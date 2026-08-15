@@ -2,7 +2,7 @@
 // JOY EMMANUEL HOSPITAL — HMIS DATABASE SCHEMA
 // =====================================================================
 // Designed per the Neon PostgreSQL Database Architecture spec.
-// Sandbox uses SQLite; the schema is portable to Neon PostgreSQL.
+// Production database: Neon PostgreSQL.
 //
 // PRIMARY PRINCIPLE: ONE PATIENT = ONE MASTER PATIENT RECORD
 //   patients are organization-level (NOT facility-owned)
@@ -14,9 +14,11 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
 
 // ---------------------------------------------------------------------
 // ORGANIZATION HIERARCHY

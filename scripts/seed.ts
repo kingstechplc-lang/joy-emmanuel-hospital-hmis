@@ -1,6 +1,7 @@
 // =====================================================================
 // SEED SCRIPT — Joy Emmanuel Hospital HMIS
 // =====================================================================
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";
@@ -140,15 +141,22 @@ async function main() {
       },
     });
     rolesByCode[code] = role;
-    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
-    for (const permCode of perms) {
-      const perm = permByCode[permCode as string];
-      if (perm) {
-        await prisma.rolePermission.create({ data: { roleId: role.id, permissionId: perm.id } });
-      }
-    }
   }
   console.log(`✓ Roles: ${rolesData.length}`);
+
+  // Bulk-assign permissions using createMany (much faster than individual creates)
+  for (const [code, perms] of rolesData) {
+    const role = rolesByCode[code];
+    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+    const permRows = perms
+      .map((pc) => permByCode[pc as string])
+      .filter(Boolean)
+      .map((p: any) => ({ roleId: role.id, permissionId: p.id }));
+    if (permRows.length > 0) {
+      await prisma.rolePermission.createMany({ data: permRows, skipDuplicates: true });
+    }
+  }
+  console.log(`✓ Role-permission assignments created`);
 
   const passwordHash = await bcrypt.hash("Password@2026", 10);
 
