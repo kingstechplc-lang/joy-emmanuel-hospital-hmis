@@ -6,6 +6,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
+// Force dynamic rendering — stats are user-specific and time-sensitive
+export const dynamic = "force-dynamic";
+// Allow up to 30s for Neon cold start + 14 parallel queries (Pro tier)
+// Hobby tier supports 10s which is still enough for warm DB
+export const maxDuration = 30;
+
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
