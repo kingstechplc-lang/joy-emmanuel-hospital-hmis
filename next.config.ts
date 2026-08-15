@@ -20,7 +20,9 @@ const nextConfig: NextConfig = {
   // serverExternalPackages. This tells Next.js NOT to bundle these packages —
   // they're loaded as external Node modules (required for Prisma Client +
   // bcryptjs to work in serverless environments like Vercel).
-  serverExternalPackages: ["@prisma/client", "bcryptjs", "@mdxeditor/editor"],
+  // Only include packages that ACTUALLY need to be external — heavy unused
+  // packages like @mdxeditor/editor cause Turbopack to fail on Vercel.
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
 };
 
 export default nextConfig;
