@@ -16,11 +16,11 @@ const nextConfig: NextConfig = {
     // Same reason — we've verified lint is clean via `bun run lint`.
     ignoreDuringBuilds: true,
   },
-  // Prisma Client needs to be bundled for serverless (Vercel)
-  // — see https://www.prisma.io/docs/orm/prisma-client/deployment/edge/deploy-to-vercel
-  experimental: {
-    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
-  },
+  // In Next.js 16, serverComponentsExternalPackages moved to top-level as serverExternalPackages.
+  // This tells Next.js NOT to bundle these packages — they're loaded as external Node modules
+  // (required for Prisma Client + bcryptjs to work in serverless environments like Vercel).
+  serverExternalPackages: ["@prisma/client", "bcryptjs", "@mdxeditor/editor"],
 };
 
 export default nextConfig;
+
