@@ -12,15 +12,15 @@ const nextConfig: NextConfig = {
     // type-only issues in example/skills folders that aren't part of the app.
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // Same reason — we've verified lint is clean via `bun run lint`.
-    ignoreDuringBuilds: true,
-  },
-  // In Next.js 16, serverComponentsExternalPackages moved to top-level as serverExternalPackages.
-  // This tells Next.js NOT to bundle these packages — they're loaded as external Node modules
-  // (required for Prisma Client + bcryptjs to work in serverless environments like Vercel).
+  // Note: `eslint: { ignoreDuringBuilds: true }` was removed in Next.js 16.
+  // Next.js 16 no longer runs ESLint during `next build` by default.
+  // To run lint manually: `bun run lint`
+  //
+  // In Next.js 16, serverComponentsExternalPackages moved to top-level as
+  // serverExternalPackages. This tells Next.js NOT to bundle these packages —
+  // they're loaded as external Node modules (required for Prisma Client +
+  // bcryptjs to work in serverless environments like Vercel).
   serverExternalPackages: ["@prisma/client", "bcryptjs", "@mdxeditor/editor"],
 };
 
 export default nextConfig;
-
