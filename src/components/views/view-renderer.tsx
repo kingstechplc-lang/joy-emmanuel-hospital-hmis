@@ -120,7 +120,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   prescriptions: "pharmacy.view",
   dispense: "pharmacy.dispense",
   referrals: "clinical.view",
-  immunizations: "patient.view",
+  immunizations: "clinical.view",
   maternity: "maternity.view",
   lab_orders: "lab.view",
   lab_results: "lab.view",
