@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
 import { DashboardView } from "@/components/views/dashboard-view";
+import { RecordsDeskView } from "@/components/views/clinical/records-desk-view";
 import { PatientsView } from "@/components/views/patients/patients-view";
 import { PatientRegistrationView } from "@/components/views/patients/patient-registration-view";
 import { Patient360View } from "@/components/views/patients/patient-360-view";
@@ -55,6 +56,7 @@ import type { ViewKey } from "@/stores/app-store";
 
 const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   dashboard: DashboardView,
+  records_desk: RecordsDeskView,
   patients: PatientsView,
   patient_new: PatientRegistrationView,
   patient_360: Patient360View,
@@ -106,6 +108,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
+  records_desk: "patient.view",
   patients: "patient.view",
   patient_new: "patient.create",
   patient_360: "patient.view",

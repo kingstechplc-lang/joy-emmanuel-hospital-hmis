@@ -53,7 +53,8 @@ export type ViewKey =
   | "settings_lab_tests"
   | "settings_medications"
   | "settings_insurance_providers"
-  | "settings_system";
+  | "settings_system"
+  | "records_desk";
 
 type AppState = {
   view: ViewKey;
@@ -105,6 +106,7 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", category: "Overview" },
+  { key: "records_desk", label: "Records Desk", icon: "ClipboardCheck", permission: "patient.view", category: "Clinical" },
   { key: "patients", label: "Patients", icon: "Users", permission: "patient.view", category: "Clinical" },
   { key: "patient_new", label: "Register Patient", icon: "UserPlus", permission: "patient.create", category: "Clinical" },
   { key: "encounters", label: "Encounters", icon: "Stethoscope", permission: "encounter.view", category: "Clinical" },
