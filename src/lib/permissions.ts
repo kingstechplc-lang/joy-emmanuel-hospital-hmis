@@ -169,6 +169,13 @@ const CLINICAL_FULL = [
   PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
 ];
 
+// CLINICAL_VIEW_ONLY — for nurses and other clinical support staff who can VIEW
+// clinical data and create nursing notes/triage, but CANNOT create consultations
+// or sign clinical notes (only doctors/specialists/medical officers can).
+const CLINICAL_VIEW_ONLY = CLINICAL_FULL.filter(
+  (p) => p !== PERMISSIONS.CLINICAL_CREATE
+);
+
 export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
   super_admin: ALL_PERMISSIONS,
 
@@ -230,7 +237,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
 
   nurse: [
     PERMISSIONS.PATIENT_VIEW,
-    PERMISSIONS.CLINICAL_VIEW, PERMISSIONS.CLINICAL_CREATE, PERMISSIONS.CLINICAL_EDIT,
+    PERMISSIONS.CLINICAL_VIEW, PERMISSIONS.CLINICAL_EDIT,
     PERMISSIONS.ENCOUNTER_VIEW,
     PERMISSIONS.TRIAGE_VIEW, PERMISSIONS.TRIAGE_RECORD, PERMISSIONS.VITALS_RECORD,
     PERMISSIONS.LAB_VIEW, PERMISSIONS.LAB_COLLECT,

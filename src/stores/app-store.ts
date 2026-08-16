@@ -113,7 +113,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "appointments", label: "Appointments", icon: "Calendar", permission: "appointment.view", category: "Clinical" },
   { key: "queue", label: "Queue", icon: "ListOrdered", permission: "encounter.view", category: "Clinical" },
   { key: "triage", label: "Triage & Vitals", icon: "Activity", permission: "triage.view", category: "Clinical" },
-  { key: "consultations", label: "Consultations", icon: "ClipboardList", permission: "clinical.view", category: "Clinical" },
+  { key: "consultations", label: "Consultations", icon: "ClipboardList", permission: "clinical.create", category: "Clinical" },
   { key: "prescriptions", label: "Prescriptions", icon: "FileText", permission: "pharmacy.view", category: "Clinical" },
   { key: "dispense", label: "Dispensing", icon: "Pill", permission: "pharmacy.dispense", category: "Clinical" },
   { key: "referrals", label: "Referrals", icon: "Share2", permission: "clinical.view", category: "Clinical" },

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, ClipboardList, PenSquare, Save, Check, X } from "lucide-react";
+import { Plus, ClipboardList, PenSquare, Save, Check, X, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
@@ -22,6 +23,12 @@ async function fetchJson(url: string) {
 }
 
 export function ConsultationsView() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const perms: string[] = user?.permissions || [];
+  const canCreate = user?.roles?.includes("super_admin") || perms.includes("clinical.create");
+  const canSign = user?.roles?.includes("super_admin") || perms.includes("clinical.sign");
+
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
@@ -40,9 +47,11 @@ export function ConsultationsView() {
           <h2 className="text-2xl font-bold text-slate-900">Consultations</h2>
           <p className="text-sm text-slate-500">Clinical consultation notes. Drafts can be signed once finalized.</p>
         </div>
-        <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4" /> New Consultation
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            <Plus className="w-4 h-4" /> New Consultation
+          </Button>
+        )}
       </div>
 
       {!activeFacilityId && (
@@ -58,8 +67,8 @@ export function ConsultationsView() {
           <CardContent className="p-6">
             <EmptyState
               title="No consultations yet"
-              description="Start a new consultation note for an encounter."
-              action={<Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> New Consultation</Button>}
+              description={canCreate ? "Start a new consultation note for an encounter." : "Consultations can only be created by doctors, specialists, physician assistants, clinical officers, or medical officers."}
+              action={canCreate ? <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> New Consultation</Button> : undefined}
             />
           </CardContent>
         </Card>
@@ -85,7 +94,9 @@ export function ConsultationsView() {
         </div>
       )}
 
-      <NewConsultationDialog open={showNew} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); qc.invalidateQueries({ queryKey: ["consultations"] }); }} defaultFacilityId={activeFacilityId} />
+      {canCreate && (
+        <NewConsultationDialog open={showNew} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); qc.invalidateQueries({ queryKey: ["consultations"] }); }} defaultFacilityId={activeFacilityId} />
+      )}
       {viewConsult && (
         <ViewConsultationDialog consultation={viewConsult} onClose={() => setViewConsult(null)} onChanged={() => {
           setViewConsult(null);
@@ -237,6 +248,13 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consultation: any; onClose: () => void; onChanged: () => void }) {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const perms: string[] = user?.permissions || [];
+  const canEdit = user?.roles?.includes("super_admin") || perms.includes("clinical.create") || perms.includes("clinical.edit");
+  const canSign = user?.roles?.includes("super_admin") || perms.includes("clinical.sign");
+  const canAmend = user?.roles?.includes("super_admin") || perms.includes("clinical.amend");
+
   const [editable, setEditable] = useState<any>(c);
   const [saving, setSaving] = useState(false);
   const [signing, setSigning] = useState(false);
@@ -314,16 +332,23 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="gap-1"><X className="w-4 h-4" /> Close</Button>
-          {editable.status !== "signed" && (
+          {editable.status !== "signed" && canEdit && (
             <>
               <Button onClick={update} disabled={saving} variant="outline" className="gap-1">
                 <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Changes"}
               </Button>
-              <Button onClick={sign} disabled={signing} className="gap-1 bg-emerald-600 hover:bg-emerald-700">
-                {signing ? <PenSquare className="w-4 h-4 animate-pulse" /> : <Check className="w-4 h-4" />}
-                {signing ? "Signing..." : "Sign Consultation"}
-              </Button>
+              {canSign && (
+                <Button onClick={sign} disabled={signing} className="gap-1 bg-emerald-600 hover:bg-emerald-700">
+                  {signing ? <PenSquare className="w-4 h-4 animate-pulse" /> : <Check className="w-4 h-4" />}
+                  {signing ? "Signing..." : "Sign Consultation"}
+                </Button>
+              )}
             </>
+          )}
+          {editable.status === "signed" && canAmend && (
+            <Button onClick={update} disabled={saving} variant="outline" className="gap-1">
+              <PenSquare className="w-4 h-4" /> {saving ? "Saving..." : "Amend Note"}
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>
