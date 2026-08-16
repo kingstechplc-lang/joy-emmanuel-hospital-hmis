@@ -125,5 +125,10 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/",
   },
+  // Use explicit secret from env var — never fall back to a default in production.
   secret: process.env.NEXTAUTH_SECRET || "joy-emmanuel-hospital-dev-secret-change-in-production",
+  // Provide a safe default for NEXTAUTH_URL when not set (e.g., during build).
+  // At runtime on Vercel, the env var should always be set in Project Settings.
+  // This prevents `new URL("")` crashes in NextAuth internals.
+  url: process.env.NEXTAUTH_URL || "http://localhost:3000",
 };
