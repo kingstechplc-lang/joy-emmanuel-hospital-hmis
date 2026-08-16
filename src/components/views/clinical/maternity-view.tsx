@@ -14,6 +14,7 @@ import { Plus, Baby, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -188,7 +189,7 @@ function NewMaternityDialog({ open, onClose, onCreated, defaultFacilityId }: { o
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
@@ -204,7 +205,7 @@ function NewMaternityDialog({ open, onClose, onCreated, defaultFacilityId }: { o
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>Facility *</Label>
+              <FieldLabel required>Facility</FieldLabel>
               <Select value={facilityId} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>

@@ -15,6 +15,7 @@ import { Plus, BedDouble, LogOut, Search, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -278,7 +279,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search by name, number, phone, Ghana Card..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
@@ -312,7 +313,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
           )}
 
           <div>
-            <Label>Ward *</Label>
+            <FieldLabel required>Ward</FieldLabel>
             <Select value={wardId} onValueChange={(v) => { setWardId(v); setBedId(""); }}>
               <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
               <SelectContent>

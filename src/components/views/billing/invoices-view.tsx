@@ -16,6 +16,7 @@ import { Plus, Receipt, Eye, CreditCard, Ban, Trash2, Search, X } from "lucide-r
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -320,7 +321,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
@@ -379,7 +380,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
                       </Select>
                     </div>
                     <div className="col-span-12 md:col-span-7">
-                      <Label className="text-[10px]">Description *</Label>
+                      <FieldLabel required className="text-[10px]">Description</FieldLabel>
                       <Input value={it.description} onChange={(e) => updateItem(i, { description: e.target.value })} className="h-8 text-xs" />
                     </div>
                   </div>
@@ -602,12 +603,12 @@ function PaymentDialog({ invoice, onClose, onDone, canPay }: { invoice: any; onC
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Amount *</Label>
+            <FieldLabel required>Amount</FieldLabel>
             <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
             <p className="text-[10px] text-slate-500 mt-1">Defaulted to outstanding balance</p>
           </div>
           <div>
-            <Label>Payment Method *</Label>
+            <FieldLabel required>Payment Method</FieldLabel>
             <Select value={paymentMethod} onValueChange={setPaymentMethod}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -713,7 +714,7 @@ function AddItemDialog({ invoice, onClose, onDone, facilityId }: { invoice: any;
             </Select>
           </div>
           <div>
-            <Label>Description *</Label>
+            <FieldLabel required>Description</FieldLabel>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-2">

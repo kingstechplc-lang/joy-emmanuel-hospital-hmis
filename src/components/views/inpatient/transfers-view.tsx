@@ -14,6 +14,7 @@ import { Plus, ArrowRightLeft, Search, Check, X, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -279,7 +280,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
@@ -323,7 +324,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
                 <Input value={selectedAdmission?.facility?.name || fromFacilityId || ""} disabled className="bg-slate-50" />
               </div>
               <div>
-                <Label>To Facility *</Label>
+                <FieldLabel required>To Facility</FieldLabel>
                 <Select value={toFacilityId} onValueChange={(v) => { setToFacilityId(v); setToWardId(""); setToBedId(""); }}>
                   <SelectTrigger><SelectValue placeholder="Select target facility" /></SelectTrigger>
                   <SelectContent>
@@ -339,7 +340,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
           {toFacilityId && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Target Ward *</Label>
+                <FieldLabel required>Target Ward</FieldLabel>
                 <Select value={toWardId} onValueChange={(v) => { setToWardId(v); setToBedId(""); }}>
                   <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
                   <SelectContent>

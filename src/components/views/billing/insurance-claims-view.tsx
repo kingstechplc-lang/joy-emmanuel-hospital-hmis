@@ -13,6 +13,7 @@ import { Plus, ShieldCheck, Search, Send, Check, X, DollarSign, RefreshCw } from
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -291,7 +292,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
@@ -311,7 +312,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
           {patientId && (
             <>
               <div>
-                <Label>Insurance Provider *</Label>
+                <FieldLabel required>Insurance Provider</FieldLabel>
                 {insuranceProviders.length === 0 ? (
                   <div className="text-xs text-amber-700 bg-amber-50 p-2 rounded">This patient has no registered insurance. Add insurance in the patient record first.</div>
                 ) : (
@@ -329,7 +330,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
               </div>
 
               <div>
-                <Label>Outstanding Invoice *</Label>
+                <FieldLabel required>Outstanding Invoice</FieldLabel>
                 {outstandingInvoices.length === 0 ? (
                   <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded">No outstanding invoices for this patient.</div>
                 ) : (
@@ -347,7 +348,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
               </div>
 
               <div>
-                <Label>Claim Amount *</Label>
+                <FieldLabel required>Claim Amount</FieldLabel>
                 <Input type="number" step="0.01" value={claimAmount} onChange={(e) => setClaimAmount(Number(e.target.value))} />
                 <p className="text-[10px] text-slate-500 mt-1">Defaulted to invoice balance</p>
               </div>
@@ -402,7 +403,7 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Approved Amount *</Label>
+            <FieldLabel required>Approved Amount</FieldLabel>
             <Input type="number" step="0.01" value={approvedAmount} onChange={(e) => setApprovedAmount(Number(e.target.value))} />
             <p className="text-[10px] text-slate-500 mt-1">Must be less than the claim amount ({formatCurrency(claim.claimAmount)})</p>
           </div>

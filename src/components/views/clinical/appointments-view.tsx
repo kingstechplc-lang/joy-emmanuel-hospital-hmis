@@ -13,6 +13,7 @@ import { Plus, Calendar, Clock, Phone, User, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -280,7 +281,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-40 overflow-y-auto border rounded bg-white">
@@ -296,7 +297,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Facility *</Label>
+              <FieldLabel required>Facility</FieldLabel>
               <Select value={facilityId} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
@@ -322,11 +323,11 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label>Date *</Label>
+              <FieldLabel required>Date</FieldLabel>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div>
-              <Label>Time *</Label>
+              <FieldLabel required>Time</FieldLabel>
               <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </div>
             <div>
@@ -395,11 +396,11 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>New Date *</Label>
+            <FieldLabel required>New Date</FieldLabel>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
-            <Label>New Time *</Label>
+            <FieldLabel required>New Time</FieldLabel>
             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
         </div>

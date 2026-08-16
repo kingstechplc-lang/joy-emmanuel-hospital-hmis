@@ -14,6 +14,7 @@ import { Plus, Share2, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -184,7 +185,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
@@ -200,7 +201,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>Referring Facility (Current) *</Label>
+              <FieldLabel required>Referring Facility (Current)</FieldLabel>
               <Select value={referringFacilityId} onValueChange={setReferringFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
@@ -226,7 +227,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
           {patientId && referringFacilityId && (
             <div>
-              <Label>Encounter *</Label>
+              <FieldLabel required>Encounter</FieldLabel>
               <Select value={encounterId} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Select encounter" /></SelectTrigger>
                 <SelectContent>

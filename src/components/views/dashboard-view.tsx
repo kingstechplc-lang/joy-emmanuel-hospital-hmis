@@ -294,26 +294,33 @@ function StatCard({
   onClick?: () => void;
 }) {
   const colorMap = {
-    emerald: "bg-emerald-50 text-emerald-700",
-    blue: "bg-blue-50 text-blue-700",
-    amber: "bg-amber-50 text-amber-700",
-    purple: "bg-purple-50 text-purple-700",
-    pink: "bg-pink-50 text-pink-700",
-    cyan: "bg-cyan-50 text-cyan-700",
-    rose: "bg-rose-50 text-rose-700",
-    teal: "bg-teal-50 text-teal-700",
-    orange: "bg-orange-50 text-orange-700",
+    emerald: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200/60", bar: "bg-emerald-500" },
+    blue: { bg: "bg-blue-50", text: "text-blue-700", ring: "ring-blue-200/60", bar: "bg-blue-500" },
+    amber: { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200/60", bar: "bg-amber-500" },
+    purple: { bg: "bg-purple-50", text: "text-purple-700", ring: "ring-purple-200/60", bar: "bg-purple-500" },
+    pink: { bg: "bg-pink-50", text: "text-pink-700", ring: "ring-pink-200/60", bar: "bg-pink-500" },
+    cyan: { bg: "bg-cyan-50", text: "text-cyan-700", ring: "ring-cyan-200/60", bar: "bg-cyan-500" },
+    rose: { bg: "bg-rose-50", text: "text-rose-700", ring: "ring-rose-200/60", bar: "bg-rose-500" },
+    teal: { bg: "bg-teal-50", text: "text-teal-700", ring: "ring-teal-200/60", bar: "bg-teal-500" },
+    orange: { bg: "bg-orange-50", text: "text-orange-700", ring: "ring-orange-200/60", bar: "bg-orange-500" },
   };
+  const c = colorMap[color];
   return (
-    <Card className="hover:shadow-md transition cursor-pointer" onClick={onClick}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
-            <Icon className="w-4 h-4" />
+    <Card
+      onClick={onClick}
+      className="group relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden ring-1 ring-slate-200/50"
+    >
+      {/* Top accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 ${c.bar} opacity-80 group-hover:opacity-100 transition`} />
+      <CardContent className="p-4 pt-5">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.bg} ${c.text} ring-1 ${c.ring} group-hover:scale-110 transition-transform`}>
+            <Icon className="w-5 h-5" />
           </div>
+          <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" />
         </div>
-        <p className="text-2xl font-bold text-slate-900">{value}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+        <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{value}</p>
+        <p className="text-xs text-slate-500 mt-0.5 font-medium">{label}</p>
       </CardContent>
     </Card>
   );

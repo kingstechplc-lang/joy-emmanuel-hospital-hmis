@@ -13,6 +13,7 @@ import { FolderOpen, Search, Plus, FileText, ExternalLink, Eye, X } from "lucide
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -299,11 +300,11 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-1.5 md:col-span-2">
-            <Label>File Name *</Label>
+            <FieldLabel required>File Name</FieldLabel>
             <Input value={form.fileName} onChange={(e) => setForm({ ...form, fileName: e.target.value })} placeholder="e.g., Referral_Letter_JohnDoe.pdf" />
           </div>
           <div className="space-y-1.5 md:col-span-2">
-            <Label>File URL *</Label>
+            <FieldLabel required>File URL</FieldLabel>
             <Input value={form.fileUrl} onChange={(e) => setForm({ ...form, fileUrl: e.target.value })} placeholder="https://... or /uploads/..." />
           </div>
           <div className="space-y-1.5">

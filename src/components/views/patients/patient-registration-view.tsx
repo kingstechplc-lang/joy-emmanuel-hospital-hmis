@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ArrowLeft, AlertTriangle, Check, Save } from "lucide-react";
 import { toast } from "sonner";
 
+import { FieldLabel } from "@/components/ui/required-label";
 interface DuplicateMatch {
   matchType: string;
   patient: {
@@ -125,7 +126,7 @@ export function PatientRegistrationView() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label>First Name *</Label>
+              <FieldLabel required>First Name</FieldLabel>
               <Input value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} required />
             </div>
             <div>
@@ -133,7 +134,7 @@ export function PatientRegistrationView() {
               <Input value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} />
             </div>
             <div>
-              <Label>Last Name *</Label>
+              <FieldLabel required>Last Name</FieldLabel>
               <Input value={form.lastName} onChange={(e) => setField("lastName", e.target.value)} required />
             </div>
             <div>

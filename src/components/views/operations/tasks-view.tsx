@@ -14,6 +14,7 @@ import { CheckSquare, Search, Plus, Play, Check, X, RefreshCcw, User } from "luc
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -300,7 +301,7 @@ function NewTaskDialog({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
-            <Label>Title *</Label>
+            <FieldLabel required>Title</FieldLabel>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Contact patient about lab results" />
           </div>
           <div className="space-y-1.5 md:col-span-2">

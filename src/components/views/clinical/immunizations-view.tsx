@@ -13,6 +13,7 @@ import { Plus, Syringe, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -204,7 +205,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
@@ -219,7 +220,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
           </div>
 
           <div>
-            <Label>Vaccine *</Label>
+            <FieldLabel required>Vaccine</FieldLabel>
             <Select value={vaccineName} onValueChange={setVaccineName}>
               <SelectTrigger><SelectValue placeholder="Select vaccine" /></SelectTrigger>
               <SelectContent className="max-h-72">
@@ -242,7 +243,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
           </div>
 
           <div>
-            <Label>Facility *</Label>
+            <FieldLabel required>Facility</FieldLabel>
             <Select value={facilityId} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
               <SelectContent>
@@ -255,7 +256,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Date Administered *</Label>
+              <FieldLabel required>Date Administered</FieldLabel>
               <Input type="date" value={administeredAt} onChange={(e) => setAdministeredAt(e.target.value)} />
             </div>
             <div>

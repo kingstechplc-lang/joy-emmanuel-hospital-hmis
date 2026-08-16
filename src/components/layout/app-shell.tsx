@@ -303,13 +303,17 @@ function SidebarContent({
                       key={item.key}
                       onClick={() => onSelect(item.key)}
                       title={collapsed ? item.label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 group relative ${
                         isActive
-                          ? "bg-emerald-50 text-emerald-700 font-semibold"
-                          : "text-slate-700 hover:bg-slate-100"
+                          ? "bg-emerald-50 text-emerald-700 font-semibold shadow-sm"
+                          : "text-slate-700 hover:bg-slate-100 hover:translate-x-0.5"
                       }`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-emerald-600" : "text-slate-500 group-hover:text-slate-700"}`} />
+                      {/* Active left accent */}
+                      {isActive && (
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-emerald-600 rounded-r-full" />
+                      )}
+                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-emerald-600" : "text-slate-500 group-hover:text-slate-700"}`} />
                       {!collapsed && <span className="truncate text-left">{item.label}</span>}
                     </button>
                   );

@@ -14,6 +14,7 @@ import { Plus, RotateCcw, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -236,7 +237,7 @@ function NewRefundDialog({ open, onClose, onCreated, facilityId }: { open: boole
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Payment *</Label>
+            <FieldLabel required>Payment</FieldLabel>
             <Select value={paymentId} onValueChange={selectPayment}>
               <SelectTrigger><SelectValue placeholder="Select payment" /></SelectTrigger>
               <SelectContent>
@@ -257,12 +258,12 @@ function NewRefundDialog({ open, onClose, onCreated, facilityId }: { open: boole
           )}
 
           <div>
-            <Label>Refund Amount *</Label>
+            <FieldLabel required>Refund Amount</FieldLabel>
             <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
           </div>
 
           <div>
-            <Label>Reason *</Label>
+            <FieldLabel required>Reason</FieldLabel>
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="Reason for refund (e.g. duplicate payment, service not rendered, overpayment)" />
           </div>
         </div>

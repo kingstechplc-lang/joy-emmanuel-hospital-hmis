@@ -15,6 +15,7 @@ import { CalendarClock, Search, Plus, Check, X, Clock, Ban } from "lucide-react"
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -431,7 +432,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
-            <Label>Staff Member *</Label>
+            <FieldLabel required>Staff Member</FieldLabel>
             <Select value={staffId} onValueChange={setStaffId}>
               <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
               <SelectContent>
@@ -442,7 +443,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Shift Date *</Label>
+            <FieldLabel required>Shift Date</FieldLabel>
             <Input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -455,7 +456,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Start Time *</Label>
+            <FieldLabel required>Start Time</FieldLabel>
             <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -531,7 +532,7 @@ function NewLeaveDialog({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
-            <Label>Staff Member *</Label>
+            <FieldLabel required>Staff Member</FieldLabel>
             <Select value={staffId} onValueChange={setStaffId}>
               <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
               <SelectContent>
@@ -551,7 +552,7 @@ function NewLeaveDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Start Date *</Label>
+            <FieldLabel required>Start Date</FieldLabel>
             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">

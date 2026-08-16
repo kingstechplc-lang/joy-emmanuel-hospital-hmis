@@ -16,6 +16,7 @@ import { Plus, NotebookPen, ClipboardList, Search } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -187,7 +188,7 @@ function PatientPicker({ patientId, setPatientId, setEncounterId }: { patientId:
   return (
     <>
       <div>
-        <Label>Patient *</Label>
+        <FieldLabel required>Patient</FieldLabel>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
@@ -215,7 +216,7 @@ function PatientPicker({ patientId, setPatientId, setEncounterId }: { patientId:
       {patientId && (
         <>
           <div>
-            <Label>Encounter *</Label>
+            <FieldLabel required>Encounter</FieldLabel>
             <Select value={encountersData?.items?.[0]?.id || ""} onValueChange={setEncounterId}>
               <SelectTrigger><SelectValue placeholder="Select encounter" /></SelectTrigger>
               <SelectContent>
@@ -298,7 +299,7 @@ function NewNursingNoteDialog({ open, onClose, onCreated }: { open: boolean; onC
             </Select>
           </div>
           <div>
-            <Label>Content *</Label>
+            <FieldLabel required>Content</FieldLabel>
             <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={5} placeholder="Enter the nursing note..." />
           </div>
         </div>
@@ -357,7 +358,7 @@ function NewCarePlanDialog({ open, onClose, onCreated }: { open: boolean; onClos
         <div className="space-y-3">
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
           <div>
-            <Label>Problem *</Label>
+            <FieldLabel required>Problem</FieldLabel>
             <Textarea value={problem} onChange={(e) => setProblem(e.target.value)} rows={2} placeholder="Nursing problem (e.g. Acute pain related to surgical incision)" />
           </div>
           <div>

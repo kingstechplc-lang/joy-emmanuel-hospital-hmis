@@ -12,6 +12,7 @@ import { Beaker, Search, Plus, Edit, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, formatCurrency } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -224,12 +225,12 @@ function LabTestDialog({ test, onClose }: { test?: any; onClose: () => void }) {
         </DialogHeader>
         <div className="grid grid-cols-1 gap-3 py-2">
           <div className="space-y-1.5">
-            <Label>Name *</Label>
+            <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Code *</Label>
+              <FieldLabel required>Code</FieldLabel>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             </div>
             <div className="space-y-1.5">

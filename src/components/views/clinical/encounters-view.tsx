@@ -12,6 +12,7 @@ import { Plus, Activity, Search, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -246,7 +247,7 @@ function NewEncounterDialog({ open, onClose, onCreated, defaultFacilityId }: { o
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <Input
               placeholder="Search patient by name, number, phone, Ghana Card..."
               value={patientQuery}
@@ -273,7 +274,7 @@ function NewEncounterDialog({ open, onClose, onCreated, defaultFacilityId }: { o
           </div>
 
           <div>
-            <Label>Facility *</Label>
+            <FieldLabel required>Facility</FieldLabel>
             <Select value={facilityId} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
               <SelectContent>

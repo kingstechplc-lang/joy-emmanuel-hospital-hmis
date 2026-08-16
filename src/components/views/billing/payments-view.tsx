@@ -13,6 +13,7 @@ import { Plus, CreditCard, Search } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -241,7 +242,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
@@ -260,7 +261,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
 
           {patientId && (
             <div>
-              <Label>Outstanding Invoice *</Label>
+              <FieldLabel required>Outstanding Invoice</FieldLabel>
               {outstandingInvoices.length === 0 ? (
                 <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded">No outstanding invoices for this patient.</div>
               ) : (
@@ -280,11 +281,11 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Amount *</Label>
+              <FieldLabel required>Amount</FieldLabel>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
             </div>
             <div>
-              <Label>Payment Method *</Label>
+              <FieldLabel required>Payment Method</FieldLabel>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

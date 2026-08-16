@@ -13,6 +13,7 @@ import { Pill, Search, Plus, Edit, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -244,7 +245,7 @@ function MedicationDialog({ medication, onClose }: { medication?: any; onClose: 
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
-            <Label>Generic Name *</Label>
+            <FieldLabel required>Generic Name</FieldLabel>
             <Input value={form.genericName} onChange={(e) => setForm({ ...form, genericName: e.target.value })} placeholder="e.g., Paracetamol" />
           </div>
           <div className="space-y-1.5">

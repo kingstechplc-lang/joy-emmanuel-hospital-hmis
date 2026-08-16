@@ -14,6 +14,7 @@ import { UserCog, Search, Plus, Building2, Phone, Mail, Ban, CheckCircle2, Edit,
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -363,21 +364,21 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
           {!isEdit && (
             <>
               <div className="space-y-1.5">
-                <Label>Username *</Label>
+                <FieldLabel required>Username</FieldLabel>
                 <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
               </div>
               <div className="space-y-1.5">
-                <Label>Password *</Label>
+                <FieldLabel required>Password</FieldLabel>
                 <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
               </div>
             </>
           )}
           <div className="space-y-1.5">
-            <Label>First Name *</Label>
+            <FieldLabel required>First Name</FieldLabel>
             <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>Last Name *</Label>
+            <FieldLabel required>Last Name</FieldLabel>
             <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
           </div>
           <div className="space-y-1.5">
@@ -385,7 +386,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
             <Input value={form.middleName} onChange={(e) => setForm({ ...form, middleName: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>Email *</Label>
+            <FieldLabel required>Email</FieldLabel>
             <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div className="space-y-1.5">

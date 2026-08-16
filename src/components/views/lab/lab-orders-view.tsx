@@ -16,6 +16,7 @@ import { Plus, FlaskConical, Search, TestTube, Microscope, CheckCircle2, Send, X
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -309,7 +310,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Patient *</Label>
+            <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
@@ -441,7 +442,7 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Sample Number *</Label>
+            <FieldLabel required>Sample Number</FieldLabel>
             <Input value={sampleNumber} onChange={(e) => setSampleNumber(e.target.value)} />
           </div>
           <div>

@@ -13,6 +13,7 @@ import { Building2, Search, Plus, Edit, Network, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -227,11 +228,11 @@ function FacilityDialog({ facility, onClose }: { facility?: any; onClose: () => 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5">
-            <Label>Name *</Label>
+            <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>Code *</Label>
+            <FieldLabel required>Code</FieldLabel>
             <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g., JEH-MAIN" />
           </div>
           <div className="space-y-1.5">

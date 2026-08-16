@@ -12,6 +12,7 @@ import { Activity, Stethoscope, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -164,7 +165,7 @@ function TriageForm({ facilityId, onCreated }: { facilityId: string | null; onCr
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label>Patient *</Label>
+          <FieldLabel required>Patient</FieldLabel>
           <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
           {patientsData?.patients && patientsData.patients.length > 0 && (
             <div className="mt-1 max-h-40 overflow-y-auto border rounded bg-white">
