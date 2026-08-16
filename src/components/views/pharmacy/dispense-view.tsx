@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Pill, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -155,6 +156,7 @@ function PrescriptionDispenseRow({ rx, allergies, onDone, dispensing, setDispens
   const [batchesByItem, setBatchesByItem] = useState<Record<string, any[]>>({});
   const [dispenseMap, setDispenseMap] = useState<Record<string, { batchId: string; quantity: number; createInvoice: boolean }>>({});
   const [loadingBatches, setLoadingBatches] = useState(true);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   useEffect(() => {
     let active = true;
@@ -194,11 +196,38 @@ function PrescriptionDispenseRow({ rx, allergies, onDone, dispensing, setDispens
     const remaining = item.quantity - item.dispensedQuantity;
     if (cfg.quantity > remaining) return toast.error(`Cannot dispense more than ${remaining} remaining`);
 
-    // Check allergy interaction
+    // Check allergy interaction — if allergy matches, show custom danger dialog
     const medName = item.medication?.genericName?.toLowerCase() || "";
-    const hasAllergy = allergies.some((a) => medName.includes(a.allergen?.toLowerCase() || "___"));
-    if (hasAllergy && !confirm("WARNING: Possible allergy interaction! Proceed anyway?")) return;
+    const matchedAllergies = allergies.filter((a) => medName.includes(a.allergen?.toLowerCase() || "___"));
+    if (matchedAllergies.length > 0) {
+      confirmAction({
+        title: "⚠ Allergy Warning — Proceed with Caution",
+        description: `This patient has a documented allergy that may interact with ${item.medication?.genericName}. Proceed only if a clinician has authorized override.`,
+        confirmText: "Yes, dispense anyway",
+        variant: "danger",
+        details: (
+          <div className="space-y-1">
+            <div><strong>Patient:</strong> {rx.patient.firstName} {rx.patient.lastName}</div>
+            <div><strong>Medication:</strong> {item.medication?.genericName} ({item.medication?.brandName})</div>
+            <div className="pt-2 border-t border-slate-200 mt-2">
+              <div className="font-semibold text-rose-700 mb-1">Documented Allergies:</div>
+              {matchedAllergies.map((a, i) => (
+                <div key={i} className="text-xs">
+                  • {a.allergen} — <em>{a.reaction || "reaction unknown"}</em> ({a.severity || "unspecified"})
+                </div>
+              ))}
+            </div>
+          </div>
+        ),
+        onConfirm: () => doDispense(item, cfg),
+      });
+      return;
+    }
 
+    doDispense(item, cfg);
+  };
+
+  const doDispense = async (item: any, cfg: any) => {
     setDispensing((p) => ({ ...p, [item.id]: true }));
     try {
       const res = await fetch("/api/dispense", {
@@ -308,6 +337,7 @@ function PrescriptionDispenseRow({ rx, allergies, onDone, dispensing, setDispens
           </div>
         )}
       </div>
+      {confirmDialogEl}
     </div>
   );
 }

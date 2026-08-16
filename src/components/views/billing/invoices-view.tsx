@@ -568,12 +568,31 @@ function PaymentDialog({ invoice, onClose, onDone, canPay }: { invoice: any; onC
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [transactionReference, setTransactionReference] = useState("");
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const submit = async () => {
     if (!amount || amount <= 0) { toast.error("Amount must be > 0"); return; }
     if (amount > invoice.balance + 0.01) {
-      if (!confirm(`Amount (${amount}) exceeds outstanding balance (${invoice.balance}). Continue?`)) return;
+      confirmAction({
+        title: "Overpayment Warning",
+        description: `The entered amount exceeds the outstanding balance. The excess will be credited to the patient's account.`,
+        confirmText: "Yes, accept overpayment",
+        variant: "warning",
+        details: (
+          <div>
+            <div><strong>Outstanding balance:</strong> {formatCurrency(invoice.balance, invoice.currency)}</div>
+            <div><strong>Payment amount:</strong> {formatCurrency(amount, invoice.currency)}</div>
+            <div><strong>Overpayment:</strong> {formatCurrency(amount - invoice.balance, invoice.currency)}</div>
+          </div>
+        ),
+        onConfirm: () => doSubmit(),
+      });
+      return;
     }
+    doSubmit();
+  };
+
+  const doSubmit = async () => {
     setSaving(true);
     try {
       const res = await fetch("/api/payments", {
@@ -603,6 +622,7 @@ function PaymentDialog({ invoice, onClose, onDone, canPay }: { invoice: any; onC
   };
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -644,6 +664,8 @@ function PaymentDialog({ invoice, onClose, onDone, canPay }: { invoice: any; onC
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {confirmDialogEl}
+  </>
   );
 }
 

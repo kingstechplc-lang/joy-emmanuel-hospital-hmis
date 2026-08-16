@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Pill, Search, Plus, Edit, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -58,6 +59,7 @@ export function MedicationsAdminView() {
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
@@ -178,7 +180,20 @@ export function MedicationsAdminView() {
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                if (confirm(`Deactivate medication "${m.genericName}"?`)) deleteMutation.mutate(m.id);
+                                confirmAction({
+                                  title: `Deactivate medication "${m.genericName}"?`,
+                                  description: "This will mark the medication as inactive. Existing prescriptions referencing it will be preserved but new ones cannot use it until reactivated.",
+                                  confirmText: "Yes, deactivate",
+                                  variant: "warning",
+                                  details: (
+                                    <div>
+                                      <div><strong>Generic:</strong> {m.genericName}</div>
+                                      <div><strong>Brand:</strong> {m.brandName || "—"}</div>
+                                      <div><strong>Strength:</strong> {m.strength || "—"}</div>
+                                    </div>
+                                  ),
+                                  onConfirm: () => deleteMutation.mutate(m.id),
+                                });
                               }}
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50"
                             >
@@ -198,6 +213,7 @@ export function MedicationsAdminView() {
 
       {showNew && <MedicationDialog onClose={() => setShowNew(false)} />}
       {editing && <MedicationDialog medication={editing} onClose={() => setEditing(null)} />}
+      {confirmDialogEl}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Beaker, Search, Plus, Edit, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, formatCurrency } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -41,6 +42,7 @@ export function LabTestsAdminView() {
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [showNew, setShowNew] = useState(false);
@@ -155,7 +157,20 @@ export function LabTestsAdminView() {
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                if (confirm(`Deactivate lab test "${t.name}"?`)) deleteMutation.mutate(t.id);
+                                confirmAction({
+                                  title: `Deactivate lab test "${t.name}"?`,
+                                  description: "This will mark the lab test as inactive. Existing lab orders referencing it will be preserved but new orders cannot use it until reactivated.",
+                                  confirmText: "Yes, deactivate",
+                                  variant: "warning",
+                                  details: (
+                                    <div>
+                                      <div><strong>Test:</strong> {t.name} ({t.code})</div>
+                                      <div><strong>Category:</strong> {t.category || "—"}</div>
+                                      <div><strong>Price:</strong> {formatCurrency(t.price)}</div>
+                                    </div>
+                                  ),
+                                  onConfirm: () => deleteMutation.mutate(t.id),
+                                });
                               }}
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50"
                             >
@@ -175,6 +190,7 @@ export function LabTestsAdminView() {
 
       {showNew && <LabTestDialog onClose={() => setShowNew(false)} />}
       {editing && <LabTestDialog test={editing} onClose={() => setEditing(null)} />}
+      {confirmDialogEl}
     </div>
   );
 }

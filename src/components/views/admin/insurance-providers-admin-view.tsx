@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Building, Search, Plus, Edit, Trash2, Phone, Mail, MapPin, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
-
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FieldLabel } from "@/components/ui/required-label";
+
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -30,6 +31,7 @@ export function InsuranceProvidersAdminView() {
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
@@ -159,7 +161,19 @@ export function InsuranceProvidersAdminView() {
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                if (confirm(`Deactivate insurance provider "${p.name}"?`)) deleteMutation.mutate(p.id);
+                                confirmAction({
+                                  title: `Deactivate insurance provider "${p.name}"?`,
+                                  description: "This will mark the provider as inactive. Existing patient insurance records will be preserved but new policies cannot be created with this provider until reactivated.",
+                                  confirmText: "Yes, deactivate",
+                                  variant: "warning",
+                                  details: (
+                                    <div>
+                                      <div><strong>Provider:</strong> {p.name} ({p.code})</div>
+                                      <div><strong>Patients with this insurance:</strong> {p.patientsCount || 0}</div>
+                                    </div>
+                                  ),
+                                  onConfirm: () => deleteMutation.mutate(p.id),
+                                });
                               }}
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50"
                             >
@@ -179,6 +193,7 @@ export function InsuranceProvidersAdminView() {
 
       {showNew && <ProviderDialog onClose={() => setShowNew(false)} />}
       {editing && <ProviderDialog provider={editing} onClose={() => setEditing(null)} />}
+      {confirmDialogEl}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Building2, Search, Plus, Edit, Network, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -40,6 +41,7 @@ export function FacilitiesAdminView() {
   const setView = useAppStore((s) => s.setView);
   const setActiveFacility = useAppStore((s) => s.setActiveFacility);
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -157,9 +159,27 @@ export function FacilitiesAdminView() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        if (confirm(`Delete facility ${f.name}? This cannot be undone if there are associated records.`)) {
-                          deleteMutation.mutate(f.id);
-                        }
+                        confirmAction({
+                          title: `Delete facility "${f.name}"?`,
+                          description: "This will permanently delete the facility and all its departments, wards, beds, and staff assignments. Encounters and clinical records will be preserved but may become orphaned. THIS CANNOT BE UNDONE.",
+                          confirmText: "Yes, delete facility",
+                          variant: "destructive",
+                          requireTextToMatch: f.code,
+                          details: (
+                            <div>
+                              <div><strong>Facility:</strong> {f.name}</div>
+                              <div><strong>Code:</strong> {f.code}</div>
+                              <div><strong>Type:</strong> {f.facilityType || "—"}</div>
+                              <div><strong>Departments:</strong> {f._count?.departments || 0}</div>
+                              <div><strong>Beds:</strong> {f._count?.beds || 0}</div>
+                              <div><strong>Staff assigned:</strong> {f._count?.staffFacilities || 0}</div>
+                              <div className="mt-2 pt-2 border-t border-slate-200 text-rose-700 font-medium">
+                                Type the facility code <code className="bg-rose-50 px-1.5 py-0.5 rounded font-mono font-bold">{f.code}</code> to confirm deletion.
+                              </div>
+                            </div>
+                          ),
+                          onConfirm: () => deleteMutation.mutate(f.id),
+                        });
                       }}
                       className="w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                     >
@@ -175,6 +195,7 @@ export function FacilitiesAdminView() {
 
       {showNew && <FacilityDialog onClose={() => setShowNew(false)} />}
       {editing && <FacilityDialog facility={editing} onClose={() => setEditing(null)} />}
+      {confirmDialogEl}
     </div>
   );
 }

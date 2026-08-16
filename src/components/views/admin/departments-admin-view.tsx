@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Network, Search, Plus, Edit, ChevronDown, ChevronRight, Trash2, Boxes } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -148,27 +149,42 @@ function DepartmentRow({ dept, isExpanded, onToggle, onEdit, canManage, onInvali
     enabled: isExpanded,
   });
 
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
+
   const units = detail?.item?.units || [];
   const [showUnitForm, setShowUnitForm] = useState(false);
   const [editingUnit, setEditingUnit] = useState<any | null>(null);
 
   const deleteUnit = async (unitId: string, unitName: string) => {
-    if (!confirm(`Delete unit ${unitName}?`)) return;
-    try {
-      const res = await fetch(`/api/departments/${dept.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete_unit", unit: { id: unitId } }),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error || "Failed");
-      }
-      toast.success("Unit deleted");
-      onInvalidate();
-    } catch (e: any) {
-      toast.error(e.message);
-    }
+    confirmAction({
+      title: `Delete unit "${unitName}"?`,
+      description: "This will permanently remove the unit from this department. Any staff assigned to this unit may need to be reassigned.",
+      confirmText: "Yes, delete unit",
+      variant: "destructive",
+      details: (
+        <div>
+          <div><strong>Unit:</strong> {unitName}</div>
+          <div><strong>Department:</strong> {dept.name}</div>
+        </div>
+      ),
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/departments/${dept.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "delete_unit", unit: { id: unitId } }),
+          });
+          if (!res.ok) {
+            const e = await res.json().catch(() => ({}));
+            throw new Error(e.error || "Failed");
+          }
+          toast.success("Unit deleted");
+          onInvalidate();
+        } catch (e: any) {
+          toast.error(e.message);
+        }
+      },
+    });
   };
 
   return (
@@ -251,6 +267,7 @@ function DepartmentRow({ dept, isExpanded, onToggle, onEdit, canManage, onInvali
           onSaved={onInvalidate}
         />
       )}
+      {confirmDialogEl}
     </Collapsible>
   );
 }
