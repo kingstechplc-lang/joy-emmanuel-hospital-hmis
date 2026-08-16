@@ -30,7 +30,7 @@ async function main() {
 
   const facilitiesData = [
     { name: "Joy Emmanuel Hospital — Accra", code: "JEM-ACCRA", facilityType: "hospital", address: "Independence Ave, Accra", city: "Accra", region: "Greater Accra", country: "Ghana", phone: "+233 30 111 1111", email: "accra@joyemmanuelhospital.org" },
-    { name: "Joy Emmanuel Hospital — Kasoa", code: "JEM-KASOA", facilityType: "hospital", address: "Kasoa-Winneba Rd, Kasoa", city: "Kasoa", region: "Central", country: "Ghana", phone: "+233 30 222 2222", email: "kasoa@joyemmanuelhospital.org" },
+    { name: "Joy Emmanuel Hospital — Assin Fosu", code: "JEM-ASSIN", facilityType: "hospital", address: "Assin Fosu, Central Region", city: "Assin Fosu", region: "Central", country: "Ghana", phone: "+233 30 222 2222", email: "assin@joyemmanuelhospital.org" },
     { name: "Joy Emmanuel Hospital — Tema", code: "JEM-TEMA", facilityType: "hospital", address: "Harbour Rd, Tema", city: "Tema", region: "Greater Accra", country: "Ghana", phone: "+233 30 333 3333", email: "tema@joyemmanuelhospital.org" },
   ];
 

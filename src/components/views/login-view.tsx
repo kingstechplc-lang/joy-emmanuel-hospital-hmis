@@ -85,7 +85,7 @@ export function LoginView() {
           </h2>
           <p className="text-emerald-100/90 max-w-md leading-relaxed">
             A centralized, secure HMIS that maintains a longitudinal medical record
-            across every Joy Emmanuel Hospital location — Accra, Kasoa, Tema and beyond.
+            across every Joy Emmanuel Hospital location — Assin Fosu, Accra, Tema and beyond.
           </p>
           <ul className="text-sm space-y-2.5 text-emerald-50">
             <li className="flex items-center gap-2">
