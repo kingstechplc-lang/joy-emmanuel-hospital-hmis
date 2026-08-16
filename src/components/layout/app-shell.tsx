@@ -268,7 +268,7 @@ function SidebarContent({
   collapsed: boolean;
 }) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo / Brand */}
       <div className="h-16 border-b border-slate-200 flex items-center px-4 gap-2 shrink-0">
         <div className="w-9 h-9 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-lg flex items-center justify-center text-white shrink-0">
@@ -282,47 +282,45 @@ function SidebarContent({
         )}
       </div>
 
-      {/* Nav */}
-      <ScrollArea className="flex-1 py-2">
-        <nav className="px-2 space-y-1">
-          {NAV_CATEGORIES.map((cat) => {
-            const items = navByCategory[cat] || [];
-            if (items.length === 0) return null;
-            return (
-              <div key={cat} className="mb-2">
-                {!collapsed && (
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1 mt-3">
-                    {cat}
-                  </p>
-                )}
-                {items.map((item) => {
-                  const Icon = (Icons as any)[item.icon] || Icons.Circle;
-                  const isActive = currentView === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      onClick={() => onSelect(item.key)}
-                      title={collapsed ? item.label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 group relative ${
-                        isActive
-                          ? "bg-emerald-50 text-emerald-700 font-semibold shadow-sm"
-                          : "text-slate-700 hover:bg-slate-100 hover:translate-x-0.5"
-                      }`}
-                    >
-                      {/* Active left accent */}
-                      {isActive && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-emerald-600 rounded-r-full" />
-                      )}
-                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-emerald-600" : "text-slate-500 group-hover:text-slate-700"}`} />
-                      {!collapsed && <span className="truncate text-left">{item.label}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </nav>
-      </ScrollArea>
+      {/* Nav — scrolls independently within the sidebar */}
+      <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-2">
+        {NAV_CATEGORIES.map((cat) => {
+          const items = navByCategory[cat] || [];
+          if (items.length === 0) return null;
+          return (
+            <div key={cat} className="mb-2">
+              {!collapsed && (
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1 mt-3">
+                  {cat}
+                </p>
+              )}
+              {items.map((item) => {
+                const Icon = (Icons as any)[item.icon] || Icons.Circle;
+                const isActive = currentView === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => onSelect(item.key)}
+                    title={collapsed ? item.label : undefined}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 group relative ${
+                      isActive
+                        ? "bg-emerald-50 text-emerald-700 font-semibold shadow-sm"
+                        : "text-slate-700 hover:bg-slate-100 hover:translate-x-0.5"
+                    }`}
+                  >
+                    {/* Active left accent */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-emerald-600 rounded-r-full" />
+                    )}
+                    <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-emerald-600" : "text-slate-500 group-hover:text-slate-700"}`} />
+                    {!collapsed && <span className="truncate text-left">{item.label}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </nav>
 
       {/* Footer */}
       <div className="border-t border-slate-200 p-3 shrink-0">
