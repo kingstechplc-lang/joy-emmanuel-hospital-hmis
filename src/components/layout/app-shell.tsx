@@ -106,7 +106,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="h-screen flex bg-slate-50 overflow-hidden">
       {/* Mobile sidebar trigger */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="p-0 w-72">
@@ -124,7 +124,7 @@ export function AppShell() {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`${sidebarCollapsed ? "w-16" : "w-64"} hidden md:flex flex-col bg-white border-r border-slate-200 transition-all duration-200 shrink-0`}
+        className={`${sidebarCollapsed ? "w-16" : "w-64"} hidden md:flex flex-col bg-white border-r border-slate-200 transition-all duration-200 shrink-0 h-screen overflow-hidden`}
       >
         <SidebarContent
           navByCategory={navByCategory}
@@ -135,9 +135,9 @@ export function AppShell() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Topbar */}
-        <header className="h-16 border-b border-slate-200 bg-white px-4 md:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
+        <header className="h-16 border-b border-slate-200 bg-white px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 z-30">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Button
               variant="ghost"
@@ -241,7 +241,7 @@ export function AppShell() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto overflow-x-hidden">
           {view === "dashboard" ? (
             <DashboardView />
           ) : (

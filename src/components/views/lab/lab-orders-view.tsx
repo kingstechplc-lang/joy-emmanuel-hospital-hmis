@@ -358,7 +358,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           </div>
 
           <div>
-            <Label>Tests * ({selectedTestIds.length} selected)</Label>
+            <FieldLabel required>Tests ({selectedTestIds.length} selected)</FieldLabel>
             <div className="max-h-56 overflow-y-auto border rounded p-2 space-y-1 bg-slate-50">
               {(catalogData?.items || []).length === 0 ? (
                 <p className="text-xs text-slate-500 p-2">No tests in catalog. Add tests in Settings → Lab Test Catalog.</p>

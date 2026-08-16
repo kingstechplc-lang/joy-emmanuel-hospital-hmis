@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Truck, Plus, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -182,11 +183,11 @@ function SupplierDialog({ open, onClose, onCreated, existing }: {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Name *</Label>
+              <FieldLabel required className="text-xs">Name</FieldLabel>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="MediSource Ghana Ltd" />
             </div>
             <div>
-              <Label className="text-xs">Code *</Label>
+              <FieldLabel required className="text-xs">Code</FieldLabel>
               <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="MS-001" disabled={isEdit} />
             </div>
           </div>

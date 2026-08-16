@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -241,8 +242,8 @@ function NewTaskDialog({ onClose }: { onClose: () => void }) {
   });
 
   const { data: usersData } = useQuery({
-    queryKey: ["users-for-task"],
-    queryFn: () => fetchJson("/api/users"),
+    queryKey: ["users-assignable"],
+    queryFn: () => fetchJson("/api/users/assignable"),
   });
   const users = usersData?.items || [];
 
@@ -325,37 +326,42 @@ function NewTaskDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Assign To</Label>
-            <Select value={form.assignedToId} onValueChange={(v) => setForm({ ...form, assignedToId: v })}>
-              <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
-                {users.map((u: any) => (
-                  <SelectItem key={u.id} value={u.id}>{u.firstName} {u.lastName} (@{u.username})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={users.map((u: any) => ({
+                value: u.id,
+                label: u.name || `${u.firstName} ${u.lastName}`,
+                description: `@${u.username}`,
+                secondary: u.professionalRole || u.roles?.[0] || null,
+                initials: u.initials,
+              }))}
+              value={form.assignedToId}
+              onValueChange={(v) => setForm({ ...form, assignedToId: v })}
+              placeholder="Select user (search by name or role)"
+              searchPlaceholder="Search by name, username, or role..."
+              emptyText="No users found"
+            />
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Patient (optional)</Label>
-            <Input value={patientSearch} onChange={(e) => searchPatients(e.target.value)} placeholder="Search patient by name or number..." />
-            {searchedPatients.length > 0 && (
-              <div className="border rounded mt-1 max-h-40 overflow-y-auto">
-                {searchedPatients.slice(0, 8).map((p: any) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      setForm({ ...form, patientId: p.id });
-                      setPatientSearch(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
-                      setSearchedPatients([]);
-                    }}
-                    className="w-full text-left p-2 hover:bg-slate-50 text-sm"
-                  >
-                    {p.firstName} {p.lastName} — {p.patientNumber}
-                  </button>
-                ))}
-              </div>
-            )}
+            <SearchableSelect
+              options={searchedPatients.map((p: any) => ({
+                value: p.id,
+                label: `${p.firstName} ${p.lastName}`,
+                description: p.phone || undefined,
+                secondary: p.patientNumber,
+                initials: `${p.firstName?.[0] || ""}${p.lastName?.[0] || ""}`.toUpperCase(),
+              }))}
+              value={form.patientId}
+              onValueChange={(v) => {
+                setForm({ ...form, patientId: v });
+                const p = searchedPatients.find((p: any) => p.id === v);
+                setPatientSearch(p ? `${p.firstName} ${p.lastName} (${p.patientNumber})` : "");
+              }}
+              onSearch={(q) => searchPatients(q)}
+              placeholder="Search patient by name or number..."
+              searchPlaceholder="Type to search patients..."
+              emptyText={patientSearch.length < 2 ? "Type at least 2 characters to search" : "No patients found"}
+            />
             {form.patientId && (
               <Button size="sm" variant="ghost" onClick={() => { setForm({ ...form, patientId: "" }); setPatientSearch(""); }} className="h-7 mt-1 text-xs">
                 Clear patient

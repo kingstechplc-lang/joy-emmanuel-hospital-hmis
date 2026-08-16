@@ -16,6 +16,7 @@ import { Package, Search, Plus, History, AlertTriangle, Boxes, TrendingDown } fr
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -235,11 +236,11 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Name *</Label>
+              <FieldLabel required className="text-xs">Name</FieldLabel>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Paracetamol 500mg" />
             </div>
             <div>
-              <Label className="text-xs">SKU *</Label>
+              <FieldLabel required className="text-xs">SKU</FieldLabel>
               <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="MED-PARA-500" />
             </div>
           </div>

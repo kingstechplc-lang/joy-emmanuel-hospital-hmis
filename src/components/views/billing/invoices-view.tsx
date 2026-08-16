@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Receipt, Eye, CreditCard, Ban, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -39,6 +40,7 @@ export function InvoicesView() {
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<any | null>(null);
@@ -61,23 +63,30 @@ export function InvoicesView() {
     qc.invalidateQueries({ queryKey: ["payments"] });
   };
 
-  const cancel = async (id: string) => {
-    if (!confirm("Cancel this invoice? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`/api/invoices/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel" }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed");
-      }
-      toast.success("Invoice cancelled");
-      invalidate();
-    } catch (e: any) {
-      toast.error(e.message);
-    }
+  const cancel = (id: string) => {
+    confirmAction({
+      title: "Cancel this invoice?",
+      description: "Cancelling marks the invoice as cancelled. This cannot be undone. If payments were already received, they will need to be refunded separately.",
+      confirmText: "Yes, cancel invoice",
+      variant: "warning",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/invoices/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "cancel" }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Failed");
+          }
+          toast.success("Invoice cancelled");
+          invalidate();
+        } catch (e: any) {
+          toast.error(e.message);
+        }
+      },
+    });
   };
 
   const items: any[] = data?.items || [];
@@ -197,6 +206,7 @@ export function InvoicesView() {
       {addItemInvoice && (
         <AddItemDialog invoice={addItemInvoice} onClose={() => setAddItemInvoice(null)} onDone={() => { setAddItemInvoice(null); invalidate(); }} facilityId={activeFacilityId} />
       )}
+      {confirmDialogEl}
     </div>
   );
 }

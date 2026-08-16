@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, CheckCircle2, X, Pill, Search, Eye, Activity, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -42,6 +43,7 @@ export function PrescriptionsView() {
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const [statusFilter, setStatusFilter] = useState("all");
   const [patientSearch, setPatientSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -159,14 +161,21 @@ export function PrescriptionsView() {
                             </Button>
                           )}
                           {["pending", "approved", "partially_dispensed"].includes(o.status) && can("pharmacy.prescribe") && (
-                            <Button size="sm" variant="ghost" onClick={async () => {
-                              if (!confirm("Cancel this prescription?")) return;
-                              const res = await fetch(`/api/prescriptions/${o.id}`, {
-                                method: "PATCH", headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ action: "cancel" }),
+                            <Button size="sm" variant="ghost" onClick={() => {
+                              confirmAction({
+                                title: "Cancel this prescription?",
+                                description: "Cancelling will mark the prescription as cancelled. Already-dispensed items will remain dispensed.",
+                                confirmText: "Yes, cancel",
+                                variant: "warning",
+                                onConfirm: async () => {
+                                  const res = await fetch(`/api/prescriptions/${o.id}`, {
+                                    method: "PATCH", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ action: "cancel" }),
+                                  });
+                                  if (res.ok) { toast.success("Prescription cancelled"); invalidate(); }
+                                  else { const e = await res.json().catch(() => ({})); toast.error(e.error || "Failed"); }
+                                },
                               });
-                              if (res.ok) { toast.success("Prescription cancelled"); invalidate(); }
-                              else { const e = await res.json().catch(() => ({})); toast.error(e.error || "Failed"); }
                             }} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700">
                               <X className="w-3 h-3" />
                             </Button>
@@ -204,6 +213,7 @@ export function PrescriptionsView() {
           onDone={() => { setDispenseItem(null); invalidate(); }}
         />
       )}
+      {confirmDialogEl}
     </div>
   );
 }

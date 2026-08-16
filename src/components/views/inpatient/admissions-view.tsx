@@ -328,7 +328,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
 
           {wardId && (
             <div>
-              <Label>Bed * (only available beds shown)</Label>
+              <FieldLabel required>Bed (only available beds shown)</FieldLabel>
               <Select value={bedId} onValueChange={setBedId}>
                 <SelectTrigger><SelectValue placeholder="Select an available bed" /></SelectTrigger>
                 <SelectContent>

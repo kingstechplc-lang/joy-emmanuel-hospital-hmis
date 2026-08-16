@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { BadgeCheck, Search, Plus, Edit, Trash2, KeyRound, Shield, Save } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -45,6 +46,8 @@ export function RolesAdminView() {
   );
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["roles-admin"] });
+
+  const { confirm: confirmDelete, dialog: deleteDialog } = useConfirmDialog();
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -143,9 +146,21 @@ export function RolesAdminView() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => {
-                                if (confirm(`Delete role "${r.name}"?`)) deleteMutation.mutate(r.id);
-                              }}
+                              onClick={() =>
+                                confirmDelete({
+                                  title: `Delete role "${r.name}"?`,
+                                  description: "This will permanently remove the role and its permission assignments. This action cannot be undone.",
+                                  confirmText: "Delete role",
+                                  variant: "destructive",
+                                  details: (
+                                    <div>
+                                      <div><strong>Role:</strong> {r.name} ({r.code})</div>
+                                      <div><strong>Permissions assigned:</strong> {r.permissionsCount || 0}</div>
+                                    </div>
+                                  ),
+                                  onConfirm: () => deleteMutation.mutate(r.id),
+                                })
+                              }
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -164,6 +179,7 @@ export function RolesAdminView() {
 
       {showNew && <RoleDialog onClose={() => setShowNew(false)} />}
       {editing && <RoleDialog role={editing} onClose={() => setEditing(null)} />}
+      {deleteDialog}
     </div>
   );
 }
@@ -241,8 +257,8 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isEdit ? "Edit Role & Permissions" : "Add New Role"}</DialogTitle>
           <DialogDescription>
             {isEdit
@@ -251,7 +267,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2 shrink-0 border-y">
           <div className="space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={role?.isSystemRole} />
@@ -262,18 +278,21 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Selected Perms</Label>
-            <div className="text-sm font-medium text-emerald-700 mt-1.5">{selectedPerms.size} / {allPerms.length}</div>
+            <div className="text-sm font-medium text-emerald-700 mt-1.5 flex items-center gap-1.5">
+              <Shield className="w-4 h-4" />
+              {selectedPerms.size} / {allPerms.length}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-1.5 md:col-span-3">
+        <div className="space-y-1.5 py-2 shrink-0">
           <Label>Description</Label>
-          <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional description of this role" />
         </div>
 
-        {/* Permissions grid */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-3">
+        {/* Permissions grid — scrolls independently inside the dialog */}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between mb-2 shrink-0">
             <Label className="flex items-center gap-2"><Shield className="w-4 h-4 text-emerald-600" /> Permissions</Label>
             {isEdit && role?.isSystemRole && (
               <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50">System role</Badge>
@@ -281,36 +300,35 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           </div>
 
           {allPerms.length === 0 ? (
-            <div className="text-sm text-slate-500 italic">
-              No permissions are seeded in the database yet. The system uses the in-code ROLE_PERMISSIONS mapping for default roles;
-              you can assign DB-stored permissions here once they are seeded.
+            <div className="text-sm text-slate-500 italic p-4 text-center">
+              No permissions are seeded in the database yet.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 pr-1">
               {Object.entries(groupedPerms).map(([mod, perms]: [string, any]) => {
                 const permsArr = perms as any[];
                 const allSelected = permsArr.every((p) => selectedPerms.has(p.code));
                 const someSelected = permsArr.some((p) => selectedPerms.has(p.code)) && !allSelected;
                 return (
-                  <div key={mod} className="border rounded p-3">
+                  <div key={mod} className="border rounded-md p-3 bg-slate-50/50">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold uppercase text-slate-700">{mod}</span>
+                      <span className="text-xs font-semibold uppercase text-slate-700 tracking-wide">{mod}</span>
                       <Checkbox
                         checked={allSelected ? true : someSelected ? "indeterminate" : false}
                         onCheckedChange={() => toggleModule(mod, permsArr)}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {permsArr.map((p) => (
-                        <label key={p.id} className="flex items-start gap-2 cursor-pointer text-sm hover:bg-slate-50 p-1 rounded">
+                        <label key={p.id} className="flex items-start gap-2 cursor-pointer text-sm hover:bg-white p-1.5 rounded transition">
                           <Checkbox
                             checked={selectedPerms.has(p.code)}
                             onCheckedChange={() => togglePerm(p.code)}
                             className="mt-0.5"
                           />
-                          <div>
-                            <div className="font-medium text-slate-900 text-xs"><code className="bg-emerald-50 text-emerald-700 px-1 rounded">{p.code}</code></div>
-                            {p.description && <div className="text-xs text-slate-500">{p.description}</div>}
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-900 text-xs"><code className="bg-emerald-50 text-emerald-700 px-1 py-0.5 rounded">{p.code}</code></div>
+                            {p.description && <div className="text-xs text-slate-500 mt-0.5">{p.description}</div>}
                           </div>
                         </label>
                       ))}
@@ -322,7 +340,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t pt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}

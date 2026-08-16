@@ -15,6 +15,7 @@ import { Plus, Search, Cpu, Wrench, History, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
 
+import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -237,7 +238,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Asset # *</Label>
+              <FieldLabel required className="text-xs">Asset #</FieldLabel>
               <Input value={assetNumber} onChange={(e) => setAssetNumber(e.target.value)} placeholder="AST-001" disabled={isEdit} />
             </div>
             <div>
@@ -252,7 +253,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Name *</Label>
+              <FieldLabel required className="text-xs">Name</FieldLabel>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="X-Ray Machine" />
             </div>
             <div>
@@ -428,7 +429,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Description *</Label>
+            <FieldLabel required className="text-xs">Description</FieldLabel>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="e.g. Annual preventive service, replacement of worn parts" />
           </div>
           <div className="grid grid-cols-2 gap-2">
