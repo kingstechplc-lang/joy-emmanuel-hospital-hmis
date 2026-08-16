@@ -9,6 +9,10 @@ import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 
+import { apiRouteConfig } from "@/lib/api-route-config";
+
+export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
+
 const VALID_STATUSES = ["available", "occupied", "reserved", "cleaning", "maintenance", "out_of_service"];
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {

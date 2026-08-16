@@ -9,6 +9,10 @@ import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission, nextInvoiceNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 
+import { apiRouteConfig } from "@/lib/api-route-config";
+
+export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
+
 // GET /api/invoices?facilityId=...&status=...&patientId=...&limit=50
 export async function GET(req: Request) {
   const session = await getSession();

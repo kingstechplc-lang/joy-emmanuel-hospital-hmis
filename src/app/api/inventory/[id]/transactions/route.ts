@@ -15,6 +15,10 @@ import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 
+import { apiRouteConfig } from "@/lib/api-route-config";
+
+export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
+
 const POSITIVE_TYPES = new Set(["receive", "return", "transfer_in", "adjustment"]);
 const NEGATIVE_TYPES = new Set(["issue", "damage", "expiry", "transfer_out", "dispense"]);
 

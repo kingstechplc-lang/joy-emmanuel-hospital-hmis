@@ -5,6 +5,11 @@ import { LoginView } from "@/components/views/login-view";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAppStore } from "@/stores/app-store";
 
+// Force dynamic — this page uses useSession which depends on cookies.
+// Without this, Next.js tries to prerender at build time and fails
+// because there's no session/cookies available during build.
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   const { data: session, status } = useSession();
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
