@@ -32,6 +32,53 @@ const TYPE_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
+// Type-specific categories — each item type has its own category list
+const CATEGORIES_BY_TYPE: Record<string, string[]> = {
+  medication: [
+    "Antibiotics", "Antipyretics", "Analgesics", "Antihypertensives",
+    "Antidiabetics", "Antimalarials", "Antihistamines", "Antacids",
+    "Vitamins & Supplements", "IV Fluids", "Vaccines", "Dressings",
+    "Respiratory", "Cardiovascular", "Gastrointestinal", "Dermatological",
+    "Ophthalmic", "Otic", "Other Medications",
+  ],
+  consumable: [
+    "Gloves", "Syringes & Needles", "Cotton & Gauze", "Bandages & Dressings",
+    "IV Sets & Cannulas", "Catheters", "Sutures", "Swabs",
+    "Tape & Adhesives", "Diagnostic Consumables", "Lab Consumables",
+    "Cleaning & Disinfection", "Waste Management", "Other Consumables",
+  ],
+  equipment: [
+    "Diagnostic Equipment", "Monitoring Equipment", "Surgical Equipment",
+    "Anesthesia Equipment", "Resuscitation Equipment", "Patient Furniture",
+    "Lab Equipment", "Imaging Equipment", "Office Equipment",
+    "IT Equipment", "Other Equipment",
+  ],
+  supply: [
+    "Office Supplies", "Stationery", "Printing", "Kitchen Supplies",
+    "Housekeeping", "Maintenance", "Safety & PPE", "Fuel & Lubricants",
+    "Other Supplies",
+  ],
+  other: ["General", "Miscellaneous"],
+};
+
+// Type-specific unit suggestions
+const UNITS_BY_TYPE: Record<string, string[]> = {
+  medication: ["tablets", "capsules", "bottles", "vials", "ampoules", "tubes", "sachets", "boxes", "puffs", "ml", "mg"],
+  consumable: ["boxes", "packs", "pieces", "rolls", "sets", "pairs", "units"],
+  equipment: ["units", "sets", "pieces"],
+  supply: ["boxes", "packs", "reams", "litres", "gallons", "pieces"],
+  other: ["units", "pieces", "boxes"],
+};
+
+// Type-specific placeholder hints
+const HINTS_BY_TYPE: Record<string, { name: string; sku: string; reorder: string }> = {
+  medication: { name: "e.g., Paracetamol 500mg", sku: "e.g., MED-PARA-500", reorder: "e.g., 50 (minimum stock before reorder)" },
+  consumable: { name: "e.g., Examination Gloves (box of 100)", sku: "e.g., CONS-GLOVE-M", reorder: "e.g., 20 boxes" },
+  equipment: { name: "e.g., Digital Blood Pressure Monitor", sku: "e.g., EQ-BPM-001", reorder: "e.g., 2 (spares needed)" },
+  supply: { name: "e.g., A4 Paper Ream", sku: "e.g., SUP-PAPER-A4", reorder: "e.g., 10 reams" },
+  other: { name: "e.g., Item Name", sku: "e.g., OTH-ITEM-001", reorder: "e.g., 5" },
+};
+
 const TXN_TYPES = [
   { value: "receive", label: "Receive (+)" },
   { value: "issue", label: "Issue (−)" },
@@ -198,12 +245,23 @@ export function InventoryView() {
 function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
-  const [itemType, setItemType] = useState("consumable");
+  const [itemType, setItemType] = useState("medication");
   const [category, setCategory] = useState("");
   const [unit, setUnit] = useState("");
   const [reorderLevel, setReorderLevel] = useState("0");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Get type-specific options
+  const categories = CATEGORIES_BY_TYPE[itemType] || [];
+  const units = UNITS_BY_TYPE[itemType] || [];
+  const hints = HINTS_BY_TYPE[itemType] || HINTS_BY_TYPE.other;
+
+  const handleTypeChange = (newType: string) => {
+    setItemType(newType);
+    setCategory(""); // Reset category when type changes
+    setUnit(""); // Reset unit when type changes
+  };
 
   const handleSubmit = async () => {
     if (!name || !sku) return toast.error("Name and SKU required");
@@ -237,40 +295,75 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
           <div className="grid grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Name</FieldLabel>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Paracetamol 500mg" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={hints.name} />
             </div>
             <div>
               <FieldLabel required className="text-xs">SKU</FieldLabel>
-              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="MED-PARA-500" />
+              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder={hints.sku} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+
+          {/* Type selector */}
+          <div>
+            <FieldLabel required className="text-xs">Item Type</FieldLabel>
+            <Select value={itemType} onValueChange={handleTypeChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TYPE_OPTIONS.filter((t) => t.value !== "all").map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category — type-specific dropdown */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Type</Label>
-              <Select value={itemType || undefined} onValueChange={setItemType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <FieldLabel required className="text-xs">Category</FieldLabel>
+              <Select value={category || undefined} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue placeholder={`Select ${itemType} category...`} /></SelectTrigger>
                 <SelectContent>
-                  {TYPE_OPTIONS.filter((t) => t.value !== "all").map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {categories.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Category</Label>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Antipyretic" />
+              <FieldLabel required className="text-xs">Unit of Measure</FieldLabel>
+              <Select value={unit || undefined} onValueChange={setUnit}>
+                <SelectTrigger><SelectValue placeholder="Select unit..." /></SelectTrigger>
+                <SelectContent>
+                  {units.map((u) => (
+                    <SelectItem key={u} value={u}>{u}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <FieldLabel required className="text-xs">Reorder Level</FieldLabel>
+              <Input type="number" min="0" value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} placeholder={hints.reorder} />
             </div>
             <div>
-              <Label className="text-xs">Unit</Label>
-              <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="tablets" />
+              <Label className="text-xs">Description (optional)</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of the item" />
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Reorder Level</Label>
-            <Input type="number" value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
-          </div>
+
+          {/* Type-specific info banner */}
+          {itemType === "medication" && (
+            <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded p-2">
+              💡 Medication items can be linked to the medication catalog for prescriptions. Use the generic name + strength as the item name.
+            </div>
+          )}
+          {itemType === "equipment" && (
+            <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded p-2">
+              💡 Equipment items can be tracked with maintenance schedules, warranty info, and asset numbers in the Equipment module.
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>

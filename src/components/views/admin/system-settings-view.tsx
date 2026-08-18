@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Save, Building, ShieldCheck, Bell, Hash, RefreshCcw } from "lucide-react";
+import { Settings, Save, Building, ShieldCheck, Bell, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingState, ErrorState } from "@/components/ui-helpers";
 
@@ -113,6 +113,7 @@ export function SystemSettingsView() {
 }
 
 function SettingsTab({ settings, canEdit }: { settings: any[]; canEdit: boolean }) {
+  const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["system-settings"],
     queryFn: () => fetchJson("/api/system-settings"),
@@ -140,42 +141,34 @@ function SettingsTab({ settings, canEdit }: { settings: any[]; canEdit: boolean 
     setFormValues(init);
   }
 
-  const saveMutation = useMutation({
-    mutationFn: async (key: string) => {
-      const config = settings.find((s) => s.key === key);
-      if (!config) throw new Error("Unknown setting");
-      const value = formValues[key];
-      const stringValue = config.type === "boolean" ? String(value) : String(value);
-      const res = await fetch("/api/system-settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settingKey: key, settingValue: stringValue, settingType: config.type }),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error || "Failed");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast.success("Setting saved");
-      refetch();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   if (isLoading) return <LoadingState rows={5} />;
   if (isError) return <ErrorState message="Failed to load settings" onRetry={() => refetch()} />;
 
   const configuredCount = (data?.items || []).filter((it: any) => settings.some((s) => s.key === it.settingKey)).length;
 
   const saveAll = async () => {
-    for (const s of settings) {
+    // Save all settings in parallel for speed
+    const promises = settings.map(async (s) => {
       try {
-        await saveMutation.mutateAsync(s.key);
-      } catch {}
-    }
-    toast.success("All settings saved");
+        const value = formValues[s.key];
+        const stringValue = String(value);
+        const res = await fetch("/api/system-settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ settingKey: s.key, settingValue: stringValue, settingType: s.type }),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.error || `Failed to save ${s.key}`);
+        }
+      } catch (e) {
+        console.error(`Failed to save ${s.key}:`, e);
+      }
+    });
+    await Promise.all(promises);
+    toast.success("All settings saved successfully");
+    // Invalidate the query to trigger a refetch with fresh data
+    qc.invalidateQueries({ queryKey: ["system-settings"] });
   };
 
   const updateValue = (key: string, value: any) => {
@@ -191,8 +184,8 @@ function SettingsTab({ settings, canEdit }: { settings: any[]; canEdit: boolean 
             <CardDescription className="text-xs">{settings.length} settings • {configuredCount} configured</CardDescription>
           </div>
           {canEdit && (
-            <Button onClick={saveAll} disabled={saveMutation.isPending} className="gap-2 bg-emerald-600 hover:bg-emerald-700" size="sm">
-              {saveMutation.isPending ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <Button onClick={saveAll} className="gap-2 bg-emerald-600 hover:bg-emerald-700" size="sm">
+              <Save className="w-4 h-4" />
               Save All
             </Button>
           )}
