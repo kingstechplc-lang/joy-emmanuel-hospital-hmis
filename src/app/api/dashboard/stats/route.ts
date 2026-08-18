@@ -41,6 +41,8 @@ export async function GET(req: Request) {
     occupiedBeds,
     wardOccupancyRaw,
     pendingTasksRaw,
+    totalUsers,
+    recentAuditCount,
   ] = await Promise.all([
     db.patient.count({ where: { organizationId: orgId, status: "active" } }),
     db.encounter.count({ where: { ...f, startAt: { gte: today, lte: todayEnd } } }),
@@ -70,6 +72,11 @@ export async function GET(req: Request) {
       where: { assignedToId: session.user.id, status: { in: ["pending", "in_progress"] } },
       orderBy: { dueAt: "asc" },
       take: 5,
+    }),
+    // Security / Admin stats
+    db.user.count({ where: { organizationId: orgId, status: "active" } }),
+    db.auditLog.count({
+      where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     }),
   ]);
 
@@ -108,5 +115,7 @@ export async function GET(req: Request) {
     occupiedBeds,
     wardOccupancy,
     pendingTasks: pendingTasksRaw,
+    totalUsers,
+    recentAuditCount,
   });
 }

@@ -10,6 +10,7 @@ import {
   Users, UserPlus, Calendar, BedDouble, Activity, Pill, FlaskConical,
   Receipt, TrendingUp, AlertTriangle, Clock, ArrowRight,
   ClipboardCheck, Stethoscope, ShieldCheck, ShieldX, Boxes,
+  ScrollText, Shield, FileText, UserCog, BarChart3,
 } from "lucide-react";
 
 async function fetchJson(url: string) {
@@ -56,6 +57,10 @@ const ALL_KPIs: KpiDef[] = [
 
   // Inventory
   { key: "lowStockItems", label: "Low Stock Items", icon: AlertTriangle, color: "orange", perm: "inventory.view", view: "inventory", getValue: (s) => s?.lowStockItems ?? "—" },
+
+  // Security / Audit — for security roles, audit officers, etc.
+  { key: "totalUsers", label: "Total Users", icon: UserCog, color: "blue", perm: "user.view", view: "settings_users", getValue: (s) => s?.totalUsers ?? "—" },
+  { key: "auditLogs", label: "Recent Audit Events", icon: ScrollText, color: "teal", perm: "audit.view", view: "audit_logs", getValue: (s) => s?.recentAuditCount ?? "—" },
 ];
 
 // Role-specific quick actions
@@ -72,6 +77,13 @@ const ALL_QUICK_ACTIONS: { label: string; view: any; icon: any; perm: string }[]
   { label: "New Invoice", view: "billing_invoices", icon: Receipt, perm: "billing.create" },
   { label: "Beds", view: "beds", icon: BedDouble, perm: "bed.manage" },
   { label: "Inventory", view: "inventory", icon: Boxes, perm: "inventory.view" },
+  // Security / Admin
+  { label: "Audit Logs", view: "audit_logs", icon: ScrollText, perm: "audit.view" },
+  { label: "Security", view: "security", icon: Shield, perm: "security.dashboard" },
+  { label: "Reports", view: "reports", icon: BarChart3, perm: "report.view" },
+  { label: "Users", view: "settings_users", icon: UserCog, perm: "user.view" },
+  { label: "Documents", view: "documents", icon: FileText, perm: "document.view" },
+  { label: "Tasks", view: "tasks", icon: Clock, perm: "task.assign" },
 ];
 
 export function DashboardView() {
@@ -287,13 +299,17 @@ export function DashboardView() {
         </Card>
       )}
 
-      {/* If no KPIs are visible (shouldn't happen, but safety net) */}
+      {/* If no KPIs are visible — show a welcome panel with pending tasks */}
       {visibleKPIs.length === 0 && visibleActions.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <ShieldX className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-1">No dashboard data available</h3>
-            <p className="text-sm text-slate-500">Your role doesn&apos;t have any dashboard permissions assigned. Contact an administrator.</p>
+            <ShieldCheck className="w-12 h-12 mx-auto mb-4 text-emerald-500" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Welcome to Joy Emmanuel Hospital HMIS</h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              You are logged in as <strong>{role.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</strong>.
+              Your dashboard will display relevant statistics and quick actions based on your assigned permissions.
+              If you need access to additional modules, please contact your system administrator.
+            </p>
           </CardContent>
         </Card>
       )}
