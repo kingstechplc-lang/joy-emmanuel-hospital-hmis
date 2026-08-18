@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, AlertTriangle, History } from "lucide-react";
+import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
 
@@ -187,6 +188,60 @@ export function LabResultsView() {
                                   )}
                                 </div>
                               </div>
+                              {r.status === "released" || r.status === "verified" ? (
+                                <div className="mt-3 pt-3 border-t border-slate-200">
+                                  <PrintButton
+                                    label="Print Lab Report"
+                                    renderContent={() => (
+                                      <PrintLayout
+                                        title="Laboratory Test Report"
+                                        subtitle={r.labOrderItem?.laboratoryTest?.name || "Laboratory Test"}
+                                        documentNumber={r.labOrderItem?.labOrder?.orderNumber}
+                                        facility={r.labOrderItem?.labOrder?.facility}
+                                        patient={r.labOrderItem?.labOrder?.patient}
+                                        signatory={r.labOrderItem?.labOrder?.orderingClinician ? `Dr. ${r.labOrderItem.labOrder.orderingClinician.firstName} ${r.labOrderItem.labOrder.orderingClinician.lastName}` : undefined}
+                                        signatoryRole="Ordering Physician"
+                                      >
+                                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                          <thead>
+                                            <tr style={{ background: "#f1f5f9" }}>
+                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Test</th>
+                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Result</th>
+                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Unit</th>
+                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Ref Range</th>
+                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Flag</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            <tr>
+                                              <td style={{ padding: "6px 8px", fontWeight: 500 }}>{r.labOrderItem?.laboratoryTest?.name}</td>
+                                              <td style={{ padding: "6px 8px", fontWeight: 700, color: r.criticalFlag ? "#be123c" : r.abnormalFlag && r.abnormalFlag !== "normal" ? "#d97706" : "#0f172a" }}>
+                                                {(r.numericValue ?? r.resultValue) || "—"}
+                                                {r.criticalFlag && " ⚠ CRITICAL"}
+                                              </td>
+                                              <td style={{ padding: "6px 8px" }}>{r.unit || "—"}</td>
+                                              <td style={{ padding: "6px 8px" }}>{r.referenceRange || "—"}</td>
+                                              <td style={{ padding: "6px 8px" }}>{r.abnormalFlag?.replace(/_/g, " ") || "normal"}</td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                        {r.resultNotes && (
+                                          <div style={{ marginTop: "12px", padding: "8px", background: "#f8fafc", borderRadius: "4px", fontSize: "11px" }}>
+                                            <strong>Notes:</strong> {r.resultNotes}
+                                          </div>
+                                        )}
+                                        <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
+                                          <p><strong>Specimen:</strong> {r.labOrderItem?.laboratoryTest?.specimenType || "—"}</p>
+                                          <p><strong>Collected:</strong> {r.labOrderItem?.labOrder?.samples?.[0]?.collectedAt ? new Date(r.labOrderItem.labOrder.samples[0].collectedAt).toLocaleString("en-GB") : "—"}</p>
+                                          <p><strong>Result entered:</strong> {r.enteredAt ? new Date(r.enteredAt).toLocaleString("en-GB") : "—"}</p>
+                                          <p><strong>Verified:</strong> {r.verifiedAt ? new Date(r.verifiedAt).toLocaleString("en-GB") : "—"}</p>
+                                          <p><strong>Status:</strong> {r.status}</p>
+                                        </div>
+                                      </PrintLayout>
+                                    )}
+                                  />
+                                </div>
+                              ) : null}
                             </td>
                           </tr>
                         )}

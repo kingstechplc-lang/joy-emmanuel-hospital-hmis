@@ -16,6 +16,7 @@ import { Plus, Receipt, Eye, CreditCard, Ban, Trash2, Search, X } from "lucide-r
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -552,7 +553,61 @@ function ViewInvoiceDialog({ invoiceId, onClose }: { invoiceId: string; onClose:
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
+          <PrintButton
+            label="Print Invoice"
+            renderContent={() => (
+              <PrintLayout
+                title="Invoice"
+                subtitle={inv.facility?.name}
+                documentNumber={inv.invoiceNumber}
+                facility={inv.facility}
+                patient={inv.patient}
+              >
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", marginBottom: "16px" }}>
+                  <thead>
+                    <tr style={{ background: "#f1f5f9" }}>
+                      <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Description</th>
+                      <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Qty</th>
+                      <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Unit Price</th>
+                      <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Disc</th>
+                      <th style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(inv.items || []).map((it: any) => (
+                      <tr key={it.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "6px 8px" }}>{it.description}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right" }}>{it.quantity}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right" }}>{formatCurrency(it.unitPrice, inv.currency)}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right" }}>{formatCurrency(it.discount, inv.currency)}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(it.total, inv.currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ marginLeft: "auto", width: "250px", fontSize: "11px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span>Subtotal:</span><span>{formatCurrency(inv.subtotal, inv.currency)}</span></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span>Discount:</span><span>-{formatCurrency(inv.discount, inv.currency)}</span></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span>Tax:</span><span>{formatCurrency(inv.tax, inv.currency)}</span></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderTop: "2px solid #059669", marginTop: "4px" }}>
+                    <span style={{ fontWeight: 700 }}>Total:</span>
+                    <span style={{ fontWeight: 700, color: "#059669" }}>{formatCurrency(inv.total, inv.currency)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}><span>Paid:</span><span style={{ color: "#059669" }}>{formatCurrency(inv.amountPaid, inv.currency)}</span></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ fontWeight: 700 }}>Balance Due:</span>
+                    <span style={{ fontWeight: 700, color: "#be123c" }}>{formatCurrency(inv.balance, inv.currency)}</span>
+                  </div>
+                </div>
+                <div style={{ marginTop: "16px", fontSize: "10px", color: "#64748b" }}>
+                  <p>Status: <strong>{inv.status}</strong></p>
+                  <p>Issued: {formatDate(inv.issuedAt, true)}</p>
+                  {inv.dueAt && <p>Due: {formatDate(inv.dueAt)}</p>}
+                </div>
+              </PrintLayout>
+            )}
+          />
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

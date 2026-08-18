@@ -16,6 +16,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Joy Emmanuel Hospital — HMIS",
   description: "Joy Emmanuel Hospital — Multi-facility Hospital Management Information System",
+  manifest: "/manifest.json",
+  applicationName: "JEM HMIS",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "JEM HMIS",
+  },
 };
 
 export default function RootLayout({

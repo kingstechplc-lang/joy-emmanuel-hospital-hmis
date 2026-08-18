@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Plus, CreditCard, Search } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
-
+import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { FieldLabel } from "@/components/ui/required-label";
+
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -128,6 +129,7 @@ export function PaymentsView() {
                     <th className="text-left p-3 font-semibold text-slate-700">Reference</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Received By</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Date</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">Print</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,6 +151,61 @@ export function PaymentsView() {
                       <td className="p-3 text-xs text-slate-600 font-mono">{p.transactionReference || "—"}</td>
                       <td className="p-3 text-xs text-slate-600">{p.receivedBy?.firstName} {p.receivedBy?.lastName}</td>
                       <td className="p-3 text-xs text-slate-600">{formatDate(p.receivedAt, true)}</td>
+                      <td className="p-3">
+                        <PrintButton
+                          label=""
+                          className="h-7 w-7 p-0"
+                          renderContent={() => (
+                            <PrintLayout
+                              title="Payment Receipt"
+                              documentNumber={p.paymentNumber}
+                              facility={p.facility}
+                              patient={p.patient}
+                              signatory={p.receivedBy ? `${p.receivedBy.firstName} ${p.receivedBy.lastName}` : undefined}
+                              signatoryRole="Cashier"
+                            >
+                              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                                <div style={{ fontSize: "28px", fontWeight: 800, color: "#059669" }}>{formatCurrency(p.amount)}</div>
+                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>Payment received via {(p.paymentMethod || "").replace(/_/g, " ")}</div>
+                              </div>
+                              <table style={{ width: "100%", fontSize: "11px", borderCollapse: "collapse" }}>
+                                <tbody>
+                                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <td style={{ padding: "6px 8px", color: "#64748b" }}>Receipt No:</td>
+                                    <td style={{ padding: "6px 8px", fontWeight: 600, fontFamily: "monospace" }}>{p.paymentNumber}</td>
+                                  </tr>
+                                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <td style={{ padding: "6px 8px", color: "#64748b" }}>Invoice:</td>
+                                    <td style={{ padding: "6px 8px", fontWeight: 600, fontFamily: "monospace" }}>{p.invoice?.invoiceNumber}</td>
+                                  </tr>
+                                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <td style={{ padding: "6px 8px", color: "#64748b" }}>Amount:</td>
+                                    <td style={{ padding: "6px 8px", fontWeight: 700, color: "#059669" }}>{formatCurrency(p.amount)}</td>
+                                  </tr>
+                                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <td style={{ padding: "6px 8px", color: "#64748b" }}>Method:</td>
+                                    <td style={{ padding: "6px 8px", textTransform: "capitalize" }}>{(p.paymentMethod || "").replace(/_/g, " ")}</td>
+                                  </tr>
+                                  {p.transactionReference && (
+                                    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "6px 8px", color: "#64748b" }}>Reference:</td>
+                                      <td style={{ padding: "6px 8px", fontFamily: "monospace" }}>{p.transactionReference}</td>
+                                    </tr>
+                                  )}
+                                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <td style={{ padding: "6px 8px", color: "#64748b" }}>Received by:</td>
+                                    <td style={{ padding: "6px 8px" }}>{p.receivedBy?.firstName} {p.receivedBy?.lastName}</td>
+                                  </tr>
+                                  <tr>
+                                    <td style={{ padding: "6px 8px", color: "#64748b" }}>Date:</td>
+                                    <td style={{ padding: "6px 8px" }}>{formatDate(p.receivedAt, true)}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </PrintLayout>
+                          )}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
