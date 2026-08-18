@@ -325,12 +325,12 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2"><Receipt className="w-5 h-5 text-emerald-600" /> New Invoice</DialogTitle>
           <DialogDescription>Add line items — selecting a service auto-fills the unit price from the facility price list. Totals are computed automatically.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto flex-1 pr-1">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -445,12 +445,23 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={saving || !patientId} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            {saving ? "Issuing..." : <><Receipt className="w-4 h-4" /> Issue Invoice</>}
-          </Button>
-        </DialogFooter>
+        {/* Sticky footer with Add Item button always visible */}
+        <div className="shrink-0 border-t pt-3 space-y-3 bg-white">
+          <div className="flex items-center justify-between">
+            <Button size="sm" variant="outline" onClick={addItem} className="gap-1 h-8 text-xs">
+              <Plus className="w-3.5 h-3.5" /> Add Line Item
+            </Button>
+            <div className="text-sm font-mono font-bold text-emerald-700">
+              Total: {formatCurrency(total)}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={submit} disabled={saving || !patientId} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              {saving ? "Issuing..." : <><Receipt className="w-4 h-4" /> Issue Invoice</>}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

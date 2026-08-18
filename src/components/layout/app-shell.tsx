@@ -3,6 +3,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useMemo } from "react";
 import { NAV_ITEMS, NAV_CATEGORIES, useAppStore } from "@/stores/app-store";
 import * as Icons from "lucide-react";
+import { OfflineIndicator } from "@/components/offline/offline-indicator";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -188,6 +189,9 @@ export function AppShell() {
                 </SelectContent>
               </Select>
             )}
+
+            {/* Offline status indicator */}
+            <OfflineIndicator />
 
             {/* Notifications */}
             <Button variant="ghost" size="icon" className="relative">
