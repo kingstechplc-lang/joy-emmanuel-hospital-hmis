@@ -153,8 +153,8 @@ export function PaymentsView() {
                       <td className="p-3 text-xs text-slate-600">{formatDate(p.receivedAt, true)}</td>
                       <td className="p-3">
                         <PrintButton
-                          label=""
-                          className="h-7 w-7 p-0"
+                          label="Receipt"
+                          className="h-7 px-2 py-0 text-xs"
                           renderContent={() => (
                             <PrintLayout
                               title="Payment Receipt"
