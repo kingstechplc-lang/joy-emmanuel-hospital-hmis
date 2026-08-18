@@ -244,7 +244,7 @@ function LabTestDialog({ test, onClose }: { test?: any; onClose: () => void }) {
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <FieldLabel required>Code</FieldLabel>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
@@ -263,7 +263,7 @@ function LabTestDialog({ test, onClose }: { test?: any; onClose: () => void }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Specimen Type</Label>
               <Input value={form.specimenType} onChange={(e) => setForm({ ...form, specimenType: e.target.value })} placeholder="e.g., Whole blood" />

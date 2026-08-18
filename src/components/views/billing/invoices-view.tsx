@@ -350,7 +350,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
           </div>
 
           {patientId && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label>Encounter (optional)</Label>
                 <Select value={encounterId || undefined} onValueChange={setEncounterId}>
@@ -430,7 +430,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
           </div>
 
           <Separator />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <Label>Header Discount</Label>
               <Input type="number" step="0.01" value={headerDiscount} onChange={(e) => setHeaderDiscount(Number(e.target.value))} />
@@ -534,7 +534,7 @@ function ViewInvoiceDialog({ invoiceId, onClose }: { invoiceId: string; onClose:
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
             <div className="space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Subtotal:</span><span className="font-mono">{formatCurrency(inv.subtotal, inv.currency)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Discount:</span><span className="font-mono text-rose-700">-{formatCurrency(inv.discount, inv.currency)}</span></div>
@@ -815,7 +815,7 @@ function AddItemDialog({ invoice, onClose, onDone, facilityId }: { invoice: any;
             <FieldLabel required>Description</FieldLabel>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <Label>Quantity</Label>
               <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />

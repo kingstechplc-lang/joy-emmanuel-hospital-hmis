@@ -313,7 +313,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
             <div className="text-xs text-slate-500">Patient: {result.labOrderItem?.labOrder?.patient?.firstName} {result.labOrderItem?.labOrder?.patient?.lastName}</div>
             <div className="text-xs text-slate-500">Original value: <span className="font-mono">{result.numericValue ?? result.resultValue ?? "—"}</span></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">New Result Value</Label>
               <Input value={form.resultValue} onChange={(e) => setField("resultValue", e.target.value)} />

@@ -371,7 +371,7 @@ function DocumentDetail({ doc, onClose, onDelete, deleting }: { doc: any; onClos
           <DialogDescription>Document details</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-3 py-2 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 text-sm">
           <DetailRow label="Type" value={<span className="capitalize">{(doc.documentType || "other").replace(/_/g, " ")}</span>} />
           <DetailRow label="Visibility" value={<span className="capitalize">{doc.visibility}</span>} />
           <DetailRow label="Patient" value={doc.patient ? `${doc.patient.firstName} ${doc.patient.lastName} (${doc.patient.patientNumber})` : "—"} />

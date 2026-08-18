@@ -181,7 +181,7 @@ function SupplierDialog({ open, onClose, onCreated, existing }: {
           <DialogDescription>{isEdit ? "Update supplier information" : "Create a new supplier record (org-wide)"}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Name</FieldLabel>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="MediSource Ghana Ltd" />
@@ -191,7 +191,7 @@ function SupplierDialog({ open, onClose, onCreated, existing }: {
               <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="MS-001" disabled={isEdit} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Contact Person</Label>
               <Input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} placeholder="John Mensah" />

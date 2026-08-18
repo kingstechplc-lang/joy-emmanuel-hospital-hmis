@@ -445,7 +445,7 @@ function WardRoundDetail({ round, onClose }: { round: any; onClose: () => void }
           {round.notes && <DetailBlock label="Round Notes" value={round.notes} />}
           {round.planChanges && <DetailBlock label="Plan Changes" value={round.planChanges} />}
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <DetailRow label="Consultant" value={round.consultant ? `${round.consultant.firstName} ${round.consultant.lastName} (@${round.consultant.username})` : "—"} />
             <DetailRow label="Recorded By" value={round.createdBy ? `${round.createdBy.firstName} ${round.createdBy.lastName} (@${round.createdBy.username})` : "—"} />
           </div>

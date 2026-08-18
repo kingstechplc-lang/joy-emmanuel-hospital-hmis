@@ -261,7 +261,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Procedure Name</FieldLabel>
               <Input value={procedureName} onChange={(e) => setProcedureName(e.target.value)} placeholder="e.g. Appendectomy" />
@@ -272,7 +272,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Performer (User ID, optional)</Label>
               <Input value={performedById} onChange={(e) => setPerformedById(e.target.value)} placeholder="Defaults to current user" />
@@ -380,7 +380,7 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Procedure Name</Label>
               <Input value={editable.procedureName || ""} onChange={(e) => setField("procedureName", e.target.value)} />

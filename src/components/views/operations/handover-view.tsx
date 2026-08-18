@@ -474,7 +474,7 @@ function HandoverDetail({ handover, onClose }: { handover: any; onClose: () => v
           <DetailBlock label="Handover Notes" value={handover.notes} />
           {handover.pendingTasks && <DetailBlock label="Pending Tasks" value={handover.pendingTasks} />}
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <DetailRow label="Outgoing Staff" value={handover.outgoingStaff ? `${handover.outgoingStaff.firstName} ${handover.outgoingStaff.lastName} (@${handover.outgoingStaff.username})` : "—"} />
             <DetailRow label="Incoming Staff" value={handover.incomingStaff ? `${handover.incomingStaff.firstName} ${handover.incomingStaff.lastName} (@${handover.incomingStaff.username})` : "—"} />
             <DetailRow label="Created" value={formatDate(handover.createdAt, true)} />

@@ -364,7 +364,7 @@ function ServiceDialog({ service, onClose }: { service?: any; onClose: () => voi
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <FieldLabel required>Code</FieldLabel>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />

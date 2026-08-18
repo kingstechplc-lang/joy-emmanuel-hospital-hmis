@@ -394,7 +394,7 @@ function CheckInDialog({
         </div>
 
         {/* Encounter type + priority */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Encounter Type</FieldLabel>
             <Select value={encounterType || undefined} onValueChange={setEncounterType}>

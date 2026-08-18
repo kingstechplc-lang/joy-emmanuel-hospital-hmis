@@ -239,7 +239,7 @@ function NewDischargeDialog({ open, onClose, onCreated, facilityId }: { open: bo
             <Label>Discharge Summary</Label>
             <Textarea value={dischargeSummary} onChange={(e) => setDischargeSummary(e.target.value)} rows={3} placeholder="Course of treatment during admission..." />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Final Diagnosis</Label>
               <Input value={finalDiagnosis} onChange={(e) => setFinalDiagnosis(e.target.value)} placeholder="Final diagnosis at discharge" />

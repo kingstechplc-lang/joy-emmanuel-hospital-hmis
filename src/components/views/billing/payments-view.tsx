@@ -336,7 +336,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Amount</FieldLabel>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />

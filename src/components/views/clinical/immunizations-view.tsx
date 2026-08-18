@@ -231,7 +231,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Dose</Label>
               <Input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g. 1st dose" />
@@ -254,7 +254,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Date Administered</FieldLabel>
               <Input type="date" value={administeredAt} onChange={(e) => setAdministeredAt(e.target.value)} />

@@ -200,7 +200,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <FieldLabel required>Referring Facility (Current)</FieldLabel>
               <Select value={referringFacilityId || undefined} onValueChange={setReferringFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
@@ -211,7 +211,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="min-w-0">
               <Label>Receiving Facility</Label>
               <Select value={receivingFacilityId || "none"} onValueChange={(v) => setReceivingFacilityId(v === "none" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>

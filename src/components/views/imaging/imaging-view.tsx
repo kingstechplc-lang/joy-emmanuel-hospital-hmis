@@ -319,7 +319,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Procedure Type</Label>
               <Select value={procedureType || undefined} onValueChange={(v) => { setProcedureType(v); if (!procedureName) setProcedureName(v); }}>
@@ -338,7 +338,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
             <Label>Procedure Name</Label>
             <Input value={procedureName} onChange={(e) => setProcedureName(e.target.value)} placeholder="e.g. Chest X-Ray PA view" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Priority</Label>
               <Select value={priority || undefined} onValueChange={setPriority}>

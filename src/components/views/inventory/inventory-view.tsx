@@ -292,7 +292,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
           <DialogDescription>Create a new inventory catalog item (org-level). Stock levels are tracked per facility.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Name</FieldLabel>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={hints.name} />
@@ -317,7 +317,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
           </div>
 
           {/* Category — type-specific dropdown */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Category</FieldLabel>
               <Select value={category || undefined} onValueChange={setCategory}>
@@ -342,7 +342,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Reorder Level</FieldLabel>
               <Input type="number" min="0" value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} placeholder={hints.reorder} />

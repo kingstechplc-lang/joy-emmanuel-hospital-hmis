@@ -303,7 +303,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
                       </div>
                       <Button size="sm" variant="ghost" onClick={() => removeItem(idx)} className="text-rose-600 h-7"><X className="w-3 h-3" /></Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <div>
                         <Label className="text-[10px]">Batch (optional)</Label>
                         <Select value={it.batchId || undefined} onValueChange={(v) => updateItem(idx, "batchId", v)}>

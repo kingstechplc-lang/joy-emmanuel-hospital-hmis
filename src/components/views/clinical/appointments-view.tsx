@@ -295,8 +295,8 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="min-w-0">
               <FieldLabel required>Facility</FieldLabel>
               <Select value={facilityId || undefined} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
@@ -307,7 +307,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="min-w-0">
               <Label>Doctor / Staff</Label>
               <Select value={staffId || "none"} onValueChange={(v) => setStaffId(v === "none" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -321,7 +321,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <FieldLabel required>Date</FieldLabel>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -394,7 +394,7 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
           <DialogTitle>Reschedule Appointment</DialogTitle>
           <DialogDescription>Choose a new date and time.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <FieldLabel required>New Date</FieldLabel>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

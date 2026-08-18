@@ -496,7 +496,7 @@ function IncidentDetail({
             <DetailBlock label="Immediate Action Taken" icon={Activity} value={incident.immediateAction} />
           )}
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <DetailRow label="Facility" value={incident.facility?.name || "—"} />
             <DetailRow label="Reported By" value={incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName} (@${incident.reportedBy.username})` : "—"} />
           </div>

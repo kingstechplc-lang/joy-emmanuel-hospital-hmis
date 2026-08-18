@@ -236,7 +236,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
           <DialogDescription>{isEdit ? "Update equipment information" : "Register a new equipment asset"}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Asset #</FieldLabel>
               <Input value={assetNumber} onChange={(e) => setAssetNumber(e.target.value)} placeholder="AST-001" disabled={isEdit} />
@@ -251,7 +251,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Name</FieldLabel>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="X-Ray Machine" />
@@ -266,7 +266,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Manufacturer</Label>
               <Input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} placeholder="Siemens" />
@@ -276,7 +276,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
               <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Multix Pro" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Serial Number</Label>
               <Input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
@@ -286,7 +286,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
               <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Radiology Dept" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div>
               <Label className="text-xs">Purchase Date</Label>
               <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
@@ -432,7 +432,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
             <FieldLabel required className="text-xs">Description</FieldLabel>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="e.g. Annual preventive service, replacement of worn parts" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Performed At</Label>
               <Input type="date" value={performedAt} onChange={(e) => setPerformedAt(e.target.value)} />
@@ -442,7 +442,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
               <Input type="date" value={nextDueAt} onChange={(e) => setNextDueAt(e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Cost (GHS)</Label>
               <Input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} />

@@ -318,7 +318,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
           )}
 
           {admissionId && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label>From Facility</Label>
                 <Input value={selectedAdmission?.facility?.name || fromFacilityId || ""} disabled className="bg-slate-50" />
@@ -338,7 +338,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
           )}
 
           {toFacilityId && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <FieldLabel required>Target Ward</FieldLabel>
                 <Select value={toWardId || undefined} onValueChange={(v) => { setToWardId(v); setToBedId(""); }}>

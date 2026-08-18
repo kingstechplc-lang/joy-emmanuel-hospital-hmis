@@ -132,7 +132,7 @@ export function FacilitiesAdminView() {
                   {f.email && <div className="truncate">✉️ {f.email}</div>}
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3 text-center">
                   <div className="bg-slate-50 rounded p-2">
                     <div className="text-lg font-bold text-slate-900">{f._count?.departments || 0}</div>
                     <div className="text-xs text-slate-500">Depts</div>
