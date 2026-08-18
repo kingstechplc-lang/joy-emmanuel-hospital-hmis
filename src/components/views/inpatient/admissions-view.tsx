@@ -84,7 +84,7 @@ export function AdmissionsView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -299,7 +299,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
           {patientId && (
             <div>
               <Label>Encounter (optional — auto-creates an inpatient encounter if blank)</Label>
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Auto-create inpatient encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).map((e: any) => (
@@ -314,7 +314,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
 
           <div>
             <FieldLabel required>Ward</FieldLabel>
-            <Select value={wardId} onValueChange={(v) => { setWardId(v); setBedId(""); }}>
+            <Select value={wardId || undefined} onValueChange={(v) => { setWardId(v); setBedId(""); }}>
               <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
               <SelectContent>
                 {(wardsData?.items || []).map((w: any) => (
@@ -329,7 +329,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
           {wardId && (
             <div>
               <FieldLabel required>Bed (only available beds shown)</FieldLabel>
-              <Select value={bedId} onValueChange={setBedId}>
+              <Select value={bedId || undefined} onValueChange={setBedId}>
                 <SelectTrigger><SelectValue placeholder="Select an available bed" /></SelectTrigger>
                 <SelectContent>
                   {(bedsData?.items || []).length === 0 ? (
@@ -349,7 +349,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Admission Type</Label>
-              <Select value={admissionType} onValueChange={setAdmissionType}>
+              <Select value={admissionType || undefined} onValueChange={setAdmissionType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ADMISSION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -445,7 +445,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
             </div>
             <div>
               <Label>Disposition</Label>
-              <Select value={disposition} onValueChange={setDisposition}>
+              <Select value={disposition || undefined} onValueChange={setDisposition}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="home">Home</SelectItem>

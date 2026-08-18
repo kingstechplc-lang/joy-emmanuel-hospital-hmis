@@ -90,7 +90,7 @@ export function UsersAdminView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by name, username, email" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -250,7 +250,7 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
   const [selectedRoles, setSelectedRoles] = useState<any[]>(
     existingUser?.roles?.map((r: any) => ({
       roleId: r.roleId || r.id,
-      facilityId: r.facilityId || "",
+      facilityId: r.facilityId || "__none__",
     })) || []
   );
 
@@ -274,11 +274,11 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
       const body = isEdit
         ? {
             ...form,
-            roles: selectedRoles,
+            roles: selectedRoles.map((r: any) => ({ roleId: r.roleId, facilityId: r.facilityId === "__none__" ? null : r.facilityId || null })),
           }
         : {
             ...form,
-            roles: selectedRoles,
+            roles: selectedRoles.map((r: any) => ({ roleId: r.roleId, facilityId: r.facilityId === "__none__" ? null : r.facilityId || null })),
           };
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) {
@@ -318,7 +318,7 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
 
   const addRole = () => {
     if (roles.length === 0) return;
-    setSelectedRoles([...selectedRoles, { roleId: roles[0].id, facilityId: "" }]);
+    setSelectedRoles([...selectedRoles, { roleId: roles[0].id, facilityId: "__none__" }]);
   };
 
   const updateRole = (index: number, key: "roleId" | "facilityId", value: string) => {
@@ -375,7 +375,7 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
           {isEdit && (
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+              <Select value={form.status || undefined} onValueChange={(v) => setForm({ ...form, status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
@@ -401,16 +401,16 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
               )}
               {selectedRoles.map((r, i) => (
                 <div key={i} className="flex gap-2 items-center">
-                  <Select value={r.roleId} onValueChange={(v) => updateRole(i, "roleId", v)}>
+                  <Select value={r.roleId || undefined} onValueChange={(v) => updateRole(i, "roleId", v)}>
                     <SelectTrigger className="flex-1"><SelectValue placeholder="Select role" /></SelectTrigger>
                     <SelectContent>
                       {roles.map((role: any) => <SelectItem key={role.id} value={role.id}>{role.name} ({role.code})</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Select value={r.facilityId} onValueChange={(v) => updateRole(i, "facilityId", v)}>
+                  <Select value={r.facilityId || undefined} onValueChange={(v) => updateRole(i, "facilityId", v)}>
                     <SelectTrigger className="flex-1"><SelectValue placeholder="All facilities" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Facilities</SelectItem>
+                      <SelectItem value="__none__">All Facilities</SelectItem>
                       {facilities.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                     </SelectContent>
                   </Select>

@@ -248,7 +248,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
           {patientId && (
             <div>
               <Label>Encounter</Label>
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Auto-create a procedure encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).map((e: any) => (

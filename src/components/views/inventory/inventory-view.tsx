@@ -97,7 +97,7 @@ export function InventoryView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by name, SKU, description" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter || undefined} onValueChange={setTypeFilter}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               {TYPE_OPTIONS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -247,7 +247,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
           <div className="grid grid-cols-3 gap-2">
             <div>
               <Label className="text-xs">Type</Label>
-              <Select value={itemType} onValueChange={setItemType}>
+              <Select value={itemType || undefined} onValueChange={setItemType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {TYPE_OPTIONS.filter((t) => t.value !== "all").map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -394,7 +394,7 @@ function AdjustDialog({ item, onClose, onDone }: { item: any; onClose: () => voi
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Transaction Type</Label>
-            <Select value={transactionType} onValueChange={setTransactionType}>
+            <Select value={transactionType || undefined} onValueChange={setTransactionType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TXN_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -408,7 +408,7 @@ function AdjustDialog({ item, onClose, onDone }: { item: any; onClose: () => voi
           {(item.batches || []).length > 0 && (
             <div>
               <Label className="text-xs">Batch (optional)</Label>
-              <Select value={batchId} onValueChange={setBatchId}>
+              <Select value={batchId || undefined} onValueChange={setBatchId}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   {(item.batches || []).map((b: any) => (

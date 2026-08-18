@@ -83,7 +83,7 @@ export function StockTransfersView() {
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2">
-          <Select value={direction} onValueChange={setDirection}>
+          <Select value={direction || undefined} onValueChange={setDirection}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="both">Both (in/out)</SelectItem>
@@ -91,7 +91,7 @@ export function StockTransfersView() {
               <SelectItem value="to">Incoming (to this facility)</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -255,7 +255,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">From Facility</Label>
-              <Select value={fromFacilityId} onValueChange={setFromFacilityId}>
+              <Select value={fromFacilityId || undefined} onValueChange={setFromFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
                 <SelectContent>
                   {facilities.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -264,7 +264,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
             </div>
             <div>
               <Label className="text-xs">To Facility</Label>
-              <Select value={toFacilityId} onValueChange={setToFacilityId}>
+              <Select value={toFacilityId || undefined} onValueChange={setToFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select destination" /></SelectTrigger>
                 <SelectContent>
                   {facilities.filter((f) => f.id !== fromFacilityId).map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -306,7 +306,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-[10px]">Batch (optional)</Label>
-                        <Select value={it.batchId} onValueChange={(v) => updateItem(idx, "batchId", v)}>
+                        <Select value={it.batchId || undefined} onValueChange={(v) => updateItem(idx, "batchId", v)}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any" /></SelectTrigger>
                           <SelectContent>
                             {(it.batches || []).map((b: any) => (

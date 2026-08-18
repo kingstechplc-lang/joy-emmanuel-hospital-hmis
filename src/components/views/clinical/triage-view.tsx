@@ -187,7 +187,7 @@ function TriageForm({ facilityId, onCreated }: { facilityId: string | null; onCr
               <Button size="sm" type="button" variant={encounterMode === "new" ? "default" : "outline"} onClick={() => setEncounterMode("new")} className={encounterMode === "new" ? "bg-emerald-600 hover:bg-emerald-700" : ""}>Create New (Emergency)</Button>
             </div>
             {encounterMode === "existing" && (
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Select encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).filter((e: any) => e.status === "open" || e.status === "in_progress").map((e: any) => (
@@ -218,7 +218,7 @@ function TriageForm({ facilityId, onCreated }: { facilityId: string | null; onCr
           <VitalInput label="Pain (0-10)" value={v.painScore} onChange={(val) => setField("painScore", val)} placeholder="0" />
           <div>
             <Label className="text-xs">Consciousness</Label>
-            <Select value={v.consciousnessLevel} onValueChange={(val) => setField("consciousnessLevel", val)}>
+            <Select value={v.consciousnessLevel || undefined} onValueChange={(val) => setField("consciousnessLevel", val)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="alert">A — Alert</SelectItem>
@@ -236,7 +236,7 @@ function TriageForm({ facilityId, onCreated }: { facilityId: string | null; onCr
 
         <div>
           <Label>Triage Category</Label>
-          <Select value={v.triageCategory} onValueChange={(val) => setField("triageCategory", val)}>
+          <Select value={v.triageCategory || undefined} onValueChange={(val) => setField("triageCategory", val)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {TRIAGE_CATEGORIES.map((c) => (

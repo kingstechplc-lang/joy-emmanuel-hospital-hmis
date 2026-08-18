@@ -107,7 +107,7 @@ export function DocumentsView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by file name" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={docType} onValueChange={setDocType}>
+          <Select value={docType || undefined} onValueChange={setDocType}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {DOC_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -281,7 +281,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5">
             <Label>Document Type</Label>
-            <Select value={form.documentType} onValueChange={(v) => setForm({ ...form, documentType: v })}>
+            <Select value={form.documentType || undefined} onValueChange={(v) => setForm({ ...form, documentType: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {DOC_TYPES.filter((t) => t.value !== "all").map((t) => (
@@ -292,7 +292,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Visibility</Label>
-            <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v })}>
+            <Select value={form.visibility || undefined} onValueChange={(v) => setForm({ ...form, visibility: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {VISIBILITY_OPTIONS.map((v) => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}

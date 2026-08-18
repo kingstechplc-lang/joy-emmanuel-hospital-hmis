@@ -218,7 +218,7 @@ function NewDischargeDialog({ open, onClose, onCreated, facilityId }: { open: bo
           {patientId && (
             <div>
               <Label>Admission (must be admitted)</Label>
-              <Select value={admissionId} onValueChange={setAdmissionId}>
+              <Select value={admissionId || undefined} onValueChange={setAdmissionId}>
                 <SelectTrigger><SelectValue placeholder="Select an active admission" /></SelectTrigger>
                 <SelectContent>
                   {(admissionsData?.items || []).length === 0 ? (
@@ -246,7 +246,7 @@ function NewDischargeDialog({ open, onClose, onCreated, facilityId }: { open: bo
             </div>
             <div>
               <Label>Disposition</Label>
-              <Select value={disposition} onValueChange={setDisposition}>
+              <Select value={disposition || undefined} onValueChange={setDisposition}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {DISPOSITIONS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}

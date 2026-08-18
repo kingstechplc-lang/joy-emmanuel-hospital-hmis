@@ -92,7 +92,7 @@ export function ServicesAdminView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search services by name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={category} onValueChange={setCategory}>
+          <Select value={category || undefined} onValueChange={setCategory}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
@@ -304,7 +304,7 @@ function NewFacilityPriceForm({ serviceId, onSaved, onCancel }: {
 
   return (
     <div className="flex gap-2 bg-white border rounded p-2">
-      <Select value={facilityId} onValueChange={setFacilityId}>
+      <Select value={facilityId || undefined} onValueChange={setFacilityId}>
         <SelectTrigger className="flex-1 h-7"><SelectValue placeholder="Select facility" /></SelectTrigger>
         <SelectContent>
           {facilities.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -376,7 +376,7 @@ function ServiceDialog({ service, onClose }: { service?: any; onClose: () => voi
           </div>
           <div className="space-y-1.5">
             <Label>Category</Label>
-            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+            <Select value={form.category || undefined} onValueChange={(v) => setForm({ ...form, category: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}

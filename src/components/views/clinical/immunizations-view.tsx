@@ -221,7 +221,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
           <div>
             <FieldLabel required>Vaccine</FieldLabel>
-            <Select value={vaccineName} onValueChange={setVaccineName}>
+            <Select value={vaccineName || undefined} onValueChange={setVaccineName}>
               <SelectTrigger><SelectValue placeholder="Select vaccine" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 {COMMON_VACCINES.map((v) => (
@@ -244,7 +244,7 @@ function NewImmunizationDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
           <div>
             <FieldLabel required>Facility</FieldLabel>
-            <Select value={facilityId} onValueChange={setFacilityId}>
+            <Select value={facilityId || undefined} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
               <SelectContent>
                 {(facilitiesData?.items || facilitiesData?.facilities || []).map((f: any) => (

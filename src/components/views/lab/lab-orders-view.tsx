@@ -87,13 +87,13 @@ export function LabOrdersView() {
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <Select value={priorityFilter || undefined} onValueChange={setPriorityFilter}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               {PRIORITY_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -330,7 +330,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           {patientId && (
             <div>
               <Label>Encounter</Label>
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Auto-create a laboratory encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).map((e: any) => (
@@ -346,7 +346,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority || undefined} onValueChange={setPriority}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="routine">Routine</SelectItem>

@@ -294,7 +294,7 @@ function PrescriptionDispenseRow({ rx, allergies, onDone, dispensing, setDispens
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
                     <div className="md:col-span-2">
                       <Label className="text-[10px]">Batch</Label>
-                      <Select value={dispenseMap[it.id]?.batchId || ""} onValueChange={(v) => setItem(it.id, "batchId", v)}>
+                      <Select value={dispenseMap[it.id]?.batchId || undefined} onValueChange={(v) => setItem(it.id, "batchId", v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={availableBatches.length === 0 ? "No batches" : "Select batch"} /></SelectTrigger>
                         <SelectContent>
                           {availableBatches.map((b: any) => (

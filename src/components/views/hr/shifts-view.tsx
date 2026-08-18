@@ -134,14 +134,14 @@ function ShiftsTab() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by staff name or number" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={shiftType} onValueChange={setShiftType}>
+          <Select value={shiftType || undefined} onValueChange={setShiftType}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Shift Types</SelectItem>
               {SHIFT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -276,7 +276,7 @@ function LeaveTab() {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -286,7 +286,7 @@ function LeaveTab() {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={leaveType} onValueChange={setLeaveType}>
+          <Select value={leaveType || undefined} onValueChange={setLeaveType}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
@@ -371,7 +371,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
 
   const [staffId, setStaffId] = useState("");
-  const [departmentId, setDepartmentId] = useState("");
+  const [departmentId, setDepartmentId] = useState("__none__");
   const [shiftDate, setShiftDate] = useState(new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("16:00");
@@ -401,7 +401,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           staffId,
           facilityId: activeFacilityId,
-          departmentId: departmentId || undefined,
+          departmentId: departmentId && departmentId !== "__none__" ? departmentId : undefined,
           shiftDate: `${shiftDate}T00:00:00`,
           startTime: startDate.toISOString(),
           endTime: endDate?.toISOString(),
@@ -433,7 +433,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId} onValueChange={setStaffId}>
+            <Select value={staffId || undefined} onValueChange={setStaffId}>
               <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
               <SelectContent>
                 {staffList.map((s: any) => (
@@ -448,7 +448,7 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Shift Type</Label>
-            <Select value={shiftType} onValueChange={setShiftType}>
+            <Select value={shiftType || undefined} onValueChange={setShiftType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SHIFT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -465,10 +465,10 @@ function NewShiftDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Department (optional)</Label>
-            <Select value={departmentId} onValueChange={setDepartmentId}>
+            <Select value={departmentId || undefined} onValueChange={setDepartmentId}>
               <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">—</SelectItem>
+                <SelectItem value="__none__">—</SelectItem>
                 {depts.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -533,7 +533,7 @@ function NewLeaveDialog({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId} onValueChange={setStaffId}>
+            <Select value={staffId || undefined} onValueChange={setStaffId}>
               <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
               <SelectContent>
                 {staffList.map((s: any) => (
@@ -544,7 +544,7 @@ function NewLeaveDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Leave Type</Label>
-            <Select value={leaveType} onValueChange={setLeaveType}>
+            <Select value={leaveType || undefined} onValueChange={setLeaveType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {LEAVE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}

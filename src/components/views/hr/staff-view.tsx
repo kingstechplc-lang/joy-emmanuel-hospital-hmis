@@ -122,7 +122,7 @@ export function StaffView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by name, staff number, role, email" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={facilityFilter} onValueChange={setFacilityFilter}>
+          <Select value={facilityFilter || undefined} onValueChange={setFacilityFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Facilities</SelectItem>
@@ -131,7 +131,7 @@ export function StaffView() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -280,7 +280,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
     employmentType: staff?.employmentType || "full_time",
     hireDate: staff?.hireDate ? new Date(staff.hireDate).toISOString().slice(0, 10) : "",
     primaryFacilityId: staff?.primaryFacility?.facilityId || (facilities[0]?.id ?? ""),
-    departmentId: staff?.primaryFacility?.departmentId || "",
+    departmentId: staff?.primaryFacility?.departmentId || "__none__",
     position: staff?.primaryFacility?.position || "",
   });
 
@@ -302,7 +302,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
             employmentType: form.employmentType,
             hireDate: form.hireDate || undefined,
             facilityId: form.primaryFacilityId || undefined,
-            departmentId: form.departmentId || undefined,
+            departmentId: form.departmentId && form.departmentId !== "__none__" ? form.departmentId : undefined,
             position: form.position || undefined,
             action: "add_facility",
           }
@@ -325,7 +325,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
   // Load departments for selected facility on mount
   const [departments, setDepartments] = useState<any[]>([]);
   useEffect(() => {
-    if (form.primaryFacilityId) {
+    if (form.primaryFacilityId && form.primaryFacilityId !== "__none__") {
       fetch(`/api/departments?facilityId=${form.primaryFacilityId}`)
         .then((r) => r.json())
         .then((d) => setDepartments(d.items || []))
@@ -395,7 +395,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
           </div>
           <div className="space-y-1.5">
             <Label>Professional Role</Label>
-            <Select value={form.professionalRole} onValueChange={(v) => setForm({ ...form, professionalRole: v })}>
+            <Select value={form.professionalRole || undefined} onValueChange={(v) => setForm({ ...form, professionalRole: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {PROFESSIONAL_ROLES.map((r) => (
@@ -410,7 +410,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
           </div>
           <div className="space-y-1.5">
             <Label>Employment Type</Label>
-            <Select value={form.employmentType} onValueChange={(v) => setForm({ ...form, employmentType: v })}>
+            <Select value={form.employmentType || undefined} onValueChange={(v) => setForm({ ...form, employmentType: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {EMPLOYMENT_TYPES.map((t) => (
@@ -425,7 +425,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
           </div>
           <div className="space-y-1.5">
             <Label>Primary Facility</Label>
-            <Select value={form.primaryFacilityId} onValueChange={loadDepartments}>
+            <Select value={form.primaryFacilityId || undefined} onValueChange={loadDepartments}>
               <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
               <SelectContent>
                 {facilities.map((f) => (
@@ -436,10 +436,10 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
           </div>
           <div className="space-y-1.5">
             <Label>Department</Label>
-            <Select value={form.departmentId} onValueChange={(v) => setForm({ ...form, departmentId: v })}>
+            <Select value={form.departmentId || undefined} onValueChange={(v) => setForm({ ...form, departmentId: v })}>
               <SelectTrigger><SelectValue placeholder="Select department (optional)" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">—</SelectItem>
+                <SelectItem value="__none__">—</SelectItem>
                 {departments.map((d: any) => (
                   <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                 ))}

@@ -91,7 +91,7 @@ export function RefundsView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -238,7 +238,7 @@ function NewRefundDialog({ open, onClose, onCreated, facilityId }: { open: boole
         <div className="space-y-3">
           <div>
             <FieldLabel required>Payment</FieldLabel>
-            <Select value={paymentId} onValueChange={selectPayment}>
+            <Select value={paymentId || undefined} onValueChange={selectPayment}>
               <SelectTrigger><SelectValue placeholder="Select payment" /></SelectTrigger>
               <SelectContent>
                 {(paymentsData?.items || []).map((p: any) => (

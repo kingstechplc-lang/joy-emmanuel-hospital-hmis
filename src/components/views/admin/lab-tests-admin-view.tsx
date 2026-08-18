@@ -99,7 +99,7 @@ export function LabTestsAdminView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search tests by name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={category} onValueChange={setCategory}>
+          <Select value={category || undefined} onValueChange={setCategory}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
@@ -256,7 +256,7 @@ function LabTestDialog({ test, onClose }: { test?: any; onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Category</Label>
-            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+            <Select value={form.category || undefined} onValueChange={(v) => setForm({ ...form, category: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CATEGORIES.filter((c) => c.value !== "all").map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}

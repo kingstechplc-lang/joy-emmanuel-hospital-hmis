@@ -275,7 +275,7 @@ function NewEncounterDialog({ open, onClose, onCreated, defaultFacilityId }: { o
 
           <div>
             <FieldLabel required>Facility</FieldLabel>
-            <Select value={facilityId} onValueChange={setFacilityId}>
+            <Select value={facilityId || undefined} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
               <SelectContent>
                 {(facilitiesData?.items || facilitiesData?.facilities || []).map((f: any) => (
@@ -301,7 +301,7 @@ function NewEncounterDialog({ open, onClose, onCreated, defaultFacilityId }: { o
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Type</Label>
-              <Select value={encounterType} onValueChange={setEncounterType}>
+              <Select value={encounterType || undefined} onValueChange={setEncounterType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ENCOUNTER_TYPES.map((t) => (
@@ -312,7 +312,7 @@ function NewEncounterDialog({ open, onClose, onCreated, defaultFacilityId }: { o
             </div>
             <div>
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority || undefined} onValueChange={setPriority}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="routine">Routine</SelectItem>

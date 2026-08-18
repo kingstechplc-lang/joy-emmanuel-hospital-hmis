@@ -98,7 +98,7 @@ export function InsuranceClaimsView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -316,7 +316,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
                 {insuranceProviders.length === 0 ? (
                   <div className="text-xs text-amber-700 bg-amber-50 p-2 rounded">This patient has no registered insurance. Add insurance in the patient record first.</div>
                 ) : (
-                  <Select value={providerId} onValueChange={setProviderId}>
+                  <Select value={providerId || undefined} onValueChange={setProviderId}>
                     <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
                     <SelectContent>
                       {insuranceProviders.map((pi: any) => (
@@ -334,7 +334,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
                 {outstandingInvoices.length === 0 ? (
                   <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded">No outstanding invoices for this patient.</div>
                 ) : (
-                  <Select value={invoiceId} onValueChange={selectInvoice}>
+                  <Select value={invoiceId || undefined} onValueChange={selectInvoice}>
                     <SelectTrigger><SelectValue placeholder="Select invoice" /></SelectTrigger>
                     <SelectContent>
                       {outstandingInvoices.map((i: any) => (

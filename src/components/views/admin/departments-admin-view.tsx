@@ -89,10 +89,10 @@ export function DepartmentsAdminView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search departments by name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={activeFacilityId || ""} onValueChange={(v) => useAppStore.getState().setActiveFacility(v || null)}>
+          <Select value={activeFacilityId || undefined} onValueChange={(v) => useAppStore.getState().setActiveFacility(v || null)}>
             <SelectTrigger className="md:w-72"><SelectValue placeholder="All facilities" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Facilities</SelectItem>
+              <SelectItem value="__none__">All Facilities</SelectItem>
               {facilities.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -279,7 +279,7 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
     name: department?.name || "",
     code: department?.code || "",
     description: department?.description || "",
-    facilityId: department?.facilityId || facilityId || "",
+    facilityId: department?.facilityId || facilityId || "__none__",
     status: department?.status || "active",
   });
 
@@ -287,7 +287,7 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
     mutationFn: async () => {
       const url = isEdit ? `/api/departments/${department.id}` : "/api/departments";
       const method = isEdit ? "PATCH" : "POST";
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, facilityId: form.facilityId === "__none__" ? undefined : form.facilityId }) });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error || "Failed");
@@ -326,7 +326,7 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+            <Select value={form.status || undefined} onValueChange={(v) => setForm({ ...form, status: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>

@@ -95,7 +95,7 @@ export function BedsView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -380,7 +380,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
               {transferMode && bed.status === "occupied" && (
                 <div className="border rounded p-3 space-y-2 bg-slate-50">
                   <Label>Transfer to a new bed</Label>
-                  <Select value={targetWardId} onValueChange={(v) => { setTargetWardId(v); setTargetBedId(""); }}>
+                  <Select value={targetWardId || undefined} onValueChange={(v) => { setTargetWardId(v); setTargetBedId(""); }}>
                     <SelectTrigger><SelectValue placeholder="Select target ward" /></SelectTrigger>
                     <SelectContent>
                       {(wardsData?.items || []).filter((w: any) => w.id !== bed.wardId).map((w: any) => (
@@ -391,7 +391,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
                     </SelectContent>
                   </Select>
                   {targetWardId && (
-                    <Select value={targetBedId} onValueChange={setTargetBedId}>
+                    <Select value={targetBedId || undefined} onValueChange={setTargetBedId}>
                       <SelectTrigger><SelectValue placeholder="Select available bed" /></SelectTrigger>
                       <SelectContent>
                         {(targetBedsData?.items || []).length === 0 ? (

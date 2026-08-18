@@ -197,7 +197,7 @@ export function AuditLogsView() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Action</Label>
-            <Select value={action} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(0); }}>
+            <Select value={action || undefined} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(0); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ACTION_PREFIXES.map((a) => <SelectItem key={a.value || "all"} value={a.value || "all"}>{a.label}</SelectItem>)}
@@ -206,7 +206,7 @@ export function AuditLogsView() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Resource Type</Label>
-            <Select value={resourceType} onValueChange={(v) => { setResourceType(v === "all" ? "" : v); setPage(0); }}>
+            <Select value={resourceType || undefined} onValueChange={(v) => { setResourceType(v === "all" ? "" : v); setPage(0); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Resource Types</SelectItem>
@@ -216,7 +216,7 @@ export function AuditLogsView() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Facility</Label>
-            <Select value={facilityId} onValueChange={(v) => { setFacilityId(v === "all" ? "" : v); setPage(0); }}>
+            <Select value={facilityId || undefined} onValueChange={(v) => { setFacilityId(v === "all" ? "" : v); setPage(0); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Facilities</SelectItem>
@@ -226,7 +226,7 @@ export function AuditLogsView() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">User</Label>
-            <Select value={userId} onValueChange={(v) => { setUserId(v === "all" ? "" : v); setPage(0); }}>
+            <Select value={userId || undefined} onValueChange={(v) => { setUserId(v === "all" ? "" : v); setPage(0); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Users</SelectItem>

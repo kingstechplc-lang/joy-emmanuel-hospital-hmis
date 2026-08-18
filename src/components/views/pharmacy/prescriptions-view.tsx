@@ -87,7 +87,7 @@ export function PrescriptionsView() {
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -394,7 +394,7 @@ function NewPrescriptionDialog({ open, onClose, onCreated, defaultFacilityId, de
 
             <div>
               <Label className="text-xs">Encounter</Label>
-              <Select value={encounterId} onValueChange={setEncounterId} disabled={!patientId || encounters.length === 0}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId} disabled={!patientId || encounters.length === 0}>
                 <SelectTrigger><SelectValue placeholder={patientId ? (encounters.length ? "Select encounter" : "No encounters") : "Select patient first"} /></SelectTrigger>
                 <SelectContent>
                   {encounters.map((e) => (
@@ -408,7 +408,7 @@ function NewPrescriptionDialog({ open, onClose, onCreated, defaultFacilityId, de
 
             <div>
               <Label className="text-xs">Facility</Label>
-              <Select value={facilityId} onValueChange={setFacilityId}>
+              <Select value={facilityId || undefined} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
                   {facilities.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -471,7 +471,7 @@ function NewPrescriptionDialog({ open, onClose, onCreated, defaultFacilityId, de
                       </div>
                       <div>
                         <Label className="text-[10px]">Frequency</Label>
-                        <Select value={it.frequency} onValueChange={(v) => updateItem(idx, "frequency", v)}>
+                        <Select value={it.frequency || undefined} onValueChange={(v) => updateItem(idx, "frequency", v)}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
@@ -480,7 +480,7 @@ function NewPrescriptionDialog({ open, onClose, onCreated, defaultFacilityId, de
                       </div>
                       <div>
                         <Label className="text-[10px]">Route</Label>
-                        <Select value={it.route} onValueChange={(v) => updateItem(idx, "route", v)}>
+                        <Select value={it.route || undefined} onValueChange={(v) => updateItem(idx, "route", v)}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {ROUTES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -753,7 +753,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
                       <div className="md:col-span-2">
                         <Label className="text-[10px]">Select Batch</Label>
-                        <Select value={dispenseMap[it.id]?.batchId || ""} onValueChange={(v) => setItem(it.id, "batchId", v)}>
+                        <Select value={dispenseMap[it.id]?.batchId || undefined} onValueChange={(v) => setItem(it.id, "batchId", v)}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={batches.length === 0 ? "No batches available" : "Select batch"} /></SelectTrigger>
                           <SelectContent>
                             {batches.filter((b: any) => b.quantity > 0).map((b: any) => (

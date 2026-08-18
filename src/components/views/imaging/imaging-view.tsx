@@ -84,7 +84,7 @@ export function ImagingView() {
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -306,7 +306,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
           {patientId && (
             <div>
               <Label>Encounter</Label>
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Auto-create an imaging encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).map((e: any) => (
@@ -322,7 +322,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Procedure Type</Label>
-              <Select value={procedureType} onValueChange={(v) => { setProcedureType(v); if (!procedureName) setProcedureName(v); }}>
+              <Select value={procedureType || undefined} onValueChange={(v) => { setProcedureType(v); if (!procedureName) setProcedureName(v); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PROCEDURE_TYPES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
@@ -341,7 +341,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority || undefined} onValueChange={setPriority}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="routine">Routine</SelectItem>

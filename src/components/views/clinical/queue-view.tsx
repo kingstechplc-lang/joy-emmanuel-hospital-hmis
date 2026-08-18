@@ -274,7 +274,7 @@ function AddToQueueDialog({ open, onClose, facilityId, queues, onAdded }: { open
           </div>
           <div>
             <Label>Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
+            <Select value={priority || undefined} onValueChange={setPriority}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="routine">Routine</SelectItem>

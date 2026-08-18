@@ -397,7 +397,7 @@ function CheckInDialog({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Encounter Type</FieldLabel>
-            <Select value={encounterType} onValueChange={setEncounterType}>
+            <Select value={encounterType || undefined} onValueChange={setEncounterType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="opd">OPD</SelectItem>
@@ -411,7 +411,7 @@ function CheckInDialog({
           </div>
           <div className="space-y-1.5">
             <FieldLabel required>Priority</FieldLabel>
-            <Select value={priority} onValueChange={setPriority}>
+            <Select value={priority || undefined} onValueChange={setPriority}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="routine">Routine</SelectItem>

@@ -258,7 +258,7 @@ function FacilityDialog({ facility, onClose }: { facility?: any; onClose: () => 
           </div>
           <div className="space-y-1.5">
             <Label>Facility Type</Label>
-            <Select value={form.facilityType} onValueChange={(v) => setForm({ ...form, facilityType: v })}>
+            <Select value={form.facilityType || undefined} onValueChange={(v) => setForm({ ...form, facilityType: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {FACILITY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -267,7 +267,7 @@ function FacilityDialog({ facility, onClose }: { facility?: any; onClose: () => 
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+            <Select value={form.status || undefined} onValueChange={(v) => setForm({ ...form, status: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>

@@ -89,7 +89,7 @@ export function PurchaseOrdersView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-56"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -260,7 +260,7 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Facility</Label>
-              <Select value={facilityId} onValueChange={setFacilityId}>
+              <Select value={facilityId || undefined} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
                   {facilities.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -269,7 +269,7 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
             </div>
             <div>
               <Label className="text-xs">Supplier</Label>
-              <Select value={supplierId} onValueChange={setSupplierId}>
+              <Select value={supplierId || undefined} onValueChange={setSupplierId}>
                 <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
                 <SelectContent>
                   {suppliers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.code})</SelectItem>)}

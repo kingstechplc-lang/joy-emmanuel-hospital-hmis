@@ -202,7 +202,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Referring Facility (Current)</FieldLabel>
-              <Select value={referringFacilityId} onValueChange={setReferringFacilityId}>
+              <Select value={referringFacilityId || undefined} onValueChange={setReferringFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
                   {(facilitiesData?.items || facilitiesData?.facilities || []).map((f: any) => (
@@ -228,7 +228,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           {patientId && referringFacilityId && (
             <div>
               <FieldLabel required>Encounter</FieldLabel>
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Select encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).map((e: any) => (
@@ -253,7 +253,7 @@ function NewReferralDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
           <div>
             <Label>Urgency</Label>
-            <Select value={urgency} onValueChange={setUrgency}>
+            <Select value={urgency || undefined} onValueChange={setUrgency}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="routine">Routine</SelectItem>

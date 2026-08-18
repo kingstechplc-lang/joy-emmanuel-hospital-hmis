@@ -298,7 +298,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Facility</FieldLabel>
-              <Select value={facilityId} onValueChange={setFacilityId}>
+              <Select value={facilityId || undefined} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
                   {(facilitiesData?.items || facilitiesData?.facilities || []).map((f: any) => (
@@ -332,7 +332,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
             </div>
             <div>
               <Label>Type</Label>
-              <Select value={appointmentType} onValueChange={setAppointmentType}>
+              <Select value={appointmentType || undefined} onValueChange={setAppointmentType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {APPOINTMENT_TYPES.map((t) => (

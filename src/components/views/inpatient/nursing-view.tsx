@@ -217,7 +217,7 @@ function PatientPicker({ patientId, setPatientId, setEncounterId }: { patientId:
         <>
           <div>
             <FieldLabel required>Encounter</FieldLabel>
-            <Select value={encountersData?.items?.[0]?.id || ""} onValueChange={setEncounterId}>
+            <Select value={encountersData?.items?.[0]?.id || undefined} onValueChange={setEncounterId}>
               <SelectTrigger><SelectValue placeholder="Select encounter" /></SelectTrigger>
               <SelectContent>
                 {(encountersData?.items || []).map((e: any) => (
@@ -291,7 +291,7 @@ function NewNursingNoteDialog({ open, onClose, onCreated }: { open: boolean; onC
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={(id) => { setEncounterId(id); setAdmissionId(""); }} />
           <div>
             <Label>Note Type</Label>
-            <Select value={noteType} onValueChange={setNoteType}>
+            <Select value={noteType || undefined} onValueChange={setNoteType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {NOTE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}

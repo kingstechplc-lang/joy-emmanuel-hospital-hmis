@@ -211,7 +211,7 @@ function SupplierDialog({ open, onClose, onCreated, existing }: {
           </div>
           <div>
             <Label className="text-xs">Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status || undefined} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>

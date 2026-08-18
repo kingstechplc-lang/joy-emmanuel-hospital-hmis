@@ -206,7 +206,7 @@ function NewMaternityDialog({ open, onClose, onCreated, defaultFacilityId }: { o
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Facility</FieldLabel>
-              <Select value={facilityId} onValueChange={setFacilityId}>
+              <Select value={facilityId || undefined} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Select facility" /></SelectTrigger>
                 <SelectContent>
                   {(facilitiesData?.items || facilitiesData?.facilities || []).map((f: any) => (
@@ -246,7 +246,7 @@ function NewMaternityDialog({ open, onClose, onCreated, defaultFacilityId }: { o
 
           <div>
             <Label>Pregnancy Status</Label>
-            <Select value={pregnancyStatus} onValueChange={setPregnancyStatus}>
+            <Select value={pregnancyStatus || undefined} onValueChange={setPregnancyStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active (Antenatal)</SelectItem>

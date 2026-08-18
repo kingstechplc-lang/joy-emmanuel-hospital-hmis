@@ -38,7 +38,7 @@ export function ReportsView() {
   const [reportType, setReportType] = useState("patients");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [facilityId, setFacilityId] = useState("");
+  const [facilityId, setFacilityId] = useState("__none__");
   const [generatedReport, setGeneratedReport] = useState<any | null>(null);
 
   const facilitiesQ = useQuery({
@@ -50,7 +50,7 @@ export function ReportsView() {
   const params = new URLSearchParams();
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
-  if (facilityId) params.set("facilityId", facilityId);
+  if (facilityId && facilityId !== "__none__") params.set("facilityId", facilityId);
 
   const { isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["report", reportType, dateFrom, dateTo, facilityId],
@@ -133,10 +133,10 @@ export function ReportsView() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Facility</Label>
-            <Select value={facilityId} onValueChange={setFacilityId}>
+            <Select value={facilityId || undefined} onValueChange={setFacilityId}>
               <SelectTrigger><SelectValue placeholder="All facilities" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Facilities</SelectItem>
+                <SelectItem value="__none__">All Facilities</SelectItem>
                 {facilities.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
               </SelectContent>
             </Select>

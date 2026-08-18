@@ -88,7 +88,7 @@ export function EquipmentView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by name, asset #, manufacturer, model, serial" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={category} onValueChange={setCategory}>
+          <Select value={category || undefined} onValueChange={setCategory}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               {CATEGORY_OPTIONS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
@@ -243,7 +243,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
             </div>
             <div>
               <Label className="text-xs">Facility</Label>
-              <Select value={facilityId} onValueChange={setFacilityId}>
+              <Select value={facilityId || undefined} onValueChange={setFacilityId}>
                 <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
                 <SelectContent>
                   {facilities.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -258,7 +258,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
             </div>
             <div>
               <Label className="text-xs">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={category || undefined} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CATEGORY_OPTIONS.filter((c) => c.value !== "all").map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
@@ -302,7 +302,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
           </div>
           <div>
             <Label className="text-xs">Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status || undefined} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
@@ -421,7 +421,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Maintenance Type</Label>
-            <Select value={maintenanceType} onValueChange={setMaintenanceType}>
+            <Select value={maintenanceType || undefined} onValueChange={setMaintenanceType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {MAINTENANCE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -449,7 +449,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
             </div>
             <div>
               <Label className="text-xs">Status</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status || undefined} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="completed">Completed</SelectItem>

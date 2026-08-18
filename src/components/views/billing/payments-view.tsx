@@ -82,7 +82,7 @@ export function PaymentsView() {
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2 md:items-center">
-          <Select value={methodFilter} onValueChange={setMethodFilter}>
+          <Select value={methodFilter || undefined} onValueChange={setMethodFilter}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               {METHOD_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -265,7 +265,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
               {outstandingInvoices.length === 0 ? (
                 <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded">No outstanding invoices for this patient.</div>
               ) : (
-                <Select value={invoiceId} onValueChange={selectInvoice}>
+                <Select value={invoiceId || undefined} onValueChange={selectInvoice}>
                   <SelectTrigger><SelectValue placeholder="Select invoice" /></SelectTrigger>
                   <SelectContent>
                     {outstandingInvoices.map((i: any) => (
@@ -286,7 +286,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
             </div>
             <div>
               <FieldLabel required>Payment Method</FieldLabel>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <Select value={paymentMethod || undefined} onValueChange={setPaymentMethod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">Cash</SelectItem>

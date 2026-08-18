@@ -96,7 +96,7 @@ export function TransfersView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -300,7 +300,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
           {patientId && (
             <div>
               <Label>Admission (current inpatient stay)</Label>
-              <Select value={admissionId} onValueChange={setAdmissionId}>
+              <Select value={admissionId || undefined} onValueChange={setAdmissionId}>
                 <SelectTrigger><SelectValue placeholder="Select the admission to transfer" /></SelectTrigger>
                 <SelectContent>
                   {(admissionsData?.items || []).length === 0 ? (
@@ -325,7 +325,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
               </div>
               <div>
                 <FieldLabel required>To Facility</FieldLabel>
-                <Select value={toFacilityId} onValueChange={(v) => { setToFacilityId(v); setToWardId(""); setToBedId(""); }}>
+                <Select value={toFacilityId || undefined} onValueChange={(v) => { setToFacilityId(v); setToWardId(""); setToBedId(""); }}>
                   <SelectTrigger><SelectValue placeholder="Select target facility" /></SelectTrigger>
                   <SelectContent>
                     {(facilitiesData?.facilities || []).map((f: any) => (
@@ -341,7 +341,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <FieldLabel required>Target Ward</FieldLabel>
-                <Select value={toWardId} onValueChange={(v) => { setToWardId(v); setToBedId(""); }}>
+                <Select value={toWardId || undefined} onValueChange={(v) => { setToWardId(v); setToBedId(""); }}>
                   <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
                   <SelectContent>
                     {(toWardsData?.items || []).map((w: any) => (
@@ -352,7 +352,7 @@ function NewTransferDialog({ open, onClose, onCreated, fromFacilityId }: { open:
               </div>
               <div>
                 <Label>Target Bed (optional — will occupy on approval)</Label>
-                <Select value={toBedId} onValueChange={setToBedId}>
+                <Select value={toBedId || undefined} onValueChange={setToBedId}>
                   <SelectTrigger><SelectValue placeholder="No target bed" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">— No target bed —</SelectItem>

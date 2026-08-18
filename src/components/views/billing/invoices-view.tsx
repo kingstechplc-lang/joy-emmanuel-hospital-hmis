@@ -109,7 +109,7 @@ export function InvoicesView() {
 
       <Card>
         <CardContent className="p-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -352,7 +352,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Encounter (optional)</Label>
-                <Select value={encounterId} onValueChange={setEncounterId}>
+                <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                   <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                   <SelectContent>
                     {(encountersData?.items || []).map((e: any) => (
@@ -639,7 +639,7 @@ function PaymentDialog({ invoice, onClose, onDone, canPay }: { invoice: any; onC
           </div>
           <div>
             <FieldLabel required>Payment Method</FieldLabel>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <Select value={paymentMethod || undefined} onValueChange={setPaymentMethod}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="cash">Cash</SelectItem>

@@ -115,7 +115,7 @@ export function MedicationsAdminView() {
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by generic or brand name" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -274,7 +274,7 @@ function MedicationDialog({ medication, onClose }: { medication?: any; onClose: 
           </div>
           <div className="space-y-1.5">
             <Label>Dosage Form</Label>
-            <Select value={form.dosageForm} onValueChange={(v) => setForm({ ...form, dosageForm: v })}>
+            <Select value={form.dosageForm || undefined} onValueChange={(v) => setForm({ ...form, dosageForm: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {DOSAGE_FORMS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
@@ -283,7 +283,7 @@ function MedicationDialog({ medication, onClose }: { medication?: any; onClose: 
           </div>
           <div className="space-y-1.5">
             <Label>Route</Label>
-            <Select value={form.route} onValueChange={(v) => setForm({ ...form, route: v })}>
+            <Select value={form.route || undefined} onValueChange={(v) => setForm({ ...form, route: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROUTES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
@@ -296,7 +296,7 @@ function MedicationDialog({ medication, onClose }: { medication?: any; onClose: 
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+            <Select value={form.status || undefined} onValueChange={(v) => setForm({ ...form, status: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>

@@ -147,7 +147,7 @@ export function PatientRegistrationView() {
             </div>
             <div>
               <Label>Sex</Label>
-              <Select value={form.sex} onValueChange={(v) => setField("sex", v)}>
+              <Select value={form.sex || undefined} onValueChange={(v) => setField("sex", v)}>
                 <SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">Male</SelectItem>
@@ -159,7 +159,7 @@ export function PatientRegistrationView() {
             </div>
             <div>
               <Label>Marital Status</Label>
-              <Select value={form.maritalStatus} onValueChange={(v) => setField("maritalStatus", v)}>
+              <Select value={form.maritalStatus || undefined} onValueChange={(v) => setField("maritalStatus", v)}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="single">Single</SelectItem>
@@ -179,7 +179,7 @@ export function PatientRegistrationView() {
             </div>
             <div>
               <Label>Blood Group</Label>
-              <Select value={form.bloodGroup} onValueChange={(v) => setField("bloodGroup", v)}>
+              <Select value={form.bloodGroup || undefined} onValueChange={(v) => setField("bloodGroup", v)}>
                 <SelectTrigger><SelectValue placeholder="Unknown" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="A+">A+</SelectItem>
@@ -195,7 +195,7 @@ export function PatientRegistrationView() {
             </div>
             <div>
               <Label>Preferred Language</Label>
-              <Select value={form.preferredLanguage} onValueChange={(v) => setField("preferredLanguage", v)}>
+              <Select value={form.preferredLanguage || undefined} onValueChange={(v) => setField("preferredLanguage", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="en">English</SelectItem>
@@ -306,7 +306,7 @@ export function PatientRegistrationView() {
             </div>
             <div>
               <Label>Relationship to Principal</Label>
-              <Select value={form.relationshipToPrincipal} onValueChange={(v) => setField("relationshipToPrincipal", v)}>
+              <Select value={form.relationshipToPrincipal || undefined} onValueChange={(v) => setField("relationshipToPrincipal", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="self">Self</SelectItem>

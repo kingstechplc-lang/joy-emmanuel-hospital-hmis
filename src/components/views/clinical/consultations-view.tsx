@@ -184,7 +184,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
           {patientId && (
             <div>
               <FieldLabel required>Encounter</FieldLabel>
-              <Select value={encounterId} onValueChange={setEncounterId}>
+              <Select value={encounterId || undefined} onValueChange={setEncounterId}>
                 <SelectTrigger><SelectValue placeholder="Select encounter" /></SelectTrigger>
                 <SelectContent>
                   {(encountersData?.items || []).map((e: any) => (

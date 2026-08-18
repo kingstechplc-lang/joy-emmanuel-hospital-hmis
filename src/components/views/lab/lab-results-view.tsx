@@ -80,7 +80,7 @@ export function LabResultsView() {
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2 items-center">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -277,7 +277,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
             </div>
             <div>
               <Label className="text-xs">Abnormal Flag</Label>
-              <Select value={form.abnormalFlag} onValueChange={(v) => setField("abnormalFlag", v)}>
+              <Select value={form.abnormalFlag || undefined} onValueChange={(v) => setField("abnormalFlag", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="normal">Normal</SelectItem>
