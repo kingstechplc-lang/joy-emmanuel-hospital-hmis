@@ -55,6 +55,11 @@ model Organization {
   auditLogs           AuditLog[]
   systemSettings      SystemSetting[]
   patientMergeEvents  PatientMergeEvent[] @relation("mergeOrgEvents")
+  trainingRecords     TrainingRecord[]
+  certifications      Certification[]
+  incidentReports     IncidentReport[]
+  shiftHandovers      ShiftHandover[]
+  wardRounds          WardRound[]
 }
 
 model Facility {
@@ -118,6 +123,11 @@ model Facility {
   facilityServicePrices FacilityServicePrice[]
   prescriptions         Prescription[]
   bedAssignments        BedAssignment[]
+  staffAttendance       StaffAttendance[]
+  incidentReports       IncidentReport[]
+  shiftHandovers        ShiftHandover[]
+  wardRounds            WardRound[]
+  intakeOutputEntries   IntakeOutputEntry[]
 }
 
 model Department {
@@ -142,6 +152,7 @@ model Department {
   staffShifts  StaffShift[]
   equipment    Equipment[]
   tasks        Task[]
+  shiftHandovers ShiftHandover[]
 
   @@unique([facilityId, code])
 }
@@ -178,6 +189,7 @@ model Ward {
   rooms Room[]
   beds  Bed[]
   bedAssignments BedAssignment[]
+  wardRounds  WardRound[]
 }
 
 model Room {
@@ -279,6 +291,12 @@ model User {
   mergesApproved  PatientMergeEvent[] @relation("mergeApprovedBy")
   allergiesRecorded Allergy[] @relation("allergiesRecorded")
   maintenancePerformed EquipmentMaintenance[] @relation("maintenancePerformedBy")
+  incidentsReported  IncidentReport[] @relation("incidentReporter")
+  handoversOutgoing  ShiftHandover[] @relation("handoverOutgoing")
+  handoversIncoming  ShiftHandover[] @relation("handoverIncoming")
+  wardRoundsAsConsultant WardRound[] @relation("wardRoundConsultant")
+  wardRoundsAsCreator    WardRound[] @relation("wardRoundCreator")
+  intakeOutputRecorded   IntakeOutputEntry[] @relation("intakeOutputRecorder")
 }
 
 model Staff {
@@ -301,9 +319,12 @@ model Staff {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  staffFacilities StaffFacility[]
-  shifts          StaffShift[]
-  leaves          LeaveRecord[]
+  staffFacilities   StaffFacility[]
+  shifts            StaffShift[]
+  leaves            LeaveRecord[]
+  attendanceRecords StaffAttendance[]
+  trainingRecords   TrainingRecord[]
+  certifications    Certification[]
 }
 
 model StaffFacility {
@@ -460,6 +481,7 @@ model Patient {
   mergeEventsTarget  PatientMergeEvent[] @relation("mergeTarget")
   tasks              Task[]
   queueEntries       QueueEntry[]
+  intakeOutputEntries IntakeOutputEntry[]
 }
 
 model PatientIdentifier {
@@ -618,6 +640,7 @@ model Encounter {
   medicationAdministrations MedicationAdministration[]
   tasks           Task[]
   maternityRecords MaternityRecord[]
+  intakeOutputEntries IntakeOutputEntry[]
 }
 
 model Appointment {
@@ -1170,6 +1193,7 @@ model Admission {
   discharges         DischargeRecord[]
   nursingNotes       NursingNote[]
   carePlans          CarePlan[]
+  intakeOutputEntries IntakeOutputEntry[]
 }
 
 model BedAssignment {
@@ -2015,6 +2039,167 @@ model PatientMergeEvent {
   approvedBy          User?    @relation("mergeApprovedBy", fields: [approvedById], references: [id])
   mergedAt            DateTime @default(now())
   createdAt            DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------
+// HR — STAFF ATTENDANCE, TRAINING & CERTIFICATIONS
+// ---------------------------------------------------------------------
+
+model StaffAttendance {
+  id           String   @id @default(cuid())
+  staffId      String
+  staff        Staff    @relation(fields: [staffId], references: [id])
+  facilityId   String
+  facility     Facility @relation(fields: [facilityId], references: [id])
+  date         DateTime @db.Date
+  checkInAt    DateTime?
+  checkOutAt   DateTime?
+  status       String   @default("present") // present | late | absent | half_day
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([staffId, date])
+  @@index([facilityId, date])
+}
+
+model TrainingRecord {
+  id              String   @id @default(cuid())
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  trainingName    String
+  provider        String?
+  trainingDate    DateTime
+  durationHours   Float?
+  certificateIssued Boolean @default(false)
+  certificateNumber String?
+  expiryDate      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([staffId])
+}
+
+model Certification {
+  id              String   @id @default(cuid())
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  certificationName String
+  issuingBody     String?
+  issueDate       DateTime
+  expiryDate      DateTime?
+  certificateNumber String?
+  status          String   @default("active") // active | expired | revoked
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([staffId])
+  @@index([expiryDate])
+}
+
+// ---------------------------------------------------------------------
+// OPERATIONS — INCIDENT REPORTS, SHIFT HANDOVERS
+// ---------------------------------------------------------------------
+
+model IncidentReport {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  incidentType    String   // clinical | safety | security | equipment | other
+  severity        String   // low | medium | high | critical
+  description     String
+  location        String?
+  peopleInvolved  String?
+  immediateAction String?
+  status          String   @default("reported") // reported | investigating | resolved
+  resolvedAt      DateTime?
+  resolution      String?
+  reportedById    String?
+  reportedBy      User?    @relation("incidentReporter", fields: [reportedById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([facilityId, createdAt])
+}
+
+model ShiftHandover {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  shiftType       String   // morning | evening | night
+  handoverDate    DateTime @default(now())
+  outgoingStaffId String?
+  outgoingStaff   User?    @relation("handoverOutgoing", fields: [outgoingStaffId], references: [id])
+  incomingStaffId String?
+  incomingStaff   User?    @relation("handoverIncoming", fields: [incomingStaffId], references: [id])
+  patientsToFlag  String?  // JSON array of patient IDs
+  notes           String
+  pendingTasks    String?
+  status          String   @default("completed")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([facilityId, handoverDate])
+}
+
+// ---------------------------------------------------------------------
+// INPATIENT — WARD ROUNDS, INTAKE/OUTPUT CHARTING
+// ---------------------------------------------------------------------
+
+model WardRound {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  wardId          String?
+  ward            Ward?    @relation(fields: [wardId], references: [id])
+  consultantId    String?
+  consultant      User?    @relation("wardRoundConsultant", fields: [consultantId], references: [id])
+  roundDate       DateTime @default(now())
+  patientsSeen    String?  // JSON array of patient IDs
+  notes           String?
+  planChanges     String?
+  createdById     String?
+  createdBy       User?    @relation("wardRoundCreator", fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([facilityId, roundDate])
+}
+
+model IntakeOutputEntry {
+  id              String   @id @default(cuid())
+  patientId       String
+  patient         Patient @relation(fields: [patientId], references: [id])
+  encounterId     String?
+  encounter       Encounter? @relation(fields: [encounterId], references: [id])
+  admissionId     String?
+  admission       Admission? @relation(fields: [admissionId], references: [id])
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  entryType       String   // intake | output
+  fluidType       String   // oral | iv | urine | drainage | blood_loss | other
+  amount          Float    // in ml
+  recordedById    String?
+  recordedBy      User?    @relation("intakeOutputRecorder", fields: [recordedById], references: [id])
+  recordedAt      DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([patientId, recordedAt])
 }
 
 // ---------------------------------------------------------------------

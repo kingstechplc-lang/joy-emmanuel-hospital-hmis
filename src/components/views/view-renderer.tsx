@@ -38,8 +38,15 @@ import { StockTransfersView } from "@/components/views/inventory/stock-transfers
 import { EquipmentView } from "@/components/views/inventory/equipment-view";
 import { StaffView } from "@/components/views/hr/staff-view";
 import { ShiftsView } from "@/components/views/hr/shifts-view";
+import { AttendanceView } from "@/components/views/hr/attendance-view";
+import { TrainingView } from "@/components/views/hr/training-view";
+import { CertificationsView } from "@/components/views/hr/certifications-view";
 import { DocumentsView } from "@/components/views/operations/documents-view";
 import { TasksView } from "@/components/views/operations/tasks-view";
+import { IncidentReportsView } from "@/components/views/operations/incident-reports-view";
+import { HandoverView } from "@/components/views/operations/handover-view";
+import { WardRoundsView } from "@/components/views/inpatient/ward-rounds-view";
+import { IntakeOutputView } from "@/components/views/inpatient/intake-output-view";
 import { AuditLogsView } from "@/components/views/admin/audit-logs-view";
 import { SecurityView } from "@/components/views/admin/security-view";
 import { ReportsView } from "@/components/views/admin/reports-view";
@@ -92,8 +99,15 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   equipment: EquipmentView,
   staff: StaffView,
   shifts: ShiftsView,
+  attendance: AttendanceView,
+  training: TrainingView,
+  certifications: CertificationsView,
   documents: DocumentsView,
   tasks: TasksView,
+  incident_reports: IncidentReportsView,
+  handover: HandoverView,
+  ward_rounds: WardRoundsView,
+  intake_output: IntakeOutputView,
   audit_logs: AuditLogsView,
   security: SecurityView,
   reports: ReportsView,
@@ -145,8 +159,15 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   equipment: "inventory.view",
   staff: "staff.view",
   shifts: "staff.view",
+  attendance: "staff.view",
+  training: "staff.view",
+  certifications: "staff.view",
   documents: "document.view",
   tasks: "task.assign",
+  incident_reports: "task.assign",
+  handover: "clinical.view",
+  ward_rounds: "admission.view",
+  intake_output: "clinical.view",
   audit_logs: "audit.view",
   security: "security.dashboard",
   reports: "report.view",

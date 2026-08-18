@@ -39,8 +39,13 @@ export type ViewKey =
   | "equipment"
   | "staff"
   | "shifts"
+  | "attendance"
+  | "training"
+  | "certifications"
   | "documents"
   | "tasks"
+  | "incident_reports"
+  | "handover"
   | "audit_logs"
   | "security"
   | "reports"
@@ -55,7 +60,9 @@ export type ViewKey =
   | "settings_insurance_providers"
   | "settings_system"
   | "records_desk"
-  | "opd";
+  | "opd"
+  | "ward_rounds"
+  | "intake_output";
 
 type AppState = {
   view: ViewKey;
@@ -130,6 +137,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "admissions", label: "Admissions", icon: "BedDouble", permission: "admission.view", category: "Inpatient" },
   { key: "beds", label: "Bed Management", icon: "Grid3x3", permission: "bed.manage", category: "Inpatient" },
   { key: "nursing", label: "Nursing Notes", icon: "NotebookPen", permission: "clinical.view", category: "Inpatient" },
+  { key: "ward_rounds", label: "Ward Rounds", icon: "ClipboardCheck", permission: "admission.view", category: "Inpatient" },
+  { key: "intake_output", label: "Intake / Output", icon: "Droplets", permission: "clinical.view", category: "Inpatient" },
   { key: "discharges", label: "Discharges", icon: "LogOut", permission: "admission.view", category: "Inpatient" },
   { key: "transfers", label: "Transfers", icon: "ArrowRightLeft", permission: "admission.view", category: "Inpatient" },
 
@@ -146,9 +155,14 @@ export const NAV_ITEMS: NavItem[] = [
 
   { key: "staff", label: "Staff", icon: "UserCog", permission: "staff.view", category: "Human Resources" },
   { key: "shifts", label: "Shifts & Leave", icon: "CalendarClock", permission: "staff.view", category: "Human Resources" },
+  { key: "attendance", label: "Attendance", icon: "Clock", permission: "staff.view", category: "Human Resources" },
+  { key: "training", label: "Training", icon: "GraduationCap", permission: "staff.view", category: "Human Resources" },
+  { key: "certifications", label: "Certifications", icon: "Award", permission: "staff.view", category: "Human Resources" },
 
   { key: "documents", label: "Documents", icon: "FolderOpen", permission: "document.view", category: "Operations" },
   { key: "tasks", label: "Tasks", icon: "CheckSquare", permission: "task.assign", category: "Operations" },
+  { key: "incident_reports", label: "Incident Reports", icon: "AlertTriangle", permission: "task.assign", category: "Operations" },
+  { key: "handover", label: "Shift Handover", icon: "ArrowLeftRight", permission: "clinical.view", category: "Operations" },
 
   { key: "audit_logs", label: "Audit Logs", icon: "ScrollText", permission: "audit.view", category: "Administration" },
   { key: "security", label: "Security", icon: "Shield", permission: "security.dashboard", category: "Administration" },
