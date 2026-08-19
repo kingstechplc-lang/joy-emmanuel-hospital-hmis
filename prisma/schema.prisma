@@ -142,7 +142,7 @@ model Department {
   location        String?  // Physical location (e.g., "Block A, Floor 2")
   contactExtension String? // Phone extension
   operatingHours  String?  // JSON: { mon: "08:00-17:00", tue: "08:00-17:00", ... }
-  status          String   @default("active") // active | inactive | closed | archived
+  status          String   @default("active") // active | inactive | closed | under_maintenance | archived
   settings        String?
   createdById     String?
   updatedById     String?
