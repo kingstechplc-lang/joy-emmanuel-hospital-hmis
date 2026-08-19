@@ -134,6 +134,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ ok: true });
   }
 
+  if (action === "restore_unit" && unit?.id) {
+    // Restore archived unit
+    await db.unit.update({
+      where: { id: unit.id },
+      data: { status: "active" },
+    });
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      action: "UNIT_RESTORED",
+      resourceType: "unit",
+      resourceId: unit.id,
+    });
+    return NextResponse.json({ ok: true });
+  }
+
   // ─── Archive / Restore actions ─────────────────────────────────
   if (action === "archive") {
     const updated = await db.department.update({
