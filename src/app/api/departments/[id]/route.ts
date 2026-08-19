@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/departments/[id]
-//   GET    — fetch department (with units)
-//   PATCH  — update department + manage units (add/edit/delete)
-//   DELETE — delete department
+//   GET    — fetch department (with units, services, staff)
+//   PATCH  — update department + manage units + archive/restore
+//   DELETE — soft-delete (archive) instead of hard delete
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -26,12 +26,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     include: {
       facility: { select: { id: true, name: true, code: true } },
       units: { orderBy: { name: "asc" } },
+      services: { select: { id: true, name: true, code: true, defaultPrice: true, status: true } },
       _count: { select: { encounters: true, staffFacilities: true, wards: true } },
     },
   });
 
   if (!dept) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  // Org scope check
   const facility = await db.facility.findUnique({ where: { id: dept.facilityId } });
   if (!facility || facility.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -49,17 +49,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
   const body = await req.json();
-  const { name, code, description, status, action, unit } = body;
+  const {
+    name, code, description, status, category, headStaffId, location, contactExtension, operatingHours,
+    action, unit,
+  } = body;
 
   const existing = await db.department.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  // Org scope
   const facility = await db.facility.findUnique({ where: { id: existing.facilityId } });
   if (!facility || facility.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Unit management actions
+  // ─── Unit management actions ───────────────────────────────────
   if (action === "add_unit") {
     if (!unit?.name || !unit?.code) {
       return NextResponse.json({ error: "Unit name and code required" }, { status: 400 });
@@ -70,6 +72,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         name: unit.name,
         code: unit.code,
         description: unit.description || null,
+        headStaffId: unit.headStaffId || null,
+        location: unit.location || null,
+        room: unit.room || null,
+        operatingHours: unit.operatingHours || null,
         status: unit.status || "active",
       },
     });
@@ -92,6 +98,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(unit.name ? { name: unit.name } : {}),
         ...(unit.code ? { code: unit.code } : {}),
         ...(typeof unit.description === "string" ? { description: unit.description } : {}),
+        ...(unit.headStaffId !== undefined ? { headStaffId: unit.headStaffId || null } : {}),
+        ...(unit.location !== undefined ? { location: unit.location || null } : {}),
+        ...(unit.room !== undefined ? { room: unit.room || null } : {}),
+        ...(unit.operatingHours !== undefined ? { operatingHours: unit.operatingHours || null } : {}),
         ...(unit.status ? { status: unit.status } : {}),
       },
     });
@@ -108,24 +118,70 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (action === "delete_unit" && unit?.id) {
-    await db.unit.delete({ where: { id: unit.id } });
+    // Soft-delete: set status to archived
+    await db.unit.update({
+      where: { id: unit.id },
+      data: { status: "archived" },
+    });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,
       facilityId: existing.facilityId,
-      action: "UNIT_DELETED",
+      action: "UNIT_ARCHIVED",
       resourceType: "unit",
       resourceId: unit.id,
     });
     return NextResponse.json({ ok: true });
   }
 
-  // Default — update department itself
-  const updateData: any = {};
+  // ─── Archive / Restore actions ─────────────────────────────────
+  if (action === "archive") {
+    const updated = await db.department.update({
+      where: { id },
+      data: { status: "archived", updatedById: session.user.id },
+    });
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      action: "DEPARTMENT_ARCHIVED",
+      resourceType: "department",
+      resourceId: id,
+      oldValues: { status: existing.status },
+      newValues: { status: "archived" },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  if (action === "restore") {
+    const updated = await db.department.update({
+      where: { id },
+      data: { status: "active", updatedById: session.user.id },
+    });
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      action: "DEPARTMENT_RESTORED",
+      resourceType: "department",
+      resourceId: id,
+      oldValues: { status: existing.status },
+      newValues: { status: "active" },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  // ─── Default: update department fields ─────────────────────────
+  const updateData: any = { updatedById: session.user.id };
   if (typeof name === "string") updateData.name = name;
   if (typeof code === "string") updateData.code = code;
   if (typeof description === "string") updateData.description = description || null;
   if (typeof status === "string") updateData.status = status;
+  if (typeof category === "string") updateData.category = category;
+  if (headStaffId !== undefined) updateData.headStaffId = headStaffId || null;
+  if (location !== undefined) updateData.location = location || null;
+  if (contactExtension !== undefined) updateData.contactExtension = contactExtension || null;
+  if (operatingHours !== undefined) updateData.operatingHours = operatingHours || null;
 
   const updated = await db.department.update({ where: { id }, data: updateData });
   await auditLog({
@@ -135,13 +191,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     action: "DEPARTMENT_UPDATED",
     resourceType: "department",
     resourceId: id,
-    oldValues: { name: existing.name, code: existing.code, description: existing.description },
+    oldValues: { name: existing.name, code: existing.code, category: existing.category },
     newValues: updateData,
   });
 
   return NextResponse.json({ item: updated });
 }
 
+// DELETE — soft-delete (archive) instead of hard delete
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -153,22 +210,22 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const existing = await db.department.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  try {
-    await db.department.delete({ where: { id } });
-    await auditLog({
-      userId: session.user.id,
-      organizationId: session.user.organizationId,
-      facilityId: existing.facilityId,
-      action: "DEPARTMENT_DELETED",
-      resourceType: "department",
-      resourceId: id,
-      oldValues: { name: existing.name, code: existing.code },
-    });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: "Cannot delete department with associated records. Consider deactivating instead." },
-      { status: 400 }
-    );
-  }
+  // Soft-delete: archive instead of delete
+  const updated = await db.department.update({
+    where: { id },
+    data: { status: "archived", updatedById: session.user.id },
+  });
+
+  await auditLog({
+    userId: session.user.id,
+    organizationId: session.user.organizationId,
+    facilityId: existing.facilityId,
+    action: "DEPARTMENT_ARCHIVED",
+    resourceType: "department",
+    resourceId: id,
+    oldValues: { name: existing.name, code: existing.code, status: existing.status },
+    newValues: { status: "archived" },
+  });
+
+  return NextResponse.json({ ok: true, item: updated });
 }

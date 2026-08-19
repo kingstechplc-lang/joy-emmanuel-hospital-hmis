@@ -131,16 +131,23 @@ model Facility {
 }
 
 model Department {
-  id           String   @id @default(cuid())
-  facilityId   String
-  facility     Facility @relation(fields: [facilityId], references: [id])
-  name         String
-  code         String
-  description  String?
-  status       String   @default("active")
-  settings     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  name            String
+  code            String
+  category        String?  @default("Clinical") // Clinical | Diagnostic | Pharmaceutical | Nursing | Finance | Records | Technical | Management | Custom
+  description     String?
+  headStaffId     String?  // Department Head (Staff ID)
+  location        String?  // Physical location (e.g., "Block A, Floor 2")
+  contactExtension String? // Phone extension
+  operatingHours  String?  // JSON: { mon: "08:00-17:00", tue: "08:00-17:00", ... }
+  status          String   @default("active") // active | inactive | closed | archived
+  settings        String?
+  createdById     String?
+  updatedById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   units        Unit[]
   wards        Ward[]
@@ -153,20 +160,27 @@ model Department {
   equipment    Equipment[]
   tasks        Task[]
   shiftHandovers ShiftHandover[]
+  services     Service[]
 
   @@unique([facilityId, code])
+  @@index([facilityId, status])
+  @@index([category])
 }
 
 model Unit {
-  id           String   @id @default(cuid())
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-  name         String
-  code         String
-  description  String?
-  status       String   @default("active")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  departmentId    String
+  department      Department @relation(fields: [departmentId], references: [id])
+  name            String
+  code            String
+  description     String?
+  headStaffId     String?  // Unit Head (Staff ID)
+  location        String?  // Physical location
+  room            String?  // Room number
+  operatingHours  String?  // JSON
+  status          String   @default("active") // active | inactive | archived
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([departmentId, code])
 }
@@ -1420,8 +1434,12 @@ model Service {
   name            String
   code            String
   category        String? // consultation | lab | imaging | procedure | pharmacy | admission | nursing | other
+  departmentId    String? // Link service to a specific department
+  department      Department? @relation(fields: [departmentId], references: [id])
+  unitId          String? // Link service to a specific unit (optional)
   description     String?
   defaultPrice    Float    @default(0)
+  nhisPrice       Float?   // NHIS-insured price (if different from defaultPrice)
   status          String   @default("active")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1430,6 +1448,7 @@ model Service {
   invoiceItems     InvoiceItem[]
 
   @@unique([organizationId, code])
+  @@index([departmentId])
 }
 
 model FacilityServicePrice {

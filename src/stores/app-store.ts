@@ -62,7 +62,8 @@ export type ViewKey =
   | "records_desk"
   | "opd"
   | "ward_rounds"
-  | "intake_output";
+  | "intake_output"
+  | "department_dashboard";
 
 type AppState = {
   view: ViewKey;
@@ -169,6 +170,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "reports", label: "Reports", icon: "BarChart3", permission: "report.view", category: "Administration" },
   { key: "settings_facilities", label: "Facilities", icon: "Building2", permission: "facility.manage", category: "Administration" },
   { key: "settings_departments", label: "Departments", icon: "Network", permission: "department.manage", category: "Administration" },
+  { key: "department_dashboard", label: "Dept Dashboard", icon: "LayoutDashboard", permission: "department.manage", category: "Administration" },
   { key: "settings_users", label: "Users", icon: "UserCircle", permission: "user.view", category: "Administration" },
   { key: "settings_roles", label: "Roles", icon: "BadgeCheck", permission: "role.view", category: "Administration" },
   { key: "settings_permissions", label: "Permissions", icon: "Key", permission: "permission.assign", category: "Administration" },

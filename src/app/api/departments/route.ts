@@ -1,7 +1,7 @@
 // =====================================================================
 // API: /api/departments
-//   GET  — list departments filtered by facilityId
-//   POST — create department
+//   GET  — list departments filtered by facilityId, category, status
+//   POST — create department with new fields
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -22,12 +22,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || undefined;
   const q = url.searchParams.get("q") || "";
-
-  const where: any = {};
-  if (facilityId) where.facilityId = facilityId;
-  if (q) {
-    where.OR = [{ name: { contains: q } }, { code: { contains: q } }, { description: { contains: q } }];
-  }
+  const category = url.searchParams.get("category");
+  const status = url.searchParams.get("status");
+  const includeArchived = url.searchParams.get("includeArchived") === "true";
 
   // Scope to user's org
   const facilities = await db.facility.findMany({
@@ -35,12 +32,21 @@ export async function GET(req: Request) {
     select: { id: true },
   });
   const facilityIds = facilities.map((f) => f.id);
-  if (facilityId) {
-    if (!facilityIds.includes(facilityId)) {
-      return NextResponse.json({ items: [] });
-    }
+
+  const where: any = {};
+  if (facilityId && facilityIds.includes(facilityId)) {
+    where.facilityId = facilityId;
   } else {
     where.facilityId = { in: facilityIds };
+  }
+  if (q) {
+    where.OR = [{ name: { contains: q } }, { code: { contains: q } }, { description: { contains: q } }];
+  }
+  if (category && category !== "all") where.category = category;
+  if (status && status !== "all") {
+    where.status = status;
+  } else if (!includeArchived) {
+    where.status = { not: "archived" };
   }
 
   const departments = await db.department.findMany({
@@ -48,7 +54,7 @@ export async function GET(req: Request) {
     orderBy: [{ facilityId: "asc" }, { name: "asc" }],
     include: {
       facility: { select: { id: true, name: true, code: true } },
-      _count: { select: { units: true, encounters: true, staffFacilities: true } },
+      _count: { select: { units: true, encounters: true, staffFacilities: true, services: true } },
     },
   });
 
@@ -56,13 +62,19 @@ export async function GET(req: Request) {
     id: d.id,
     name: d.name,
     code: d.code,
+    category: d.category,
     description: d.description,
+    headStaffId: d.headStaffId,
+    location: d.location,
+    contactExtension: d.contactExtension,
+    operatingHours: d.operatingHours,
     status: d.status,
     facilityId: d.facilityId,
     facility: d.facility,
     unitsCount: d._count.units,
     encountersCount: d._count.encounters,
     staffCount: d._count.staffFacilities,
+    servicesCount: d._count.services,
   }));
 
   return NextResponse.json({ items, count: items.length });
@@ -76,13 +88,15 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { name, code, description, facilityId, status } = body;
+  const {
+    name, code, description, facilityId, status,
+    category, headStaffId, location, contactExtension, operatingHours,
+  } = body;
 
   if (!name || !code || !facilityId) {
     return NextResponse.json({ error: "name, code, facilityId are required" }, { status: 400 });
   }
 
-  // Verify facility belongs to user's org
   const facility = await db.facility.findUnique({ where: { id: facilityId } });
   if (!facility || facility.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Facility not found in your organization" }, { status: 404 });
@@ -94,8 +108,15 @@ export async function POST(req: Request) {
         facilityId,
         name,
         code,
+        category: category || "Clinical",
         description: description || null,
+        headStaffId: headStaffId || null,
+        location: location || null,
+        contactExtension: contactExtension || null,
+        operatingHours: operatingHours || null,
         status: status || "active",
+        createdById: session.user.id,
+        updatedById: session.user.id,
       },
     });
 
@@ -106,7 +127,7 @@ export async function POST(req: Request) {
       action: "DEPARTMENT_CREATED",
       resourceType: "department",
       resourceId: dept.id,
-      newValues: { name, code, description, facilityId },
+      newValues: { name, code, category, facilityId },
     });
 
     return NextResponse.json({ item: dept }, { status: 201 });

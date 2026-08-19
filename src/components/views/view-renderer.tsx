@@ -52,6 +52,7 @@ import { SecurityView } from "@/components/views/admin/security-view";
 import { ReportsView } from "@/components/views/admin/reports-view";
 import { FacilitiesAdminView } from "@/components/views/admin/facilities-admin-view";
 import { DepartmentsAdminView } from "@/components/views/admin/departments-admin-view";
+import { DepartmentDashboardView } from "@/components/views/admin/department-dashboard-view";
 import { UsersAdminView } from "@/components/views/admin/users-admin-view";
 import { RolesAdminView } from "@/components/views/admin/roles-admin-view";
 import { PermissionsAdminView } from "@/components/views/admin/permissions-admin-view";
@@ -113,6 +114,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   reports: ReportsView,
   settings_facilities: FacilitiesAdminView,
   settings_departments: DepartmentsAdminView,
+  department_dashboard: DepartmentDashboardView,
   settings_users: UsersAdminView,
   settings_roles: RolesAdminView,
   settings_permissions: PermissionsAdminView,
@@ -173,6 +175,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   reports: "report.view",
   settings_facilities: "facility.manage",
   settings_departments: "department.manage",
+  department_dashboard: "department.manage",
   settings_users: "user.view",
   settings_roles: "role.view",
   settings_permissions: "permission.assign",
