@@ -1,7 +1,8 @@
 // =====================================================================
 // SEED SCRIPT — Joy Emmanuel Hospital HMIS
 // =====================================================================
-import "dotenv/config";
+import { config } from "dotenv";
+config({ override: true });
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "../src/lib/permissions";

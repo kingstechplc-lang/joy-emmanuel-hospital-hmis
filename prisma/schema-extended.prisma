@@ -1,0 +1,804 @@
+// =====================================================================
+// EXTENDED MODULES — Mortuary, Blood Bank, Theatre, ICU/NICU,
+// Specialty Clinics, Support Services, Patient Relations, QA,
+// Risk, Legal, Research, PR, IT, Coding, Community Health,
+// Home Care, Histopathology
+// =====================================================================
+// (Appended to schema.prisma — these models use plain String? foreign
+//  keys to avoid modifying User/Patient/Encounter with new reverse
+//  relations. Internal relations between new models are declared
+//  normally.)
+
+// ---------------------------------------------------------------------
+// MORTUARY SERVICES — manages deceased persons (including those NOT
+// recorded from the facility), body intake, cold storage, release.
+// ---------------------------------------------------------------------
+model MortuaryAdmission {
+  id                String   @id @default(cuid())
+  organizationId    String
+  facilityId        String?
+  admissionNumber   String   @unique
+  patientId         String?  // null if deceased was brought in (not a facility patient)
+  deceasedName      String
+  deceasedAge       Int?
+  deceasedSex       String?  // male | female | unknown
+  deceasedDob       DateTime?
+  nationalId        String?
+  nextOfKinName     String?
+  nextOfKinPhone    String?
+  nextOfKinRelation String?
+  dateOfDeath       DateTime
+  placeOfDeath      String?  // facility | home | roadside | other_facility | unknown
+  causeOfDeath      String?
+  deathCertificateNo String?
+  broughtBy         String?  // person who brought the body
+  broughtByPhone    String?
+  sourceFacility    String?  // if from another facility
+  sourceNotes       String?  // free text source description
+  storageUnitId     String?
+  storageLocation   String?  // chamber / freezer / shelf label
+  bodyTag           String?  @unique
+  admissionStatus   String   @default("admitted") // admitted | stored | released | transferred_out
+  admittedAt        DateTime @default(now())
+  releasedAt        DateTime?
+  releasedTo        String?  // name of person who collected
+  releasedToPhone   String?
+  releasedToIdType  String?  // national_id | driving | passport
+  releasedToIdNo    String?
+  releaseNotes      String?
+  undertakingCompany String? // funeral home
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([admissionStatus])
+}
+
+// ---------------------------------------------------------------------
+// BLOOD BANK — donors, units, transfusions
+// ---------------------------------------------------------------------
+model BloodDonor {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  donorNumber     String   @unique
+  donorType       String   @default("voluntary") // voluntary | replacement | autologous | directed
+  fullName        String
+  age             Int?
+  sex             String?  // male | female
+  bloodGroup      String?  // A+ | A- | B+ | B- | AB+ | AB- | O+ | O-
+  rhFactor        String?  // + | -
+  phone           String?
+  email           String?
+  address         String?
+  occupation      String?
+  lastDonationAt  DateTime?
+  donationCount   Int      @default(0)
+  eligibilityStatus String @default("eligible") // eligible | deferred | banned
+  deferralReason  String?
+  deferralUntil   DateTime?
+  notes           String?
+  hbsAg           String?  // hepatitis B status
+  hcvAb           String?  // hepatitis C
+  hivAb           String?  // HIV
+  syphilis        String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bloodUnits      BloodUnit[]
+
+  @@index([organizationId, facilityId])
+  @@index([bloodGroup])
+}
+
+model BloodUnit {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  unitNumber      String   @unique
+  donorId         String
+  donor           BloodDonor @relation(fields: [donorId], references: [id])
+  bloodGroup      String   // A+ | A- | B+ | B- | AB+ | AB- | O+ | O-
+  componentType   String   @default("whole_blood") // whole_blood | prbc | ffp | platelets | cryo
+  volumeMl        Int      @default(450)
+  collectionDate  DateTime @default(now())
+  expiryDate      DateTime
+  storageTemp     String?  // e.g. 2-6°C, -25°C
+  status          String   @default("available") // available | reserved | issued | transfused | expired | discarded
+  reservedForPatientId String?
+  reservedForPatientName String?
+  reservedUntil   DateTime?
+  issuedAt        DateTime?
+  issuedToPatientId   String?
+  issuedToPatientName String?
+  issuedById      String?
+  transfusedAt    DateTime?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([status])
+  @@index([bloodGroup])
+  @@index([expiryDate])
+}
+
+model BloodTransfusion {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  transfusionNumber String @unique
+  patientId       String?
+  patientName     String
+  patientBloodGroup String?
+  unitId          String
+  unit            BloodUnit @relation(fields: [unitId], references: [id])
+  unitNumber      String
+  bloodGroup      String
+  componentType   String
+  volumeMl        Int
+  preTransfusionVitals String? // JSON: {temp, bp, pulse}
+  postTransfusionVitals String?
+  reactionObserved Boolean @default(false)
+  reactionDetails String?
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  administeredById String?
+  status          String   @default("in_progress") // in_progress | completed | aborted
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+}
+
+// ---------------------------------------------------------------------
+// OPERATING THEATRE — surgical cases, pre-op, post-op
+// ---------------------------------------------------------------------
+model TheatreCase {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  caseNumber      String   @unique
+  patientId       String?
+  patientName     String
+  patientAge      Int?
+  patientSex      String?
+  encounterId     String?
+  admissionId     String?
+  procedureType   String   // elective | emergency | urgent
+  procedureName   String
+  procedureCode   String?  // CPT/ICD-9-PCS
+  surgeonId       String?
+  surgeonName     String?
+  anesthetistId   String?
+  anesthetistName String?
+  scrubNurseId    String?
+  scrubNurseName  String?
+  theatreRoom     String?
+  scheduledStart  DateTime
+  scheduledEnd    DateTime?
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  anesthesiaType  String?  // general | regional | local | spinal | epidural | sedation
+  preOpDiagnosis  String?
+  postOpDiagnosis String?
+  findings        String?
+  procedureNotes  String?
+  complications   String?
+  bloodLossMl     Int?
+  specimensSent   String?
+  implantUsed     String?
+  status          String   @default("scheduled") // scheduled | in_progress | completed | cancelled | delayed
+  recoveryStatus  String?  // recovering | recovered_to_ward | icu_transfer
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([status])
+  @@index([scheduledStart])
+}
+
+// ---------------------------------------------------------------------
+// CRITICAL CARE — ICU/NICU admissions with monitoring
+// ---------------------------------------------------------------------
+model CriticalCareAdmission {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  admissionNumber String   @unique
+  patientId       String?
+  patientName     String
+  patientAge      Int?
+  patientSex      String?
+  encounterId     String?
+  admissionId     String?  // link to general admission
+  unitType        String   // icu | nicu | picu | ccu | hdu
+  bedNumber       String?
+  admittingDiagnosis String
+  admissionReason String
+  severity        String   @default("critical") // critical | serious | stable
+  apacheScore     Int?     // APACHE II score
+  admittedAt      DateTime @default(now())
+  dischargedAt    DateTime?
+  dischargeDestination String? // ward | home | morgue | transfer_out
+  attendingPhysicianId String?
+  attendingPhysicianName String?
+  ventilator      Boolean  @default(false)
+  ventilatorSettings String? // JSON
+  dialysis        Boolean  @default(false)
+  inotropes       String?
+  monitoringData  String?  // JSON array of hourly readings: [{time, hr, bp, spo2, temp, ...}]
+  status          String   @default("admitted") // admitted | discharged | deceased
+  outcomeNotes    String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([unitType, status])
+}
+
+// ---------------------------------------------------------------------
+// SPECIALTY CLINICS — Dental, Eye, ENT, Physio, Psych, Derm, Cardio,
+// Neuro, Ortho, Urology, etc. — appointments + treatment records.
+// ---------------------------------------------------------------------
+model SpecialtyEncounter {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  encounterNumber String   @unique
+  patientId       String?
+  patientName     String
+  patientAge      Int?
+  patientSex      String?
+  encounterId     String?  // link to general encounter if created from one
+  departmentCode  String   // DENTAL | OPHTH | ENT | PHYSIO | PSYCH | DERM | CARDIO | NEURO | ORTHO | URO | ENDO
+  clinicType      String   // new | follow_up | review
+  chiefComplaint  String
+  history         String?
+  examination     String?
+  diagnosis       String?
+  treatmentPlan   String?
+  procedureDone   String?
+  prescription    String?
+  followUpDate    DateTime?
+  nextAppointment DateTime?
+  clinicianId     String?
+  clinicianName   String?
+  status          String   @default("in_progress") // in_progress | completed | cancelled
+  startTime       DateTime @default(now())
+  endTime         DateTime?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([departmentCode])
+  @@index([patientId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// SUPPORT SERVICES — Laundry, Housekeeping, Catering, Waste,
+// Security, Transport. Unified model with serviceType discriminator.
+// ---------------------------------------------------------------------
+model ServiceRequest {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  requestNumber   String   @unique
+  serviceType     String   // laundry | housekeeping | catering | waste | security | transport
+  category        String?  // sub-category: e.g., laundry:linens, housekeeping:room_cleaning, catering:patient_meal, waste:sharp_disposal, security:visitor_pass, transport:ambulance_trip
+  priority        String   @default("routine") // routine | urgent | emergency
+  status          String   @default("requested") // requested | assigned | in_progress | completed | cancelled
+  title           String
+  description     String?
+  requestedById   String?
+  requestedByName String?
+  assignedToId    String?
+  assignedToName  String?
+  location        String?  // ward / room / area
+  departmentCode  String?
+  patientId       String?  // if linked to a patient
+  patientName     String?
+  encounterId     String?
+  admissionId     String?
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  quantity        Int?     // e.g., 50 linens
+  unit            String?  // pcs | kg | meal | bag | trip
+  itemsDetail     String?  // JSON: [{name, qty, condition}]
+  cost            Float?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([serviceType, status])
+  @@index([patientId])
+  @@index([departmentCode])
+}
+
+// ---------------------------------------------------------------------
+// PATIENT RELATIONS — complaints, feedback, satisfaction surveys
+// ---------------------------------------------------------------------
+model PatientFeedback {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  feedbackNumber  String   @unique
+  feedbackType    String   // complaint | compliment | suggestion | enquiry
+  category        String?  // clinical | billing | waiting | staff | cleanliness | food | other
+  patientId       String?
+  patientName     String
+  patientPhone    String?
+  departmentCode  String?
+  encounterId     String?
+  subject         String
+  description     String
+  severity        String   @default("medium") // low | medium | high | critical
+  status          String   @default("open") // open | investigating | resolved | closed | escalated
+  resolution      String?
+  resolvedAt      DateTime?
+  resolvedById    String?
+  resolvedByName  String?
+  satisfactionScore Int?   // 1-5
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([feedbackType, status])
+  @@index([patientId])
+}
+
+// ---------------------------------------------------------------------
+// QUALITY ASSURANCE — quality indicators & audits
+// ---------------------------------------------------------------------
+model QualityIndicator {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  indicatorCode   String   @unique
+  indicatorName   String
+  category        String?  // clinical | safety | patient_experience | efficiency | financial
+  unit            String?  // % | rate | count
+  target          String?
+  description     String?
+  measurementFrequency String? @default("monthly") // daily | weekly | monthly | quarterly
+  departmentCode  String?
+  isActive        Boolean  @default(true)
+  values          QualityIndicatorValue[]
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([category])
+}
+
+model QualityIndicatorValue {
+  id              String   @id @default(cuid())
+  indicatorId     String
+  indicator       QualityIndicator @relation(fields: [indicatorId], references: [id])
+  periodStart     DateTime
+  periodEnd       DateTime
+  measuredValue   Float
+  targetValue     Float?
+  numerator       Int?
+  denominator     Int?
+  notes           String?
+  measuredById    String?
+  measuredByName  String?
+  createdAt       DateTime @default(now())
+
+  @@index([indicatorId, periodStart])
+}
+
+// ---------------------------------------------------------------------
+// RISK MANAGEMENT — risk register
+// ---------------------------------------------------------------------
+model RiskRegister {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  riskNumber      String   @unique
+  riskTitle       String
+  riskCategory    String?  // clinical | financial | operational | strategic | compliance | reputational
+  description     String
+  likelihood      String   @default("medium") // low | medium | high
+  impact          String   @default("medium") // low | medium | high | critical
+  riskScore       String?  // computed: low | medium | high | critical
+  owner           String?
+  ownerId         String?
+  mitigationPlan  String?
+  residualRisk    String?
+  status          String   @default("open") // open | mitigated | accepted | closed
+  reviewDate      DateTime?
+  departmentCode  String?
+  relatedIncidentId String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([status])
+  @@index([riskCategory])
+}
+
+// ---------------------------------------------------------------------
+// LEGAL / COMPLIANCE
+// ---------------------------------------------------------------------
+model LegalCase {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  caseNumber       String   @unique
+  caseType        String   // malpractice | employment | contract | regulatory | patient_dispute | other
+  title           String
+  description     String?
+  status          String   @default("open") // open | in_litigation | settled | dismissed | closed
+  priority        String   @default("medium")
+  filingDate      DateTime?
+  courtDate       DateTime?
+  opposingParty   String?
+  plaintiffName   String?
+  defendantName   String?
+  patientId       String?
+  patientName     String?
+  encounterId     String?
+  departmentCode  String?
+  assignedAttorney String?
+  estimatedValue  Float?
+  settlementAmount Float?
+  resolutionNotes String?
+  closedAt        DateTime?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([caseType, status])
+  @@index([courtDate])
+}
+
+// ---------------------------------------------------------------------
+// RESEARCH & TRAINING (research projects)
+// ---------------------------------------------------------------------
+model ResearchStudy {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  studyNumber     String   @unique
+  studyTitle      String
+  studyType       String?  // observational | rct | cohort | case_control | qualitative
+  principalInvestigator String?
+  principalInvestigatorId String?
+  status          String   @default("planning") // planning | recruiting | ongoing | analysis | completed | suspended | terminated
+  ethicsApprovalNo String?
+  ethicsApprovalDate DateTime?
+  startDate       DateTime?
+  endDate         DateTime?
+  targetEnrollment Int?
+  currentEnrollment Int @default(0)
+  fundingSource   String?
+  budget          Float?
+  description     String?
+  notes           String?
+  participants    ResearchParticipant[]
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([status])
+}
+
+model ResearchParticipant {
+  id              String   @id @default(cuid())
+  studyId         String
+  study           ResearchStudy @relation(fields: [studyId], references: [id])
+  participantCode String   @unique
+  patientId       String?
+  patientName     String?
+  enrollmentDate  DateTime  @default(now())
+  status          String   @default("enrolled") // enrolled | active | completed | withdrew | excluded
+  withdrawalDate  DateTime?
+  withdrawalReason String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([studyId])
+  @@index([patientId])
+}
+
+// ---------------------------------------------------------------------
+// PUBLIC RELATIONS — campaigns, media inquiries
+// ---------------------------------------------------------------------
+model PRActivity {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  activityNumber  String   @unique
+  activityType    String   // campaign | media_inquiry | press_release | event | social_media | community_engagement
+  title           String
+  description     String?
+  status          String   @default("planned") // planned | in_progress | completed | cancelled
+  priority        String   @default("medium")
+  startDate       DateTime?
+  endDate         DateTime?
+  targetAudience  String?
+  budget          Float?
+  spentAmount     Float?
+  mediaOutlet     String?
+  contactPerson   String?
+  contactPhone    String?
+  outcomes        String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([activityType, status])
+}
+
+// ---------------------------------------------------------------------
+// IT OPERATIONS — support tickets
+// ---------------------------------------------------------------------
+model ITTicket {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  ticketNumber    String   @unique
+  ticketType      String   // hardware | software | network | access | email | other
+  category        String?  // specific category
+  priority        String   @default("medium") // low | medium | high | critical
+  status          String   @default("open") // open | assigned | in_progress | resolved | closed | escalated
+  subject         String
+  description     String
+  affectedSystem  String?
+  reportedById    String?
+  reportedByName  String?
+  reportedByPhone String?
+  assignedToId    String?
+  assignedToName  String?
+  resolution      String?
+  resolvedAt      DateTime?
+  resolutionTimeMins Int?
+  satisfactionScore Int?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([ticketType, status])
+  @@index([priority])
+}
+
+// ---------------------------------------------------------------------
+// CODING & CLAIMS — ICD-10 coding for encounters
+// ---------------------------------------------------------------------
+model CodingRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  encounterId     String?
+  patientId       String?
+  patientName     String
+  codingType      String   // icd10 | icd11 | cpt | snomed
+  primaryCode     String
+  primaryDescription String
+  secondaryCodes  String?  // JSON array
+  coderId         String?
+  coderName       String?
+  codingDate      DateTime @default(now())
+  claimId         String?
+  claimStatus     String?  // pending | submitted | approved | rejected | paid
+  claimAmount     Float?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([encounterId])
+  @@index([patientId])
+  @@index([claimStatus])
+}
+
+// ---------------------------------------------------------------------
+// COMMUNITY HEALTH — outreach events
+// ---------------------------------------------------------------------
+model CommunityOutreach {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  eventNumber     String   @unique
+  eventType       String   // vaccination | screening | health_education | community_clinic | sanitation
+  title           String
+  description     String?
+  location        String
+  region          String?
+  startDate       DateTime
+  endDate         DateTime?
+  status          String   @default("planned") // planned | ongoing | completed | cancelled
+  targetPopulation Int?
+  participantsReached Int @default(0)
+  servicesProvided String? // JSON array
+  teamLeadId      String?
+  teamLeadName    String?
+  teamMembers     String?
+  budget          Float?
+  spentAmount     Float?
+  outcomes        String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([eventType, status])
+  @@index([startDate])
+}
+
+// ---------------------------------------------------------------------
+// HOME CARE SERVICES
+// ---------------------------------------------------------------------
+model HomeCareVisit {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  visitNumber     String   @unique
+  patientId       String?
+  patientName     String
+  patientAge      Int?
+  patientSex      String?
+  patientAddress  String
+  patientPhone    String?
+  visitType       String   // nursing | physiotherapy | medical_review | palliative | postnatal | chronic_disease
+  scheduledAt     DateTime
+  arrivedAt       DateTime?
+  departedAt      DateTime?
+  durationMins    Int?
+  caregiverId     String?
+  caregiverName   String?
+  careProvided    String?
+  vitalsRecorded  String?  // JSON
+  medicationsGiven String?
+  instructions    String?
+  nextVisitDate   DateTime?
+  status          String   @default("scheduled") // scheduled | completed | cancelled | no_show
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([status, scheduledAt])
+}
+
+// ---------------------------------------------------------------------
+// HISTOPATHOLOGY
+// ---------------------------------------------------------------------
+model HistopathologySpecimen {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  specimenNumber  String   @unique
+  patientId       String?
+  patientName     String
+  patientAge      Int?
+  patientSex      String?
+  encounterId     String?
+  specimenType    String   // biopsy | cytology | resection | fluid | tissue
+  specimenSite    String   // anatomical location
+  collectionMethod String? // excisional | incisional | needle | brush | scraping
+  collectedAt     DateTime @default(now())
+  fixedIn         String?  // formalin | other
+  clinicalHistory String?
+  requestingPhysicianId String?
+  requestingPhysicianName String?
+  grossExamination String?
+  microscopyFindings String?
+  diagnosis       String?
+  differentialDiagnosis String?
+  specialStains   String?
+  tumorType       String?
+  tumorGrade      String?
+  tumorStage      String?
+  marginsStatus   String?
+  pathologistId   String?
+  pathologistName String?
+  reportedAt      DateTime?
+  status          String   @default("received") // received | processing | sectioned | reported | signed_out
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// RECOVERY ROOM — post-op recovery tracking
+// ---------------------------------------------------------------------
+model RecoveryRoomRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  recordNumber    String   @unique
+  patientId       String?
+  patientName     String
+  theatreCaseId   String?
+  theatreCaseNumber String?
+  admissionId     String?
+  admittedAt      DateTime @default(now())
+  dischargedAt    DateTime?
+  aldergroveScore Int @default(0) // post-anesthesia recovery score
+  painScore       Int @default(0)
+  vitals          String? // JSON array of hourly readings
+  complications   String?
+  treatmentGiven  String?
+  destination     String? // ward | icu | home | theatre_return
+  status          String   @default("recovering") // recovering | recovered | transferred | complication
+  nurseId         String?
+  nurseName       String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// INTERNAL AUDIT — financial & operational audits
+// ---------------------------------------------------------------------
+model AuditFinding {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  findingNumber   String   @unique
+  auditType       String   // financial | operational | compliance | clinical | it
+  title           String
+  description     String
+  findingType     String   @default("observation") // observation | weakness | non_conformance | fraud
+  severity        String   @default("medium") // low | medium | high | critical
+  status          String   @default("open") // open | in_review | remediated | closed
+  auditorId       String?
+  auditorName     String?
+  auditedPeriod   String?
+  auditedDepartment String?
+  recommendation  String?
+  managementResponse String?
+  remediationPlan String?
+  remediationDueDate DateTime?
+  remediatedAt    DateTime?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([auditType, status])
+  @@index([severity])
+}

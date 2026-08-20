@@ -63,6 +63,18 @@ import { InsuranceProvidersAdminView } from "@/components/views/admin/insurance-
 import { SystemSettingsView } from "@/components/views/admin/system-settings-view";
 import type { ViewKey } from "@/stores/app-store";
 
+// Extended module views
+import { MortuaryView } from "@/components/views/extended/mortuary-view";
+import {
+  BloodDonorsView, BloodUnitsView, BloodTransfusionsView,
+  TheatreView, CriticalCareView, SpecialtyClinicsView,
+  SupportServicesView, PatientRelationsView, QualityAssuranceView,
+  RiskManagementView, LegalComplianceView, ResearchView,
+  PublicRelationsView, ITSupportView, CodingClaimsView,
+  CommunityHealthView, HomeCareView, HistopathologyView,
+  RecoveryRoomView, InternalAuditView,
+} from "@/components/views/extended";
+
 const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   dashboard: DashboardView,
   records_desk: RecordsDeskView,
@@ -123,6 +135,28 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   settings_medications: MedicationsAdminView,
   settings_insurance_providers: InsuranceProvidersAdminView,
   settings_system: SystemSettingsView,
+  // Extended modules
+  mortuary: MortuaryView,
+  blood_donors: BloodDonorsView,
+  blood_units: BloodUnitsView,
+  blood_transfusions: BloodTransfusionsView,
+  theatre: TheatreView,
+  critical_care: CriticalCareView,
+  specialty_clinics: SpecialtyClinicsView,
+  support_services: SupportServicesView,
+  patient_relations: PatientRelationsView,
+  quality_assurance: QualityAssuranceView,
+  risk_management: RiskManagementView,
+  legal_compliance: LegalComplianceView,
+  research: ResearchView,
+  public_relations: PublicRelationsView,
+  it_support: ITSupportView,
+  coding_claims: CodingClaimsView,
+  community_health: CommunityHealthView,
+  home_care: HomeCareView,
+  histopathology: HistopathologyView,
+  recovery_room: RecoveryRoomView,
+  internal_audit: InternalAuditView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
@@ -184,6 +218,28 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   settings_medications: "settings.view",
   settings_insurance_providers: "settings.view",
   settings_system: "settings.view",
+  // Extended modules
+  mortuary: "mortuary.view",
+  blood_donors: "bloodbank.view",
+  blood_units: "bloodbank.view",
+  blood_transfusions: "bloodbank.view",
+  theatre: "theatre.view",
+  critical_care: "critical_care.view",
+  specialty_clinics: "specialty.view",
+  support_services: "support_services.view",
+  patient_relations: "patient_relations.view",
+  quality_assurance: "qa.view",
+  risk_management: "risk.view",
+  legal_compliance: "legal.view",
+  research: "research.view",
+  public_relations: "pr.view",
+  it_support: "it.view",
+  coding_claims: "coding.view",
+  community_health: "community_health.view",
+  home_care: "home_care.view",
+  histopathology: "histopathology.view",
+  recovery_room: "recovery.view",
+  internal_audit: "audit.view",
 };
 
 export function ViewRenderer({ view }: { view: ViewKey }) {

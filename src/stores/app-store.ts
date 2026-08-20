@@ -63,7 +63,29 @@ export type ViewKey =
   | "opd"
   | "ward_rounds"
   | "intake_output"
-  | "department_dashboard";
+  | "department_dashboard"
+  // Extended modules
+  | "mortuary"
+  | "blood_donors"
+  | "blood_units"
+  | "blood_transfusions"
+  | "theatre"
+  | "critical_care"
+  | "specialty_clinics"
+  | "support_services"
+  | "patient_relations"
+  | "quality_assurance"
+  | "risk_management"
+  | "legal_compliance"
+  | "research"
+  | "public_relations"
+  | "it_support"
+  | "coding_claims"
+  | "community_health"
+  | "home_care"
+  | "histopathology"
+  | "recovery_room"
+  | "internal_audit";
 
 type AppState = {
   view: ViewKey;
@@ -179,6 +201,37 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "settings_medications", label: "Medications", icon: "Pill", permission: "settings.view", category: "Administration" },
   { key: "settings_insurance_providers", label: "Insurance Providers", icon: "Building", permission: "settings.view", category: "Administration" },
   { key: "settings_system", label: "System Settings", icon: "Settings", permission: "settings.view", category: "Administration" },
+
+  // Extended Clinical — Specialty & Critical Care
+  { key: "specialty_clinics", label: "Specialty Clinics", icon: "Stethoscope", permission: "specialty.view", category: "Specialty Clinics" },
+  { key: "theatre", label: "Operating Theatre", icon: "Scissors", permission: "theatre.view", category: "Specialty Clinics" },
+  { key: "recovery_room", label: "Recovery Room", icon: "BedDouble", permission: "recovery.view", category: "Specialty Clinics" },
+  { key: "critical_care", label: "ICU / NICU", icon: "Activity", permission: "critical_care.view", category: "Specialty Clinics" },
+  { key: "histopathology", label: "Histopathology", icon: "Microscope", permission: "histopathology.view", category: "Specialty Clinics" },
+
+  // Blood Bank
+  { key: "blood_donors", label: "Blood Donors", icon: "HeartPulse", permission: "bloodbank.view", category: "Blood Bank" },
+  { key: "blood_units", label: "Blood Units", icon: "Droplet", permission: "bloodbank.view", category: "Blood Bank" },
+  { key: "blood_transfusions", label: "Transfusions", icon: "Syringe", permission: "bloodbank.view", category: "Blood Bank" },
+
+  // Support Services
+  { key: "support_services", label: "Support Services", icon: "Sparkles", permission: "support_services.view", category: "Support Services" },
+  { key: "mortuary", label: "Mortuary", icon: "Skull", permission: "mortuary.view", category: "Support Services" },
+  { key: "home_care", label: "Home Care", icon: "Home", permission: "home_care.view", category: "Support Services" },
+  { key: "community_health", label: "Community Health", icon: "Users", permission: "community_health.view", category: "Support Services" },
+
+  // Governance & Quality
+  { key: "patient_relations", label: "Patient Relations", icon: "MessageSquare", permission: "patient_relations.view", category: "Governance" },
+  { key: "quality_assurance", label: "Quality Assurance", icon: "ClipboardCheck", permission: "qa.view", category: "Governance" },
+  { key: "risk_management", label: "Risk Management", icon: "AlertTriangle", permission: "risk.view", category: "Governance" },
+  { key: "legal_compliance", label: "Legal & Compliance", icon: "Scale", permission: "legal.view", category: "Governance" },
+  { key: "internal_audit", label: "Internal Audit", icon: "ScrollText", permission: "audit.view", category: "Governance" },
+  { key: "research", label: "Research & Studies", icon: "FlaskConical", permission: "research.view", category: "Governance" },
+  { key: "public_relations", label: "Public Relations", icon: "Megaphone", permission: "pr.view", category: "Governance" },
+
+  // IT & Coding
+  { key: "it_support", label: "IT Support", icon: "Server", permission: "it.view", category: "IT & Coding" },
+  { key: "coding_claims", label: "Coding & Claims", icon: "FileText", permission: "coding.view", category: "IT & Coding" },
 ];
 
 export const NAV_CATEGORIES = [
@@ -191,4 +244,9 @@ export const NAV_CATEGORIES = [
   "Human Resources",
   "Operations",
   "Administration",
+  "Specialty Clinics",
+  "Blood Bank",
+  "Support Services",
+  "Governance",
+  "IT & Coding",
 ];
