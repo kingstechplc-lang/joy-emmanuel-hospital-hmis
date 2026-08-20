@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyHistopathologySpecimenCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "HISTOPATHOLOGY_SPECIMEN_CREATED",
     resourceType: "histopathologySpecimen",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to histopathology staff
+  await notifyHistopathologySpecimenCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    specimenNumber: item.specimenNumber,
+    patientName: item.patientName,
+    specimenType: item.specimenType,
+    specimenSite: item.specimenSite,
+    specimenId: item.id,
+    requestingPhysicianId: item.requestingPhysicianId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

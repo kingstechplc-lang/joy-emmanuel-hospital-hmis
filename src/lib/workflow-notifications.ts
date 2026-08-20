@@ -627,3 +627,316 @@ export async function notifyHomeCareVisitScheduled(opts: {
     directRecipientIds: opts.caregiverId ? [opts.caregiverId] : [],
   });
 }
+
+// =====================================================================
+// ADDITIONAL HELPERS — for the remaining extended modules
+// =====================================================================
+
+export async function notifyBloodTransfusionStarted(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  transfusionNumber: string;
+  patientName: string;
+  bloodGroup: string;
+  volumeMl: number;
+  transfusionId: string;
+  administeredById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "blood_transfusion_started",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🩸 Transfusion Started: ${opts.transfusionNumber}`,
+    message: `${opts.bloodGroup} (${opts.volumeMl}ml) for ${opts.patientName}. Monitor for reactions.`,
+    referenceType: "blood_transfusion",
+    referenceId: opts.transfusionId,
+    directRecipientIds: opts.administeredById ? [opts.administeredById] : [],
+    priority: "high",
+  });
+}
+
+export async function notifyBloodTransfusionCompleted(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  transfusionNumber: string;
+  patientName: string;
+  reactionObserved: boolean;
+  transfusionId: string;
+  administeredById?: string;
+}) {
+  const reactionTag = opts.reactionObserved ? " ⚠️ REACTION OBSERVED" : "";
+  return sendWorkflowNotification({
+    event: "blood_transfusion_completed",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🩸 Transfusion Completed: ${opts.transfusionNumber}${reactionTag}`,
+    message: `Transfusion for ${opts.patientName} completed.${opts.reactionObserved ? " Reaction was observed — review details." : " No reactions."}`,
+    referenceType: "blood_transfusion",
+    referenceId: opts.transfusionId,
+    directRecipientIds: opts.administeredById ? [opts.administeredById] : [],
+    priority: opts.reactionObserved ? "critical" : "normal",
+  });
+}
+
+export async function notifyBloodUnitIssued(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  unitNumber: string;
+  bloodGroup: string;
+  patientName: string;
+  unitId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "blood_unit_issued",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🩸 Blood Unit Issued: ${opts.unitNumber}`,
+    message: `${opts.bloodGroup} unit issued to ${opts.patientName}. Confirm crossmatch before transfusion.`,
+    referenceType: "blood_unit",
+    referenceId: opts.unitId,
+    priority: "high",
+  });
+}
+
+export async function notifySpecialtyEncounterCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  encounterNumber: string;
+  patientName: string;
+  departmentCode: string;
+  chiefComplaint: string;
+  encounterId: string;
+  clinicianId?: string;
+}) {
+  const specialtyLabel = opts.departmentCode.replace(/_/g, " ");
+  return sendWorkflowNotification({
+    event: "theatre_case_scheduled", // reuse a general "specialty booking" channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🩺 ${specialtyLabel} Encounter: ${opts.encounterNumber}`,
+    message: `${opts.patientName} — ${opts.chiefComplaint.slice(0, 100)}`,
+    referenceType: "specialty_encounter",
+    referenceId: opts.encounterId,
+    directRecipientIds: opts.clinicianId ? [opts.clinicianId] : [],
+  });
+}
+
+export async function notifyHistopathologySpecimenCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  specimenNumber: string;
+  patientName: string;
+  specimenType: string;
+  specimenSite: string;
+  specimenId: string;
+  requestingPhysicianId?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "lab_order_created", // histopathology flows through lab-style workflow
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🔬 Histopathology Specimen: ${opts.specimenNumber}`,
+    message: `${opts.specimenType} from ${opts.specimenSite} — ${opts.patientName}. Awaiting processing.`,
+    referenceType: "histopathology_specimen",
+    referenceId: opts.specimenId,
+    directRecipientIds: opts.requestingPhysicianId ? [opts.requestingPhysicianId] : [],
+  });
+}
+
+export async function notifyCodingRecordCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  patientName: string;
+  codingType: string;
+  primaryCode: string;
+  primaryDescription: string;
+  codingId: string;
+  coderId?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "it_ticket_created", // reuse a generic "coding/claims" channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📝 Coding Record: ${opts.codingType.toUpperCase()} ${opts.primaryCode}`,
+    message: `${opts.patientName} — ${opts.primaryDescription.slice(0, 100)}`,
+    referenceType: "coding_record",
+    referenceId: opts.codingId,
+    directRecipientIds: opts.coderId ? [opts.coderId] : [],
+  });
+}
+
+export async function notifyCommunityOutreachScheduled(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  eventNumber: string;
+  eventType: string;
+  title: string;
+  location: string;
+  startDate: string;
+  eventId: string;
+  teamLeadId?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "community_outreach_scheduled",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🌍 Community Outreach: ${opts.eventNumber}`,
+    message: `${opts.eventType.replace(/_/g, " ")} — ${opts.title} at ${opts.location} on ${new Date(opts.startDate).toLocaleString()}`,
+    referenceType: "community_outreach",
+    referenceId: opts.eventId,
+    directRecipientIds: opts.teamLeadId ? [opts.teamLeadId] : [],
+  });
+}
+
+export async function notifyQualityIndicatorCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  indicatorCode: string;
+  indicatorName: string;
+  category: string;
+  target: string;
+  indicatorId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "quality_indicator_breach",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📊 Quality Indicator: ${opts.indicatorCode}`,
+    message: `${opts.indicatorName} (${opts.category}) — Target: ${opts.target}`,
+    referenceType: "quality_indicator",
+    referenceId: opts.indicatorId,
+  });
+}
+
+export async function notifyRiskRegisterCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  riskNumber: string;
+  riskTitle: string;
+  riskCategory: string;
+  likelihood: string;
+  impact: string;
+  riskId: string;
+  ownerId?: string;
+}) {
+  const priority = opts.likelihood === "high" && opts.impact === "critical" ? "critical"
+    : opts.likelihood === "high" || opts.impact === "critical" ? "high"
+    : "normal";
+  return sendWorkflowNotification({
+    event: "risk_register_updated",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `⚠️ Risk Registered: ${opts.riskNumber}`,
+    message: `${opts.riskTitle} — ${opts.riskCategory} [L:${opts.likelihood} I:${opts.impact}]`,
+    referenceType: "risk_register",
+    referenceId: opts.riskId,
+    directRecipientIds: opts.ownerId ? [opts.ownerId] : [],
+    priority: priority as any,
+  });
+}
+
+export async function notifyLegalCaseCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  caseNumber: string;
+  caseType: string;
+  title: string;
+  priority: string;
+  caseId: string;
+  assignedAttorney?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "risk_register_updated", // legal matters flow through the risk/governance channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `⚖️ Legal Case: ${opts.caseNumber}`,
+    message: `${opts.caseType} — ${opts.title} [${opts.priority.toUpperCase()}]${opts.assignedAttorney ? ` — Attorney: ${opts.assignedAttorney}` : ""}`,
+    referenceType: "legal_case",
+    referenceId: opts.caseId,
+    priority: opts.priority === "high" ? "high" : "normal",
+  });
+}
+
+export async function notifyResearchStudyCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  studyNumber: string;
+  studyTitle: string;
+  studyType: string;
+  principalInvestigator: string;
+  studyId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "it_ticket_created", // research flows through governance/research channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🔬 Research Study: ${opts.studyNumber}`,
+    message: `${opts.studyType} — ${opts.studyTitle} (PI: ${opts.principalInvestigator})`,
+    referenceType: "research_study",
+    referenceId: opts.studyId,
+  });
+}
+
+export async function notifyPRActivityCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  activityNumber: string;
+  activityType: string;
+  title: string;
+  status: string;
+  activityId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "it_ticket_created", // PR activities flow through the governance channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📢 PR Activity: ${opts.activityNumber}`,
+    message: `${opts.activityType.replace(/_/g, " ")} — ${opts.title} [${opts.status}]`,
+    referenceType: "pr_activity",
+    referenceId: opts.activityId,
+  });
+}
+
+export async function notifyRecoveryRoomAdmitted(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  recordNumber: string;
+  patientName: string;
+  theatreCaseNumber?: string;
+  recoveryId: string;
+  nurseId?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "theatre_case_completed", // recovery flows through the theatre/recovery channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🛏️ Recovery Room: ${opts.recordNumber}`,
+    message: `${opts.patientName} admitted to recovery${opts.theatreCaseNumber ? ` (from ${opts.theatreCaseNumber})` : ""}. Monitor vitals.`,
+    referenceType: "recovery_room_record",
+    referenceId: opts.recoveryId,
+    directRecipientIds: opts.nurseId ? [opts.nurseId] : [],
+  });
+}
+
+export async function notifyAuditFindingCreated(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  findingNumber: string;
+  auditType: string;
+  title: string;
+  severity: string;
+  findingId: string;
+  auditorId?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "risk_register_updated", // audit findings flow through governance channel
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📜 Audit Finding: ${opts.findingNumber}`,
+    message: `${opts.auditType} — ${opts.title} [${opts.severity.toUpperCase()}]`,
+    referenceType: "audit_finding",
+    referenceId: opts.findingId,
+    directRecipientIds: opts.auditorId ? [opts.auditorId] : [],
+    priority: opts.severity === "critical" ? "critical" : opts.severity === "high" ? "high" : "normal",
+  });
+}

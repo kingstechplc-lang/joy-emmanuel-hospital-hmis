@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyQualityIndicatorCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,17 @@ export async function POST(req: Request) {
     action: "QUALITY_INDICATOR_CREATED",
     resourceType: "qualityIndicator",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to QA staff
+  await notifyQualityIndicatorCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    indicatorCode: item.indicatorCode,
+    indicatorName: item.indicatorName,
+    category: item.category || "general",
+    target: item.target || "—",
+    indicatorId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

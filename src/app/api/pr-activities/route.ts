@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyPRActivityCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,17 @@ export async function POST(req: Request) {
     action: "PR_ACTIVITY_CREATED",
     resourceType: "pRActivity",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to PR staff
+  await notifyPRActivityCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    activityNumber: item.activityNumber,
+    activityType: item.activityType,
+    title: item.title,
+    status: item.status,
+    activityId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

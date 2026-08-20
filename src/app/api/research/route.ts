@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyResearchStudyCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,17 @@ export async function POST(req: Request) {
     action: "RESEARCH_STUDY_CREATED",
     resourceType: "researchStudy",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to research staff
+  await notifyResearchStudyCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    studyNumber: item.studyNumber,
+    studyTitle: item.studyTitle,
+    studyType: item.studyType || "observational",
+    principalInvestigator: item.principalInvestigator || "—",
+    studyId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

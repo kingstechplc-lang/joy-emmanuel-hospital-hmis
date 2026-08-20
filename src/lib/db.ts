@@ -4,6 +4,36 @@
 import { config } from 'dotenv';
 config({ path: '.env', override: true });
 
+// Belt-and-suspenders: explicitly read .env and override process.env
+// in case dotenv's override doesn't fully work in some environments.
+import * as fs from 'fs';
+import * as path from 'path';
+
+try {
+  const envPath = path.join(process.cwd(), '.env');
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      let value = trimmed.slice(eqIdx + 1).trim();
+      // Strip surrounding quotes (single or double)
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (key && value) {
+        process.env[key] = value;
+      }
+    }
+  }
+} catch {
+  // Silent fail — don't break the app
+}
+
 import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = globalThis as unknown as {

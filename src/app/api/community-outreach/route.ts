@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyCommunityOutreachScheduled } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,19 @@ export async function POST(req: Request) {
     action: "COMMUNITY_OUTREACH_CREATED",
     resourceType: "communityOutreach",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to community health staff
+  await notifyCommunityOutreachScheduled({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    eventNumber: item.eventNumber,
+    eventType: item.eventType,
+    title: item.title,
+    location: item.location,
+    startDate: item.startDate,
+    eventId: item.id,
+    teamLeadId: item.teamLeadId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyBloodTransfusionStarted } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "BLOOD_TRANSFUSION_CREATED",
     resourceType: "bloodTransfusion",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification — transfusion started
+  await notifyBloodTransfusionStarted({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    transfusionNumber: item.transfusionNumber,
+    patientName: item.patientName,
+    bloodGroup: item.bloodGroup,
+    volumeMl: item.volumeMl,
+    transfusionId: item.id,
+    administeredById: item.administeredById || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

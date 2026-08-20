@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyBloodTransfusionCompleted } from "@/lib/workflow-notifications";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
@@ -58,6 +59,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     oldValues: existing,
     newValues: updateData,
   });
+
+  // 🔔 If status changed to completed or aborted, fire notification
+  const oldStatus = (existing as any).status;
+  const newStatus = (updated as any).status;
+  if (newStatus && newStatus !== oldStatus && (newStatus === "completed" || newStatus === "aborted")) {
+    if (newStatus === "completed") {
+      await notifyBloodTransfusionCompleted({
+        organizationId: session.user.organizationId,
+        facilityId: existing.facilityId,
+        transfusionNumber: existing.transfusionNumber,
+        patientName: existing.patientName,
+        reactionObserved: !!(updated as any).reactionObserved,
+        transfusionId: id,
+        administeredById: (updated as any).administeredById || undefined,
+      });
+    }
+  }
 
   return NextResponse.json({ item: updated });
 }

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyLegalCaseCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "LEGAL_CASE_CREATED",
     resourceType: "legalCase",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to legal/governance staff
+  await notifyLegalCaseCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    caseNumber: item.caseNumber,
+    caseType: item.caseType,
+    title: item.title,
+    priority: item.priority || "medium",
+    caseId: item.id,
+    assignedAttorney: item.assignedAttorney || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

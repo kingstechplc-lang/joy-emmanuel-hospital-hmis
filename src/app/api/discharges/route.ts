@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyDischargeInitiated } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -147,6 +148,16 @@ export async function POST(req: Request) {
         disposition: disposition || "home",
         finalDiagnosis,
       },
+    });
+
+    // 🔔 Notify billing + records + clinical staff that patient was discharged
+    await notifyDischargeInitiated({
+      organizationId: session.user.organizationId,
+      facilityId: result.admission.facilityId,
+      patientName: result.patient ? `${result.patient.firstName} ${result.patient.lastName}` : "Unknown",
+      admissionId,
+      dischargeId: result.id,
+      wardName: undefined,
     });
 
     return NextResponse.json({ item: result }, { status: 201 });

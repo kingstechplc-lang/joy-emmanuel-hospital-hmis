@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyRecoveryRoomAdmitted } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,17 @@ export async function POST(req: Request) {
     action: "RECOVERY_RECORD_CREATED",
     resourceType: "recoveryRoomRecord",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to recovery room staff
+  await notifyRecoveryRoomAdmitted({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    recordNumber: item.recordNumber,
+    patientName: item.patientName,
+    theatreCaseNumber: item.theatreCaseNumber || undefined,
+    recoveryId: item.id,
+    nurseId: item.nurseId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

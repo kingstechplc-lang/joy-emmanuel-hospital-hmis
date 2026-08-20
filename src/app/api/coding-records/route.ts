@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyCodingRecordCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -107,6 +108,18 @@ export async function POST(req: Request) {
     action: "CODING_RECORD_CREATED",
     resourceType: "codingRecord",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to coding/claims staff
+  await notifyCodingRecordCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    patientName: item.patientName,
+    codingType: item.codingType,
+    primaryCode: item.primaryCode,
+    primaryDescription: item.primaryDescription,
+    codingId: item.id,
+    coderId: session.user.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifySpecialtyEncounterCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "SPECIALTY_ENCOUNTER_CREATED",
     resourceType: "specialtyEncounter",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to specialty clinicians
+  await notifySpecialtyEncounterCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    encounterNumber: item.encounterNumber,
+    patientName: item.patientName,
+    departmentCode: item.departmentCode,
+    chiefComplaint: item.chiefComplaint,
+    encounterId: item.id,
+    clinicianId: item.clinicianId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

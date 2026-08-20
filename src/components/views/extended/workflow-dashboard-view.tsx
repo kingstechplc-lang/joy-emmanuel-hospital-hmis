@@ -39,11 +39,22 @@ const TYPE_LABELS: Record<string, { label: string; color: string; icon: string }
   theatre_case_started: { label: "Surgery Started", color: "bg-amber-50 text-amber-700 border-amber-200", icon: "🔪" },
   theatre_case_completed: { label: "Surgery Completed", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "🔪" },
   critical_care_admitted: { label: "ICU Admission", color: "bg-rose-50 text-rose-700 border-rose-200", icon: "🚨" },
+  blood_unit_reserved: { label: "Blood Unit", color: "bg-rose-50 text-rose-700 border-rose-200", icon: "🩸" },
+  blood_unit_issued: { label: "Blood Issued", color: "bg-rose-50 text-rose-700 border-rose-200", icon: "🩸" },
+  blood_transfusion_started: { label: "Transfusion Started", color: "bg-rose-50 text-rose-700 border-rose-200", icon: "🩸" },
+  blood_transfusion_completed: { label: "Transfusion Done", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "🩸" },
   mortuary_admission: { label: "Mortuary", color: "bg-slate-50 text-slate-700 border-slate-200", icon: "🪦" },
   service_request_created: { label: "Service Request", color: "bg-teal-50 text-teal-700 border-teal-200", icon: "📋" },
+  service_request_assigned: { label: "Service Assigned", color: "bg-cyan-50 text-cyan-700 border-cyan-200", icon: "📋" },
+  service_request_completed: { label: "Service Done", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "📋" },
   patient_feedback_received: { label: "Patient Feedback", color: "bg-blue-50 text-blue-700 border-blue-200", icon: "💬" },
+  patient_feedback_resolved: { label: "Feedback Resolved", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "💬" },
+  quality_indicator_breach: { label: "Quality Indicator", color: "bg-amber-50 text-amber-700 border-amber-200", icon: "📊" },
+  risk_register_updated: { label: "Risk / Legal / Audit", color: "bg-amber-50 text-amber-700 border-amber-200", icon: "⚠️" },
   it_ticket_created: { label: "IT Ticket", color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "💻" },
+  it_ticket_resolved: { label: "IT Resolved", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "💻" },
   home_care_visit_scheduled: { label: "Home Care", color: "bg-amber-50 text-amber-700 border-amber-200", icon: "🏠" },
+  community_outreach_scheduled: { label: "Community Outreach", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "🌍" },
 };
 
 export function WorkflowDashboardView() {

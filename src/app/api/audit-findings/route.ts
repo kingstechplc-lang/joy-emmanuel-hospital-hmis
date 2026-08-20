@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyAuditFindingCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "AUDIT_FINDING_CREATED",
     resourceType: "auditFinding",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to audit/governance staff
+  await notifyAuditFindingCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    findingNumber: item.findingNumber,
+    auditType: item.auditType,
+    title: item.title,
+    severity: item.severity,
+    findingId: item.id,
+    auditorId: session.user.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

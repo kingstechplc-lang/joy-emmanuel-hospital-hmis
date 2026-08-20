@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { sendWorkflowNotification } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,17 @@ export async function POST(req: Request) {
     action: "BLOOD_DONOR_CREATED",
     resourceType: "bloodDonor",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to blood bank staff
+  await sendWorkflowNotification({
+    event: "blood_unit_reserved",
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    title: `🩸 New Donor Registered: ${item.donorNumber}`,
+    message: `${item.fullName} — Blood Group: ${item.bloodGroup || "Unknown"}`,
+    referenceType: "blood_donor",
+    referenceId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

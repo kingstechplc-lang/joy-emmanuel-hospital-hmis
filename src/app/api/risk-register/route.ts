@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyRiskRegisterCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,19 @@ export async function POST(req: Request) {
     action: "RISK_REGISTER_CREATED",
     resourceType: "riskRegister",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to risk/governance staff
+  await notifyRiskRegisterCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    riskNumber: item.riskNumber,
+    riskTitle: item.riskTitle,
+    riskCategory: item.riskCategory || "operational",
+    likelihood: item.likelihood || "medium",
+    impact: item.impact || "medium",
+    riskId: item.id,
+    ownerId: item.ownerId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });
