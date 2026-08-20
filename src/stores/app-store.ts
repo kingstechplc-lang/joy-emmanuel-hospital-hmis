@@ -85,7 +85,8 @@ export type ViewKey =
   | "home_care"
   | "histopathology"
   | "recovery_room"
-  | "internal_audit";
+  | "internal_audit"
+  | "workflow_dashboard";
 
 type AppState = {
   view: ViewKey;
@@ -137,6 +138,7 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", category: "Overview" },
+  { key: "workflow_dashboard", label: "Workflow & Notifications", icon: "BellRing", category: "Overview" },
   { key: "records_desk", label: "Records Desk", icon: "ClipboardCheck", permission: "patient.view", category: "Clinical" },
   { key: "opd", label: "Outpatient (OPD)", icon: "Stethoscope", permission: "encounter.view", category: "Clinical" },
   { key: "patients", label: "Patients", icon: "Users", permission: "patient.view", category: "Clinical" },

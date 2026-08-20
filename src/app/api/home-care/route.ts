@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyHomeCareVisitScheduled } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "HOME_CARE_VISIT_CREATED",
     resourceType: "homeCareVisit",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to home care staff
+  await notifyHomeCareVisitScheduled({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    visitNumber: item.visitNumber,
+    patientName: item.patientName,
+    visitType: item.visitType,
+    scheduledAt: item.scheduledAt,
+    visitId: item.id,
+    caregiverId: item.caregiverId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

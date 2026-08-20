@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission, nextAdmissionNumber, nextEncounterNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyAdmissionCreated } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -191,6 +192,21 @@ export async function POST(req: Request) {
         bedAssignments: { where: { status: "active" }, include: { bed: true, ward: true } },
       },
     });
+
+    // 🔔 Fire workflow notification to ward/nursing staff
+    if (fullAdmission) {
+      const activeBed = fullAdmission.bedAssignments[0];
+      await notifyAdmissionCreated({
+        organizationId: session.user.organizationId,
+        facilityId,
+        admissionNumber: fullAdmission.admissionNumber,
+        patientName: `${fullAdmission.patient.firstName} ${fullAdmission.patient.lastName}`,
+        wardName: activeBed?.ward?.name || "Ward",
+        bedNumber: activeBed?.bed?.bedNumber,
+        admissionId: fullAdmission.id,
+        admittingDoctorId: fullAdmission.admittedById || undefined,
+      });
+    }
 
     return NextResponse.json({ item: fullAdmission }, { status: 201 });
   } catch (e: any) {

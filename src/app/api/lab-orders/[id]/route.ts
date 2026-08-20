@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyLabResultReleased, sendWorkflowNotification } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -67,9 +68,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const existing = await db.labOrder.findUnique({
     where: { id },
-    include: { items: { include: { laboratoryTest: true } }, samples: true },
+    include: {
+      patient: { select: { id: true, firstName: true, lastName: true, patientNumber: true } },
+      items: { include: { laboratoryTest: true, results: true } },
+      samples: true,
+    },
   });
   if (!existing) return NextResponse.json({ error: "Lab order not found" }, { status: 404 });
+
+  const patientName = existing.patient ? `${existing.patient.firstName} ${existing.patient.lastName}` : "Unknown";
 
   // ---- COLLECT SAMPLE ----
   if (action === "collect") {
@@ -260,6 +267,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       newValues: { status: "verified", verifiedById: session.user.id },
     });
 
+    // 🔔 Notify lab staff that results are verified
+    await sendWorkflowNotification({
+      event: "lab_result_verified",
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      title: `🧪 Results Verified: ${existing.orderNumber}`,
+      message: `Lab results for ${patientName} have been verified. Ready for release.`,
+      referenceType: "lab_order",
+      referenceId: id,
+      excludeUserId: session.user.id,
+    });
+
     return NextResponse.json({ item: { ...existing, status: "verified" } });
   }
 
@@ -286,6 +305,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       resourceType: "lab_order",
       resourceId: id,
       newValues: { status: "released" },
+    });
+
+    // 🔔 Notify ordering clinician + clinical staff that results are released
+    const hasCritical = existing.items.some((it: any) =>
+      it.results?.some((r: any) => r.criticalFlag === true)
+    );
+    const hasAbnormal = existing.items.some((it: any) =>
+      it.results?.some((r: any) => r.abnormalFlag && r.abnormalFlag !== "normal")
+    );
+    await notifyLabResultReleased({
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      orderNumber: existing.orderNumber,
+      patientName,
+      orderId: id,
+      orderingClinicianId: existing.orderingClinicianId || undefined,
+      hasCritical,
+      hasAbnormal,
     });
 
     return NextResponse.json({ item: { ...existing, status: "released" } });

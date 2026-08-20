@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyImagingOrderCreated } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -132,6 +133,18 @@ export async function POST(req: Request) {
       priority,
       indication: indication || null,
     },
+  });
+
+  // 🔔 Fire workflow notification to radiology staff
+  await notifyImagingOrderCreated({
+    organizationId: session.user.organizationId,
+    facilityId,
+    orderNumber: order.id.slice(-8).toUpperCase(),
+    patientName: order.patient ? `${order.patient.firstName} ${order.patient.lastName}` : "Unknown",
+    modality: procedureCode || "Imaging",
+    studyType: procedureName,
+    orderId: order.id,
+    orderingClinicianId: session.user.id,
   });
 
   return NextResponse.json({ item: order }, { status: 201 });

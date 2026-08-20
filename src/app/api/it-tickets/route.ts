@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyItTicketCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "IT_TICKET_CREATED",
     resourceType: "iTTicket",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to IT support staff
+  await notifyItTicketCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    ticketNumber: item.ticketNumber,
+    ticketType: item.ticketType,
+    subject: item.subject,
+    priority: item.priority,
+    ticketId: item.id,
+    reportedById: session.user.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

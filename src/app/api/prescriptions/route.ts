@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission, nextPrescriptionNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyPrescriptionCreated } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -145,6 +146,21 @@ export async function POST(req: Request) {
       encounterId,
       itemCount: items.length,
     },
+  });
+
+  // 🔔 Fire workflow notification to pharmacy staff
+  const patForNotif = await db.patient.findUnique({
+    where: { id: patientId },
+    select: { firstName: true, lastName: true },
+  });
+  await notifyPrescriptionCreated({
+    organizationId: session.user.organizationId,
+    facilityId,
+    prescriptionNumber,
+    patientName: patForNotif ? `${patForNotif.firstName} ${patForNotif.lastName}` : "Unknown",
+    itemCount: items.length,
+    prescriberId: session.user.id,
+    prescriptionId: prescription.id,
   });
 
   return NextResponse.json({ item: prescription }, { status: 201 });

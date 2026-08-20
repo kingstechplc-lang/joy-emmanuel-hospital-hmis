@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyCriticalCareAdmitted } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,19 @@ export async function POST(req: Request) {
     action: "CRITICAL_CARE_CREATED",
     resourceType: "criticalCareAdmission",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to ICU/NICU staff
+  await notifyCriticalCareAdmitted({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    admissionNumber: item.admissionNumber,
+    patientName: item.patientName,
+    unitType: item.unitType,
+    diagnosis: item.admittingDiagnosis,
+    severity: item.severity || undefined,
+    criticalCareId: item.id,
+    attendingPhysicianId: item.attendingPhysicianId || undefined,
   });
 
   return NextResponse.json({ item }, { status: 201 });

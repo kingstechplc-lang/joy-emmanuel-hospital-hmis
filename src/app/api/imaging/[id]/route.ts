@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyImagingVerified } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -54,7 +55,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const existing = await db.imagingOrder.findUnique({
     where: { id },
-    include: { report: true },
+    include: {
+      report: true,
+      patient: { select: { firstName: true, lastName: true } },
+    },
   });
   if (!existing) return NextResponse.json({ error: "Imaging order not found" }, { status: 404 });
 
@@ -196,6 +200,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       oldValues: { status: existing.status },
       newValues: { status: "verified", verifiedById: session.user.id },
     });
+
+    // 🔔 Notify ordering clinician that imaging report is verified
+    await notifyImagingVerified({
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      orderNumber: existing.id.slice(-8).toUpperCase(),
+      patientName: existing.patient ? `${existing.patient.firstName} ${existing.patient.lastName}` : "Unknown",
+      orderId: id,
+      orderingClinicianId: existing.orderingClinicianId || undefined,
+    });
+
     return NextResponse.json({ item: updated });
   }
 

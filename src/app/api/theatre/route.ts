@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyTheatreCaseScheduled } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "THEATRE_CASE_CREATED",
     resourceType: "theatreCase",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to theatre staff
+  await notifyTheatreCaseScheduled({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    caseNumber: item.caseNumber,
+    patientName: item.patientName,
+    procedureName: item.procedureName,
+    scheduledStart: item.scheduledStart,
+    surgeonName: item.surgeonName || undefined,
+    theatreCaseId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

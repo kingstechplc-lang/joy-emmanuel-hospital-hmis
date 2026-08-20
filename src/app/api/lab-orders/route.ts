@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission, nextLabOrderNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyLabOrderCreated } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -155,6 +156,19 @@ export async function POST(req: Request) {
       testCodes: tests.map((t) => t.code),
       notes: notes || null,
     },
+  });
+
+  // 🔔 Fire workflow notification to lab staff
+  await notifyLabOrderCreated({
+    organizationId: session.user.organizationId,
+    facilityId,
+    orderNumber,
+    patientName: `${order.patient.firstName} ${order.patient.lastName}`,
+    testCount: tests.length,
+    testNames: tests.map((t) => t.name),
+    priority: priority || "routine",
+    orderingClinicianId: orderingClinicianId || session.user.id,
+    orderId: order.id,
   });
 
   return NextResponse.json({ item: order }, { status: 201 });

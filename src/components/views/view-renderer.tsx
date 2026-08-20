@@ -65,6 +65,7 @@ import type { ViewKey } from "@/stores/app-store";
 
 // Extended module views
 import { MortuaryView } from "@/components/views/extended/mortuary-view";
+import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import {
   BloodDonorsView, BloodUnitsView, BloodTransfusionsView,
   TheatreView, CriticalCareView, SpecialtyClinicsView,
@@ -77,6 +78,7 @@ import {
 
 const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   dashboard: DashboardView,
+  workflow_dashboard: WorkflowDashboardView,
   records_desk: RecordsDeskView,
   opd: OPDView,
   patients: PatientsView,

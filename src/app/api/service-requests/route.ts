@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyServiceRequestCreated } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,19 @@ export async function POST(req: Request) {
     action: "SERVICE_REQUEST_CREATED",
     resourceType: "serviceRequest",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to support services staff
+  await notifyServiceRequestCreated({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    requestNumber: item.requestNumber,
+    serviceType: item.serviceType,
+    title: item.title,
+    location: item.location || undefined,
+    priority: item.priority || undefined,
+    requestId: item.id,
+    requestedById: session.user.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

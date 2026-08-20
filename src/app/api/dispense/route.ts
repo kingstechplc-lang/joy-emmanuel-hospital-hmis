@@ -19,6 +19,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission, nextInvoiceNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyPrescriptionDispensed } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -257,6 +258,23 @@ export async function POST(req: Request) {
       invoiceId: result.invoice?.id || null,
     },
   });
+
+  // 🔔 Notify prescriber + clinical staff that prescription was dispensed
+  const fullRx = await db.prescription.findUnique({
+    where: { id: result.item.prescriptionId },
+    include: { patient: { select: { firstName: true, lastName: true } } },
+  });
+  if (fullRx) {
+    await notifyPrescriptionDispensed({
+      organizationId: session.user.organizationId,
+      facilityId: result.transaction.facilityId,
+      prescriptionNumber: fullRx.prescriptionNumber,
+      patientName: fullRx.patient ? `${fullRx.patient.firstName} ${fullRx.patient.lastName}` : "Unknown",
+      prescriptionId: fullRx.id,
+      prescriberId: fullRx.prescriberId || undefined,
+      partial: result.prescriptionStatus === "partially_dispensed",
+    });
+  }
 
   return NextResponse.json({ ...result }, { status: 201 });
 }

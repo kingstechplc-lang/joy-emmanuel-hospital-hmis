@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
+import { notifyPatientFeedbackReceived } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -110,6 +111,18 @@ export async function POST(req: Request) {
     action: "PATIENT_FEEDBACK_CREATED",
     resourceType: "patientFeedback",
     resourceId: item.id,
+  });
+
+  // 🔔 Fire workflow notification to patient relations staff
+  await notifyPatientFeedbackReceived({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    feedbackNumber: item.feedbackNumber,
+    feedbackType: item.feedbackType,
+    patientName: item.patientName,
+    subject: item.subject,
+    severity: item.severity || undefined,
+    feedbackId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyReferralMade } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -110,6 +111,19 @@ export async function POST(req: Request) {
     resourceType: "referral",
     resourceId: referral.id,
     newValues: { patientIdFrom, referringFacilityId, receivingFacilityId, urgency },
+  });
+
+  // 🔔 Fire workflow notification to receiving facility + clinical staff
+  await notifyReferralMade({
+    organizationId: session.user.organizationId,
+    facilityId: receivingFacilityId,
+    referralNumber: referral.id.slice(-8).toUpperCase(),
+    patientName: referral.patient ? `${referral.patient.firstName} ${referral.patient.lastName}` : "Unknown",
+    fromDepartment: referral.referringFacility?.name || "Referring facility",
+    toDepartment: referral.receivingFacility?.name || "Receiving facility",
+    reason: reason || "Clinical referral",
+    referralId: referral.id,
+    referredById: session.user.id,
   });
 
   return NextResponse.json({ item: referral }, { status: 201 });

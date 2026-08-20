@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyMortuaryAdmission } from "@/lib/workflow-notifications";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
@@ -128,6 +129,17 @@ export async function POST(req: Request) {
     resourceType: "mortuary_admission",
     resourceId: item.id,
     newValues: { admissionNumber, deceasedName, placeOfDeath: placeOfDeath || null },
+  });
+
+  // 🔔 Fire workflow notification to mortuary staff
+  await notifyMortuaryAdmission({
+    organizationId: session.user.organizationId,
+    facilityId: resolvedFacilityId,
+    admissionNumber,
+    deceasedName,
+    placeOfDeath: placeOfDeath || "unknown",
+    causeOfDeath: causeOfDeath || undefined,
+    mortuaryId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });
