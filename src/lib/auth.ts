@@ -93,17 +93,72 @@ export const authOptions: NextAuthOptions = {
     maxAge: 8 * 60 * 60, // 8 hours
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Initial sign-in: token comes from `user` returned by authorize()
       if (user) {
         token.id = (user as any).id;
         token.username = (user as any).username;
+        token.name = (user as any).name;
+        token.email = (user as any).email;
         token.roles = (user as any).roles || [];
         token.role = (user as any).role;
         token.organizationId = (user as any).organizationId;
         token.facilityId = (user as any).facilityId;
         token.departmentId = (user as any).departmentId;
         token.permissions = (user as any).permissions || [];
+        token.permsRefreshedAt = Date.now();
       }
+
+      // Always refresh permissions from DB if the token is older than 5 minutes
+      // OR if explicitly triggered (e.g., "updateSession" call from client)
+      const now = Date.now();
+      const lastRefresh = (token.permsRefreshedAt as number) || 0;
+      const fiveMins = 5 * 60 * 1000;
+      const shouldRefresh =
+        trigger === "update" ||
+        !token.permsRefreshedAt ||
+        now - lastRefresh > fiveMins;
+
+      if (shouldRefresh && token.id) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            include: {
+              userRoles: {
+                include: { role: { include: { permissions: { include: { permission: true } } } } },
+              },
+            },
+          });
+          if (dbUser) {
+            const roleCodes = dbUser.userRoles.map((ur) => ur.role.code);
+            const permSet = new Set<string>();
+
+            // 1. Pull perms from in-code ROLE_PERMISSIONS (covers all default roles)
+            for (const roleCode of roleCodes) {
+              const perms = ROLE_PERMISSIONS[roleCode] || [];
+              perms.forEach((p) => permSet.add(p as string));
+            }
+
+            // 2. Also pull DB-stored perms (covers custom roles + any DB-only changes)
+            for (const ur of dbUser.userRoles) {
+              for (const rp of ur.role.permissions) {
+                permSet.add(rp.permission.code);
+              }
+            }
+
+            token.roles = roleCodes;
+            token.role = roleCodes[0] || token.role;
+            token.facilityId = dbUser.userRoles.find((ur) => ur.facilityId)?.facilityId || token.facilityId;
+            token.departmentId = dbUser.userRoles.find((ur) => ur.departmentId)?.departmentId || token.departmentId;
+            token.permissions = Array.from(permSet);
+            token.permsRefreshedAt = now;
+          }
+        } catch (e) {
+          // Don't fail the request if refresh fails — keep using existing token
+          console.error("Failed to refresh permissions:", e);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
