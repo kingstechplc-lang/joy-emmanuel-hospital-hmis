@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/patient-feedback/[id]
-//   GET    — fetch single patient feedback
-//   PATCH  — update patient feedback
-//   DELETE — remove patient feedback
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

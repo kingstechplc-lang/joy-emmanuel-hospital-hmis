@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/quality-indicators/[id]
-//   GET    — fetch single quality indicator
-//   PATCH  — update quality indicator
-//   DELETE — remove quality indicator
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

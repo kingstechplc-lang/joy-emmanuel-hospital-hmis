@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/service-requests/[id]
-//   GET    — fetch single service request
-//   PATCH  — update service request
-//   DELETE — remove service request
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

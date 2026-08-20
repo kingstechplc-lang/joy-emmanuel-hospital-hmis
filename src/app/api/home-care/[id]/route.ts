@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/home-care/[id]
-//   GET    — fetch single home care visit
-//   PATCH  — update home care visit
-//   DELETE — remove home care visit
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

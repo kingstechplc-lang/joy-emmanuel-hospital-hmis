@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/blood-bank/transfusions/[id]
-//   GET    — fetch single transfusion
-//   PATCH  — update transfusion
-//   DELETE — remove transfusion
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

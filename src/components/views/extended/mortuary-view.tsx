@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Skull, Plus, Search, RefreshCcw, Eye, DoorOpen, UserX, Building2, Phone, FileText, AlertCircle } from "lucide-react";
+import { Skull, Plus, Search, RefreshCcw, Eye, DoorOpen, UserX, Building2, Phone, FileText, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
@@ -126,6 +126,42 @@ export function MortuaryView() {
 
   const items: any[] = data?.items || [];
 
+  // CSV Export for mortuary records
+  const handleExportCSV = () => {
+    if (!items.length) {
+      toast.error("No records to export");
+      return;
+    }
+    const headers = ["Admission #", "Body Tag", "Deceased Name", "Age", "Sex", "Date of Death", "Place of Death", "Cause", "Status", "Admitted At", "Released At", "Released To", "Next of Kin", "Source Facility"];
+    const rows = items.map((it) => [
+      it.admissionNumber || "",
+      it.bodyTag || "",
+      it.deceasedName || "",
+      it.deceasedAge || "",
+      it.deceasedSex || "",
+      it.dateOfDeath ? new Date(it.dateOfDeath).toISOString() : "",
+      it.placeOfDeath || "",
+      (it.causeOfDeath || "").replace(/"/g, '""'),
+      it.admissionStatus || "",
+      it.admittedAt ? new Date(it.admittedAt).toISOString() : "",
+      it.releasedAt ? new Date(it.releasedAt).toISOString() : "",
+      (it.releasedTo || "").replace(/"/g, '""'),
+      (it.nextOfKinName || "").replace(/"/g, '""'),
+      (it.sourceFacility || "").replace(/"/g, '""'),
+    ].map((v) => `"${v}"`).join(","));
+    const csv = [headers.map((h) => `"${h}"`).join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mortuary-records-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${items.length} records to CSV`);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -141,6 +177,9 @@ export function MortuaryView() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length}>
+            <Download className="w-4 h-4 mr-1" /> Export CSV
           </Button>
           {canManage && (
             <Button size="sm" onClick={() => setShowForm(true)}>

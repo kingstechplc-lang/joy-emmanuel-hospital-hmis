@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/histopathology/[id]
-//   GET    — fetch single histopathology specimen
-//   PATCH  — update histopathology specimen
-//   DELETE — remove histopathology specimen
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

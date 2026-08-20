@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/research/[id]
-//   GET    — fetch single research study
-//   PATCH  — update research study
-//   DELETE — remove research study
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

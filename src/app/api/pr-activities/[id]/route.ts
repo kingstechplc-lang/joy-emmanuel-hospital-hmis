@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/pr-activities/[id]
-//   GET    — fetch single PR activity
-//   PATCH  — update PR activity
-//   DELETE — remove PR activity
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

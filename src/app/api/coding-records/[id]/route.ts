@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/coding-records/[id]
-//   GET    — fetch single coding record
-//   PATCH  — update coding record
-//   DELETE — remove coding record
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

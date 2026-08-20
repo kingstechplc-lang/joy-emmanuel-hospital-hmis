@@ -11,17 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, RefreshCcw, Eye, Pencil, Trash2, AlertCircle, Filter } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Search, RefreshCcw, Eye, Pencil, Trash2, AlertCircle, Download, FileSpreadsheet, TrendingUp, Clock, CheckCircle2, XCircle, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 // =====================================================================
-// GENERIC EXTENDED MODULE VIEW
-// =====================================================================
-// Reusable component that renders a CRUD interface for any of the
-// extended modules (Blood Bank, Theatre, ICU, Specialty, etc.) using
-// a config-driven approach.
+// GENERIC EXTENDED MODULE VIEW — Full-featured CRUD with stats, export,
+// workflow actions, and tabbed detail panel.
 // =====================================================================
 
 export type FieldDef = {
@@ -31,15 +29,24 @@ export type FieldDef = {
   options?: { value: string; label: string }[];
   required?: boolean;
   placeholder?: string;
-  full?: boolean; // span full width
+  full?: boolean;
   hideInList?: boolean;
   hideInForm?: boolean;
+  group?: string; // for grouping fields in form
 };
 
 export type FilterDef = {
   param: string;
   label: string;
   options: { value: string; label: string }[];
+};
+
+export type WorkflowAction = {
+  fromStatus: string;
+  toStatus: string;
+  label: string;
+  icon?: any;
+  requireNote?: boolean;
 };
 
 export type ModuleConfig = {
@@ -58,6 +65,8 @@ export type ModuleConfig = {
   auditActionCreate: string;
   auditActionUpdate: string;
   accentColor?: string;
+  workflowActions?: WorkflowAction[];
+  statusField?: string; // which field is the "status" field for workflow
 };
 
 export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
@@ -77,6 +86,8 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
   const [editItem, setEditItem] = useState<any | null>(null);
   const [viewItem, setViewItem] = useState<any | null>(null);
   const [deleteItem, setDeleteItem] = useState<any | null>(null);
+  const [workflowTarget, setWorkflowTarget] = useState<{ item: any; action: WorkflowAction } | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
 
   const queryParams = useMemo(() => {
     const p = new URLSearchParams();
@@ -115,7 +126,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
       return res.json();
     },
     onSuccess: () => {
-      toast.success("Record created");
+      toast.success("Record created successfully");
       setShowForm(false);
       qc.invalidateQueries({ queryKey: [config.queryKey] });
     },
@@ -138,6 +149,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
     onSuccess: () => {
       toast.success("Record updated");
       setEditItem(null);
+      setViewItem(null);
       qc.invalidateQueries({ queryKey: [config.queryKey] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -160,6 +172,64 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Workflow mutation — advances status
+  const workflowMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await fetch(`/api/${config.apiPath}/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || "Failed");
+      }
+      return res.json();
+    },
+    onSuccess: (_d, vars) => {
+      const action = config.workflowActions?.find((a) => a.toStatus === vars.data[config.statusField || "status"]);
+      toast.success(`Status changed to: ${action?.label || vars.data[config.statusField || "status"]}`);
+      setWorkflowTarget(null);
+      qc.invalidateQueries({ queryKey: [config.queryKey] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // CSV Export
+  const handleExportCSV = () => {
+    if (!items.length) {
+      toast.error("No data to export");
+      return;
+    }
+    const headers = config.fields.filter((f) => !f.hideInList).map((f) => f.label);
+    const keys = config.fields.filter((f) => !f.hideInList).map((f) => f.name);
+    if (config.numberField) {
+      headers.unshift(config.numberField);
+      keys.unshift(config.numberField);
+    }
+    const rows = items.map((item) => {
+      return keys.map((k) => {
+        const v = item[k];
+        if (v === null || v === undefined) return "";
+        if (typeof v === "string" && (v.match(/^\d{4}-\d{2}-\d{2}/) || v.match(/^\d{4}-\d{2}-\d{2}T/))) {
+          try { return formatDate(v, true); } catch { return String(v); }
+        }
+        return `"${String(v).replace(/"/g, '""')}"`;
+      }).join(",");
+    });
+    const csv = [headers.map((h) => `"${h}"`).join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${config.viewKey}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${items.length} records to CSV`);
+  };
+
   if (!canView) {
     return (
       <Card>
@@ -173,6 +243,23 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
 
   const Icon = config.icon;
   const items: any[] = data?.items || [];
+
+  // Compute breakdown stats for each filter
+  const breakdowns = config.filters.map((f) => {
+    const counts: Record<string, number> = {};
+    items.forEach((i) => {
+      const v = i[f.param];
+      if (v) counts[v] = (counts[v] || 0) + 1;
+    });
+    return { filter: f, counts };
+  });
+
+  // Available workflow actions for an item
+  const getWorkflowActions = (item: any): WorkflowAction[] => {
+    if (!config.workflowActions || !config.statusField) return [];
+    const currentStatus = item[config.statusField];
+    return config.workflowActions.filter((a) => a.fromStatus === currentStatus);
+  };
 
   return (
     <div className="space-y-4">
@@ -188,6 +275,9 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
           </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length}>
+            <Download className="w-4 h-4 mr-1" /> Export CSV
+          </Button>
           {canManage && (
             <Button size="sm" onClick={() => setShowForm(true)}>
               <Plus className="w-4 h-4 mr-1" /> New Record
@@ -196,22 +286,25 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total" value={items.length} color="slate" />
-        {config.filters.slice(0, 3).map((f) => {
-          const counts: Record<string, number> = {};
-          items.forEach((i) => {
-            const v = i[f.param];
-            if (v) counts[v] = (counts[v] || 0) + 1;
-          });
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard
+          label="Total Records"
+          value={items.length}
+          icon={Activity}
+          color="slate"
+        />
+        {breakdowns.slice(0, 4).map(({ filter, counts }) => {
           const topEntry = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+          const totalForFilter = Object.values(counts).reduce((a, b) => a + b, 0);
           return (
             <StatCard
-              key={f.param}
-              label={`Top ${f.label}`}
+              key={filter.param}
+              label={`Top ${filter.label}`}
               value={topEntry ? topEntry[1] : 0}
               subValue={topEntry ? topEntry[0].replace(/_/g, " ") : "—"}
+              subLabel={`of ${totalForFilter} categorized`}
+              icon={TrendingUp}
               color="amber"
             />
           );
@@ -247,13 +340,36 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
               </SelectContent>
             </Select>
           ))}
+          <div className="ml-auto flex gap-1 border rounded-md p-0.5">
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              className="h-7"
+              onClick={() => setViewMode("list")}
+            >
+              List
+            </Button>
+            <Button
+              variant={viewMode === "cards" ? "default" : "ghost"}
+              size="sm"
+              className="h-7"
+              onClick={() => setViewMode("cards")}
+            >
+              Cards
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* List */}
+      {/* Records */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Records ({items.length})</CardTitle>
+          {items.length > 0 && (
+            <span className="text-xs text-slate-500">
+              Last updated {formatRelative(items[0].createdAt)}
+            </span>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -263,7 +379,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
           ) : items.length === 0 ? (
             <EmptyState
               title="No records yet"
-              description="Create your first record to get started."
+              description="Create your first record to get started. Records can be linked to patients, encounters, or admissions from other modules."
               icon={Icon}
               action={canManage ? (
                 <Button size="sm" onClick={() => setShowForm(true)}>
@@ -271,69 +387,36 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
                 </Button>
               ) : undefined}
             />
-          ) : (
+          ) : viewMode === "list" ? (
             <div className="space-y-2">
               {items.map((item) => (
-                <div
+                <RecordListItem
                   key={item.id}
-                  className="border border-slate-200 rounded-md p-3 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[200px]">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {config.numberField && item[config.numberField] && (
-                          <span className="font-mono text-xs text-slate-500">{item[config.numberField]}</span>
-                        )}
-                        {config.fields.slice(0, 1).map((f) => (
-                          <span key={f.name} className="font-medium text-slate-900">
-                            {item[f.name]}
-                          </span>
-                        ))}
-                        {config.filters.map((f) => {
-                          const v = item[f.param];
-                          if (!v) return null;
-                          return <StatusBadge key={f.param} status={v} />;
-                        })}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1 space-y-0.5">
-                        {config.fields
-                          .slice(1, 4)
-                          .filter((f) => !f.hideInList && item[f.name])
-                          .map((f) => (
-                            <div key={f.name}>
-                              <span className="text-slate-400">{f.label}:</span>{" "}
-                              <span className="text-slate-700">
-                                {f.type === "date" || f.type === "datetime-local"
-                                  ? formatDate(item[f.name], f.type === "datetime-local")
-                                  : String(item[f.name]).slice(0, 150)}
-                              </span>
-                            </div>
-                          ))}
-                        <div className="text-slate-400">Created {formatRelative(item.createdAt)}</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button variant="ghost" size="sm" onClick={() => setViewItem(item)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {canManage && (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={() => setEditItem(item)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteItem(item)}
-                            className="text-rose-600 hover:text-rose-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  item={item}
+                  config={config}
+                  canManage={canManage}
+                  onView={() => setViewItem(item)}
+                  onEdit={() => setEditItem(item)}
+                  onDelete={() => setDeleteItem(item)}
+                  workflowActions={getWorkflowActions(item)}
+                  onWorkflow={(action) => setWorkflowTarget({ item, action })}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {items.map((item) => (
+                <RecordCard
+                  key={item.id}
+                  item={item}
+                  config={config}
+                  canManage={canManage}
+                  onView={() => setViewItem(item)}
+                  onEdit={() => setEditItem(item)}
+                  onDelete={() => setDeleteItem(item)}
+                  workflowActions={getWorkflowActions(item)}
+                  onWorkflow={(action) => setWorkflowTarget({ item, action })}
+                />
               ))}
             </div>
           )}
@@ -363,40 +446,24 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         />
       )}
 
-      {/* View Dialog */}
+      {/* View Dialog with tabs */}
       {viewItem && (
-        <Dialog open onOpenChange={(o) => !o && setViewItem(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-700"}`} />
-                {viewItem[config.fields[0].name]}
-              </DialogTitle>
-              <DialogDescription>
-                {config.numberField && viewItem[config.numberField]
-                  ? `${viewItem[config.numberField]}`
-                  : `Record details`}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              {config.fields.map((f) => {
-                if (f.type === "checkbox") {
-                  return (
-                    <DetailRow key={f.name} label={f.label} value={viewItem[f.name] ? "Yes" : "No"} />
-                  );
-                }
-                const v = viewItem[f.name];
-                let display = v;
-                if (v && (f.type === "date" || f.type === "datetime-local")) {
-                  display = formatDate(v, f.type === "datetime-local");
-                } else if (v !== null && v !== undefined) {
-                  display = String(v);
-                }
-                return <DetailRow key={f.name} label={f.label} value={display || "—"} />;
-              })}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <RecordDetailDialog
+          config={config}
+          item={viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          onEdit={canManage ? () => {
+            const itemToEdit = viewItem;
+            setViewItem(null);
+            setEditItem(itemToEdit);
+          } : undefined}
+          workflowActions={getWorkflowActions(viewItem)}
+          onWorkflow={(action) => {
+            const item = viewItem;
+            setViewItem(null);
+            setWorkflowTarget({ item, action });
+          }}
+        />
       )}
 
       {/* Delete Confirmation */}
@@ -408,7 +475,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
                 <AlertCircle className="w-5 h-5" /> Confirm Delete
               </DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete &quot;{deleteItem[config.fields[0].name]}&quot;? This cannot be undone.
+                Are you sure you want to delete &quot;{deleteItem[config.fields[0].name]}&quot;? This action cannot be undone and will be recorded in the audit log.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -418,32 +485,370 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
                 onClick={() => deleteMutation.mutate(deleteItem.id)}
                 disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                {deleteMutation.isPending ? "Deleting..." : "Delete Permanently"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Workflow Action Dialog */}
+      {workflowTarget && (
+        <WorkflowDialog
+          config={config}
+          target={workflowTarget}
+          onOpenChange={(o) => !o && setWorkflowTarget(null)}
+          onSubmit={(notes) => {
+            const data: any = {};
+            if (config.statusField) data[config.statusField] = workflowTarget.action.toStatus;
+            if (notes) data.notes = notes;
+            workflowMutation.mutate({ id: workflowTarget.item.id, data });
+          }}
+          loading={workflowMutation.isPending}
+        />
+      )}
     </div>
   );
 }
 
-function StatCard({ label, value, subValue, color }: { label: string; value: number; subValue?: string; color: string }) {
+// =====================================================================
+// RECORD LIST ITEM
+// =====================================================================
+function RecordListItem({
+  item, config, canManage, onView, onEdit, onDelete, workflowActions, onWorkflow,
+}: {
+  item: any;
+  config: ModuleConfig;
+  canManage: boolean;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  workflowActions: WorkflowAction[];
+  onWorkflow: (a: WorkflowAction) => void;
+}) {
+  const [showActions, setShowActions] = useState(false);
+  return (
+    <div
+      className="border border-slate-200 rounded-md p-3 hover:bg-slate-50 transition-colors"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <div className="flex items-center gap-2 flex-wrap">
+            {config.numberField && item[config.numberField] && (
+              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                {item[config.numberField]}
+              </span>
+            )}
+            {config.fields.slice(0, 1).map((f) => (
+              <span key={f.name} className="font-medium text-slate-900">
+                {item[f.name]}
+              </span>
+            ))}
+            {config.filters.map((f) => {
+              const v = item[f.param];
+              if (!v) return null;
+              return <StatusBadge key={f.param} status={v} />;
+            })}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 space-y-0.5">
+            {config.fields
+              .slice(1, 4)
+              .filter((f) => !f.hideInList && item[f.name])
+              .map((f) => (
+                <div key={f.name}>
+                  <span className="text-slate-400">{f.label}:</span>{" "}
+                  <span className="text-slate-700">
+                    {f.type === "date" || f.type === "datetime-local"
+                      ? formatDate(item[f.name], f.type === "datetime-local")
+                      : String(item[f.name]).slice(0, 150)}
+                  </span>
+                </div>
+              ))}
+            <div className="text-slate-400">Created {formatRelative(item.createdAt)}</div>
+          </div>
+          {workflowActions.length > 0 && (
+            <div className="mt-2 flex gap-1 flex-wrap">
+              {workflowActions.map((a) => {
+                const ActionIcon = a.icon || CheckCircle2;
+                return (
+                  <Button
+                    key={a.toStatus}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => onWorkflow(a)}
+                  >
+                    <ActionIcon className="w-3 h-3 mr-1" /> {a.label}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
+          <Button variant="ghost" size="sm" onClick={onView}>
+            <Eye className="w-4 h-4" />
+          </Button>
+          {canManage && (
+            <>
+              <Button variant="ghost" size="sm" onClick={onEdit}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDelete}
+                className="text-rose-600 hover:text-rose-700"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// RECORD CARD (alternative view)
+// =====================================================================
+function RecordCard({
+  item, config, canManage, onView, onEdit, onDelete, workflowActions, onWorkflow,
+}: {
+  item: any;
+  config: ModuleConfig;
+  canManage: boolean;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  workflowActions: WorkflowAction[];
+  onWorkflow: (a: WorkflowAction) => void;
+}) {
+  const Icon = config.icon;
+  return (
+    <div className="border border-slate-200 rounded-md p-4 hover:shadow-md transition-shadow bg-white">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-600"}`} />
+          {config.numberField && item[config.numberField] && (
+            <span className="font-mono text-xs text-slate-500">{item[config.numberField]}</span>
+          )}
+        </div>
+        <div className="flex gap-1">
+          {config.filters.slice(0, 2).map((f) => {
+            const v = item[f.param];
+            if (!v) return null;
+            return <StatusBadge key={f.param} status={v} />;
+          })}
+        </div>
+      </div>
+      <h3 className="font-semibold text-slate-900 mb-1 truncate">
+        {item[config.fields[0].name]}
+      </h3>
+      <div className="text-xs text-slate-500 space-y-1 mb-3">
+        {config.fields.slice(1, 4).filter((f) => !f.hideInList && item[f.name]).map((f) => (
+          <div key={f.name} className="truncate">
+            <span className="text-slate-400">{f.label}:</span>{" "}
+            <span className="text-slate-700">
+              {f.type === "date" || f.type === "datetime-local"
+                ? formatDate(item[f.name], f.type === "datetime-local")
+                : String(item[f.name]).slice(0, 80)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {workflowActions.length > 0 && (
+        <div className="flex gap-1 flex-wrap mb-2">
+          {workflowActions.map((a) => {
+            const ActionIcon = a.icon || CheckCircle2;
+            return (
+              <Button
+                key={a.toStatus}
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => onWorkflow(a)}
+              >
+                <ActionIcon className="w-3 h-3 mr-1" /> {a.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+      <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+        <span className="text-[10px] text-slate-400">{formatRelative(item.createdAt)}</span>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={onView}>
+            <Eye className="w-3.5 h-3.5" />
+          </Button>
+          {canManage && (
+            <>
+              <Button variant="ghost" size="sm" onClick={onEdit}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onDelete} className="text-rose-600">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// STAT CARD
+// =====================================================================
+function StatCard({ label, value, subValue, subLabel, icon: Icon, color }: {
+  label: string;
+  value: number | string;
+  subValue?: string;
+  subLabel?: string;
+  icon?: any;
+  color: string;
+}) {
   const colorMap: Record<string, string> = {
-    slate: "border-slate-300",
-    amber: "border-amber-300",
-    emerald: "border-emerald-300",
-    rose: "border-rose-300",
-    blue: "border-blue-300",
+    slate: "border-slate-300 bg-slate-50",
+    amber: "border-amber-300 bg-amber-50",
+    emerald: "border-emerald-300 bg-emerald-50",
+    rose: "border-rose-300 bg-rose-50",
+    blue: "border-blue-300 bg-blue-50",
+    purple: "border-purple-300 bg-purple-50",
   };
   return (
-    <Card className={colorMap[color] ? `border-l-4 ${colorMap[color]}` : ""}>
+    <Card className={`${colorMap[color] || colorMap.slate} border-l-4`}>
       <CardContent className="p-3">
-        <div className="text-xs text-slate-500">{label}</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-xs text-slate-600">{label}</div>
+          {Icon && <Icon className="w-4 h-4 text-slate-500" />}
+        </div>
         <div className="text-2xl font-bold text-slate-900">{value}</div>
-        {subValue && <div className="text-xs text-slate-500 capitalize truncate">{subValue}</div>}
+        {subValue && <div className="text-xs text-slate-600 capitalize truncate">{subValue}</div>}
+        {subLabel && <div className="text-[10px] text-slate-400">{subLabel}</div>}
       </CardContent>
     </Card>
+  );
+}
+
+// =====================================================================
+// DETAIL DIALOG with TABS
+// =====================================================================
+function RecordDetailDialog({
+  config, item, onOpenChange, onEdit, workflowActions, onWorkflow,
+}: {
+  config: ModuleConfig;
+  item: any;
+  onOpenChange: (o: boolean) => void;
+  onEdit?: () => void;
+  workflowActions: WorkflowAction[];
+  onWorkflow: (a: WorkflowAction) => void;
+}) {
+  const Icon = config.icon;
+  // Group fields by `group` attribute (default to "Details")
+  const groups: Record<string, FieldDef[]> = {};
+  for (const f of config.fields) {
+    const g = f.group || "Details";
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(f);
+  }
+  const groupNames = Object.keys(groups);
+
+  // Compute audit/summary info
+  const createdDate = item.createdAt ? formatDate(item.createdAt, true) : "—";
+  const updatedDate = item.updatedAt ? formatDate(item.updatedAt, true) : "—";
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-700"}`} />
+            {item[config.fields[0].name]}
+          </DialogTitle>
+          <DialogDescription>
+            {config.numberField && item[config.numberField]
+              ? `${config.numberField}: ${item[config.numberField]}`
+              : `Record details`}
+          </DialogDescription>
+        </DialogHeader>
+
+        {workflowActions.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
+            <div className="text-xs font-semibold text-amber-800 mb-2">Workflow Actions:</div>
+            <div className="flex gap-2 flex-wrap">
+              {workflowActions.map((a) => {
+                const ActionIcon = a.icon || CheckCircle2;
+                return (
+                  <Button
+                    key={a.toStatus}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onWorkflow(a)}
+                  >
+                    <ActionIcon className="w-4 h-4 mr-1" /> {a.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <Tabs defaultValue={groupNames[0] || "Details"}>
+          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(groupNames.length, 4)}, 1fr)` }}>
+            {groupNames.map((g) => (
+              <TabsTrigger key={g} value={g} className="text-xs">{g}</TabsTrigger>
+            ))}
+            <TabsTrigger value="meta" className="text-xs">Meta</TabsTrigger>
+          </TabsList>
+
+          {groupNames.map((g) => (
+            <TabsContent key={g} value={g}>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {groups[g].map((f) => {
+                  if (f.type === "checkbox") {
+                    return (
+                      <DetailRow key={f.name} label={f.label} value={item[f.name] ? "Yes" : "No"} />
+                    );
+                  }
+                  const v = item[f.name];
+                  let display: any = v;
+                  if (v && (f.type === "date" || f.type === "datetime-local")) {
+                    display = formatDate(v, f.type === "datetime-local");
+                  } else if (v !== null && v !== undefined) {
+                    display = String(v);
+                  }
+                  return <DetailRow key={f.name} label={f.label} value={display || "—"} />;
+                })}
+              </div>
+            </TabsContent>
+          ))}
+
+          <TabsContent value="meta">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <DetailRow label="Record ID" value={item.id} />
+              <DetailRow label="Created At" value={createdDate} />
+              <DetailRow label="Last Updated" value={updatedDate} />
+              <DetailRow label="Created By" value={item.createdById || "—"} />
+              <DetailRow label="Facility ID" value={item.facilityId || "—"} />
+              <DetailRow label="Organization ID" value={item.organizationId || "—"} />
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {onEdit && (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+            <Button onClick={onEdit}>
+              <Pencil className="w-4 h-4 mr-1" /> Edit Record
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -456,6 +861,61 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
+// =====================================================================
+// WORKFLOW DIALOG
+// =====================================================================
+function WorkflowDialog({
+  config, target, onOpenChange, onSubmit, loading,
+}: {
+  config: ModuleConfig;
+  target: { item: any; action: WorkflowAction };
+  onOpenChange: (o: boolean) => void;
+  onSubmit: (notes?: string) => void;
+  loading: boolean;
+}) {
+  const [notes, setNotes] = useState("");
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" /> {target.action.label}
+          </DialogTitle>
+          <DialogDescription>
+            Change status from <strong>{target.action.fromStatus.replace(/_/g, " ")}</strong> to{" "}
+            <strong>{target.action.toStatus.replace(/_/g, " ")}</strong> for{" "}
+            &quot;{target.item[config.fields[0].name]}&quot;?
+            {target.action.requireNote && (
+              <span className="block mt-2 text-amber-700">A note is required for this action.</span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <div>
+          <Label>Notes {target.action.requireNote && <span className="text-rose-500">*</span>}</Label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="Add any notes about this status change..."
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            onClick={() => onSubmit(notes || undefined)}
+            disabled={loading || (target.action.requireNote && !notes)}
+          >
+            {loading ? "Processing..." : "Confirm"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// RECORD FORM (Create / Edit) — grouped by field.group
+// =====================================================================
 function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValues }: {
   config: ModuleConfig;
   open: boolean;
@@ -470,8 +930,10 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
       if (initialValues) {
         let v = initialValues[f.name];
         if (v && (f.type === "date" || f.type === "datetime-local")) {
-          const d = new Date(v);
-          v = d.toISOString().slice(0, f.type === "datetime-local" ? 16 : 10);
+          try {
+            const d = new Date(v);
+            v = d.toISOString().slice(0, f.type === "datetime-local" ? 16 : 10);
+          } catch { /* keep v */ }
         }
         init[f.name] = v ?? (f.type === "checkbox" ? false : "");
       } else {
@@ -485,19 +947,30 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
 
   const submit = () => {
     const payload: any = { ...form };
-    // Convert number fields
     for (const f of config.fields) {
-      if (f.type === "number" && payload[f.name] !== "") {
+      if (f.type === "number" && payload[f.name] !== "" && payload[f.name] !== null) {
         payload[f.name] = payload[f.name] === "" ? null : parseFloat(payload[f.name]);
       }
       if ((f.type === "date" || f.type === "datetime-local") && payload[f.name]) {
-        payload[f.name] = new Date(payload[f.name]).toISOString();
+        try {
+          payload[f.name] = new Date(payload[f.name]).toISOString();
+        } catch { /* keep */ }
       }
     }
     onSubmit(payload);
   };
 
   const isEdit = !!initialValues;
+
+  // Group fields by group attribute
+  const groups: Record<string, FieldDef[]> = {};
+  for (const f of config.fields) {
+    if (f.hideInForm) continue;
+    const g = f.group || "Details";
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(f);
+  }
+  const groupNames = Object.keys(groups);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -507,61 +980,69 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
             <config.icon className="w-5 h-5" /> {isEdit ? "Edit" : "New"} {config.title}
           </DialogTitle>
           <DialogDescription>
-            {isEdit ? "Update the record details below." : "Fill in the details to create a new record."}
+            {isEdit ? "Update the record details below." : "Fill in the details to create a new record. Fields marked with * are required."}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          {config.fields.map((f) => {
-            if (f.hideInForm) return null;
-            return (
-              <div key={f.name} className={f.full || f.type === "textarea" ? "col-span-2" : ""}>
-                {f.type === "checkbox" ? (
-                  <div className="flex items-center gap-2 pt-6">
-                    <input
-                      type="checkbox"
-                      checked={!!form[f.name]}
-                      onChange={(e) => set(f.name, e.target.checked)}
-                      className="rounded"
-                    />
-                    <Label>{f.label}</Label>
+
+        <div className="space-y-4">
+          {groupNames.map((g) => (
+            <div key={g} className={groupNames.length > 1 ? "border-t pt-3 first:border-t-0 first:pt-0" : ""}>
+              {groupNames.length > 1 && (
+                <h4 className="text-sm font-semibold text-slate-700 mb-2">{g}</h4>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                {groups[g].map((f) => (
+                  <div key={f.name} className={f.full || f.type === "textarea" ? "col-span-2" : ""}>
+                    {f.type === "checkbox" ? (
+                      <div className="flex items-center gap-2 pt-6">
+                        <input
+                          type="checkbox"
+                          checked={!!form[f.name]}
+                          onChange={(e) => set(f.name, e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label>{f.label}</Label>
+                      </div>
+                    ) : (
+                      <>
+                        {f.required ? (
+                          <FieldLabel>{f.label}</FieldLabel>
+                        ) : (
+                          <Label>{f.label}</Label>
+                        )}
+                        {f.type === "textarea" ? (
+                          <Textarea
+                            value={form[f.name] || ""}
+                            onChange={(e) => set(f.name, e.target.value)}
+                            placeholder={f.placeholder}
+                            rows={3}
+                          />
+                        ) : f.type === "select" ? (
+                          <Select value={form[f.name] || ""} onValueChange={(v) => set(f.name, v)}>
+                            <SelectTrigger><SelectValue placeholder={f.placeholder || f.label} /></SelectTrigger>
+                            <SelectContent>
+                              {f.options?.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            type={f.type}
+                            value={form[f.name] || ""}
+                            onChange={(e) => set(f.name, e.target.value)}
+                            placeholder={f.placeholder}
+                          />
+                        )}
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    {f.required ? (
-                      <FieldLabel>{f.label}</FieldLabel>
-                    ) : (
-                      <Label>{f.label}</Label>
-                    )}
-                    {f.type === "textarea" ? (
-                      <Textarea
-                        value={form[f.name] || ""}
-                        onChange={(e) => set(f.name, e.target.value)}
-                        placeholder={f.placeholder}
-                        rows={3}
-                      />
-                    ) : f.type === "select" ? (
-                      <Select value={form[f.name] || ""} onValueChange={(v) => set(f.name, v)}>
-                        <SelectTrigger><SelectValue placeholder={f.placeholder || f.label} /></SelectTrigger>
-                        <SelectContent>
-                          {f.options?.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        type={f.type}
-                        value={form[f.name] || ""}
-                        onChange={(e) => set(f.name, e.target.value)}
-                        placeholder={f.placeholder}
-                      />
-                    )}
-                  </>
-                )}
+                ))}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={loading}>
@@ -572,5 +1053,3 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
     </Dialog>
   );
 }
-
-// Re-export the icon for use in form

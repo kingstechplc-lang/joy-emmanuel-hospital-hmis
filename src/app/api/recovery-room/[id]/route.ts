@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/recovery-room/[id]
-//   GET    — fetch single recovery record
-//   PATCH  — update recovery record
-//   DELETE — remove recovery record
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

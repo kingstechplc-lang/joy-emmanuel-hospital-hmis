@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/audit-findings/[id]
-//   GET    — fetch single audit finding
-//   PATCH  — update audit finding
-//   DELETE — remove audit finding
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

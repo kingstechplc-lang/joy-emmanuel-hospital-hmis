@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/theatre/[id]
-//   GET    — fetch single theatre case
-//   PATCH  — update theatre case
-//   DELETE — remove theatre case
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

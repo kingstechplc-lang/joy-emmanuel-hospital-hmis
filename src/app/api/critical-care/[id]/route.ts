@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/critical-care/[id]
-//   GET    — fetch single critical care admission
-//   PATCH  — update critical care admission
-//   DELETE — remove critical care admission
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

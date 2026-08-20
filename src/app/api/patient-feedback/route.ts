@@ -1,7 +1,7 @@
 // =====================================================================
 // API: /api/patient-feedback
-//   GET  — list patient feedback records
-//   POST — create a new patient feedback
+//   GET  — list records (filter by facility, status, etc.)
+//   POST — create a new record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -17,14 +17,13 @@ export async function GET(req: Request) {
   if (!hasPermission(session, PERMISSIONS.PATIENT_RELATIONS_VIEW)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId");
   const search = url.searchParams.get("search");
   const limit = parseInt(url.searchParams.get("limit") || "200");
-  const feedbackType = url.searchParams.get("feedbackType");
-  const status = url.searchParams.get("status");
-  const severity = url.searchParams.get("severity");
 
+  // Scope to user's facilities
   const orgFacilities = await db.facility.findMany({
     where: { organizationId: session.user.organizationId },
     select: { id: true },
@@ -37,11 +36,23 @@ export async function GET(req: Request) {
   } else {
     where.facilityId = { in: orgFacilityIds };
   }
-  if (feedbackType && feedbackType !== "all") where.feedbackType = feedbackType;
-  if (status && status !== "all") where.status = status;
-  if (severity && severity !== "all") where.severity = severity;
+
+  // Apply filter params from URL (any param other than facilityId/search/limit)
+  for (const [k, v] of url.searchParams.entries()) {
+    if (["facilityId", "search", "limit"].includes(k)) continue;
+    if (v && v !== "all") {
+      if (k === "isActive") {
+        where[k] = v === "true";
+      } else {
+        where[k] = v;
+      }
+    }
+  }
+
   if (search) {
-    where.OR = [{ feedbackNumber: { contains: search, mode: "insensitive" } }, { patientName: { contains: search, mode: "insensitive" } }, { subject: { contains: search, mode: "insensitive" } }, { description: { contains: search, mode: "insensitive" } }];
+    where.OR = [
+      { subject: { contains: search, mode: "insensitive" } },
+    ];
   }
 
   const items = await db.patientFeedback.findMany({
@@ -62,10 +73,12 @@ export async function POST(req: Request) {
 
   const body = await req.json();
 
-  if (!feedbackType || !patientName || !subject || !description) {
+  // Validate required fields
+  if (body.feedbackType === undefined || body.feedbackType === "" || body.feedbackType === null || body.patientName === undefined || body.patientName === "" || body.patientName === null || body.subject === undefined || body.subject === "" || body.subject === null || body.description === undefined || body.description === "" || body.description === null) {
     return NextResponse.json({ error: "Missing required fields: feedbackType, patientName, subject, description" }, { status: 400 });
   }
 
+  // Validate facility scope
   let resolvedFacilityId = body.facilityId || session.user.facilityId || null;
   if (resolvedFacilityId) {
     const f = await db.facility.findUnique({ where: { id: resolvedFacilityId } });
@@ -73,18 +86,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid facility" }, { status: 400 });
     }
   }
+
+  // Strip protected fields from body before passing to prisma.create
+  const { id: _id, organizationId: _orgId, createdAt: _c, updatedAt: _u, createdById: _cb, facilityId: _fId, ...createData } = body;
   const year = new Date().getFullYear();
   const count = await db.patientFeedback.count({ where: { organizationId: session.user.organizationId } });
   const feedbackNumber = `FB-${year}-${String(count + 1).padStart(6, "0")}`;
 
   const item = await db.patientFeedback.create({
     data: {
+      ...createData,
       organizationId: session.user.organizationId,
       facilityId: resolvedFacilityId,
       feedbackNumber,
-      ...body,
-      facilityId: resolvedFacilityId,
-      organizationId: session.user.organizationId,
       createdById: session.user.id,
     },
   });

@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/blood-bank/units/[id]
-//   GET    — fetch single blood unit
-//   PATCH  — update blood unit
-//   DELETE — remove blood unit
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

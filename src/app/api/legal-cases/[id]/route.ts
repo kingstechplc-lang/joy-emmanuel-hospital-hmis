@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/legal-cases/[id]
-//   GET    — fetch single legal case
-//   PATCH  — update legal case
-//   DELETE — remove legal case
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

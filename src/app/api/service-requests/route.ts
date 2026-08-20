@@ -1,7 +1,7 @@
 // =====================================================================
 // API: /api/service-requests
-//   GET  — list service request records
-//   POST — create a new service request
+//   GET  — list records (filter by facility, status, etc.)
+//   POST — create a new record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -17,15 +17,13 @@ export async function GET(req: Request) {
   if (!hasPermission(session, PERMISSIONS.SUPPORT_SERVICES_VIEW)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId");
   const search = url.searchParams.get("search");
   const limit = parseInt(url.searchParams.get("limit") || "200");
-  const serviceType = url.searchParams.get("serviceType");
-  const status = url.searchParams.get("status");
-  const priority = url.searchParams.get("priority");
-  const departmentCode = url.searchParams.get("departmentCode");
 
+  // Scope to user's facilities
   const orgFacilities = await db.facility.findMany({
     where: { organizationId: session.user.organizationId },
     select: { id: true },
@@ -38,12 +36,23 @@ export async function GET(req: Request) {
   } else {
     where.facilityId = { in: orgFacilityIds };
   }
-  if (serviceType && serviceType !== "all") where.serviceType = serviceType;
-  if (status && status !== "all") where.status = status;
-  if (priority && priority !== "all") where.priority = priority;
-  if (departmentCode && departmentCode !== "all") where.departmentCode = departmentCode;
+
+  // Apply filter params from URL (any param other than facilityId/search/limit)
+  for (const [k, v] of url.searchParams.entries()) {
+    if (["facilityId", "search", "limit"].includes(k)) continue;
+    if (v && v !== "all") {
+      if (k === "isActive") {
+        where[k] = v === "true";
+      } else {
+        where[k] = v;
+      }
+    }
+  }
+
   if (search) {
-    where.OR = [{ requestNumber: { contains: search, mode: "insensitive" } }, { title: { contains: search, mode: "insensitive" } }, { patientName: { contains: search, mode: "insensitive" } }, { location: { contains: search, mode: "insensitive" } }];
+    where.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+    ];
   }
 
   const items = await db.serviceRequest.findMany({
@@ -64,10 +73,12 @@ export async function POST(req: Request) {
 
   const body = await req.json();
 
-  if (!serviceType || !title) {
+  // Validate required fields
+  if (body.serviceType === undefined || body.serviceType === "" || body.serviceType === null || body.title === undefined || body.title === "" || body.title === null) {
     return NextResponse.json({ error: "Missing required fields: serviceType, title" }, { status: 400 });
   }
 
+  // Validate facility scope
   let resolvedFacilityId = body.facilityId || session.user.facilityId || null;
   if (resolvedFacilityId) {
     const f = await db.facility.findUnique({ where: { id: resolvedFacilityId } });
@@ -75,18 +86,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid facility" }, { status: 400 });
     }
   }
+
+  // Strip protected fields from body before passing to prisma.create
+  const { id: _id, organizationId: _orgId, createdAt: _c, updatedAt: _u, createdById: _cb, facilityId: _fId, ...createData } = body;
   const year = new Date().getFullYear();
   const count = await db.serviceRequest.count({ where: { organizationId: session.user.organizationId } });
   const requestNumber = `SRV-${year}-${String(count + 1).padStart(6, "0")}`;
 
   const item = await db.serviceRequest.create({
     data: {
+      ...createData,
       organizationId: session.user.organizationId,
       facilityId: resolvedFacilityId,
       requestNumber,
-      ...body,
-      facilityId: resolvedFacilityId,
-      organizationId: session.user.organizationId,
       createdById: session.user.id,
     },
   });

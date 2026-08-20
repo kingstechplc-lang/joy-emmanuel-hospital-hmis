@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/it-tickets/[id]
-//   GET    — fetch single IT ticket
-//   PATCH  — update IT ticket
-//   DELETE — remove IT ticket
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/community-outreach/[id]
-//   GET    — fetch single community outreach
-//   PATCH  — update community outreach
-//   DELETE — remove community outreach
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

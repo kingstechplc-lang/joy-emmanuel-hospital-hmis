@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/risk-register/[id]
-//   GET    — fetch single risk
-//   PATCH  — update risk
-//   DELETE — remove risk
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";

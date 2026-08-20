@@ -1,7 +1,7 @@
 // =====================================================================
 // API: /api/blood-bank/donors
-//   GET  — list donor records
-//   POST — create a new donor
+//   GET  — list records (filter by facility, status, etc.)
+//   POST — create a new record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -17,13 +17,13 @@ export async function GET(req: Request) {
   if (!hasPermission(session, PERMISSIONS.BLOODBANK_VIEW)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId");
   const search = url.searchParams.get("search");
   const limit = parseInt(url.searchParams.get("limit") || "200");
-  const bloodGroup = url.searchParams.get("bloodGroup");
-  const eligibilityStatus = url.searchParams.get("eligibilityStatus");
 
+  // Scope to user's facilities
   const orgFacilities = await db.facility.findMany({
     where: { organizationId: session.user.organizationId },
     select: { id: true },
@@ -36,10 +36,23 @@ export async function GET(req: Request) {
   } else {
     where.facilityId = { in: orgFacilityIds };
   }
-  if (bloodGroup && bloodGroup !== "all") where.bloodGroup = bloodGroup;
-  if (eligibilityStatus && eligibilityStatus !== "all") where.eligibilityStatus = eligibilityStatus;
+
+  // Apply filter params from URL (any param other than facilityId/search/limit)
+  for (const [k, v] of url.searchParams.entries()) {
+    if (["facilityId", "search", "limit"].includes(k)) continue;
+    if (v && v !== "all") {
+      if (k === "isActive") {
+        where[k] = v === "true";
+      } else {
+        where[k] = v;
+      }
+    }
+  }
+
   if (search) {
-    where.OR = [{ fullName: { contains: search, mode: "insensitive" } }, { donorNumber: { contains: search, mode: "insensitive" } }, { phone: { contains: search, mode: "insensitive" } }, { bloodGroup: { contains: search, mode: "insensitive" } }];
+    where.OR = [
+      { fullName: { contains: search, mode: "insensitive" } },
+    ];
   }
 
   const items = await db.bloodDonor.findMany({
@@ -60,10 +73,12 @@ export async function POST(req: Request) {
 
   const body = await req.json();
 
-  if (!fullName) {
+  // Validate required fields
+  if (body.fullName === undefined || body.fullName === "" || body.fullName === null) {
     return NextResponse.json({ error: "Missing required fields: fullName" }, { status: 400 });
   }
 
+  // Validate facility scope
   let resolvedFacilityId = body.facilityId || session.user.facilityId || null;
   if (resolvedFacilityId) {
     const f = await db.facility.findUnique({ where: { id: resolvedFacilityId } });
@@ -71,18 +86,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid facility" }, { status: 400 });
     }
   }
+
+  // Strip protected fields from body before passing to prisma.create
+  const { id: _id, organizationId: _orgId, createdAt: _c, updatedAt: _u, createdById: _cb, facilityId: _fId, ...createData } = body;
   const year = new Date().getFullYear();
   const count = await db.bloodDonor.count({ where: { organizationId: session.user.organizationId } });
   const donorNumber = `DON-${year}-${String(count + 1).padStart(6, "0")}`;
 
   const item = await db.bloodDonor.create({
     data: {
+      ...createData,
       organizationId: session.user.organizationId,
       facilityId: resolvedFacilityId,
       donorNumber,
-      ...body,
-      facilityId: resolvedFacilityId,
-      organizationId: session.user.organizationId,
       createdById: session.user.id,
     },
   });

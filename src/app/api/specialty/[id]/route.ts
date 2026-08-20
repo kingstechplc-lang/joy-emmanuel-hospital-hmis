@@ -1,8 +1,8 @@
 // =====================================================================
 // API: /api/specialty/[id]
-//   GET    — fetch single specialty encounter
-//   PATCH  — update specialty encounter
-//   DELETE — remove specialty encounter
+//   GET    — fetch single record
+//   PATCH  — update record
+//   DELETE — remove record
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
