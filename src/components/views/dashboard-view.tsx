@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { safeJson } from "@/components/ui-helpers";
 import {
   Users, UserPlus, Calendar, BedDouble, Activity, Pill, FlaskConical,
   Receipt, TrendingUp, AlertTriangle, Clock, ArrowRight,
@@ -16,7 +17,7 @@ import {
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 // ─── Role-specific KPI definitions ───────────────────────────────

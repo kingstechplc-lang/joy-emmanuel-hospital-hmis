@@ -6,12 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, User } from "lucide-react";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function PatientsView() {

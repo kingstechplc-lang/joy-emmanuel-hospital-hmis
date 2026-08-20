@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeftRight, Plus, RefreshCcw, Eye, Clock, UserCheck, LogOut, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -21,10 +21,10 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const SHIFT_OPTIONS = [
@@ -231,7 +231,7 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
     if (q.length < 2) { setPatientResults([]); return; }
     try {
       const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}`);
-      const d = await res.json();
+      const d = await safeJson(res);
       setPatientResults(d.items || d.patients || []);
     } catch {
       setPatientResults([]);
@@ -256,10 +256,10 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
         }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Handover recorded");

@@ -62,7 +62,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
   const { fromFacilityId, toFacilityId, items, notes } = body;
 
   if (!fromFacilityId) return NextResponse.json({ error: "fromFacilityId is required" }, { status: 400 });

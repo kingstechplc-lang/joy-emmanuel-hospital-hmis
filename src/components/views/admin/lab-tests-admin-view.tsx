@@ -10,17 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Beaker, Search, Plus, Edit, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, formatCurrency, safeJson} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const CATEGORIES = [
@@ -67,10 +67,10 @@ export function LabTestsAdminView() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/lab-tests/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Lab test deactivated");
@@ -218,10 +218,10 @@ function LabTestDialog({ test, onClose }: { test?: any; onClose: () => void }) {
         body: JSON.stringify({ ...form, price: Number(form.price) }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Lab test updated" : "Lab test created");

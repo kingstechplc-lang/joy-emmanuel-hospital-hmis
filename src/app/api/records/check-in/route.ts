@@ -35,7 +35,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden — missing encounter.create permission" }, { status: 403 });
   }
 
-  const body = await req.json();
+  // Parse body safely — handle empty/invalid JSON gracefully
+  let body: any;
+  try {
+    const text = await req.text();
+    if (!text || text.trim() === "") {
+      return NextResponse.json({ error: "Request body is empty. Please provide patientId, encounterType, and other required fields." }, { status: 400 });
+    }
+    body = JSON.parse(text);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body. Please check the data and try again." }, { status: 400 });
+  }
+
   const {
     patientId,
     encounterType = "opd",

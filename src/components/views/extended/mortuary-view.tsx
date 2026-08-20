@@ -14,16 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Skull, Plus, Search, RefreshCcw, Eye, DoorOpen, UserX, Building2, Phone, FileText, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_OPTIONS = [
@@ -79,10 +79,10 @@ export function MortuaryView() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Deceased person admitted to mortuary");
@@ -100,10 +100,10 @@ export function MortuaryView() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Body released to family / undertaker");

@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, ShoppingCart, PackageCheck, Send, CheckCircle2, X, Truck, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_OPTIONS = [
@@ -68,7 +68,7 @@ export function PurchaseOrdersView() {
       body: JSON.stringify({ action }),
     });
     if (res.ok) { toast.success(successMsg); invalidate(); }
-    else { const e = await res.json().catch(() => ({})); toast.error(e.error || "Failed"); }
+    else { const e = await safeJson(res).catch(() => ({})); toast.error(e.error || "Failed"); }
   };
 
   return (
@@ -237,7 +237,7 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
           items: items.map((it) => ({ inventoryItemId: it.inventoryItemId, quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success("Purchase order created");
       setItems([]); setNotes(""); setSupplierId("");
@@ -451,7 +451,7 @@ function ReceiveDialog({ po, onClose, onDone }: { po: any; onClose: () => void; 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ referenceNumber, notes, items }),
       });
-      const rdata = await res.json();
+      const rdata = await safeJson(res);
       if (!res.ok) throw new Error(rdata.error || "Failed");
       toast.success(`Goods received — ${items.length} item(s) stocked`);
       onDone();

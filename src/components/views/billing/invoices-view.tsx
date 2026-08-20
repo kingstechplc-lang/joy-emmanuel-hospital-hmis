@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Receipt, Eye, CreditCard, Ban, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 
@@ -22,7 +22,7 @@ import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_FILTERS = [
@@ -78,7 +78,7 @@ export function InvoicesView() {
             body: JSON.stringify({ action: "cancel" }),
           });
           if (!res.ok) {
-            const err = await res.json();
+            const err = await safeJson(res);
             throw new Error(err.error || "Failed");
           }
           toast.success("Invoice cancelled");
@@ -308,7 +308,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Invoice issued");
@@ -674,7 +674,7 @@ function PaymentDialog({ invoice, onClose, onDone, canPay }: { invoice: any; onC
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Payment recorded");
@@ -779,7 +779,7 @@ function AddItemDialog({ invoice, onClose, onDone, facilityId }: { invoice: any;
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Item added to invoice");

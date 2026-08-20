@@ -13,13 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Cpu, Wrench, History, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const CATEGORY_OPTIONS = [
@@ -217,7 +217,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
         status, location,
       };
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success(isEdit ? "Equipment updated" : "Equipment created");
       onCreated();
@@ -399,7 +399,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
           status,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success("Maintenance scheduled");
       setDescription(""); setNextDueAt(""); setCost("");

@@ -14,13 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, FlaskConical, Search, TestTube, Microscope, CheckCircle2, Send, X, Beaker, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_OPTIONS = [
@@ -239,7 +239,7 @@ async function doAction(id: string, action: string, successMsg: string, onDone: 
       body: JSON.stringify({ action }),
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await safeJson(res);
       throw new Error(err.error || "Failed");
     }
     toast.success(successMsg);
@@ -287,7 +287,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
         body: JSON.stringify({ patientId, encounterId: encounterId || undefined, facilityId: defaultFacilityId, testIds: selectedTestIds, priority, notes }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Lab order created");
@@ -421,7 +421,7 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
         body: JSON.stringify({ action: "collect", sampleNumber, specimenType, collectedById }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Sample collected");
@@ -479,7 +479,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
         body: JSON.stringify({ action: "receive" }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Sample received at lab");
@@ -555,7 +555,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
         body: JSON.stringify({ action: "result", results: payload }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Results entered");
@@ -655,7 +655,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
         body: JSON.stringify({ action: "verify" }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Results verified");

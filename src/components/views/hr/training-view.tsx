@@ -39,22 +39,20 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  EmptyState,
+import {EmptyState,
   LoadingState,
   ErrorState,
   StatusBadge,
-  formatDate,
-} from "@/components/ui-helpers";
+  formatDate, safeJson} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 export function TrainingView() {
@@ -509,10 +507,10 @@ function NewTrainingDialog({ onClose }: { onClose: () => void }) {
         }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Training recorded successfully");

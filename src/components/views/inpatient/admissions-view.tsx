@@ -13,13 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, BedDouble, LogOut, Search, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_FILTERS = [
@@ -255,7 +255,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed to create admission");
       }
       toast.success("Admission created and bed assigned");
@@ -408,7 +408,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed to discharge");
       }
       toast.success("Patient discharged. Bed released and encounter closed.");

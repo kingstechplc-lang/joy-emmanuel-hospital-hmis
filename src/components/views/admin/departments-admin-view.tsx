@@ -17,17 +17,17 @@ import {
   Archive, RotateCcw, MapPin, Phone, Clock, User, FileText, Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency, safeJson} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 // ─── Department categories (initial list per spec) ─────────────────
@@ -245,7 +245,7 @@ function DepartmentRow({ dept, isExpanded, onToggle, onEdit, canManage, onInvali
             body: JSON.stringify({ action: "delete_unit", unit: { id: unitId } }),
           });
           if (!res.ok) {
-            const e = await res.json().catch(() => ({}));
+            const e = await safeJson(res).catch(() => ({}));
             throw new Error(e.error || "Failed");
           }
           toast.success("Unit archived");
@@ -278,7 +278,7 @@ function DepartmentRow({ dept, isExpanded, onToggle, onEdit, canManage, onInvali
             body: JSON.stringify({ action: "archive" }),
           });
           if (!res.ok) {
-            const e = await res.json().catch(() => ({}));
+            const e = await safeJson(res).catch(() => ({}));
             throw new Error(e.error || "Failed");
           }
           toast.success("Department archived");
@@ -310,7 +310,7 @@ function DepartmentRow({ dept, isExpanded, onToggle, onEdit, canManage, onInvali
             body: JSON.stringify({ action: "restore" }),
           });
           if (!res.ok) {
-            const e = await res.json().catch(() => ({}));
+            const e = await safeJson(res).catch(() => ({}));
             throw new Error(e.error || "Failed");
           }
           toast.success("Department restored");
@@ -554,10 +554,10 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
         }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Department updated" : "Department created");
@@ -691,10 +691,10 @@ function UnitDialog({ departmentId, unit, onClose, onSaved }: {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Unit updated" : "Unit added");

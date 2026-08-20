@@ -10,15 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollText, Search, Download, ChevronLeft, ChevronRight, FileJson } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, formatDate, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const PAGE_SIZE = 50;

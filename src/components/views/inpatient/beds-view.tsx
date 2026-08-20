@@ -12,12 +12,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { BedDouble, RefreshCw, Sparkles, Wrench, Brush, LogOut, ArrowRightLeft, X } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -207,7 +207,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
         body: JSON.stringify({ status }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success(`Bed marked as ${label}`);
@@ -224,7 +224,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
     try {
       const res = await fetch(`/api/beds/${bed.id}/release`, { method: "POST" });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Bed released and marked available");
@@ -252,7 +252,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Patient transferred to new bed");

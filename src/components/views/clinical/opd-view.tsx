@@ -8,12 +8,12 @@ import {
   Stethoscope, Users, Clock, Activity, UserPlus, ClipboardCheck,
   ListOrdered, Calendar, FlaskConical, Pill, ArrowRight, UserCheck,
 } from "lucide-react";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function OPDView() {

@@ -14,13 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Package, Search, Plus, History, AlertTriangle, Boxes, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const TYPE_OPTIONS = [
@@ -272,7 +272,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, sku, itemType, category, unit, reorderLevel: Number(reorderLevel), description }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success("Inventory item created");
       setName(""); setSku(""); setCategory(""); setUnit(""); setReorderLevel("0"); setDescription("");
@@ -463,7 +463,7 @@ function AdjustDialog({ item, onClose, onDone }: { item: any; onClose: () => voi
           minimumQuantity: minimumQuantity ? Number(minimumQuantity) : undefined,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success("Stock adjusted");
       setQuantity(""); setReason(""); setNotes(""); setBatchId("");

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Download, RefreshCcw, FileText, Activity, FlaskConical, Pill, DollarSign, Bed } from "lucide-react";
 import { toast } from "sonner";
-import { LoadingState, ErrorState } from "@/components/ui-helpers";
+import {LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -17,10 +17,10 @@ import {
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const REPORT_TYPES = [

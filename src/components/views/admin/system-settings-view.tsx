@@ -10,15 +10,15 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Save, Building, ShieldCheck, Bell, Hash } from "lucide-react";
 import { toast } from "sonner";
-import { LoadingState, ErrorState } from "@/components/ui-helpers";
+import {LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 // Default setting keys for each tab
@@ -158,7 +158,7 @@ function SettingsTab({ settings, canEdit }: { settings: any[]; canEdit: boolean 
           body: JSON.stringify({ settingKey: s.key, settingValue: stringValue, settingType: s.type }),
         });
         if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
+          const e = await safeJson(res).catch(() => ({}));
           throw new Error(e.error || `Failed to save ${s.key}`);
         }
       } catch (e) {

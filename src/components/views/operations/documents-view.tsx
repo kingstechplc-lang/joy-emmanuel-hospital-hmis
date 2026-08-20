@@ -11,16 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { FolderOpen, Search, Plus, FileText, ExternalLink, Eye, X } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const DOC_TYPES = [
@@ -74,10 +74,10 @@ export function DocumentsView() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Document deleted");
@@ -236,7 +236,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
     }
     try {
       const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}`);
-      const d = await res.json();
+      const d = await safeJson(res);
       setSearchedPatients(d.items || d.patients || []);
     } catch {
       setSearchedPatients([]);
@@ -257,10 +257,10 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
         }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Document uploaded");

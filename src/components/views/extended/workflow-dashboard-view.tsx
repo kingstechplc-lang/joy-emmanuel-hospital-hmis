@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCheck, Filter, BellRing, AlertCircle, Activity, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 // Map notification types to readable labels + colors
@@ -85,7 +85,7 @@ export function WorkflowDashboardView() {
         body: JSON.stringify({ action: "markAllRead" }),
       });
       if (!res.ok) throw new Error("Failed");
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("All notifications marked as read");
@@ -97,7 +97,7 @@ export function WorkflowDashboardView() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/notifications/${id}`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed");
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["workflow-notifications"] });

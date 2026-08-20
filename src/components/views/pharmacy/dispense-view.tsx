@@ -11,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Pill, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function DispenseView() {
@@ -166,7 +166,7 @@ function PrescriptionDispenseRow({ rx, allergies, onDone, dispensing, setDispens
         // search inventory for this medication
         const res = await fetch(`/api/inventory?facilityId=${rx.facilityId}&type=medication&q=${encodeURIComponent(it.medication?.genericName || "")}`);
         if (res.ok) {
-          const inv = await res.json();
+          const inv = await safeJson(res);
           const match = (inv.items || []).find((i: any) =>
             i.medication?.id === it.medicationId ||
             i.name?.toLowerCase().includes((it.medication?.genericName || "").toLowerCase())
@@ -240,7 +240,7 @@ function PrescriptionDispenseRow({ rx, allergies, onDone, dispensing, setDispens
           createInvoice: cfg.createInvoice,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success(`Dispensed ${cfg.quantity} units${data.invoice ? " — invoice updated" : ""}`);
       onDone();

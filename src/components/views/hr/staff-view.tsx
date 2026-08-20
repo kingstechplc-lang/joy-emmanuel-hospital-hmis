@@ -12,16 +12,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UserCog, Search, Plus, Building2, Phone, Mail, Ban, CheckCircle2, Edit, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
+    const err = await safeJson(res).catch(() => ({}));
     throw new Error(err.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const PROFESSIONAL_ROLES = [
@@ -90,10 +90,10 @@ export function StaffView() {
         body: JSON.stringify({ action }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: (_d, vars) => {
       toast.success(vars.action === "disable" ? "Staff member disabled" : "Staff member enabled");
@@ -309,10 +309,10 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
         : form;
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Staff updated" : "Staff created");
@@ -341,7 +341,7 @@ function StaffDialog({ staff, onClose, facilities }: { staff?: any; onClose: () 
     }
     try {
       const res = await fetch(`/api/departments?facilityId=${facilityId}`);
-      const d = await res.json();
+      const d = await safeJson(res);
       setDepartments(d.items || []);
     } catch {
       setDepartments([]);

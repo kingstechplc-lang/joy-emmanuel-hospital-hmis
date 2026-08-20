@@ -13,17 +13,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Droplets, Plus, RefreshCcw, Search, AlertCircle, TrendingDown, TrendingUp, Activity } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, formatDate, calculateAge } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const ENTRY_TYPE_OPTIONS = [
@@ -405,10 +405,10 @@ function NewEntryDialog({
         }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Entry recorded");

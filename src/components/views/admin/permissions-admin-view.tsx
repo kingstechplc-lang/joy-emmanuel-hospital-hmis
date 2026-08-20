@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Key, Search, Lock } from "lucide-react";
-import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function PermissionsAdminView() {

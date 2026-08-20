@@ -12,15 +12,13 @@ import {
   Pill, ClipboardList, BedDouble, Receipt, FileText, ScrollText,
   AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert,
 } from "lucide-react";
-import {
-  EmptyState, LoadingState, ErrorState, StatusBadge,
-  formatDate, formatCurrency, calculateAge,
-} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge,
+  formatDate, formatCurrency, calculateAge, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function Patient360View() {

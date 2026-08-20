@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, RefreshCcw, Eye, Pencil, Trash2, AlertCircle, Download, FileSpreadsheet, TrendingUp, Clock, CheckCircle2, XCircle, Activity } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 // =====================================================================
@@ -104,10 +104,10 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
     queryFn: async () => {
       const res = await fetch(`/api/${config.apiPath}?${queryParams}`);
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || `Failed: ${res.status}`);
       }
-      return res.json();
+      return safeJson(res);
     },
     enabled: canView,
   });
@@ -120,10 +120,10 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Record created successfully");
@@ -141,10 +141,10 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Record updated");
@@ -159,10 +159,10 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/${config.apiPath}/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Record deleted");
@@ -181,10 +181,10 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: (_d, vars) => {
       const action = config.workflowActions?.find((a) => a.toStatus === vars.data[config.statusField || "status"]);

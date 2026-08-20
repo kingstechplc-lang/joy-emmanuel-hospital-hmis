@@ -13,6 +13,8 @@ import { ArrowLeft, AlertTriangle, Check, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { FieldLabel } from "@/components/ui/required-label";
+import { safeJson } from "@/components/ui-helpers";
+
 interface DuplicateMatch {
   matchType: string;
   patient: {
@@ -58,7 +60,7 @@ export function PatientRegistrationView() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok) {
       if (res.status === 409 && data.duplicates) {
         return { status: 409, duplicates: data.duplicates as DuplicateMatch[] };

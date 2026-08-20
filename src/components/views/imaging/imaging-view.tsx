@@ -13,13 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, ScanLine, Search, CalendarClock, Stethoscope, FileText, CheckCircle2, Send, X } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_OPTIONS = [
@@ -215,7 +215,7 @@ async function doAction(id: string, action: string, successMsg: string, onDone: 
       body: JSON.stringify({ action }),
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await safeJson(res);
       throw new Error(err.error || "Failed");
     }
     toast.success(successMsg);
@@ -262,7 +262,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Imaging order created");
@@ -389,7 +389,7 @@ function ScheduleDialog({ order, onClose, onChanged }: { order: any; onClose: ()
         body: JSON.stringify({ action: "schedule", scheduledAt }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Imaging scheduled");
@@ -436,7 +436,7 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
         body: JSON.stringify({ action: "perform" }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Imaging in progress");
@@ -480,7 +480,7 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
         body: JSON.stringify({ action: "report", findings, impression }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Report entered");
@@ -537,7 +537,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
         body: JSON.stringify({ action: "verify" }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Report verified");

@@ -12,16 +12,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DollarSign, Search, Plus, Edit, ChevronDown, ChevronRight, Building2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, formatCurrency, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const CATEGORIES = [
@@ -242,7 +242,7 @@ function FacilityPriceEditor({ serviceId, facilityId, facilityName, currentPrice
       body: JSON.stringify({ action: "set_facility_price", facilityId, price: Number(price) }),
     });
     if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
+      const e = await safeJson(res).catch(() => ({}));
       toast.error(e.error || "Failed");
       return;
     }
@@ -294,7 +294,7 @@ function NewFacilityPriceForm({ serviceId, onSaved, onCancel }: {
       body: JSON.stringify({ action: "set_facility_price", facilityId, price: Number(price) }),
     });
     if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
+      const e = await safeJson(res).catch(() => ({}));
       toast.error(e.error || "Failed");
       return;
     }
@@ -338,10 +338,10 @@ function ServiceDialog({ service, onClose }: { service?: any; onClose: () => voi
         body: JSON.stringify({ ...form, defaultPrice: Number(form.defaultPrice) }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Service updated" : "Service created");

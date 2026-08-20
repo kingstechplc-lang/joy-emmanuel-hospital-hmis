@@ -30,11 +30,12 @@ import { DashboardView } from "@/components/views/dashboard-view";
 import { ViewRenderer } from "@/components/views/view-renderer";
 import { Menu, LogOut, ChevronDown, Hospital, Bell, Search } from "lucide-react";
 import { toast } from "sonner";
+import { safeJson } from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function AppShell() {

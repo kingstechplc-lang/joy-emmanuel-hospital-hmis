@@ -11,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, ShieldCheck, Search, Send, Check, X, DollarSign, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_FILTERS = [
@@ -68,7 +68,7 @@ export function InsuranceClaimsView() {
         body: JSON.stringify({ action, ...extra }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success(successMsg);
@@ -270,7 +270,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Claim created as draft — submit it to the provider");
@@ -380,7 +380,7 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
         body: JSON.stringify({ action: "partially_approve", approvedAmount }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success(`Claim partially approved for ${formatCurrency(approvedAmount)}`);

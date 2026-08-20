@@ -13,13 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, ClipboardList, PenSquare, Save, Check, X, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 export function ConsultationsView() {
@@ -145,7 +145,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
         body: JSON.stringify({ patientId, encounterId, ...form }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Consultation created (draft)");
@@ -268,7 +268,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
         body: JSON.stringify({ action: "sign" }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed to sign");
       }
       toast.success("Consultation signed");
@@ -289,7 +289,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
         body: JSON.stringify(editable),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Consultation updated");

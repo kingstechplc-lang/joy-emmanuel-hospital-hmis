@@ -12,17 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BadgeCheck, Search, Plus, Edit, Trash2, KeyRound, Shield, Save } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 export function RolesAdminView() {
@@ -53,10 +53,10 @@ export function RolesAdminView() {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/roles/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Role deleted");
@@ -241,10 +241,10 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
         : { ...form, permissionCodes: Array.from(selectedPerms) };
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Role updated" : "Role created");

@@ -15,17 +15,17 @@ import {
   Users, Activity, FileText, CheckCircle2, AlertCircle, Loader2, Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 // ─── Eligibility badge component ─────────────────────────────────
@@ -79,7 +79,7 @@ export function RecordsDeskView() {
     setSearching(true);
     try {
       const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}&limit=20`);
-      const d = await res.json();
+      const d = await safeJson(res);
       setSearchResults(d.patients || []);
     } catch {
       setSearchResults([]);
@@ -102,7 +102,7 @@ export function RecordsDeskView() {
           addToQueue: true,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to check in");
       return data;
     },

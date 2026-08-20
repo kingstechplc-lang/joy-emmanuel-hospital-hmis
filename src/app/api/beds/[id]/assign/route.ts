@@ -21,7 +21,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const { id: bedId } = await params;
-  const body = await req.json();
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
   const { admissionId, patientId, wardId, roomId, assignedById } = body;
 
   if (!admissionId || !patientId || !wardId) {

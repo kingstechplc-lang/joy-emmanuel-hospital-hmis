@@ -39,7 +39,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await req.json();
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
   const { status, scheduledStart, scheduledEnd, reason, notes } = body;
 
   const existing = await db.appointment.findUnique({ where: { id } });

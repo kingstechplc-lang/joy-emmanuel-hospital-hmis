@@ -79,7 +79,13 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
   const { amendedFromId } = body;
 
   // AMENDMENT path

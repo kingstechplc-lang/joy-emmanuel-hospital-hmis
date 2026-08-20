@@ -12,17 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CheckSquare, Search, Plus, Play, Check, X, RefreshCcw, User } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 const PRIORITY_OPTIONS = [
@@ -82,10 +82,10 @@ export function TasksView() {
         body: JSON.stringify({ action }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: (_d, vars) => {
       toast.success(`Task ${vars.action === "start" ? "started" : vars.action === "complete" ? "completed" : "cancelled"}`);
@@ -257,7 +257,7 @@ function NewTaskDialog({ onClose }: { onClose: () => void }) {
     }
     try {
       const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}`);
-      const d = await res.json();
+      const d = await safeJson(res);
       setSearchedPatients(d.items || d.patients || []);
     } catch {
       setSearchedPatients([]);
@@ -279,10 +279,10 @@ function NewTaskDialog({ onClose }: { onClose: () => void }) {
         }),
       });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
+        const e = await safeJson(res).catch(() => ({}));
         throw new Error(e.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Task created");

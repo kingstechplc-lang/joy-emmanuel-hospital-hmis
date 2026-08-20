@@ -14,13 +14,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, NotebookPen, ClipboardList, Search } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const NOTE_TYPES = [
@@ -267,7 +267,7 @@ function NewNursingNoteDialog({ open, onClose, onCreated }: { open: boolean; onC
         body: JSON.stringify({ recordType: "note", patientId, encounterId, admissionId: admissionId || undefined, noteType, content }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Nursing note created");
@@ -335,7 +335,7 @@ function NewCarePlanDialog({ open, onClose, onCreated }: { open: boolean; onClos
         body: JSON.stringify({ recordType: "care_plan", patientId, encounterId, problem, goal, interventions, evaluation }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
       toast.success("Care plan created");

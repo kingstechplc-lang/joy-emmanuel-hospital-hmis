@@ -4,6 +4,46 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, SearchX } from "lucide-react";
 import { ReactNode } from "react";
 
+// =====================================================================
+// SAFE FETCH HELPERS — handle empty/error responses gracefully
+// =====================================================================
+
+/**
+ * Safely parse a JSON response body. Returns {} if body is empty or invalid.
+ * Prevents "Failed to execute 'json' on 'Response': Unexpected end of JSON input"
+ */
+export async function safeJson<T = any>(res: Response): Promise<T> {
+  try {
+    const text = await res.text();
+    if (!text || text.trim() === "") return {} as T;
+    return JSON.parse(text) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
+/**
+ * Safe fetch + JSON parse. Throws Error with server message on non-OK response.
+ * Never throws "Unexpected end of JSON input" — falls back to generic message.
+ */
+export async function safeFetchJson(url: string, options?: RequestInit): Promise<any> {
+  let res: Response;
+  try {
+    res = await fetch(url, options);
+  } catch (e: any) {
+    throw new Error(e?.message || "Network request failed");
+  }
+
+  const data = await safeJson(res);
+
+  if (!res.ok) {
+    const errMsg = (data && data.error) || `Request failed with status ${res.status}`;
+    throw new Error(errMsg);
+  }
+
+  return data;
+}
+
 // Empty state
 export function EmptyState({ title, description, action, icon: Icon }: { title: string; description?: string; action?: ReactNode; icon?: any }) {
   const FinalIcon = Icon || SearchX;

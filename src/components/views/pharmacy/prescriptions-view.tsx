@@ -14,13 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, CheckCircle2, X, Pill, Search, Eye, Activity, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_OPTIONS = [
@@ -150,7 +150,7 @@ export function PrescriptionsView() {
                                 body: JSON.stringify({ action: "approve" }),
                               });
                               if (res.ok) { toast.success("Prescription approved"); invalidate(); }
-                              else { const e = await res.json().catch(() => ({})); toast.error(e.error || "Failed"); }
+                              else { const e = await safeJson(res).catch(() => ({})); toast.error(e.error || "Failed"); }
                             }} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
                               <CheckCircle2 className="w-3 h-3" /> Approve
                             </Button>
@@ -173,7 +173,7 @@ export function PrescriptionsView() {
                                     body: JSON.stringify({ action: "cancel" }),
                                   });
                                   if (res.ok) { toast.success("Prescription cancelled"); invalidate(); }
-                                  else { const e = await res.json().catch(() => ({})); toast.error(e.error || "Failed"); }
+                                  else { const e = await safeJson(res).catch(() => ({})); toast.error(e.error || "Failed"); }
                                 },
                               });
                             }} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700">
@@ -333,7 +333,7 @@ function NewPrescriptionDialog({ open, onClose, onCreated, defaultFacilityId, de
           })),
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success("Prescription created");
       reset();
@@ -642,7 +642,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
           // Look up facility inventory for this medication's inventory item
           const res = await fetch(`/api/inventory?facilityId=${facilityId}&type=medication&q=${encodeURIComponent(it.medication?.genericName || "")}`);
           if (res.ok) {
-            const inv = await res.json();
+            const inv = await safeJson(res);
             // Find the matching inventory item (by medication link or name)
             const match = (inv.items || []).find((i: any) => i.medication?.id === it.medicationId || i.name.toLowerCase().includes((it.medication?.genericName || "").toLowerCase()));
             newBatches[it.id] = match?.batches || [];
@@ -681,7 +681,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
           createInvoice: cfg.createInvoice,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success(`Dispensed ${cfg.quantity} units${data.invoice ? " (invoice updated)" : ""}`);
       onDone();

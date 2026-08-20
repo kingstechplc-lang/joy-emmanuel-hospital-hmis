@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeftRight, Plus, CheckCircle2, X, Send, Truck } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const STATUS_OPTIONS = [
@@ -66,7 +66,7 @@ export function StockTransfersView() {
       body: JSON.stringify({ action }),
     });
     if (res.ok) { toast.success(successMsg); invalidate(); }
-    else { const e = await res.json().catch(() => ({})); toast.error(e.error || "Failed"); }
+    else { const e = await safeJson(res).catch(() => ({})); toast.error(e.error || "Failed"); }
   };
 
   return (
@@ -232,7 +232,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
           items: items.map((it) => ({ inventoryItemId: it.inventoryItemId, batchId: it.batchId || null, quantity: Number(it.quantity) })),
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       toast.success("Stock transfer requested");
       setItems([]); setNotes(""); setToFacilityId("");

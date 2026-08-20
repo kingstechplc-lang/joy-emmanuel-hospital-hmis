@@ -80,7 +80,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
   const { staffId, facilityId, departmentId, shiftDate, startTime, endTime, shiftType } = body;
 
   if (!staffId || !facilityId || !shiftDate || !startTime) {

@@ -10,13 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Stethoscope, Save } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
-  return res.json();
+  return safeJson(res);
 }
 
 const TRIAGE_CATEGORIES = [
@@ -106,7 +106,7 @@ function TriageForm({ facilityId, onCreated }: { facilityId: string | null; onCr
       }),
     });
     if (!res.ok) throw new Error("Failed to create encounter");
-    const data = await res.json();
+    const data = await safeJson(res);
     return data.item.id as string;
   };
 
@@ -142,10 +142,10 @@ function TriageForm({ facilityId, onCreated }: { facilityId: string | null; onCr
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
-      return res.json();
+      return safeJson(res);
     },
     onSuccess: () => {
       toast.success("Triage recorded");

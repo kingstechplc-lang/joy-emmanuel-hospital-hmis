@@ -72,7 +72,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
 
   // Validate required fields
   if (body.donorId === undefined || body.donorId === "" || body.donorId === null || body.bloodGroup === undefined || body.bloodGroup === "" || body.bloodGroup === null || body.expiryDate === undefined || body.expiryDate === "" || body.expiryDate === null) {

@@ -12,15 +12,15 @@ import {
   Wallet, FileText, Wrench, Settings, ArrowRight, History,
   type LucideIcon,
 } from "lucide-react";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative } from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, safeJson} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
+    const e = await safeJson(res).catch(() => ({}));
     throw new Error(e.error || `Failed: ${res.status}`);
   }
-  return res.json();
+  return safeJson(res);
 }
 
 // ─── Category metadata ────────────────────────────────────────────
