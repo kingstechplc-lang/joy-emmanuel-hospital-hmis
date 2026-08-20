@@ -83,6 +83,7 @@ async function main() {
     { code: "MATWARD", name: "Maternity/Labour Ward", category: "Nursing & Patient Care" },
     { code: "RECOVERY", name: "Recovery Room", category: "Nursing & Patient Care" },
     { code: "COMMHEALTH", name: "Community Health/Public Health", category: "Nursing & Patient Care" },
+    { code: "HOMECARE", name: "Home Care Services", category: "Nursing & Patient Care" },
     // Finance & Administration
     { code: "FIN", name: "Accounts & Finance", category: "Finance & Administration" },
     { code: "BILLING", name: "Billing & Revenue", category: "Finance & Administration" },
@@ -148,6 +149,8 @@ async function main() {
       { code: "XRAY", name: "X-Ray Unit", description: "General radiography" },
       { code: "US", name: "Ultrasound Unit", description: "Ultrasonography" },
       { code: "CT", name: "CT Scan Unit", description: "Computed tomography" },
+      { code: "MRI", name: "MRI Unit", description: "Magnetic resonance imaging" },
+      { code: "MAMMO", name: "Mammography Unit", description: "Breast imaging" },
     ],
     OPD: [
       { code: "GEN", name: "General Consultation", description: "General outpatient consultations" },
