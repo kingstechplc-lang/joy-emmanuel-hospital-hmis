@@ -20,6 +20,7 @@ import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
   calculateAge, safeJson, PageHeader, MiniStatCard,
 } from "@/components/ui-helpers";
+import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useAppStore } from "@/stores/app-store";
@@ -416,41 +417,29 @@ function RequestsTab() {
            </CardTitle>
          </CardHeader>
          <CardContent className="p-0">
-           <div className="overflow-x-auto">
-             <table className="w-full">
-               <thead>
-                 <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Req #</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Patient</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">MRN</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Dept</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Priority</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Status</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Requested</th>
-                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Actions</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100">
-                 {items.map((item) => {
-                   const isOverdue = item.issuedAt && (Date.now() - new Date(item.issuedAt).getTime()) / (1000 * 60 * 60) > 24 && item.status !== "returned" && item.status !== "closed";
-                   return (
-                     <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${isOverdue ? "bg-rose-50/30" : ""}`}>
-                       <td className="px-4 py-2"><span className="font-mono text-xs text-white bg-gradient-to-r from-indigo-500 to-blue-600 px-2 py-0.5 rounded-md font-semibold">{item.requestNumber}</span></td>
-                       <td className="px-4 py-2 text-sm font-medium text-slate-900">{item.patientName}</td>
-                       <td className="px-4 py-2 text-xs font-mono text-slate-500">{item.patientNumber || "—"}</td>
-                       <td className="px-4 py-2 text-xs text-slate-600">{item.requestingDepartment || "—"}</td>
-                       <td className="px-4 py-2"><StatusBadge status={item.priority} /></td>
-                       <td className="px-4 py-2"><StatusBadge status={item.status} />{isOverdue && <span className="ml-1 text-[10px] text-rose-600 font-bold">OVERDUE</span>}</td>
-                       <td className="px-4 py-2 text-xs text-slate-500">{formatRelative(item.requestedAt)}</td>
-                       <td className="px-4 py-2">
-                         <Button variant="ghost" size="sm" onClick={() => setViewItem(item)}><Eye className="w-4 h-4" /></Button>
-                       </td>
-                     </tr>
-                   );
-                 })}
-               </tbody>
-             </table>
-           </div>
+           <DataTable
+             headers={["Req #", "Patient", "MRN", "Dept", "Priority", "Status", "Requested", "Actions"]}
+             rows={items.map((item) => {
+               const isOverdue = item.issuedAt && (Date.now() - new Date(item.issuedAt).getTime()) / (1000 * 60 * 60) > 24 && item.status !== "returned" && item.status !== "closed";
+               return {
+                 cells: [
+                   <span key="n" className="font-mono text-xs text-white bg-gradient-to-r from-indigo-500 to-blue-600 px-2 py-0.5 rounded-md font-semibold">{item.requestNumber}</span>,
+                   <span key="p" className="text-sm font-medium text-slate-900">{item.patientName}</span>,
+                   <span key="m" className="text-xs font-mono text-slate-500">{item.patientNumber || "—"}</span>,
+                   <span key="d" className="text-xs text-slate-600">{item.requestingDepartment || "—"}</span>,
+                   <StatusBadge key="pr" status={item.priority} />,
+                   <span key="st"><StatusBadge status={item.status} />{isOverdue && <span className="ml-1 text-[10px] text-rose-600 font-bold">OVERDUE</span>}</span>,
+                   <span key="c" className="text-xs text-slate-500">{formatRelative(item.requestedAt)}</span>,
+                   <Button key="a" variant="ghost" size="sm" onClick={() => setViewItem(item)}><Eye className="w-4 h-4" /></Button>,
+                 ],
+                 sortValues: [item.requestNumber, item.patientName, item.patientNumber || "", item.requestingDepartment || "", item.priority, item.status, item.requestedAt, ""],
+                 onClick: () => setViewItem(item),
+                 rowClassName: isOverdue ? "bg-rose-50/30" : "",
+               };
+             })}
+             gradient="from-indigo-500 to-blue-600"
+             pageSize={10}
+           />
          </CardContent>
        </Card>}
 

@@ -155,6 +155,63 @@
 }
 
 /* ===================================================================== */
+/* GLOBAL TABLE STYLING — beautiful gradient headers + hoverable rows     */
+/* ===================================================================== */
+/* Auto-applies to ALL <table> elements in the app */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Upgrade old-style headers (bg-slate-50, border-b) to gradient */
+thead[class*="bg-slate-50"],
+thead[class*="border-b"]:not([class*="bg-gradient"]) {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%) !important;
+  border-bottom: none !important;
+}
+
+thead[class*="bg-slate-50"] th,
+thead[class*="border-b"]:not([class*="bg-gradient"]) th {
+  color: white !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+
+/* If thead already has a gradient class, just ensure text styling */
+thead[class*="bg-gradient"] th {
+  color: white;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Table body rows — hoverable */
+tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+tbody td {
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* Table container — rounded corners + shadow when it wraps a table */
+.overflow-x-auto > table,
+.overflow-x-auto:has(> table) {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* ===================================================================== */
 /* KPI CARD GRADIENT CLASSES — vibrant gradients matching the sample UI  */
 /* ===================================================================== */
 .kpi-gradient-blue {

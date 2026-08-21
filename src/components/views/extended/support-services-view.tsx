@@ -20,6 +20,7 @@ import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
   safeJson, PageHeader, MiniStatCard,
 } from "@/components/ui-helpers";
+import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -272,40 +273,29 @@ function RequestsTab({ canManage }: { canManage: boolean }) {
           {isLoading ? <LoadingState rows={5} /> :
            isError ? <ErrorState message={(error as Error).message} onRetry={() => refetch()} /> :
            items.length === 0 ? <EmptyState title="No requests" description="Create a new service request to get support." icon={Sparkles} /> :
-           <div className="overflow-x-auto">
-             <table className="w-full">
-               <thead>
-                 <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Request #</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Title</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Service</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Priority</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Status</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Location</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Created</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100">
-                 {items.map((item) => {
-                   const typeInfo = SERVICE_TYPES.find((t) => t.value === item.serviceType) || SERVICE_TYPES[0];
-                   const TypeIcon = typeInfo.icon;
-                   return (
-                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                       <td className="px-4 py-2.5"><span className="font-mono text-xs text-white bg-gradient-to-r from-slate-600 to-slate-700 px-2 py-0.5 rounded-md font-semibold">{item.requestNumber}</span></td>
-                       <td className="px-4 py-2.5 text-sm font-medium text-slate-900 max-w-xs truncate">{item.title}</td>
-                       <td className="px-4 py-2.5"><span className="inline-flex items-center gap-1 text-xs text-slate-600"><TypeIcon className="w-3 h-3" />{typeInfo.label}</span></td>
-                       <td className="px-4 py-2.5"><StatusBadge status={item.priority} /></td>
-                       <td className="px-4 py-2.5"><StatusBadge status={item.status} /></td>
-                       <td className="px-4 py-2.5 text-xs text-slate-500">{item.location || "—"}</td>
-                       <td className="px-4 py-2.5 text-xs text-slate-500">{formatRelative(item.createdAt)}</td>
-                       <td className="px-4 py-2.5"><Button variant="ghost" size="sm" onClick={() => setViewItem(item)}><Eye className="w-4 h-4" /></Button></td>
-                     </tr>
-                   );
-                 })}
-               </tbody>
-             </table>
-           </div>}
+           <DataTable
+             headers={["Request #", "Title", "Service", "Priority", "Status", "Location", "Created", "Actions"]}
+             rows={items.map((item) => {
+               const typeInfo = SERVICE_TYPES.find((t) => t.value === item.serviceType) || SERVICE_TYPES[0];
+               const TypeIcon = typeInfo.icon;
+               return {
+                 cells: [
+                   <span key="n" className="font-mono text-xs text-white bg-gradient-to-r from-slate-600 to-slate-700 px-2 py-0.5 rounded-md font-semibold">{item.requestNumber}</span>,
+                   <span key="t" className="text-sm font-medium text-slate-900 max-w-xs truncate inline-block">{item.title}</span>,
+                   <span key="s" className="inline-flex items-center gap-1 text-xs text-slate-600"><TypeIcon className="w-3 h-3" />{typeInfo.label}</span>,
+                   <StatusBadge key="p" status={item.priority} />,
+                   <StatusBadge key="st" status={item.status} />,
+                   <span key="l" className="text-xs text-slate-500">{item.location || "—"}</span>,
+                   <span key="c" className="text-xs text-slate-500">{formatRelative(item.createdAt)}</span>,
+                   <Button key="a" variant="ghost" size="sm" onClick={() => setViewItem(item)}><Eye className="w-4 h-4" /></Button>,
+                 ],
+                 sortValues: [item.requestNumber, item.title, typeInfo.label, item.priority, item.status, item.location || "", item.createdAt, ""],
+                 onClick: () => setViewItem(item),
+               };
+             })}
+             gradient="from-teal-500 to-teal-600"
+             pageSize={10}
+           />}
         </CardContent>
       </Card>
 

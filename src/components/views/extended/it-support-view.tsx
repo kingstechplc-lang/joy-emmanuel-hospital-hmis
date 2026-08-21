@@ -20,6 +20,7 @@ import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
   safeJson, PageHeader, MiniStatCard,
 } from "@/components/ui-helpers";
+import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -236,40 +237,28 @@ function TicketTab({ canManage }: { canManage: boolean }) {
           {isLoading ? <LoadingState rows={5} /> :
            isError ? <ErrorState message={(error as Error).message} onRetry={() => refetch()} /> :
            items.length === 0 ? <EmptyState title="No tickets" description="Create a new ticket to get IT support." icon={Server} /> :
-           <div className="overflow-x-auto">
-             <table className="w-full">
-               <thead>
-                 <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Ticket #</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Subject</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Type</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Priority</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Status</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Created</th>
-                   <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100">
-                 {items.map((item) => {
-                   const typeInfo = TICKET_TYPES.find((t) => t.value === item.ticketType) || TICKET_TYPES[5];
-                   const TypeIcon = typeInfo.icon;
-                   return (
-                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                       <td className="px-4 py-2.5 text-xs font-mono text-white bg-gradient-to-r from-slate-600 to-slate-700 m-1 rounded-md font-semibold inline-block">
-                         {item.ticketNumber}
-                       </td>
-                       <td className="px-4 py-2.5 text-sm font-medium text-slate-900 max-w-xs truncate">{item.subject}</td>
-                       <td className="px-4 py-2.5"><span className="inline-flex items-center gap-1 text-xs text-slate-600"><TypeIcon className="w-3 h-3" />{typeInfo.label}</span></td>
-                       <td className="px-4 py-2.5"><StatusBadge status={item.priority} /></td>
-                       <td className="px-4 py-2.5"><StatusBadge status={item.status} /></td>
-                       <td className="px-4 py-2.5 text-xs text-slate-500">{formatRelative(item.createdAt)}</td>
-                       <td className="px-4 py-2.5"><Button variant="ghost" size="sm" onClick={() => setViewTicket(item)}><Eye className="w-4 h-4" /></Button></td>
-                     </tr>
-                   );
-                 })}
-               </tbody>
-             </table>
-           </div>}
+           <DataTable
+             headers={["Ticket #", "Subject", "Type", "Priority", "Status", "Created", "Actions"]}
+             rows={items.map((item) => {
+               const typeInfo = TICKET_TYPES.find((t) => t.value === item.ticketType) || TICKET_TYPES[5];
+               const TypeIcon = typeInfo.icon;
+               return {
+                 cells: [
+                   <span key="n" className="font-mono text-xs text-white bg-gradient-to-r from-slate-600 to-slate-700 px-2 py-0.5 rounded-md font-semibold">{item.ticketNumber}</span>,
+                   <span key="s" className="text-sm font-medium text-slate-900 max-w-xs truncate inline-block">{item.subject}</span>,
+                   <span key="t" className="inline-flex items-center gap-1 text-xs text-slate-600"><TypeIcon className="w-3 h-3" />{typeInfo.label}</span>,
+                   <StatusBadge key="p" status={item.priority} />,
+                   <StatusBadge key="st" status={item.status} />,
+                   <span key="c" className="text-xs text-slate-500">{formatRelative(item.createdAt)}</span>,
+                   <Button key="a" variant="ghost" size="sm" onClick={() => setViewTicket(item)}><Eye className="w-4 h-4" /></Button>,
+                 ],
+                 sortValues: [item.ticketNumber, item.subject, typeInfo.label, item.priority, item.status, item.createdAt, ""],
+                 onClick: () => setViewTicket(item),
+               };
+             })}
+             gradient="from-indigo-500 to-blue-600"
+             pageSize={10}
+           />}
         </CardContent>
       </Card>
 
