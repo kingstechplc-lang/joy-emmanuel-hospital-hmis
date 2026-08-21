@@ -138,9 +138,9 @@ export function AppShell() {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar — dark navy */}
       <aside
-        className={`${sidebarCollapsed ? "w-16" : "w-64"} hidden md:flex flex-col bg-white border-r border-slate-200 transition-all duration-200 shrink-0 h-screen overflow-hidden`}
+        className={`${sidebarCollapsed ? "w-16" : "w-64"} hidden md:flex flex-col bg-slate-900 transition-all duration-200 shrink-0 h-screen overflow-hidden shadow-xl`}
       >
         <SidebarContent
           navByCategory={navByCategory}
@@ -151,30 +151,30 @@ export function AppShell() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        {/* Topbar */}
-        <header className="h-16 border-b border-slate-200 bg-white px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 z-30">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-slate-50">
+        {/* Topbar — clean white with subtle shadow */}
+        <header className="h-16 border-b border-slate-200 bg-white px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 z-30 shadow-sm">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden hover:bg-slate-100"
               onClick={() => setMobileOpen(true)}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-slate-700" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="hidden md:flex"
+              className="hidden md:flex hover:bg-slate-100"
               onClick={toggleSidebar}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-slate-700" />
             </Button>
             <div className="flex flex-col min-w-0">
-              <h1 className="text-lg font-semibold text-slate-900 truncate">{currentViewLabel}</h1>
+              <h1 className="text-lg font-bold text-slate-900 truncate">{currentViewLabel}</h1>
               <p className="text-xs text-slate-500 hidden sm:block">
-                Joy Emmanuel Hospital HMIS
+                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
           </div>
@@ -183,10 +183,10 @@ export function AppShell() {
             {/* Facility Switcher */}
             {facilities.length > 0 && (
               <Select value={activeFacilityId || undefined} onValueChange={handleFacilityChange}>
-                <SelectTrigger className="w-44 hidden md:flex">
+                <SelectTrigger className="w-44 hidden md:flex border-slate-200 hover:border-rose-300">
                   <div className="flex items-center gap-2 truncate">
-                    <Hospital className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="truncate text-sm">
+                    <Hospital className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span className="truncate text-sm font-medium text-slate-700">
                       {activeFacility ? activeFacility.code : "All Facilities"}
                     </span>
                   </div>
@@ -209,10 +209,10 @@ export function AppShell() {
             <OfflineIndicator />
 
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="relative hover:bg-slate-100" onClick={() => setView("workflow_dashboard")}>
+              <Bell className="w-5 h-5 text-slate-600" />
               {unread.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-gradient-to-br from-rose-500 to-red-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-md">
                   {unread.length > 9 ? "9+" : unread.length}
                 </span>
               )}
@@ -221,19 +221,19 @@ export function AppShell() {
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 px-2">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-emerald-600 text-white text-xs font-semibold">
+                <Button variant="ghost" className="gap-2 px-2 hover:bg-slate-100 rounded-full">
+                  <Avatar className="w-9 h-9 ring-2 ring-slate-200">
+                    <AvatarFallback className="bg-gradient-to-br from-rose-500 to-red-600 text-white text-xs font-bold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden md:flex flex-col items-start">
-                    <span className="text-sm font-medium leading-tight">{user?.name}</span>
-                    <span className="text-xs text-slate-500 leading-tight">
+                    <span className="text-sm font-semibold leading-tight text-slate-900">{user?.name}</span>
+                    <span className="text-[11px] text-slate-500 leading-tight capitalize">
                       {(user?.roles || []).join(", ").replace(/_/g, " ")}
                     </span>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -287,29 +287,29 @@ function SidebarContent({
   collapsed: boolean;
 }) {
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Logo / Brand */}
-      <div className="h-16 border-b border-slate-200 flex items-center px-4 gap-2 shrink-0">
-        <div className="w-9 h-9 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-lg flex items-center justify-center text-white shrink-0">
+    <div className="flex flex-col h-full overflow-hidden bg-slate-900">
+      {/* Logo / Brand — dark sidebar with red accent */}
+      <div className="h-16 border-b border-slate-700/50 flex items-center px-4 gap-3 shrink-0 bg-slate-950/50">
+        <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-red-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg shadow-red-900/30">
           <Icons.ShieldPlus className="w-5 h-5" />
         </div>
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">Joy Emmanuel</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">HMIS</p>
+            <p className="text-sm font-bold text-white truncate">Joy Emmanuel</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider">Hospital HMIS</p>
           </div>
         )}
       </div>
 
-      {/* Nav — scrolls independently within the sidebar */}
-      <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-2">
+      {/* Nav — dark sidebar with red active state */}
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 sidebar-scroll">
         {NAV_CATEGORIES.map((cat) => {
           const items = navByCategory[cat] || [];
           if (items.length === 0) return null;
           return (
-            <div key={cat} className="mb-2">
+            <div key={cat} className="mb-3">
               {!collapsed && (
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1 mt-3">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-1.5 mt-4">
                   {cat}
                 </p>
               )}
@@ -321,17 +321,13 @@ function SidebarContent({
                     key={item.key}
                     onClick={() => onSelect(item.key)}
                     title={collapsed ? item.label : undefined}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 group relative ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 group relative mb-0.5 ${
                       isActive
-                        ? "bg-emerald-50 text-emerald-700 font-semibold shadow-sm"
-                        : "text-slate-700 hover:bg-slate-100 hover:translate-x-0.5"
+                        ? "bg-gradient-to-r from-rose-500 to-red-600 text-white font-semibold shadow-lg shadow-red-900/30"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
                     }`}
                   >
-                    {/* Active left accent */}
-                    {isActive && (
-                      <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-emerald-600 rounded-r-full" />
-                    )}
-                    <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-emerald-600" : "text-slate-500 group-hover:text-slate-700"}`} />
+                    <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} />
                     {!collapsed && <span className="truncate text-left">{item.label}</span>}
                   </button>
                 );
@@ -341,12 +337,16 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-slate-200 p-3 shrink-0">
-        {!collapsed && (
+      {/* Footer — dark */}
+      <div className="border-t border-slate-700/50 p-3 shrink-0 bg-slate-950/30">
+        {!collapsed ? (
           <div className="text-[10px] text-slate-500 leading-tight">
-            <p>© {new Date().getFullYear()} Joy Emmanuel Hospital</p>
-            <p>v1.0.0 • Multi-facility HMIS</p>
+            <p className="font-semibold text-slate-400">© {new Date().getFullYear()} Joy Emmanuel Hospital</p>
+            <p className="mt-0.5">v1.0.0 • Multi-facility HMIS</p>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System online" />
           </div>
         )}
       </div>

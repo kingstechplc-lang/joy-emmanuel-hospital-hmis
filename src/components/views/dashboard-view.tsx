@@ -133,22 +133,36 @@ export function DashboardView() {
   const showPendingTasks = true; // Tasks are always relevant (assigned to this user)
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 fade-in-up">
+      {/* Header — Welcome with action buttons */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">
             Welcome back, {firstName} 👋
           </h2>
-          <p className="text-slate-600 text-sm">
-            {role.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} • {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          <p className="text-slate-600 text-sm flex items-center gap-1.5 mt-1">
+            <Calendar className="w-3.5 h-3.5 text-rose-500" />
+            {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            <span className="text-slate-300 mx-1">•</span>
+            <span className="capitalize">{role.replace(/_/g, " ")}</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {visibleActions.slice(0, 4).map((a) => {
+          {visibleActions.slice(0, 4).map((a, i) => {
             const Icon = a.icon;
+            // First button is primary (red), rest are dark
+            const isPrimary = i === 0;
             return (
-              <Button key={a.view} onClick={() => setView(a.view)} size="sm" variant="outline" className="gap-2">
+              <Button
+                key={a.view}
+                onClick={() => setView(a.view)}
+                size="sm"
+                className={`gap-2 rounded-lg shadow-md ${
+                  isPrimary
+                    ? "bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white border-0"
+                    : "bg-slate-800 hover:bg-slate-900 text-white border-0"
+                }`}
+              >
                 <Icon className="w-4 h-4" />
                 {a.label}
               </Button>
@@ -366,39 +380,44 @@ function StatCard({
   color: string;
   onClick?: () => void;
 }) {
-  const colorMap: Record<string, { bg: string; text: string; ring: string; bar: string }> = {
-    emerald: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200/60", bar: "bg-emerald-500" },
-    blue: { bg: "bg-blue-50", text: "text-blue-700", ring: "ring-blue-200/60", bar: "bg-blue-500" },
-    amber: { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200/60", bar: "bg-amber-500" },
-    purple: { bg: "bg-purple-50", text: "text-purple-700", ring: "ring-purple-200/60", bar: "bg-purple-500" },
-    pink: { bg: "bg-pink-50", text: "text-pink-700", ring: "ring-pink-200/60", bar: "bg-pink-500" },
-    cyan: { bg: "bg-cyan-50", text: "text-cyan-700", ring: "ring-cyan-200/60", bar: "bg-cyan-500" },
-    rose: { bg: "bg-rose-50", text: "text-rose-700", ring: "ring-rose-200/60", bar: "bg-rose-500" },
-    teal: { bg: "bg-teal-50", text: "text-teal-700", ring: "ring-teal-200/60", bar: "bg-teal-500" },
-    orange: { bg: "bg-orange-50", text: "text-orange-700", ring: "ring-orange-200/60", bar: "bg-orange-500" },
-    indigo: { bg: "bg-indigo-50", text: "text-indigo-700", ring: "ring-indigo-200/60", bar: "bg-indigo-500" },
-    slate: { bg: "bg-slate-50", text: "text-slate-700", ring: "ring-slate-200/60", bar: "bg-slate-500" },
-    green: { bg: "bg-green-50", text: "text-green-700", ring: "ring-green-200/60", bar: "bg-green-500" },
-    red: { bg: "bg-red-50", text: "text-red-700", ring: "ring-red-200/60", bar: "bg-red-500" },
-    yellow: { bg: "bg-yellow-50", text: "text-yellow-700", ring: "ring-yellow-200/60", bar: "bg-yellow-500" },
-    violet: { bg: "bg-violet-50", text: "text-violet-700", ring: "ring-violet-200/60", bar: "bg-violet-500" },
+  // Gradient class map — vibrant gradients matching the sample HMIS UI
+  const gradientMap: Record<string, string> = {
+    emerald: "kpi-gradient-emerald",
+    blue: "kpi-gradient-blue",
+    amber: "kpi-gradient-amber",
+    purple: "kpi-gradient-purple",
+    pink: "kpi-gradient-pink",
+    cyan: "kpi-gradient-cyan",
+    rose: "kpi-gradient-rose",
+    teal: "kpi-gradient-teal",
+    orange: "kpi-gradient-orange",
+    indigo: "kpi-gradient-indigo",
+    slate: "kpi-gradient-slate",
+    green: "kpi-gradient-green",
+    red: "kpi-gradient-red",
+    yellow: "kpi-gradient-amber",
+    violet: "kpi-gradient-violet",
   };
-  const c = colorMap[color] || colorMap.slate;
+  const gradientClass = gradientMap[color] || gradientMap.slate;
+
   return (
     <Card
       onClick={onClick}
-      className="group relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden ring-1 ring-slate-200/50"
+      className={`group relative ${gradientClass} text-white cursor-pointer overflow-hidden border-0 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl card-hover-lift`}
     >
-      <div className={`absolute top-0 left-0 right-0 h-1 ${c.bar} opacity-80 group-hover:opacity-100 transition`} />
-      <CardContent className="p-4 pt-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.bg} ${c.text} ring-1 ${c.ring} group-hover:scale-110 transition-transform`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" />
+      <CardContent className="p-5 relative z-10">
+        {/* Watermark icon in top-right */}
+        <div className="absolute top-4 right-4 text-white/20 pointer-events-none">
+          <Icon className="w-12 h-12" strokeWidth={1.5} />
         </div>
-        <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{value}</p>
-        <p className="text-xs text-slate-500 mt-0.5 font-medium">{label}</p>
+        {/* Label */}
+        <p className="text-[11px] font-bold uppercase tracking-wider text-white/90 mb-2 pr-12">{label}</p>
+        {/* Value */}
+        <p className="text-3xl font-extrabold text-white tracking-tight tabular-nums">{value}</p>
+        {/* Hover arrow */}
+        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          <ArrowRight className="w-4 h-4 text-white/70" />
+        </div>
       </CardContent>
     </Card>
   );

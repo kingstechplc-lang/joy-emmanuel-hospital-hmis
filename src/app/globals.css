@@ -120,3 +120,106 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===================================================================== */
+/* CUSTOM SCROLLBAR — for sidebar and content areas                      */
+/* ===================================================================== */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Smooth scrolling for all scrollable areas */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+/* ===================================================================== */
+/* KPI CARD GRADIENT CLASSES — vibrant gradients matching the sample UI  */
+/* ===================================================================== */
+.kpi-gradient-blue {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+}
+.kpi-gradient-red {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+.kpi-gradient-emerald {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+.kpi-gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.kpi-gradient-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.kpi-gradient-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+.kpi-gradient-orange {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+}
+.kpi-gradient-teal {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+}
+.kpi-gradient-indigo {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+}
+.kpi-gradient-slate {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+}
+.kpi-gradient-pink {
+  background: linear-gradient(135deg, #db2777 0%, #be185d 100%);
+}
+.kpi-gradient-rose {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+}
+.kpi-gradient-green {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+.kpi-gradient-violet {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+/* Watermark icon effect for KPI cards */
+.kpi-watermark-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 48px;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* Card hover lift effect */
+.card-hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+}
+
+/* Fade-in animation for content */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}
