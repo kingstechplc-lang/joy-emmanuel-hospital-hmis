@@ -91,23 +91,51 @@ export function RecordsDeskView() {
   // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/records/check-in", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId: checkInPatient.id,
-          facilityId: activeFacilityId,
-          encounterType,
-          priority,
-          addToQueue: true,
-        }),
-      });
-      const data = await safeJson(res);
-      if (!res.ok) throw new Error(data.error || "Failed to check in");
+      // Pre-validate: ensure facility is selected
+      if (!activeFacilityId) {
+        throw new Error("No facility selected. Please select a facility from the top bar before checking in.");
+      }
+      if (!checkInPatient?.id) {
+        throw new Error("No patient selected for check-in.");
+      }
+
+      let res: Response;
+      try {
+        res = await fetch("/api/records/check-in", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientId: checkInPatient.id,
+            facilityId: activeFacilityId,
+            encounterType,
+            priority,
+            addToQueue: true,
+          }),
+        });
+      } catch (fetchErr: any) {
+        throw new Error(`Network error: ${fetchErr?.message || "Could not reach the server. Please check your connection and try again."}`);
+      }
+
+      // Safely parse the response body
+      let data: any = {};
+      try {
+        const text = await res.text();
+        if (text && text.trim() !== "") {
+          data = JSON.parse(text);
+        }
+      } catch {
+        // Body wasn't valid JSON
+      }
+
+      if (!res.ok) {
+        const errMsg = data?.error || `Check-in failed (HTTP ${res.status}). Please try again.`;
+        throw new Error(errMsg);
+      }
+
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message || "Patient checked in successfully");
       qc.invalidateQueries({ queryKey: ["records-stats"] });
       qc.invalidateQueries({ queryKey: ["encounters"] });
       qc.invalidateQueries({ queryKey: ["queue"] });
