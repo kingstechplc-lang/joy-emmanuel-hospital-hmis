@@ -2330,6 +2330,10 @@ model MortuaryAdmission {
   @@index([organizationId, facilityId])
   @@index([patientId])
   @@index([admissionStatus])
+
+  movements       MortuaryMovement[]
+  viewings        MortuaryViewing[]
+  propertyItems   MortuaryProperty[]
 }
 
 // ---------------------------------------------------------------------
@@ -3328,4 +3332,88 @@ model RecordAmendment {
 
   @@index([organizationId, status])
   @@index([patientId])
+}
+
+// ---------------------------------------------------------------------
+// MORTUARY — Storage, Movements, Viewings, Property
+// ---------------------------------------------------------------------
+
+model MortuaryStorage {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  name            String   // e.g., "Refrigerator 1 - Compartment A"
+  storageType     String   @default("refrigerator") // refrigerator | freezer | shelf | room | other
+  location        String?  // building/room description
+  capacity        Int      @default(1)
+  status          String   @default("available") // available | occupied | reserved | maintenance | out_of_service
+  currentCaseId   String?  // link to MortuaryAdmission if occupied
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([status])
+}
+
+model MortuaryMovement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  mortuaryAdmissionId String
+  mortuaryAdmission   MortuaryAdmission @relation(fields: [mortuaryAdmissionId], references: [id], onDelete: Cascade)
+  movementType    String   // admitted | stored | moved | viewed | released | transferred
+  fromLocation    String?
+  toLocation      String?
+  movedById       String?
+  movedByName     String?
+  reason          String?
+  notes           String?
+  movedAt         DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([mortuaryAdmissionId, movedAt])
+}
+
+model MortuaryViewing {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  mortuaryAdmissionId String
+  mortuaryAdmission   MortuaryAdmission @relation(fields: [mortuaryAdmissionId], references: [id], onDelete: Cascade)
+  viewerName      String
+  viewerRelation  String?
+  viewerPhone     String?
+  numVisitors     Int      @default(1)
+  scheduledAt     DateTime
+  completedAt     DateTime?
+  authorizedBy    String?
+  status          String   @default("requested") // requested | approved | scheduled | completed | cancelled
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([mortuaryAdmissionId])
+  @@index([status])
+}
+
+model MortuaryProperty {
+  id              String   @id @default(cuid())
+  organizationId  String
+  mortuaryAdmissionId String
+  mortuaryAdmission   MortuaryAdmission @relation(fields: [mortuaryAdmissionId], references: [id], onDelete: Cascade)
+  itemName        String
+  description     String?
+  quantity        Int      @default(1)
+  condition       String?  // good | fair | poor | damaged
+  receivedBy      String?
+  storedLocation  String?
+  releasedWithBody Boolean @default(false)
+  releasedAt      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([mortuaryAdmissionId])
 }
