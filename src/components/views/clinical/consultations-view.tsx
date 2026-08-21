@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, ClipboardList, PenSquare, Save, Check, X, Lock } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -42,17 +42,19 @@ export function ConsultationsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Consultations</h2>
-          <p className="text-sm text-slate-500">Clinical consultation notes. Drafts can be signed once finalized.</p>
-        </div>
-        {canCreate && (
-          <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4" /> New Consultation
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Consultations"
+        description="Record clinical consultations and patient assessments"
+        icon={ClipboardList}
+        gradient="from-purple-500 to-purple-600"
+        actions={
+          canCreate ? (
+            <Button onClick={() => setShowNew(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+              <Plus className="w-4 h-4 mr-1" /> New Consultation
+            </Button>
+          ) : undefined
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view consultations.</CardContent></Card>

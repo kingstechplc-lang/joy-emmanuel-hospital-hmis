@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Truck, Plus, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -43,15 +43,18 @@ export function SuppliersView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Suppliers</h2>
-          <p className="text-sm text-slate-500">Manage your organization&apos;s supplier directory (org-wide)</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("procurement.manage")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Suppliers"
+        description="Manage suppliers and vendor relationships"
+        icon={Truck}
+        gradient="from-cyan-500 to-blue-600"
+      
+        actions={
+                  <Button onClick={() => setShowNew(true)} disabled={!can("procurement.manage")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Supplier
         </Button>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-3">

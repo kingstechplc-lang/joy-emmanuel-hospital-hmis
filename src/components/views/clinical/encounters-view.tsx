@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Activity, Search, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -63,15 +63,17 @@ export function EncountersView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Encounters</h2>
-          <p className="text-sm text-slate-500">All clinical encounters at this facility.</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4" /> New Encounter
-        </Button>
-      </div>
+      <PageHeader
+        title="Encounters"
+        description="View and manage all patient encounters across the facility"
+        icon={Activity}
+        gradient="from-blue-500 to-blue-600"
+        actions={
+          <Button onClick={() => setShowNew(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+            <Plus className="w-4 h-4 mr-1" /> New Encounter
+          </Button>
+        }
+      />
 
       {!activeFacilityId && (
         <Card>

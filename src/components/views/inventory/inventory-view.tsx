@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Package, Search, Plus, History, AlertTriangle, Boxes, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -124,15 +124,18 @@ export function InventoryView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Inventory</h2>
-          <p className="text-sm text-slate-500">Track stock levels, transactions, and inventory adjustments</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("inventory.adjust")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Inventory"
+        description="Manage medical supplies and stock levels"
+        icon={Boxes}
+        gradient="from-teal-500 to-teal-600"
+      
+        actions={
+                  <Button onClick={() => setShowNew(true)} disabled={!can("inventory.adjust")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Item
         </Button>
-      </div>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view inventory levels.</CardContent></Card>

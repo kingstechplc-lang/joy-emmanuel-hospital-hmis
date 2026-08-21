@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Cpu, Wrench, History, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -72,15 +72,18 @@ export function EquipmentView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Equipment</h2>
-          <p className="text-sm text-slate-500">Track medical equipment assets and maintenance schedules</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("inventory.adjust")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Equipment"
+        description="Manage medical equipment and maintenance schedules"
+        icon={Wrench}
+        gradient="from-slate-600 to-slate-800"
+      
+        actions={
+                  <Button onClick={() => setShowNew(true)} disabled={!can("inventory.adjust")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Equipment
         </Button>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">

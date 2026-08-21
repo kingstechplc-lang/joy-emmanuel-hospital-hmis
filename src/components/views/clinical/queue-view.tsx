@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, UserCheck, Play, Check, X, ListOrdered } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -64,15 +64,17 @@ export function QueueView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Queue Management</h2>
-          <p className="text-sm text-slate-500">Today&apos;s patient queue per department. Live updating every 15 seconds.</p>
-        </div>
-        <Button onClick={() => setShowAdd(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4" /> Add Patient to Queue
-        </Button>
-      </div>
+      <PageHeader
+        title="Queue Management"
+        description="Manage the patient queue — call, skip, or complete patients"
+        icon={ListOrdered}
+        gradient="from-amber-500 to-orange-600"
+        actions={
+          <Button onClick={() => setShowAdd(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+            <Plus className="w-4 h-4 mr-1" /> Add Patient to Queue
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <LoadingState rows={4} />

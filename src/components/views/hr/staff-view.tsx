@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UserCog, Search, Plus, Building2, Phone, Mail, Ban, CheckCircle2, Edit, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -104,17 +104,19 @@ export function StaffView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Staff</h2>
-          <p className="text-sm text-slate-500">Manage staff members, professional roles, and facility assignments</p>
-        </div>
-        {can("staff.manage") && (
-          <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4" /> Add Staff
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Staff"
+        description="Manage hospital staff and their assignments"
+        icon={UserCog}
+        gradient="from-indigo-500 to-indigo-600"
+        actions={
+          can("staff.manage") ? (
+            <Button onClick={() => setShowNew(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+              <Plus className="w-4 h-4 mr-1" /> Add Staff
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">

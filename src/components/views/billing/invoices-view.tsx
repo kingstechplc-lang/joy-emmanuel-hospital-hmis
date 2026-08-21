@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Receipt, Eye, CreditCard, Ban, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 
@@ -94,15 +94,18 @@ export function InvoicesView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Invoices</h2>
-          <p className="text-sm text-slate-500">Bill patients for services — issue, collect payments, cancel</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("billing.create")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Invoices"
+        description="Manage patient invoices and billing"
+        icon={Receipt}
+        gradient="from-rose-500 to-red-600"
+      
+        actions={
+                  <Button onClick={() => setShowNew(true)} disabled={!can("billing.create")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Invoice
         </Button>
-      </div>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view invoices.</CardContent></Card>

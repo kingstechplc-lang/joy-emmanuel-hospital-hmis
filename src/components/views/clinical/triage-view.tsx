@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Stethoscope, Save } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -33,20 +33,22 @@ export function TriageView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Triage & Vitals</h2>
-          <p className="text-sm text-slate-500">Record patient vitals and assign a triage category.</p>
-        </div>
-        <div className="flex gap-1 border rounded">
-          <Button size="sm" variant={mode === "form" ? "default" : "ghost"} onClick={() => setMode("form")} className={mode === "form" ? "bg-emerald-600 hover:bg-emerald-700" : ""}>
-            <Activity className="w-4 h-4 mr-1" /> New Triage
-          </Button>
-          <Button size="sm" variant={mode === "history" ? "default" : "ghost"} onClick={() => setMode("history")} className={mode === "history" ? "bg-emerald-600 hover:bg-emerald-700" : ""}>
-            History
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Triage & Vitals"
+        description="Record triage assessments and vital signs for patients"
+        icon={Activity}
+        gradient="from-rose-500 to-red-600"
+        actions={
+          <div className="flex gap-1">
+            <Button size="sm" variant={mode === "form" ? "default" : "ghost"} onClick={() => setMode("form")} className={mode === "form" ? "bg-white text-rose-600" : "bg-white/20 text-white border border-white/30"}>
+              New Triage
+            </Button>
+            <Button size="sm" variant={mode === "history" ? "default" : "ghost"} onClick={() => setMode("history")} className={mode === "history" ? "bg-white text-rose-600" : "bg-white/20 text-white border border-white/30"}>
+              History
+            </Button>
+          </div>
+        }
+      />
 
       {mode === "form" ? (
         <TriageForm facilityId={activeFacilityId} onCreated={() => qc.invalidateQueries({ queryKey: ["triage"] })} />

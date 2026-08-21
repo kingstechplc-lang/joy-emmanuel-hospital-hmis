@@ -313,8 +313,9 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="p-3 flex flex-wrap gap-2 items-center">
+      {/* Filters — subtle gradient card */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
             <Input
@@ -362,12 +363,15 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         </CardContent>
       </Card>
 
-      {/* Records */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm">Records ({items.length})</CardTitle>
+      {/* Records — colorful card with gradient header bar */}
+      <Card className="overflow-hidden border-slate-200 shadow-md">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+          <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span className="w-2 h-5 rounded-full bg-gradient-to-b from-rose-500 to-red-600" />
+            Records ({items.length})
+          </CardTitle>
           {items.length > 0 && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 font-medium">
               Last updated {formatRelative(items[0].createdAt)}
             </span>
           )}
@@ -630,12 +634,14 @@ function RecordCard({
 }) {
   const Icon = config.icon;
   return (
-    <div className="border border-slate-200 rounded-md p-4 hover:shadow-md transition-shadow bg-white">
+    <div className="border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-slate-300 transition-all bg-white card-hover-lift">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-600"}`} />
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${config.gradient || "from-slate-500 to-slate-600"} text-white shadow-sm`}>
+            <Icon className="w-4 h-4" />
+          </div>
           {config.numberField && item[config.numberField] && (
-            <span className="font-mono text-xs text-slate-500">{item[config.numberField]}</span>
+            <span className="font-mono text-xs text-white bg-gradient-to-r from-slate-600 to-slate-700 px-2 py-0.5 rounded-md font-semibold">{item[config.numberField]}</span>
           )}
         </div>
         <div className="flex gap-1">
@@ -646,14 +652,14 @@ function RecordCard({
           })}
         </div>
       </div>
-      <h3 className="font-semibold text-slate-900 mb-1 truncate">
+      <h3 className="font-bold text-slate-900 mb-1 truncate text-base">
         {item[config.fields[0].name]}
       </h3>
       <div className="text-xs text-slate-500 space-y-1 mb-3">
         {config.fields.slice(1, 4).filter((f) => !f.hideInList && item[f.name]).map((f) => (
           <div key={f.name} className="truncate">
-            <span className="text-slate-400">{f.label}:</span>{" "}
-            <span className="text-slate-700">
+            <span className="text-slate-400 font-medium">{f.label}:</span>{" "}
+            <span className="text-slate-700 font-medium">
               {f.type === "date" || f.type === "datetime-local"
                 ? formatDate(item[f.name], f.type === "datetime-local")
                 : String(item[f.name]).slice(0, 80)}
@@ -704,6 +710,8 @@ function RecordCard({
 // =====================================================================
 // STAT CARD
 // =====================================================================
+// STAT CARD — vibrant gradient like the dashboard
+// =====================================================================
 function StatCard({ label, value, subValue, subLabel, icon: Icon, color }: {
   label: string;
   value: number | string;
@@ -712,26 +720,36 @@ function StatCard({ label, value, subValue, subLabel, icon: Icon, color }: {
   icon?: any;
   color: string;
 }) {
-  const colorMap: Record<string, string> = {
-    slate: "border-slate-300 bg-slate-50",
-    amber: "border-amber-300 bg-amber-50",
-    emerald: "border-emerald-300 bg-emerald-50",
-    rose: "border-rose-300 bg-rose-50",
-    blue: "border-blue-300 bg-blue-50",
-    purple: "border-purple-300 bg-purple-50",
+  const gradientMap: Record<string, string> = {
+    slate: "from-slate-600 to-slate-800",
+    amber: "from-amber-500 to-orange-600",
+    emerald: "from-emerald-500 to-emerald-600",
+    rose: "from-rose-500 to-red-600",
+    blue: "from-blue-500 to-blue-600",
+    purple: "from-purple-500 to-purple-600",
+    teal: "from-teal-500 to-teal-600",
+    cyan: "from-cyan-500 to-cyan-600",
+    indigo: "from-indigo-500 to-indigo-600",
+    pink: "from-pink-500 to-rose-600",
+    orange: "from-orange-500 to-red-600",
+    violet: "from-violet-500 to-violet-600",
+    green: "from-green-500 to-emerald-600",
+    yellow: "from-amber-500 to-orange-600",
   };
+  const gradient = gradientMap[color] || gradientMap.slate;
+
   return (
-    <Card className={`${colorMap[color] || colorMap.slate} border-l-4`}>
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-slate-600">{label}</div>
-          {Icon && <Icon className="w-4 h-4 text-slate-500" />}
+    <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} text-white p-4 shadow-md card-hover-lift`}>
+      {Icon && (
+        <div className="absolute top-2 right-2 text-white/20 pointer-events-none">
+          <Icon className="w-8 h-8" strokeWidth={1.5} />
         </div>
-        <div className="text-2xl font-bold text-slate-900">{value}</div>
-        {subValue && <div className="text-xs text-slate-600 capitalize truncate">{subValue}</div>}
-        {subLabel && <div className="text-[10px] text-slate-400">{subLabel}</div>}
-      </CardContent>
-    </Card>
+      )}
+      <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-1">{label}</p>
+      <p className="text-2xl font-extrabold text-white tabular-nums">{value}</p>
+      {subValue && <p className="text-[10px] text-white/70 mt-0.5 capitalize truncate">{subValue}</p>}
+      {subLabel && <p className="text-[9px] text-white/60 mt-0.5">{subLabel}</p>}
+    </div>
   );
 }
 

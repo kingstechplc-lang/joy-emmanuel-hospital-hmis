@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeftRight, Plus, CheckCircle2, X, Send, Truck } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -71,15 +71,18 @@ export function StockTransfersView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Stock Transfers</h2>
-          <p className="text-sm text-slate-500">Move stock between facilities</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("inventory.transfer")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Stock Transfers"
+        description="Transfer stock between facilities and departments"
+        icon={ArrowLeftRight}
+        gradient="from-purple-500 to-purple-600"
+      
+        actions={
+                  <Button onClick={() => setShowNew(true)} disabled={!can("inventory.transfer")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Transfer
         </Button>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-3 flex flex-col md:flex-row gap-2">

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Calendar, Clock, Phone, User, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -60,15 +60,17 @@ export function AppointmentsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Appointments</h2>
-          <p className="text-sm text-slate-500">Book and manage patient appointments at this facility.</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4" /> New Appointment
-        </Button>
-      </div>
+      <PageHeader
+        title="Appointments"
+        description="Schedule and manage patient appointments"
+        icon={Calendar}
+        gradient="from-cyan-500 to-cyan-600"
+        actions={
+          <Button onClick={() => setShowNew(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+            <Plus className="w-4 h-4 mr-1" /> New Appointment
+          </Button>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50 border-amber-200">

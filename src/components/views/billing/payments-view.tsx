@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, CreditCard, Search } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -67,15 +67,18 @@ export function PaymentsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Payments</h2>
-          <p className="text-sm text-slate-500">Record and review payments against invoices</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("billing.payment")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Payments"
+        description="Record and track patient payments"
+        icon={CreditCard}
+        gradient="from-emerald-500 to-emerald-600"
+      
+        actions={
+                  <Button onClick={() => setShowNew(true)} disabled={!can("billing.payment")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> Record Payment
         </Button>
-      </div>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view payments.</CardContent></Card>
