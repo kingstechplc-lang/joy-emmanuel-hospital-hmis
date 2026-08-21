@@ -3246,3 +3246,86 @@ model FacilityInspection {
   @@index([organizationId, facilityId])
   @@index([inspectionType, status])
 }
+
+// ---------------------------------------------------------------------
+// MEDICAL RECORDS — Record Requests, Movement Tracking, Amendments
+// ---------------------------------------------------------------------
+
+model RecordRequest {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  requestNumber   String   @unique
+  patientId       String?
+  patientName     String
+  patientNumber   String?
+  requestingDepartment String?
+  requestingStaffName String?
+  purpose         String?
+  priority        String   @default("routine") // routine | urgent | emergency
+  status          String   @default("requested") // requested | approved | retrieving | issued | in_use | returned | closed | cancelled
+  assignedToName  String?
+  notes           String?
+  requestedAt     DateTime @default(now())
+  requiredBy      DateTime?
+  retrievedAt     DateTime?
+  issuedAt        DateTime?
+  returnedAt      DateTime?
+  closedAt        DateTime?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  movements       RecordMovement[]
+
+  @@index([organizationId, facilityId])
+  @@index([status])
+  @@index([patientId])
+}
+
+model RecordMovement {
+  id              String   @id @default(cuid())
+  recordRequestId String?
+  recordRequest   RecordRequest? @relation(fields: [recordRequestId], references: [id], onDelete: Cascade)
+  patientId       String?
+  patientName     String
+  patientNumber   String?
+  movementType    String   // requested | retrieved | issued | returned | transferred | missing_found | archived
+  fromLocation    String?
+  toLocation      String?
+  departmentCode  String?
+  staffName       String?
+  notes           String?
+  movedAt         DateTime @default(now())
+  createdById     String?
+  createdAt       DateTime @default(now())
+
+  @@index([patientId, movedAt])
+  @@index([recordRequestId])
+}
+
+model RecordAmendment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  patientId       String?
+  patientName     String
+  amendmentType   String   // demographic | clinical | document | record_correction
+  field           String?
+  originalValue   String?
+  correctedValue  String?
+  reason          String
+  status          String   @default("pending") // pending | approved | rejected | applied
+  requestedById   String?
+  requestedByName String?
+  approvedById    String?
+  approvedByName  String?
+  requestedAt     DateTime @default(now())
+  approvedAt      DateTime?
+  appliedAt       DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([patientId])
+}

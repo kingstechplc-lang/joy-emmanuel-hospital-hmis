@@ -1,49 +1,36 @@
 "use client";
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   ClipboardCheck, Search, UserPlus, ShieldCheck, ShieldX, ShieldAlert, Clock,
-  Users, Activity, FileText, CheckCircle2, AlertCircle, Loader2, Stethoscope,
+  Users, Activity, FileText, CheckCircle2, AlertCircle, RefreshCcw, Plus,
+  ArrowRight, FolderOpen, ArrowLeftRight, FileEdit, Eye, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
+import {
+  EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
+  calculateAge, safeJson, PageHeader, MiniStatCard,
+} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { useAppStore } from "@/stores/app-store";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await safeJson(res).catch(() => ({}));
+    const e = await safeJson(res);
     throw new Error(e.error || `Failed: ${res.status}`);
   }
   return safeJson(res);
-}
-
-// ─── Eligibility badge component ─────────────────────────────────
-function EligibilityBadge({ eligibility }: { eligibility: string }) {
-  const map: Record<string, { label: string; className: string; icon: any }> = {
-    valid: { label: "NHIS Valid", className: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: ShieldCheck },
-    expired: { label: "NHIS Expired", className: "bg-rose-100 text-rose-700 border-rose-200", icon: ShieldX },
-    unvalidated: { label: "NHIS Unvalidated", className: "bg-amber-100 text-amber-700 border-amber-200", icon: ShieldAlert },
-    self_pay: { label: "Self-Pay", className: "bg-slate-100 text-slate-700 border-slate-200", icon: ShieldX },
-  };
-  const cfg = map[eligibility] || map.self_pay;
-  const Icon = cfg.icon;
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${cfg.className}`}>
-      <Icon className="w-3 h-3" />
-      {cfg.label}
-    </span>
-  );
 }
 
 export function RecordsDeskView() {
@@ -52,8 +39,159 @@ export function RecordsDeskView() {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const setView = useAppStore((s) => s.setView);
   const selectPatient = useAppStore((s) => s.selectPatient);
-  const qc = useQueryClient();
+  const [activeTab, setActiveTab] = useState("dashboard");
 
+  return (
+    <div className="space-y-4 fade-in-up">
+      <PageHeader
+        title="Records Desk"
+        description="Medical Records & Health Information Management — patient search, check-in, record requests, tracking, and amendments"
+        icon={ClipboardCheck}
+        gradient="from-emerald-500 to-teal-600"
+        actions={
+          <>
+            <Button size="sm" onClick={() => setView("patient_new")} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+              <UserPlus className="w-4 h-4 mr-1" /> Register
+            </Button>
+            <Button size="sm" onClick={() => setView("patients")} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+              <Users className="w-4 h-4 mr-1" /> All Patients
+            </Button>
+          </>
+        }
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4 max-w-lg">
+          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
+          <TabsTrigger value="checkin" className="text-xs">Check-in</TabsTrigger>
+          <TabsTrigger value="requests" className="text-xs">Record Requests</TabsTrigger>
+          <TabsTrigger value="amendments" className="text-xs">Amendments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="mt-4">
+          <DashboardTab activeFacilityId={activeFacilityId} />
+        </TabsContent>
+        <TabsContent value="checkin" className="mt-4">
+          <CheckInTab activeFacilityId={activeFacilityId} setView={setView} selectPatient={selectPatient} />
+        </TabsContent>
+        <TabsContent value="requests" className="mt-4">
+          <RequestsTab />
+        </TabsContent>
+        <TabsContent value="amendments" className="mt-4">
+          <AmendmentsTab canEdit={user?.roles?.includes("super_admin") || (user?.permissions || []).includes("patient.edit")} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// =====================================================================
+// DASHBOARD TAB
+// =====================================================================
+function DashboardTab({ activeFacilityId }: { activeFacilityId: string | null }) {
+  const facilityParam = activeFacilityId ? `?facilityId=${activeFacilityId}` : "";
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["records-stats", facilityParam],
+    queryFn: () => fetchJson(`/api/records/stats${facilityParam}`),
+    refetchInterval: 30000,
+  });
+
+  const { data: requestData } = useQuery({
+    queryKey: ["record-requests-dashboard"],
+    queryFn: () => fetchJson("/api/record-requests?limit=500"),
+  });
+  const requests: any[] = requestData?.items || [];
+
+  const recordStats = {
+    totalRequests: requests.length,
+    pending: requests.filter((r) => r.status === "requested" || r.status === "approved").length,
+    issued: requests.filter((r) => r.status === "issued" || r.status === "in_use").length,
+    overdue: requests.filter((r) => {
+      if (r.status === "returned" || r.status === "closed") return false;
+      if (!r.issuedAt) return false;
+      const issueTime = new Date(r.issuedAt).getTime();
+      const hoursSince = (Date.now() - issueTime) / (1000 * 60 * 60);
+      return hoursSince > 24;
+    }).length,
+  };
+
+  return (
+    <div className="space-y-4">
+      {isLoading ? <LoadingState rows={4} /> : (
+        <>
+          {/* Patient KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <MiniStatCard label="Today's Check-ins" value={stats?.todayCheckIns ?? 0} icon={Clock} gradient="from-emerald-500 to-emerald-600" />
+            <MiniStatCard label="Active Encounters" value={stats?.activeEncounters ?? 0} icon={Activity} gradient="from-blue-500 to-blue-600" />
+            <MiniStatCard label="New Patients Today" value={stats?.todayNewPatients ?? 0} icon={UserPlus} gradient="from-purple-500 to-purple-600" />
+            <MiniStatCard label="NHIS Valid" value={stats?.insuranceBreakdown?.nhisValid ?? 0} icon={ShieldCheck} gradient="from-teal-500 to-teal-600" />
+            <MiniStatCard label="Self-Pay" value={stats?.insuranceBreakdown?.selfPay ?? 0} icon={ShieldX} gradient="from-slate-500 to-slate-600" />
+            <MiniStatCard label="NHIS Expired" value={stats?.insuranceBreakdown?.expired ?? 0} icon={ShieldAlert} gradient="from-rose-500 to-red-600" />
+          </div>
+
+          {/* Record Request KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MiniStatCard label="Total Requests" value={recordStats.totalRequests} icon={FolderOpen} gradient="from-indigo-500 to-blue-600" />
+            <MiniStatCard label="Pending" value={recordStats.pending} icon={Clock} gradient="from-amber-500 to-orange-600" />
+            <MiniStatCard label="Issued/In Use" value={recordStats.issued} icon={ArrowRight} gradient="from-purple-500 to-purple-600" />
+            <MiniStatCard label="Overdue (>24h)" value={recordStats.overdue} icon={AlertCircle} gradient="from-rose-500 to-red-600" />
+          </div>
+
+          {/* Recent Check-ins */}
+          {stats?.recentCheckIns?.length > 0 && (
+            <Card className="shadow-sm border-slate-200 overflow-hidden">
+              <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <span className="w-2 h-4 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
+                  Recent Check-ins ({stats.recentCheckIns.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                        <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Patient</th>
+                        <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">MRN</th>
+                        <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Type</th>
+                        <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Eligibility</th>
+                        <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {stats.recentCheckIns.slice(0, 8).map((enc: any) => (
+                        <tr key={enc.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-2 text-sm font-medium text-slate-900">{enc.patient.firstName} {enc.patient.lastName}</td>
+                          <td className="px-4 py-2 text-xs font-mono text-slate-600">{enc.patient.patientNumber}</td>
+                          <td className="px-4 py-2"><span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md font-medium">{enc.encounterType}</span></td>
+                          <td className="px-4 py-2">
+                            <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                              enc.patient.eligibility === "valid" ? "bg-emerald-100 text-emerald-700" :
+                              enc.patient.eligibility === "expired" ? "bg-rose-100 text-rose-700" :
+                              enc.patient.eligibility === "self_pay" ? "bg-slate-100 text-slate-600" :
+                              "bg-amber-100 text-amber-700"
+                            }`}>{enc.patient.eligibility?.replace(/_/g, " ") || "—"}</span>
+                          </td>
+                          <td className="px-4 py-2 text-xs text-slate-500">{formatRelative(enc.startAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// CHECK-IN TAB (existing check-in functionality, enhanced UI)
+// =====================================================================
+function CheckInTab({ activeFacilityId, setView, selectPatient }: { activeFacilityId: string | null; setView: (v: any) => void; selectPatient: (id: string) => void }) {
+  const qc = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -61,77 +199,30 @@ export function RecordsDeskView() {
   const [encounterType, setEncounterType] = useState("opd");
   const [priority, setPriority] = useState("routine");
 
-  const facilityParam = activeFacilityId ? `?facilityId=${activeFacilityId}` : "";
-
-  // Fetch records stats
-  const { data: stats, isLoading, isError, refetch } = useQuery({
-    queryKey: ["records-stats", activeFacilityId],
-    queryFn: () => fetchJson(`/api/records/stats${facilityParam}`),
-    refetchInterval: 30000,
-  });
-
-  // Patient search
   const searchPatients = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
+    if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
     try {
       const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}&limit=20`);
       const d = await safeJson(res);
       setSearchResults(d.patients || []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
+    } catch { setSearchResults([]); }
+    finally { setSearching(false); }
   }, []);
 
-  // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: async () => {
-      // Pre-validate: ensure facility is selected
-      if (!activeFacilityId) {
-        throw new Error("No facility selected. Please select a facility from the top bar before checking in.");
-      }
-      if (!checkInPatient?.id) {
-        throw new Error("No patient selected for check-in.");
-      }
-
-      let res: Response;
-      try {
-        res = await fetch("/api/records/check-in", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            patientId: checkInPatient.id,
-            facilityId: activeFacilityId,
-            encounterType,
-            priority,
-            addToQueue: true,
-          }),
-        });
-      } catch (fetchErr: any) {
-        throw new Error(`Network error: ${fetchErr?.message || "Could not reach the server. Please check your connection and try again."}`);
-      }
-
-      // Safely parse the response body
+      if (!activeFacilityId) throw new Error("No facility selected");
+      if (!checkInPatient) throw new Error("No patient selected");
+      const res = await fetch("/api/records/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId: checkInPatient.id, facilityId: activeFacilityId, encounterType, priority, addToQueue: true }),
+      });
+      const text = await res.text();
       let data: any = {};
-      try {
-        const text = await res.text();
-        if (text && text.trim() !== "") {
-          data = JSON.parse(text);
-        }
-      } catch {
-        // Body wasn't valid JSON
-      }
-
-      if (!res.ok) {
-        const errMsg = data?.error || `Check-in failed (HTTP ${res.status}). Please try again.`;
-        throw new Error(errMsg);
-      }
-
+      try { data = text ? JSON.parse(text) : {}; } catch {}
+      if (!res.ok) throw new Error(data.error || `Check-in failed (HTTP ${res.status})`);
       return data;
     },
     onSuccess: (data) => {
@@ -140,55 +231,22 @@ export function RecordsDeskView() {
       qc.invalidateQueries({ queryKey: ["encounters"] });
       qc.invalidateQueries({ queryKey: ["queue"] });
       setCheckInPatient(null);
-      // Navigate to patient 360
       selectPatient(data.patient.id);
       setView("patient_360");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const openPatient360 = (patientId: string) => {
-    selectPatient(patientId);
-    setView("patient_360");
-  };
-
   return (
-    <div className="space-y-6 fade-in-up">
-      {/* Header — gradient banner */}
-      <PageHeader
-        title="Records Desk"
-        description="First point of entry — verify patient, check NHIS eligibility, open encounter"
-        icon={ClipboardCheck}
-        gradient="from-emerald-500 to-teal-600"
-        actions={
-          <Button onClick={() => setView("patient_new")} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
-            <UserPlus className="w-4 h-4 mr-1" /> Register New Patient
-          </Button>
-        }
-      />
-
-      {/* Stats Cards — colorful gradients */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <MiniStatCard label="Today's Check-ins" value={stats?.todayCheckIns ?? "—"} icon={Clock} gradient="from-emerald-500 to-emerald-600" />
-        <MiniStatCard label="Active Encounters" value={stats?.activeEncounters ?? "—"} icon={Activity} gradient="from-blue-500 to-blue-600" />
-        <MiniStatCard label="New Patients Today" value={stats?.todayNewPatients ?? "—"} icon={UserPlus} gradient="from-purple-500 to-purple-600" />
-        <MiniStatCard label="NHIS Valid" value={stats?.insuranceBreakdown?.nhisValid ?? "—"} icon={ShieldCheck} gradient="from-emerald-500 to-teal-600" />
-        <MiniStatCard label="Self-Pay" value={stats?.insuranceBreakdown?.selfPay ?? "—"} icon={ShieldX} gradient="from-slate-500 to-slate-600" />
-        <MiniStatCard label="NHIS Expired" value={stats?.insuranceBreakdown?.expired ?? "—"} icon={ShieldAlert} gradient="from-rose-500 to-red-600" />
-      </div>
-
-      {/* Patient Search + Check-in */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Search className="w-5 h-5 text-emerald-600" />
-            Find & Check-in Patient
+    <div className="space-y-4">
+      {/* Patient Search */}
+      <Card className="shadow-sm border-slate-200">
+        <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+          <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <Search className="w-4 h-4 text-emerald-600" /> Find & Check-in Patient
           </CardTitle>
-          <CardDescription>
-            Search by patient number, name, phone, or Ghana Card. Then verify NHIS and open encounter.
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="p-4 space-y-3">
           <SearchableSelect
             options={searchResults.map((p) => ({
               value: p.id,
@@ -198,297 +256,409 @@ export function RecordsDeskView() {
               initials: `${p.firstName?.[0] || ""}${p.lastName?.[0] || ""}`.toUpperCase(),
             }))}
             value=""
-            onValueChange={(v) => {
-              const p = searchResults.find((p) => p.id === v);
-              if (p) setCheckInPatient(p);
-            }}
+            onValueChange={(v) => { const p = searchResults.find((p) => p.id === v); if (p) setCheckInPatient(p); }}
             onSearch={(q) => searchPatients(q)}
-            placeholder="Search patient by name, number, phone, or Ghana Card..."
+            placeholder="Search patient by name, MRN, phone, or Ghana Card..."
             searchPlaceholder="Type at least 2 characters to search..."
             emptyText="No patients found"
             label="Search Existing Patient"
             required
           />
-          {searching && (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin" /> Searching...
+
+          {/* Selected patient preview */}
+          {checkInPatient && (
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h4 className="font-bold text-slate-900">{checkInPatient.firstName} {checkInPatient.lastName}</h4>
+                  <p className="text-xs text-slate-600">
+                    MRN: <span className="font-mono font-semibold">{checkInPatient.patientNumber}</span> ·
+                    {checkInPatient.sex ? ` ${checkInPatient.sex}` : ""} ·
+                    {checkInPatient.dateOfBirth ? ` ${calculateAge(checkInPatient.dateOfBirth)}y` : ""} ·
+                    {checkInPatient.bloodGroup ? ` Blood: ${checkInPatient.bloodGroup}` : ""}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setCheckInPatient(null)}>✕ Clear</Button>
+              </div>
+              <div className="flex flex-wrap gap-3 mt-3">
+                <div>
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Encounter Type</Label>
+                  <Select value={encounterType} onValueChange={setEncounterType}>
+                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="opd">OPD</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
+                      <SelectItem value="follow_up">Follow-up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</Label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="routine">Routine</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={() => checkInMutation.mutate()}
+                    disabled={checkInMutation.isPending || !activeFacilityId}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                  >
+                    {checkInMutation.isPending ? "Checking in..." : "Check In Patient"}
+                  </Button>
+                </div>
+              </div>
+              {!activeFacilityId && <p className="text-xs text-amber-600 mt-2">⚠ Select a facility from the top bar to check in.</p>}
             </div>
           )}
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setView("patients")} className="gap-1.5">
-              <Users className="w-4 h-4" /> Browse All Patients
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setView("patient_new")} className="gap-1.5">
-              <UserPlus className="w-4 h-4" /> Can&apos;t find? Register
-            </Button>
-          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
 
-      {/* Recent Check-ins */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Today&apos;s Check-ins</CardTitle>
-            <CardDescription>Patients who checked in today at this facility</CardDescription>
+// =====================================================================
+// RECORD REQUESTS TAB
+// =====================================================================
+function RequestsTab() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+  const [viewItem, setViewItem] = useState<any>(null);
+
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (statusFilter !== "all") params.set("status", statusFilter);
+  if (priorityFilter !== "all") params.set("priority", priorityFilter);
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["record-requests", params.toString()],
+    queryFn: () => fetchJson(`/api/record-requests?${params.toString()}`),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await fetch("/api/record-requests", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      return safeJson(res);
+    },
+    onSuccess: () => { toast.success("Record request created"); setShowForm(false); qc.invalidateQueries({ queryKey: ["record-requests"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const items: any[] = data?.items || [];
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/record-requests/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(`Status → ${newStatus}`);
+      qc.invalidateQueries({ queryKey: ["record-requests"] });
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="shadow-sm border-slate-200">
+        <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+            <Input placeholder="Search by patient, MRN, department..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setView("encounters")} className="gap-1">
-            View All Encounters
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="requested">Requested</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="retrieving">Retrieving</SelectItem>
+              <SelectItem value="issued">Issued</SelectItem>
+              <SelectItem value="in_use">In Use</SelectItem>
+              <SelectItem value="returned">Returned</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="routine">Routine</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+              <SelectItem value="emergency">Emergency</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
+            <Plus className="w-4 h-4 mr-1" /> New Request
           </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <LoadingState rows={5} />
-          ) : isError ? (
-            <ErrorState message="Failed to load check-ins" onRetry={() => refetch()} />
-          ) : !stats?.recentCheckIns?.length ? (
-            <EmptyState
-              title="No check-ins today"
-              description="Use the search above to find and check in a patient."
-              icon={Clock}
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b bg-slate-50">
-                  <tr>
-                    <th className="text-left p-3 font-semibold text-slate-700">Patient</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Encounter #</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Type</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Eligibility</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Status</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Time</th>
-                    <th className="text-right p-3 font-semibold text-slate-700">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.recentCheckIns.map((enc: any) => (
-                    <tr key={enc.id} className="border-b hover:bg-slate-50 transition-colors">
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs shrink-0">
-                            {enc.patient.firstName?.[0]}{enc.patient.lastName?.[0]}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-medium text-slate-900 truncate">
-                              {enc.patient.firstName} {enc.patient.lastName}
-                            </div>
-                            <div className="text-xs text-slate-500">{enc.patient.patientNumber}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-3 text-xs font-mono text-slate-600">{enc.encounterNumber}</td>
-                      <td className="p-3">
-                        <Badge variant="outline" className="text-xs">{enc.encounterType}</Badge>
-                      </td>
-                      <td className="p-3">
-                        <EligibilityBadge eligibility={enc.patient.eligibility} />
-                      </td>
-                      <td className="p-3"><StatusBadge status={enc.status} /></td>
-                      <td className="p-3 text-xs text-slate-500">
-                        {new Date(enc.startAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                      </td>
-                      <td className="p-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => openPatient360(enc.patient.id)}
-                          className="h-7 text-xs"
-                        >
-                          Open Record →
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Check-in Dialog */}
-      {checkInPatient && (
-        <CheckInDialog
-          patient={checkInPatient}
-          encounterType={encounterType}
-          setEncounterType={setEncounterType}
-          priority={priority}
-          setPriority={setPriority}
-          onClose={() => setCheckInPatient(null)}
-          onConfirm={() => checkInMutation.mutate()}
-          loading={checkInMutation.isPending}
-        />
+      {isLoading ? <LoadingState rows={4} /> :
+       items.length === 0 ? <EmptyState title="No record requests" description="Create a request when a department needs a patient's physical record." icon={FolderOpen} /> :
+       <Card className="shadow-sm border-slate-200 overflow-hidden">
+         <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+           <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+             <span className="w-2 h-4 rounded-full bg-gradient-to-b from-indigo-500 to-blue-600" />
+             Record Requests ({items.length})
+           </CardTitle>
+         </CardHeader>
+         <CardContent className="p-0">
+           <div className="overflow-x-auto">
+             <table className="w-full">
+               <thead>
+                 <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Req #</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Patient</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">MRN</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Dept</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Priority</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Status</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Requested</th>
+                   <th className="text-left px-4 py-2 text-xs font-bold uppercase">Actions</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                 {items.map((item) => {
+                   const isOverdue = item.issuedAt && (Date.now() - new Date(item.issuedAt).getTime()) / (1000 * 60 * 60) > 24 && item.status !== "returned" && item.status !== "closed";
+                   return (
+                     <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${isOverdue ? "bg-rose-50/30" : ""}`}>
+                       <td className="px-4 py-2"><span className="font-mono text-xs text-white bg-gradient-to-r from-indigo-500 to-blue-600 px-2 py-0.5 rounded-md font-semibold">{item.requestNumber}</span></td>
+                       <td className="px-4 py-2 text-sm font-medium text-slate-900">{item.patientName}</td>
+                       <td className="px-4 py-2 text-xs font-mono text-slate-500">{item.patientNumber || "—"}</td>
+                       <td className="px-4 py-2 text-xs text-slate-600">{item.requestingDepartment || "—"}</td>
+                       <td className="px-4 py-2"><StatusBadge status={item.priority} /></td>
+                       <td className="px-4 py-2"><StatusBadge status={item.status} />{isOverdue && <span className="ml-1 text-[10px] text-rose-600 font-bold">OVERDUE</span>}</td>
+                       <td className="px-4 py-2 text-xs text-slate-500">{formatRelative(item.requestedAt)}</td>
+                       <td className="px-4 py-2">
+                         <Button variant="ghost" size="sm" onClick={() => setViewItem(item)}><Eye className="w-4 h-4" /></Button>
+                       </td>
+                     </tr>
+                   );
+                 })}
+               </tbody>
+             </table>
+           </div>
+         </CardContent>
+       </Card>}
+
+      {showForm && (
+        <Dialog open onOpenChange={setShowForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><FolderOpen className="w-5 h-5 text-indigo-600" /> New Record Request</DialogTitle></DialogHeader>
+            <RequestForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {viewItem && (
+        <Dialog open onOpenChange={() => setViewItem(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">{viewItem.requestNumber} — {viewItem.patientName}</DialogTitle>
+              <DialogDescription>Requested {formatDate(viewItem.requestedAt, true)}</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+              <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={viewItem.priority} /></div></div>
+              <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={viewItem.status} /></div></div>
+              <div><Label className="text-slate-500">Department</Label><div>{viewItem.requestingDepartment || "—"}</div></div>
+              {viewItem.patientNumber && <div><Label className="text-slate-500">MRN</Label><div className="font-mono">{viewItem.patientNumber}</div></div>}
+              {viewItem.requestingStaffName && <div><Label className="text-slate-500">Requested By</Label><div>{viewItem.requestingStaffName}</div></div>}
+              {viewItem.assignedToName && <div><Label className="text-slate-500">Assigned To</Label><div>{viewItem.assignedToName}</div></div>}
+              {viewItem.issuedAt && <div><Label className="text-slate-500">Issued</Label><div>{formatDate(viewItem.issuedAt, true)}</div></div>}
+              {viewItem.returnedAt && <div><Label className="text-slate-500">Returned</Label><div>{formatDate(viewItem.returnedAt, true)}</div></div>}
+            </div>
+            {viewItem.purpose && <div><Label className="text-slate-500">Purpose</Label><p className="text-sm text-slate-700">{viewItem.purpose}</p></div>}
+            {viewItem.notes && <div><Label className="text-slate-500">Notes</Label><p className="text-sm text-slate-600">{viewItem.notes}</p></div>}
+            <div className="flex flex-wrap gap-2 border-t pt-3">
+              {viewItem.status === "requested" && <Button size="sm" variant="outline" onClick={() => updateStatus(viewItem.id, "approved")}>Approve</Button>}
+              {viewItem.status === "approved" && <Button size="sm" variant="outline" onClick={() => updateStatus(viewItem.id, "retrieving")}>Start Retrieval</Button>}
+              {viewItem.status === "retrieving" && <Button size="sm" variant="outline" onClick={() => updateStatus(viewItem.id, "issued")}>Issue Record</Button>}
+              {(viewItem.status === "issued" || viewItem.status === "in_use") && <Button size="sm" variant="outline" className="text-emerald-600" onClick={() => updateStatus(viewItem.id, "returned")}>Mark Returned</Button>}
+              {viewItem.status === "returned" && <Button size="sm" variant="outline" onClick={() => updateStatus(viewItem.id, "closed")}>Close</Button>}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
 }
 
-// ─── Check-in Dialog ─────────────────────────────────────────────
-function CheckInDialog({
-  patient,
-  encounterType,
-  setEncounterType,
-  priority,
-  setPriority,
-  onClose,
-  onConfirm,
-  loading,
-}: {
-  patient: any;
-  encounterType: string;
-  setEncounterType: (v: string) => void;
-  priority: string;
-  setPriority: (v: string) => void;
-  onClose: () => void;
-  onConfirm: () => void;
-  loading: boolean;
-}) {
-  const age = calculateAge(patient.dateOfBirth);
-
+function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: boolean }) {
+  const [form, setForm] = useState({
+    patientName: "", patientNumber: "", requestingDepartment: "", requestingStaffName: "",
+    purpose: "", priority: "routine",
+  });
+  const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ClipboardCheck className="w-5 h-5 text-emerald-600" />
-            Check-in Patient
-          </DialogTitle>
-          <DialogDescription>Verify patient details and NHIS eligibility before opening encounter.</DialogDescription>
-        </DialogHeader>
-
-        {/* Patient summary card */}
-        <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg shrink-0">
-              {patient.firstName?.[0]}{patient.lastName?.[0]}
-            </div>
-            <div className="min-w-0">
-              <div className="font-semibold text-slate-900">{patient.firstName} {patient.lastName}</div>
-              <div className="text-xs text-slate-500">
-                {patient.patientNumber} • {age} years • {patient.sex || "—"} • {patient.bloodGroup ? `Blood: ${patient.bloodGroup}` : "Blood: —"}
-              </div>
-              <div className="text-xs text-slate-500">{patient.phone || "No phone"}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* NHIS / Insurance eligibility check */}
-        <div className="p-3 rounded-lg border border-slate-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-slate-700">Insurance Eligibility</span>
-            <span className="text-xs text-slate-500">Auto-checked</span>
-          </div>
-          <div className="space-y-1.5 text-sm">
-            {patient.insurance && patient.insurance.length > 0 ? (
-              patient.insurance.map((ins: any, i: number) => {
-                const now = new Date();
-                const isExpired = ins.coverageEnd && new Date(ins.coverageEnd) < now;
-                const isVerified = ins.verificationStatus === "verified";
-                const status = isExpired ? "expired" : !isVerified ? "unvalidated" : "valid";
-
-                return (
-                  <div key={i} className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium">{ins.insuranceProvider?.name || "Unknown"}</span>
-                      <span className="text-xs text-slate-500 ml-2">#{ins.membershipNumber}</span>
-                    </div>
-                    <EligibilityBadge eligibility={status} />
-                  </div>
-                );
-              })
-            ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">No active insurance</span>
-                <EligibilityBadge eligibility="self_pay" />
-              </div>
-            )}
-          </div>
-          <div className="mt-2 pt-2 border-t border-slate-200 text-xs">
-            <span className="font-semibold text-slate-700">Payer Type: </span>
-            {patient.insurance?.some((ins: any) =>
-              ins.verificationStatus === "verified" &&
-              ins.coverageEnd &&
-              new Date(ins.coverageEnd) >= new Date()
-            ) ? (
-              <span className="text-emerald-700 font-semibold">NHIS-insured (subsidized care)</span>
-            ) : (
-              <span className="text-slate-700 font-semibold">Self-Pay (full cost for all services)</span>
-            )}
-          </div>
-        </div>
-
-        {/* Encounter type + priority */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <FieldLabel required>Encounter Type</FieldLabel>
-            <Select value={encounterType || undefined} onValueChange={setEncounterType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="opd">OPD</SelectItem>
-                <SelectItem value="emergency">Emergency</SelectItem>
-                <SelectItem value="follow_up">Follow-up</SelectItem>
-                <SelectItem value="laboratory">Laboratory Only</SelectItem>
-                <SelectItem value="pharmacy">Pharmacy Only</SelectItem>
-                <SelectItem value="imaging">Imaging Only</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <FieldLabel required>Priority</FieldLabel>
-            <Select value={priority || undefined} onValueChange={setPriority}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="routine">Routine</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="emergency">Emergency</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="p-2 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-700 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>Patient will be added to the OPD queue automatically after check-in.</span>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
-          <Button
-            onClick={onConfirm}
-            disabled={loading}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            {loading ? "Checking in..." : "Confirm Check-in"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <div className="grid grid-cols-2 gap-3">
+      <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
+      <div><Label>MRN / Patient Number</Label><Input value={form.patientNumber} onChange={(e) => set("patientNumber", e.target.value)} /></div>
+      <div>
+        <Label>Priority</Label>
+        <Select value={form.priority} onValueChange={(v) => set("priority", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="emergency">Emergency</SelectItem></SelectContent>
+        </Select>
+      </div>
+      <div><Label>Requesting Department</Label><Input value={form.requestingDepartment} onChange={(e) => set("requestingDepartment", e.target.value)} placeholder="OPD, Ward, Lab..." /></div>
+      <div><Label>Requesting Staff</Label><Input value={form.requestingStaffName} onChange={(e) => set("requestingStaffName", e.target.value)} /></div>
+      <div className="col-span-2"><Label>Purpose</Label><Textarea value={form.purpose} onChange={(e) => set("purpose", e.target.value)} rows={2} placeholder="Why is the record needed?" /></div>
+      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.patientName}>{loading ? "Creating..." : "Create Request"}</Button></DialogFooter>
+    </div>
   );
 }
 
-// ─── Mini stat card ──────────────────────────────────────────────
-function StatMini({ label, value, icon: Icon, color }: { label: string; value: React.ReactNode; icon: any; color: string }) {
-  const colorMap: Record<string, string> = {
-    emerald: "bg-emerald-50 text-emerald-700",
-    blue: "bg-blue-50 text-blue-700",
-    purple: "bg-purple-50 text-purple-700",
-    rose: "bg-rose-50 text-rose-700",
-    slate: "bg-slate-100 text-slate-700",
-    amber: "bg-amber-50 text-amber-700",
+// =====================================================================
+// AMENDMENTS TAB
+// =====================================================================
+function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (statusFilter !== "all") params.set("status", statusFilter);
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["record-amendments", params.toString()],
+    queryFn: () => fetchJson(`/api/record-amendments?${params.toString()}`),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await fetch("/api/record-amendments", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      return safeJson(res);
+    },
+    onSuccess: () => { toast.success("Amendment request submitted"); setShowForm(false); qc.invalidateQueries({ queryKey: ["record-amendments"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateAmendment = async (id: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/record-amendments/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(`Amendment ${newStatus}`);
+      qc.invalidateQueries({ queryKey: ["record-amendments"] });
+    } catch (e: any) { toast.error(e.message); }
   };
+
+  const items: any[] = data?.items || [];
+
   return (
-    <Card className="hover:shadow-md transition">
-      <CardContent className="p-3 flex items-center gap-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorMap[color]} shrink-0`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xl font-bold text-slate-900 tabular-nums">{value}</p>
-          <p className="text-[10px] text-slate-500 font-medium truncate">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <Card className="shadow-sm border-slate-200">
+        <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+            <Input placeholder="Search amendments..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="applied">Applied</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+            <Plus className="w-4 h-4 mr-1" /> Request Amendment
+          </Button>
+        </CardContent>
+      </Card>
+
+      {isLoading ? <LoadingState rows={4} /> :
+       items.length === 0 ? <EmptyState title="No amendments" description="Request a record correction or amendment." icon={FileEdit} /> :
+       <div className="space-y-2">
+         {items.map((item) => (
+           <div key={item.id} className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all bg-white card-hover-lift">
+             <div className="flex items-start justify-between gap-3">
+               <div className="flex-1">
+                 <div className="flex items-center gap-2 mb-1">
+                   <span className="font-mono text-xs text-white bg-gradient-to-r from-amber-500 to-orange-600 px-2 py-0.5 rounded-md font-semibold uppercase">{item.amendmentType}</span>
+                   <span className="font-bold text-slate-900">{item.patientName}</span>
+                   <StatusBadge status={item.status} />
+                 </div>
+                 <p className="text-xs text-slate-600 mt-1"><strong>Reason:</strong> {item.reason}</p>
+                 {item.field && <p className="text-xs text-slate-500 mt-1"><strong>Field:</strong> {item.field} — <span className="text-rose-600 line-through">{item.originalValue}</span> → <span className="text-emerald-600 font-medium">{item.correctedValue}</span></p>}
+                 <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
+                   <span>By: {item.requestedByName || "—"}</span>
+                   <span>{formatRelative(item.requestedAt)}</span>
+                   {item.approvedByName && <span>Approved by: {item.approvedByName}</span>}
+                 </div>
+               </div>
+               {canEdit && item.status === "pending" && (
+                 <div className="flex gap-1">
+                   <Button size="sm" variant="outline" className="text-emerald-600" onClick={() => updateAmendment(item.id, "approved")}>Approve</Button>
+                   <Button size="sm" variant="outline" className="text-rose-600" onClick={() => updateAmendment(item.id, "rejected")}>Reject</Button>
+                 </div>
+               )}
+               {canEdit && item.status === "approved" && (
+                 <Button size="sm" variant="outline" onClick={() => updateAmendment(item.id, "applied")}>Mark Applied</Button>
+               )}
+             </div>
+           </div>
+         ))}
+       </div>}
+
+      {showForm && (
+        <Dialog open onOpenChange={setShowForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><FileEdit className="w-5 h-5" /> Request Record Amendment</DialogTitle></DialogHeader>
+            <AmendmentForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+function AmendmentForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: boolean }) {
+  const [form, setForm] = useState({
+    patientName: "", amendmentType: "demographic", field: "", originalValue: "", correctedValue: "", reason: "",
+  });
+  const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
+      <div>
+        <FieldLabel>Amendment Type</FieldLabel>
+        <Select value={form.amendmentType} onValueChange={(v) => set("amendmentType", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="demographic">Demographic</SelectItem>
+            <SelectItem value="clinical">Clinical</SelectItem>
+            <SelectItem value="document">Document</SelectItem>
+            <SelectItem value="record_correction">Record Correction</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div><Label>Field</Label><Input value={form.field} onChange={(e) => set("field", e.target.value)} placeholder="e.g., date_of_birth, phone" /></div>
+      <div><Label>Original Value</Label><Input value={form.originalValue} onChange={(e) => set("originalValue", e.target.value)} /></div>
+      <div><Label>Corrected Value</Label><Input value={form.correctedValue} onChange={(e) => set("correctedValue", e.target.value)} /></div>
+      <div className="col-span-2"><FieldLabel>Reason</FieldLabel><Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={3} placeholder="Why is this correction needed?" /></div>
+      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.patientName || !form.reason}>{loading ? "Submitting..." : "Submit Request"}</Button></DialogFooter>
+    </div>
   );
 }
