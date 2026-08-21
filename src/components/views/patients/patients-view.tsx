@@ -5,7 +5,7 @@ import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, User } from "lucide-react";
+import { Plus, Search, User, Users } from "lucide-react";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {

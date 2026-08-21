@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { safeJson } from "@/components/ui-helpers";
+import { toast } from "sonner";
 import {
   Users, UserPlus, Calendar, BedDouble, Activity, Pill, FlaskConical,
   Receipt, TrendingUp, AlertTriangle, Clock, ArrowRight,
