@@ -34,6 +34,19 @@ try {
   // Silent fail — don't break the app
 }
 
+// CRITICAL: If DATABASE_URL is still a SQLite path (from system env),
+// override it with the correct PostgreSQL connection string.
+// This happens on hosting platforms where a stale system env var
+// overrides the .env file. On Vercel, env vars should be set in the
+// Vercel dashboard — this is a fallback for when they're not.
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.startsWith('file:')) {
+  process.env.DATABASE_URL = 'postgresql://neondb_owner:npg_cFAN93LwhkXs@ep-falling-firefly-ayrc50s1-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+  process.env.DIRECT_URL = 'postgresql://neondb_owner:npg_cFAN93LwhkXs@ep-falling-firefly-ayrc50s1-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+}
+if (!process.env.NEXTAUTH_SECRET) {
+  process.env.NEXTAUTH_SECRET = 'zqqhTeS/R+g5OmG8regKXehsFjL9JmIhHIb/j8dIrxo=';
+}
+
 import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = globalThis as unknown as {
