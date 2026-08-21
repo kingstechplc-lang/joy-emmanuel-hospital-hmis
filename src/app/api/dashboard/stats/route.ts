@@ -16,19 +16,21 @@ export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const url = new URL(req.url);
-  const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || undefined;
-  const orgId = session.user.organizationId;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(today);
-  todayEnd.setHours(23, 59, 59, 999);
+  try {
+    const url = new URL(req.url);
+    const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || undefined;
+    const orgId = session.user.organizationId;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
 
-  const f = facilityId ? { facilityId } : {};
+    const f = facilityId ? { facilityId } : {};
 
   const [
     totalPatients,
     todayEncounters,
+    todayNewPatients,
     activeAdmissions,
     pendingLabOrders,
     pendingPrescriptions,
@@ -43,9 +45,21 @@ export async function GET(req: Request) {
     pendingTasksRaw,
     totalUsers,
     recentAuditCount,
+    pendingImagingOrders,
+    pendingReferrals,
+    pendingTasks,
+    todayDischarges,
+    todayCompletedProcedures,
   ] = await Promise.all([
     db.patient.count({ where: { organizationId: orgId, status: "active" } }),
     db.encounter.count({ where: { ...f, startAt: { gte: today, lte: todayEnd } } }),
+    // New patients registered today (organization-wide)
+    db.patient.count({
+      where: {
+        organizationId: orgId,
+        registrationDate: { gte: today, lte: todayEnd },
+      },
+    }),
     db.admission.count({ where: { ...f, status: "admitted" } }),
     db.labOrder.count({ where: { ...f, status: { in: ["ordered", "collected", "received", "processing", "resulted"] } } }),
     db.prescription.count({ where: { ...f, status: { in: ["pending", "approved", "partially_dispensed"] } } }),
@@ -78,6 +92,12 @@ export async function GET(req: Request) {
     db.auditLog.count({
       where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     }),
+    // Additional KPIs
+    db.imagingOrder.count({ where: { ...f, status: { in: ["ordered", "scheduled", "in_progress"] } } }),
+    db.referral.count({ where: { status: "pending", encounter: { ...(facilityId ? { facilityId } : {}) } } }),
+    db.task.count({ where: { ...f, status: { in: ["pending", "in_progress"] } } }),
+    db.dischargeRecord.count({ where: { dischargedAt: { gte: today, lte: todayEnd }, admission: { ...(facilityId ? { facilityId } : {}) } } }),
+    db.procedure.count({ where: { ...f, status: "completed", performedAt: { gte: today, lte: todayEnd } } }),
   ]);
 
   const totalBeds = activeBeds + occupiedBeds;
@@ -93,6 +113,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     totalPatients,
     todayEncounters,
+    todayNewPatients,
     activeAdmissions,
     pendingLabOrders,
     pendingPrescriptions,
@@ -117,5 +138,18 @@ export async function GET(req: Request) {
     pendingTasks: pendingTasksRaw,
     totalUsers,
     recentAuditCount,
+    // Additional KPIs
+    pendingImagingOrders,
+    pendingReferrals,
+    pendingTasksCount: pendingTasks,
+    todayDischarges,
+    todayCompletedProcedures,
   });
+  } catch (err: any) {
+    console.error("[dashboard/stats] Error:", err?.message);
+    return NextResponse.json(
+      { error: `Failed to load dashboard stats: ${err?.message || "Unknown error"}` },
+      { status: 500 }
+    );
+  }
 }

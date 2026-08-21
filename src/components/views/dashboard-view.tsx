@@ -12,6 +12,7 @@ import {
   Receipt, TrendingUp, AlertTriangle, Clock, ArrowRight,
   ClipboardCheck, Stethoscope, ShieldCheck, ShieldX, Boxes,
   ScrollText, Shield, FileText, UserCog, BarChart3,
+  ScanLine, CheckSquare, AlertCircle, RefreshCcw,
 } from "lucide-react";
 
 async function fetchJson(url: string) {
@@ -45,12 +46,20 @@ const ALL_KPIs: KpiDef[] = [
   { key: "todayAppointments", label: "Today's Appointments", icon: Calendar, color: "cyan", perm: "appointment.view", view: "appointments", getValue: (s) => s?.todayAppointments ?? "—" },
   { key: "activeAdmissions", label: "Active Admissions", icon: BedDouble, color: "amber", perm: "admission.view", view: "admissions", getValue: (s) => s?.activeAdmissions ?? "—" },
   { key: "bedOccupancy", label: "Bed Occupancy", icon: BedDouble, color: "teal", perm: "bed.manage", view: "beds", getValue: (s) => s?.bedOccupancy != null ? `${s.bedOccupancy}%` : "—" },
+  { key: "todayDischarges", label: "Today's Discharges", icon: BedDouble, color: "indigo", perm: "admission.view", view: "discharges", getValue: (s) => s?.todayDischarges ?? "—" },
+  { key: "todayCompletedProcedures", label: "Procedures Done Today", icon: Activity, color: "purple", perm: "procedure.view", view: "procedures", getValue: (s) => s?.todayCompletedProcedures ?? "—" },
 
   // Lab
   { key: "pendingLabOrders", label: "Pending Lab Orders", icon: FlaskConical, color: "purple", perm: "lab.view", view: "lab_orders", getValue: (s) => s?.pendingLabOrders ?? "—" },
 
+  // Imaging
+  { key: "pendingImagingOrders", label: "Pending Imaging", icon: ScanLine, color: "cyan", perm: "imaging.view", view: "imaging", getValue: (s) => s?.pendingImagingOrders ?? "—" },
+
   // Pharmacy
   { key: "pendingPrescriptions", label: "Pending Prescriptions", icon: Pill, color: "pink", perm: "pharmacy.view", view: "prescriptions", getValue: (s) => s?.pendingPrescriptions ?? "—" },
+
+  // Referrals
+  { key: "pendingReferrals", label: "Pending Referrals", icon: ArrowRight, color: "blue", perm: "clinical.view", view: "referrals", getValue: (s) => s?.pendingReferrals ?? "—" },
 
   // Finance
   { key: "outstandingInvoices", label: "Outstanding Invoices", icon: Receipt, color: "rose", perm: "billing.view", view: "billing_invoices", getValue: (s) => s?.outstandingInvoices ?? "—" },
@@ -58,6 +67,9 @@ const ALL_KPIs: KpiDef[] = [
 
   // Inventory
   { key: "lowStockItems", label: "Low Stock Items", icon: AlertTriangle, color: "orange", perm: "inventory.view", view: "inventory", getValue: (s) => s?.lowStockItems ?? "—" },
+
+  // Tasks
+  { key: "pendingTasks", label: "Pending Tasks", icon: CheckSquare, color: "amber", perm: "task.assign", view: "tasks", getValue: (s) => s?.pendingTasksCount ?? "—" },
 
   // Security / Audit — for security roles, audit officers, etc.
   { key: "totalUsers", label: "Total Users", icon: UserCog, color: "blue", perm: "user.view", view: "settings_users", getValue: (s) => s?.totalUsers ?? "—" },
@@ -94,10 +106,13 @@ export function DashboardView() {
   const setView = useAppStore((s) => s.setView);
 
   const facilityParam = activeFacilityId ? `?facilityId=${activeFacilityId}` : "";
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["dashboard-stats", activeFacilityId],
     queryFn: () => fetchJson(`/api/dashboard/stats${facilityParam}`),
     refetchInterval: 30000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 2,
   });
 
   const role = user?.role || "user";
@@ -143,7 +158,31 @@ export function DashboardView() {
       </div>
 
       {/* KPI Cards — only show what's relevant to this role */}
-      {visibleKPIs.length > 0 && (
+      {isError && (
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center text-center">
+            <AlertCircle className="w-8 h-8 text-rose-500 mb-2" />
+            <p className="text-sm font-semibold text-slate-900 mb-1">Failed to load dashboard stats</p>
+            <p className="text-xs text-slate-500 mb-3">{(error as Error)?.message || "Please try again"}</p>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>
+              <RefreshCcw className="w-3 h-3 mr-1" /> Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      {isLoading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="h-4 w-20 bg-slate-200 rounded animate-pulse mb-2" />
+                <div className="h-8 w-16 bg-slate-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      {!isLoading && !isError && visibleKPIs.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {visibleKPIs.map((kpi) => (
             <StatCard
