@@ -45,7 +45,9 @@ export function PublicRelationsView() {
   return <ExtendedModuleView config={MODULE_CONFIGS.pr_activities} />;
 }
 export function ITSupportView() {
-  return <ExtendedModuleView config={MODULE_CONFIGS.it_tickets} />;
+  // Now uses the dedicated IT Service Desk view (imported in view-renderer.tsx)
+  // This is kept for backward compatibility but view-renderer now uses the dedicated component
+  return null;
 }
 export function CodingClaimsView() {
   return <ExtendedModuleView config={MODULE_CONFIGS.coding_records} />;

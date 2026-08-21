@@ -2866,6 +2866,10 @@ model ITTicket {
   @@index([organizationId, facilityId])
   @@index([ticketType, status])
   @@index([priority])
+
+  comments       ITTicketComment[]
+  attachments    ITTicketAttachment[]
+  assetLinks     ITTicketAssetLink[]
 }
 
 // ---------------------------------------------------------------------
@@ -3079,4 +3083,111 @@ model AuditFinding {
   @@index([organizationId, facilityId])
   @@index([auditType, status])
   @@index([severity])
+}
+
+// ---------------------------------------------------------------------
+// IT SERVICE DESK — Ticket Comments, Knowledge Base, IT Assets, SLA
+// ---------------------------------------------------------------------
+
+model ITTicketComment {
+  id              String   @id @default(cuid())
+  ticketId        String
+  ticket          ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  commentType     String   @default("public") // public | internal
+  body            String
+  authorId        String?
+  authorName      String?
+  createdAt       DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model ITTicketAttachment {
+  id              String   @id @default(cuid())
+  ticketId        String
+  ticket          ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName        String
+  fileType        String?
+  fileSize        Int?
+  fileUrl         String
+  uploadedById    String?
+  uploadedByName String?
+  createdAt       DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model KnowledgeBaseArticle {
+  id              String   @id @default(cuid())
+  organizationId  String
+  title           String
+  category        String   @default("general") // login | printing | network | hmis | email | security | general
+  content         String
+  keywords        String?
+  authorId        String?
+  authorName      String?
+  status          String   @default("published") // draft | published | archived
+  viewCount       Int      @default(0)
+  helpfulCount    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([category])
+}
+
+model ITAsset {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  assetTag        String   @unique
+  assetType       String   // desktop | laptop | printer | scanner | router | switch | server | ups | projector | other
+  manufacturer    String?
+  model           String?
+  serialNumber    String?
+  location        String?
+  departmentCode  String?
+  assignedToId    String?
+  assignedToName  String?
+  purchaseDate    DateTime?
+  warrantyExpiry  DateTime?
+  status          String   @default("active") // active | inactive | repair | retired
+  condition       String   @default("good") // excellent | good | fair | poor
+  operatingSystem String?
+  ipAddress       String?
+  macAddress      String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tickets         ITTicketAssetLink[]
+
+  @@index([organizationId, facilityId])
+  @@index([assetType, status])
+}
+
+model ITTicketAssetLink {
+  id              String   @id @default(cuid())
+  ticketId        String
+  ticket          ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  assetId         String
+  asset           ITAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  linkType        String   @default("related") // related | affected | repaired
+  createdAt       DateTime @default(now())
+
+  @@unique([ticketId, assetId])
+}
+
+model SLAPolicy {
+  id              String   @id @default(cuid())
+  organizationId  String
+  name            String
+  priority        String   // critical | high | medium | low
+  responseTimeMins Int
+  resolutionTimeMins Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, isActive])
 }
