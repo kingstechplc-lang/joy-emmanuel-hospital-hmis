@@ -144,6 +144,16 @@
   scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
 }
 
+/* Hide scrollbar on tab lists while keeping scroll functionality */
+.tabs-scroll::-webkit-scrollbar {
+  height: 0;
+  display: none;
+}
+.tabs-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ===================================================================== */
 /* KPI CARD GRADIENT CLASSES — vibrant gradients matching the sample UI  */
 /* ===================================================================== */

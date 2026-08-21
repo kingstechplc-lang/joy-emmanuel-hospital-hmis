@@ -61,11 +61,11 @@ export function RecordsDeskView() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 max-w-lg">
-          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
-          <TabsTrigger value="checkin" className="text-xs">Check-in</TabsTrigger>
-          <TabsTrigger value="requests" className="text-xs">Record Requests</TabsTrigger>
-          <TabsTrigger value="amendments" className="text-xs">Amendments</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto gap-1 p-1 bg-slate-100 rounded-lg">
+          <TabsTrigger value="dashboard" className="text-xs whitespace-nowrap flex-1 min-w-[80px]">Dashboard</TabsTrigger>
+          <TabsTrigger value="checkin" className="text-xs whitespace-nowrap flex-1 min-w-[80px]">Check-in</TabsTrigger>
+          <TabsTrigger value="requests" className="text-xs whitespace-nowrap flex-1 min-w-[80px]">Requests</TabsTrigger>
+          <TabsTrigger value="amendments" className="text-xs whitespace-nowrap flex-1 min-w-[80px]">Amendments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4">

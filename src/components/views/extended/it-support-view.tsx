@@ -93,11 +93,11 @@ export function ITSupportView() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 max-w-md">
-          <TabsTrigger value="tickets" className="text-xs">Tickets</TabsTrigger>
-          <TabsTrigger value="knowledge" className="text-xs">Knowledge Base</TabsTrigger>
-          <TabsTrigger value="assets" className="text-xs">IT Assets</TabsTrigger>
-          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto gap-1 p-1 bg-slate-100 rounded-lg">
+          <TabsTrigger value="tickets" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Tickets</TabsTrigger>
+          <TabsTrigger value="knowledge" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Knowledge</TabsTrigger>
+          <TabsTrigger value="assets" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Assets</TabsTrigger>
+          <TabsTrigger value="dashboard" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Dashboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tickets" className="mt-4">

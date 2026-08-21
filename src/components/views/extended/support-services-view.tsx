@@ -79,11 +79,11 @@ export function SupportServicesView() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 max-w-md">
-          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
-          <TabsTrigger value="requests" className="text-xs">Requests</TabsTrigger>
-          <TabsTrigger value="maintenance" className="text-xs">Maintenance</TabsTrigger>
-          <TabsTrigger value="inspections" className="text-xs">Inspections</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto gap-1 p-1 bg-slate-100 rounded-lg">
+          <TabsTrigger value="dashboard" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Dashboard</TabsTrigger>
+          <TabsTrigger value="requests" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Requests</TabsTrigger>
+          <TabsTrigger value="maintenance" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Maintenance</TabsTrigger>
+          <TabsTrigger value="inspections" className="text-xs whitespace-nowrap flex-1 min-w-[70px]">Inspections</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4">

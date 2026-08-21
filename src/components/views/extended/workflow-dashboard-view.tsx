@@ -232,29 +232,29 @@ export function WorkflowDashboardView() {
                 return (
                   <div
                     key={n.id}
-                    className={`border rounded-xl p-4 transition-all hover:shadow-md card-hover-lift ${
+                    className={`border rounded-xl p-3 sm:p-4 transition-all hover:shadow-md card-hover-lift ${
                       n.readAt ? "bg-white border-slate-200" : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-2xl">{typeInfo.icon}</span>
-                          <span className={`text-xs px-2.5 py-0.5 rounded-md border font-semibold ${typeInfo.color}`}>
+                    <div className="flex items-start justify-between gap-2 sm:gap-3">
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1">
+                          <span className="text-xl sm:text-2xl shrink-0">{typeInfo.icon}</span>
+                          <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-md border font-semibold ${typeInfo.color}`}>
                             {typeInfo.label}
                           </span>
                           {!n.readAt && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 uppercase">
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 uppercase shrink-0">
                               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> New
                             </span>
                           )}
-                          <span className="text-xs text-slate-400">{formatRelative(n.createdAt)}</span>
+                          <span className="text-[10px] sm:text-xs text-slate-400">{formatRelative(n.createdAt)}</span>
                         </div>
                         <div className="mt-1">
-                          <p className={`text-sm ${n.readAt ? "text-slate-700" : "font-bold text-slate-900"}`}>
+                          <p className={`text-xs sm:text-sm ${n.readAt ? "text-slate-700" : "font-bold text-slate-900"} break-words`}>
                             {n.title}
                           </p>
-                          <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
+                          <p className="text-xs text-slate-600 mt-1 leading-relaxed break-words">{n.message}</p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1 flex-shrink-0">
