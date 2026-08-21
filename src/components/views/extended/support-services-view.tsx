@@ -191,7 +191,8 @@ function RequestsTab({ canManage }: { canManage: boolean }) {
   if (statusFilter !== "all") params.set("status", statusFilter);
   if (priorityFilter !== "all") params.set("priority", priorityFilter);
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["service-requests", params.toString()],
     queryFn: () => fetchJson(`/api/service-requests?${params.toString()}`),
   });
@@ -252,7 +253,7 @@ function RequestsTab({ canManage }: { canManage: boolean }) {
               <SelectItem value="emergency">Emergency</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 text-white">
             <Plus className="w-4 h-4 mr-1" /> New Request
           </Button>
@@ -435,7 +436,8 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
   if (search) params.set("search", search);
   if (statusFilter !== "all") params.set("status", statusFilter);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["maintenance-schedule", params.toString()],
     queryFn: () => fetchJson(`/api/maintenance-schedule?${params.toString()}`),
   });
@@ -486,7 +488,7 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
               <SelectItem value="overdue">Overdue</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           {canManage && <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-blue-500 to-blue-600 text-white"><Plus className="w-4 h-4 mr-1" /> Schedule</Button>}
         </CardContent>
       </Card>
@@ -593,7 +595,8 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
   if (typeFilter !== "all") params.set("inspectionType", typeFilter);
   if (statusFilter !== "all") params.set("status", statusFilter);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["facility-inspections", params.toString()],
     queryFn: () => fetchJson(`/api/facility-inspections?${params.toString()}`),
   });
@@ -634,7 +637,7 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
               <SelectItem value="closed">Closed</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           {canManage && <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 text-white"><Plus className="w-4 h-4 mr-1" /> New Inspection</Button>}
         </CardContent>
       </Card>

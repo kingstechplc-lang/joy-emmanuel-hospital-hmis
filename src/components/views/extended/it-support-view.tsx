@@ -135,7 +135,8 @@ function TicketTab({ canManage }: { canManage: boolean }) {
   if (priorityFilter !== "all") params.set("priority", priorityFilter);
   if (typeFilter !== "all") params.set("ticketType", typeFilter);
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["it-tickets", params.toString()],
     queryFn: () => fetchJson(`/api/it-tickets?${params.toString()}`),
   });
@@ -216,7 +217,7 @@ function TicketTab({ canManage }: { canManage: boolean }) {
               <SelectItem value="critical">Critical</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
             <Plus className="w-4 h-4 mr-1" /> New Ticket
           </Button>
@@ -508,7 +509,8 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
   if (search) params.set("search", search);
   if (category !== "all") params.set("category", category);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["kb-articles", params.toString()],
     queryFn: () => fetchJson(`/api/knowledge-base?${params.toString()}`),
   });
@@ -639,7 +641,8 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
   if (typeFilter !== "all") params.set("assetType", typeFilter);
   if (statusFilter !== "all") params.set("status", statusFilter);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["it-assets", params.toString()],
     queryFn: () => fetchJson(`/api/it-assets?${params.toString()}`),
   });
@@ -687,7 +690,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
               <SelectItem value="retired">Retired</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           {canManage && <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white"><Plus className="w-4 h-4 mr-1" /> New Asset</Button>}
         </CardContent>
       </Card>

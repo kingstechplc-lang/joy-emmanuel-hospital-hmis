@@ -178,7 +178,7 @@ export function DashboardView() {
             <AlertCircle className="w-8 h-8 text-rose-500 mb-2" />
             <p className="text-sm font-semibold text-slate-900 mb-1">Failed to load dashboard stats</p>
             <p className="text-xs text-slate-500 mb-3">{(error as Error)?.message || "Please try again"}</p>
-            <Button size="sm" variant="outline" onClick={() => refetch()}>
+            <Button size="sm" variant="outline" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }}>
               <RefreshCcw className="w-3 h-3 mr-1" /> Retry
             </Button>
           </CardContent>

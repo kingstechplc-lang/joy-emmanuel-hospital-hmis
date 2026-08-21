@@ -65,11 +65,20 @@ export function MortuaryView() {
     ...(search ? { search } : {}),
   });
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["mortuary", queryParams.toString()],
     queryFn: () => fetchJson(`/api/mortuary?${queryParams.toString()}`),
     enabled: canView,
+    staleTime: 0,
   });
+
+  const handleRefresh = async () => {
+    toast.promise(refetch(), {
+      loading: "Refreshing...",
+      success: "Data refreshed",
+      error: "Failed to refresh",
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -172,8 +181,8 @@ export function MortuaryView() {
         gradient="from-slate-600 to-slate-800"
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
-              <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
               <Download className="w-4 h-4 mr-1" /> Export CSV

@@ -71,10 +71,11 @@ export function WorkflowDashboardView() {
   if (typeFilter !== "all") params.set("type", typeFilter);
   params.set("limit", "100");
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["workflow-notifications", params.toString()],
     queryFn: () => fetchJson(`/api/notifications?${params.toString()}`),
     refetchInterval: 30000, // refresh every 30s
+    staleTime: 0,
   });
 
   const markAllReadMutation = useMutation({
@@ -135,8 +136,8 @@ export function WorkflowDashboardView() {
         gradient="from-rose-500 to-red-600"
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
-              <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
+            <Button variant="outline" size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
             {summary && summary.unread > 0 && (
               <Button

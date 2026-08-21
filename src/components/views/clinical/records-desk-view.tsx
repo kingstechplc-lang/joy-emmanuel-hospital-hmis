@@ -338,7 +338,8 @@ function RequestsTab() {
   if (statusFilter !== "all") params.set("status", statusFilter);
   if (priorityFilter !== "all") params.set("priority", priorityFilter);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["record-requests", params.toString()],
     queryFn: () => fetchJson(`/api/record-requests?${params.toString()}`),
   });
@@ -398,7 +399,7 @@ function RequestsTab() {
               <SelectItem value="emergency">Emergency</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
             <Plus className="w-4 h-4 mr-1" /> New Request
           </Button>
@@ -533,7 +534,8 @@ function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
   if (search) params.set("search", search);
   if (statusFilter !== "all") params.set("status", statusFilter);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    staleTime: 0,
     queryKey: ["record-amendments", params.toString()],
     queryFn: () => fetchJson(`/api/record-amendments?${params.toString()}`),
   });
@@ -581,7 +583,7 @@ function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
               <SelectItem value="applied">Applied</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => refetch()} variant="outline"><RefreshCcw className="w-4 h-4 mr-1" /> Refresh</Button>
+          <Button size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} disabled={isFetching} variant="outline"><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <Plus className="w-4 h-4 mr-1" /> Request Amendment
           </Button>

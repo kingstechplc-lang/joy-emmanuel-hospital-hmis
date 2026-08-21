@@ -593,7 +593,7 @@ function HistoryTab() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }}
             className="gap-2"
           >
             <RefreshCcw className="w-4 h-4" /> Refresh

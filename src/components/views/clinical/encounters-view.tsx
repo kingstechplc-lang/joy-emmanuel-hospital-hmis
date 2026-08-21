@@ -113,7 +113,7 @@ export function EncountersView() {
             </Select>
           </div>
           <div className="flex items-end">
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1">
+            <Button variant="outline" size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} className="gap-1">
               <RefreshCw className="w-3.5 h-3.5" /> Refresh
             </Button>
           </div>

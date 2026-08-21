@@ -100,7 +100,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
     return p.toString();
   }, [activeFacilityId, search, filters]);
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: [config.queryKey, queryParams],
     queryFn: async () => {
       const res = await fetch(`/api/${config.apiPath}?${queryParams}`);
@@ -111,7 +111,16 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
       return safeJson(res);
     },
     enabled: canView,
+    staleTime: 0,
   });
+
+  const handleRefresh = async () => {
+    toast.promise(refetch(), {
+      loading: "Refreshing...",
+      success: "Data refreshed",
+      error: "Failed to refresh",
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -272,8 +281,8 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
         gradient={config.gradient || "from-rose-500 to-red-600"}
         actions={
           <>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
-              <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
               <Download className="w-4 h-4 mr-1" /> Export CSV
