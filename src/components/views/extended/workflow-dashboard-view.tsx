@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCheck, Filter, BellRing, AlertCircle, Activity, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson} from "@/components/ui-helpers";
+import { EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -127,77 +127,38 @@ export function WorkflowDashboardView() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-            <BellRing className="w-5 h-5 text-emerald-600" /> Workflow Dashboard
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Hospital-wide notifications — when one department acts, related departments get notified.
-            Auto-refreshes every 30 seconds.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
-          </Button>
-          {summary && summary.unread > 0 && (
-            <Button
-              size="sm"
-              onClick={() => markAllReadMutation.mutate()}
-              disabled={markAllReadMutation.isPending}
-            >
-              <CheckCheck className="w-4 h-4 mr-1" /> Mark All Read ({summary.unread})
+      {/* Header — gradient banner */}
+      <PageHeader
+        title="Workflow & Notifications"
+        description="Hospital-wide notifications — when one department acts, related departments get notified. Auto-refreshes every 30 seconds."
+        icon={BellRing}
+        gradient="from-rose-500 to-red-600"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
             </Button>
-          )}
-        </div>
-      </div>
+            {summary && summary.unread > 0 && (
+              <Button
+                size="sm"
+                onClick={() => markAllReadMutation.mutate()}
+                disabled={markAllReadMutation.isPending}
+                className="bg-white/20 border border-white/30 text-white hover:bg-white/30"
+              >
+                <CheckCheck className="w-4 h-4 mr-1" /> Mark All Read ({summary.unread})
+              </Button>
+            )}
+          </>
+        }
+      />
 
-      {/* Stats */}
+      {/* Stats — colorful gradient mini cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card className="border-l-4 border-emerald-300 bg-emerald-50">
-          <CardContent className="p-3">
-            <div className="text-xs text-slate-600 flex items-center gap-1">
-              <Bell className="w-3 h-3" /> Total Notifications
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{summary?.total || 0}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-rose-300 bg-rose-50">
-          <CardContent className="p-3">
-            <div className="text-xs text-slate-600 flex items-center gap-1">
-              <BellRing className="w-3 h-3" /> Unread
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{summary?.unread || 0}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-blue-300 bg-blue-50">
-          <CardContent className="p-3">
-            <div className="text-xs text-slate-600">Lab Results</div>
-            <div className="text-2xl font-bold text-slate-900">
-              {(summary?.byType?.lab_order_created?.unread || 0) +
-                (summary?.byType?.lab_result_released?.unread || 0)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-purple-300 bg-purple-50">
-          <CardContent className="p-3">
-            <div className="text-xs text-slate-600">Prescriptions</div>
-            <div className="text-2xl font-bold text-slate-900">
-              {summary?.byType?.prescription_created?.unread || 0}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-amber-300 bg-amber-50">
-          <CardContent className="p-3">
-            <div className="text-xs text-slate-600">Critical / ICU</div>
-            <div className="text-2xl font-bold text-slate-900">
-              {(summary?.byType?.critical_care_admitted?.unread || 0) +
-                (summary?.byType?.theatre_case_scheduled?.unread || 0)}
-            </div>
-          </CardContent>
-        </Card>
+        <MiniStatCard label="Total" value={summary?.total || 0} icon={Bell} gradient="from-emerald-500 to-emerald-600" />
+        <MiniStatCard label="Unread" value={summary?.unread || 0} icon={BellRing} gradient="from-rose-500 to-red-600" />
+        <MiniStatCard label="Lab Results" value={(summary?.byType?.lab_order_created?.unread || 0) + (summary?.byType?.lab_result_released?.unread || 0)} icon={Activity} gradient="from-blue-500 to-blue-600" />
+        <MiniStatCard label="Prescriptions" value={summary?.byType?.prescription_created?.unread || 0} icon={Bell} gradient="from-purple-500 to-purple-600" />
+        <MiniStatCard label="Critical / ICU" value={(summary?.byType?.critical_care_admitted?.unread || 0) + (summary?.byType?.theatre_case_scheduled?.unread || 0)} icon={AlertCircle} gradient="from-amber-500 to-orange-600" />
       </div>
 
       {/* Filters */}
@@ -271,27 +232,29 @@ export function WorkflowDashboardView() {
                 return (
                   <div
                     key={n.id}
-                    className={`border rounded-md p-3 transition-all hover:shadow-sm ${
-                      n.readAt ? "bg-white border-slate-200" : "bg-blue-50/50 border-blue-200"
+                    className={`border rounded-xl p-4 transition-all hover:shadow-md card-hover-lift ${
+                      n.readAt ? "bg-white border-slate-200" : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-lg">{typeInfo.icon}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded border ${typeInfo.color}`}>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-2xl">{typeInfo.icon}</span>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-md border font-semibold ${typeInfo.color}`}>
                             {typeInfo.label}
                           </span>
                           {!n.readAt && (
-                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 uppercase">
+                              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> New
+                            </span>
                           )}
                           <span className="text-xs text-slate-400">{formatRelative(n.createdAt)}</span>
                         </div>
                         <div className="mt-1">
-                          <p className={`text-sm ${n.readAt ? "text-slate-700" : "font-semibold text-slate-900"}`}>
+                          <p className={`text-sm ${n.readAt ? "text-slate-700" : "font-bold text-slate-900"}`}>
                             {n.title}
                           </p>
-                          <p className="text-xs text-slate-600 mt-0.5">{n.message}</p>
+                          <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1 flex-shrink-0">

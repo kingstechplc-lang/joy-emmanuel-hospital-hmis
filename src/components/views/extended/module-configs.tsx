@@ -101,6 +101,7 @@ export const BLOOD_DONOR_CONFIG: ModuleConfig = {
   auditActionCreate: "BLOOD_DONOR_CREATED",
   auditActionUpdate: "BLOOD_DONOR_UPDATED",
   accentColor: "text-rose-600",
+  gradient: "from-rose-500 to-red-600",
 };
 
 // =====================================================================
@@ -189,6 +190,7 @@ export const BLOOD_UNIT_CONFIG: ModuleConfig = {
   auditActionCreate: "BLOOD_UNIT_CREATED",
   auditActionUpdate: "BLOOD_UNIT_UPDATED",
   accentColor: "text-rose-600",
+  gradient: "from-rose-500 to-red-600",
 };
 
 // =====================================================================
@@ -248,6 +250,7 @@ export const BLOOD_TRANSFUSION_CONFIG: ModuleConfig = {
   auditActionCreate: "BLOOD_TRANSFUSION_STARTED",
   auditActionUpdate: "BLOOD_TRANSFUSION_UPDATED",
   accentColor: "text-rose-600",
+  gradient: "from-rose-500 to-red-600",
 };
 
 // =====================================================================
@@ -346,6 +349,7 @@ export const THEATRE_CONFIG: ModuleConfig = {
   auditActionCreate: "THEATRE_CASE_SCHEDULED",
   auditActionUpdate: "THEATRE_CASE_UPDATED",
   accentColor: "text-blue-600",
+  gradient: "from-blue-500 to-blue-600",
 };
 
 // =====================================================================
@@ -435,6 +439,7 @@ export const CRITICAL_CARE_CONFIG: ModuleConfig = {
   auditActionCreate: "CRITICAL_CARE_ADMISSION",
   auditActionUpdate: "CRITICAL_CARE_UPDATED",
   accentColor: "text-rose-600",
+  gradient: "from-rose-500 to-red-600",
 };
 
 // =====================================================================
@@ -529,6 +534,7 @@ export const SPECIALTY_CONFIG: ModuleConfig = {
   auditActionCreate: "SPECIALTY_ENCOUNTER_CREATED",
   auditActionUpdate: "SPECIALTY_ENCOUNTER_UPDATED",
   accentColor: "text-purple-600",
+  gradient: "from-purple-500 to-purple-600",
 };
 
 // =====================================================================
@@ -614,6 +620,7 @@ export const SUPPORT_SERVICES_CONFIG: ModuleConfig = {
   auditActionCreate: "SERVICE_REQUEST_CREATED",
   auditActionUpdate: "SERVICE_REQUEST_UPDATED",
   accentColor: "text-teal-600",
+  gradient: "from-teal-500 to-teal-600",
 };
 
 // =====================================================================
@@ -694,6 +701,7 @@ export const PATIENT_FEEDBACK_CONFIG: ModuleConfig = {
   auditActionCreate: "PATIENT_FEEDBACK_CREATED",
   auditActionUpdate: "PATIENT_FEEDBACK_UPDATED",
   accentColor: "text-blue-600",
+  gradient: "from-blue-500 to-blue-600",
 };
 
 // =====================================================================
@@ -748,6 +756,7 @@ export const QUALITY_INDICATOR_CONFIG: ModuleConfig = {
   auditActionCreate: "QUALITY_INDICATOR_CREATED",
   auditActionUpdate: "QUALITY_INDICATOR_UPDATED",
   accentColor: "text-emerald-600",
+  gradient: "from-emerald-500 to-emerald-600",
 };
 
 // =====================================================================
@@ -833,6 +842,7 @@ export const RISK_REGISTER_CONFIG: ModuleConfig = {
   auditActionCreate: "RISK_REGISTER_CREATED",
   auditActionUpdate: "RISK_REGISTER_UPDATED",
   accentColor: "text-amber-600",
+  gradient: "from-amber-500 to-orange-600",
 };
 
 // =====================================================================
@@ -920,6 +930,7 @@ export const LEGAL_CASE_CONFIG: ModuleConfig = {
   auditActionCreate: "LEGAL_CASE_CREATED",
   auditActionUpdate: "LEGAL_CASE_UPDATED",
   accentColor: "text-slate-700",
+  gradient: "from-slate-600 to-slate-800",
 };
 
 // =====================================================================
@@ -998,6 +1009,7 @@ export const RESEARCH_CONFIG: ModuleConfig = {
   auditActionCreate: "RESEARCH_STUDY_CREATED",
   auditActionUpdate: "RESEARCH_STUDY_UPDATED",
   accentColor: "text-purple-600",
+  gradient: "from-purple-500 to-purple-600",
 };
 
 // =====================================================================
@@ -1073,6 +1085,7 @@ export const PR_CONFIG: ModuleConfig = {
   auditActionCreate: "PR_ACTIVITY_CREATED",
   auditActionUpdate: "PR_ACTIVITY_UPDATED",
   accentColor: "text-pink-600",
+  gradient: "from-pink-500 to-rose-600",
 };
 
 // =====================================================================
@@ -1152,6 +1165,7 @@ export const IT_TICKET_CONFIG: ModuleConfig = {
   auditActionCreate: "IT_TICKET_CREATED",
   auditActionUpdate: "IT_TICKET_UPDATED",
   accentColor: "text-indigo-600",
+  gradient: "from-indigo-500 to-indigo-600",
 };
 
 // =====================================================================
@@ -1219,6 +1233,7 @@ export const CODING_RECORD_CONFIG: ModuleConfig = {
   auditActionCreate: "CODING_RECORD_CREATED",
   auditActionUpdate: "CODING_RECORD_UPDATED",
   accentColor: "text-cyan-600",
+  gradient: "from-cyan-500 to-cyan-600",
 };
 
 // =====================================================================
@@ -1291,6 +1306,7 @@ export const COMMUNITY_OUTREACH_CONFIG: ModuleConfig = {
   auditActionCreate: "COMMUNITY_OUTREACH_CREATED",
   auditActionUpdate: "COMMUNITY_OUTREACH_UPDATED",
   accentColor: "text-emerald-600",
+  gradient: "from-emerald-500 to-emerald-600",
 };
 
 // =====================================================================
@@ -1368,6 +1384,7 @@ export const HOME_CARE_CONFIG: ModuleConfig = {
   auditActionCreate: "HOME_CARE_VISIT_CREATED",
   auditActionUpdate: "HOME_CARE_VISIT_UPDATED",
   accentColor: "text-amber-600",
+  gradient: "from-amber-500 to-orange-600",
 };
 
 // =====================================================================
@@ -1459,6 +1476,7 @@ export const HISTOPATHOLOGY_CONFIG: ModuleConfig = {
   auditActionCreate: "HISTOPATHOLOGY_SPECIMEN_CREATED",
   auditActionUpdate: "HISTOPATHOLOGY_SPECIMEN_UPDATED",
   accentColor: "text-violet-600",
+  gradient: "from-violet-500 to-violet-600",
 };
 
 // =====================================================================
@@ -1522,6 +1540,7 @@ export const RECOVERY_ROOM_CONFIG: ModuleConfig = {
   auditActionCreate: "RECOVERY_RECORD_CREATED",
   auditActionUpdate: "RECOVERY_RECORD_UPDATED",
   accentColor: "text-cyan-600",
+  gradient: "from-cyan-500 to-cyan-600",
 };
 
 // =====================================================================
@@ -1597,6 +1616,7 @@ export const AUDIT_FINDING_CONFIG: ModuleConfig = {
   auditActionCreate: "AUDIT_FINDING_CREATED",
   auditActionUpdate: "AUDIT_FINDING_UPDATED",
   accentColor: "text-slate-700",
+  gradient: "from-slate-600 to-slate-800",
 };
 
 // Export all configs as a map

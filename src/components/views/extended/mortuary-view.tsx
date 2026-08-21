@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Skull, Plus, Search, RefreshCcw, Eye, DoorOpen, UserX, Building2, Phone, FileText, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -163,38 +163,36 @@ export function MortuaryView() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-            <Skull className="w-5 h-5 text-slate-700" /> Mortuary Services
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage deceased persons including those not recorded from this facility. Track body intake, cold storage, and release.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length}>
-            <Download className="w-4 h-4 mr-1" /> Export CSV
-          </Button>
-          {canManage && (
-            <Button size="sm" onClick={() => setShowForm(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Admit Deceased
+    <div className="space-y-4 fade-in-up">
+      {/* Header — gradient banner */}
+      <PageHeader
+        title="Mortuary Services"
+        description="Manage deceased persons including those not recorded from this facility. Track body intake, cold storage, and release."
+        icon={Skull}
+        gradient="from-slate-600 to-slate-800"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
             </Button>
-          )}
-        </div>
-      </div>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <Download className="w-4 h-4 mr-1" /> Export CSV
+            </Button>
+            {canManage && (
+              <Button size="sm" onClick={() => setShowForm(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+                <Plus className="w-4 h-4 mr-1" /> Admit Deceased
+              </Button>
+            )}
+          </>
+        }
+      />
 
-      {/* Stats */}
+      {/* Stats — colorful gradient mini cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Admissions" value={items.length} color="slate" />
-        <StatCard label="In Storage" value={items.filter((i) => i.admissionStatus === "stored" || i.admissionStatus === "admitted").length} color="amber" />
-        <StatCard label="Released" value={items.filter((i) => i.admissionStatus === "released").length} color="emerald" />
-        <StatCard label="Brought-in (Not Facility)" value={items.filter((i) => i.placeOfDeath !== "facility").length} color="rose" />
+        <MiniStatCard label="Total Admissions" value={items.length} gradient="from-slate-600 to-slate-700" />
+        <MiniStatCard label="In Storage" value={items.filter((i) => i.admissionStatus === "stored" || i.admissionStatus === "admitted").length} gradient="from-amber-500 to-orange-600" />
+        <MiniStatCard label="Released" value={items.filter((i) => i.admissionStatus === "released").length} gradient="from-emerald-500 to-emerald-600" />
+        <MiniStatCard label="Brought-in" value={items.filter((i) => i.placeOfDeath !== "facility").length} gradient="from-rose-500 to-red-600" />
       </div>
 
       {/* Filters */}

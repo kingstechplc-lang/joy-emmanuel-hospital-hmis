@@ -8,7 +8,7 @@ import {
   Stethoscope, Users, Clock, Activity, UserPlus, ClipboardCheck,
   ListOrdered, Calendar, FlaskConical, Pill, ArrowRight, UserCheck,
 } from "lucide-react";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -45,74 +45,31 @@ export function OPDView() {
   const queueEntries = (queueData?.items || []).flatMap((q: any) => q.entries || []).filter((e: any) => e.status === "waiting" || e.status === "called");
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Stethoscope className="w-6 h-6 text-emerald-600" />
-            Outpatient Department (OPD)
-          </h2>
-          <p className="text-sm text-slate-500">
-            Manage today's OPD flow — from check-in to consultation to discharge
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setView("records_desk")} size="sm" variant="outline" className="gap-2">
-            <ClipboardCheck className="w-4 h-4" /> Check-in Patient
-          </Button>
-          <Button onClick={() => setView("patient_new")} size="sm" variant="outline" className="gap-2">
-            <UserPlus className="w-4 h-4" /> Register New
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6 fade-in-up">
+      {/* Header — gradient banner */}
+      <PageHeader
+        title="Outpatient Department (OPD)"
+        description="Manage today's OPD flow — from check-in to consultation to discharge"
+        icon={Stethoscope}
+        gradient="from-emerald-500 to-teal-600"
+        actions={
+          <>
+            <Button onClick={() => setView("records_desk")} size="sm" className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+              <ClipboardCheck className="w-4 h-4 mr-1" /> Check-in Patient
+            </Button>
+            <Button onClick={() => setView("patient_new")} size="sm" className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+              <UserPlus className="w-4 h-4 mr-1" /> Register New
+            </Button>
+          </>
+        }
+      />
 
-      {/* OPD Flow Stats */}
+      {/* OPD Flow Stats — colorful gradient cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="hover:shadow-md transition cursor-pointer" onClick={() => setView("queue")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900">{waitingCount}</p>
-              <p className="text-xs text-slate-500">Waiting / In Progress</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition cursor-pointer" onClick={() => setView("encounters")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900">{completedCount}</p>
-              <p className="text-xs text-slate-500">Completed Today</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition cursor-pointer" onClick={() => setView("triage")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900">{todayOpdCount}</p>
-              <p className="text-xs text-slate-500">Total OPD Today</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition cursor-pointer" onClick={() => setView("queue")}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
-              <ListOrdered className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900">{queueEntries.length}</p>
-              <p className="text-xs text-slate-500">In Queue</p>
-            </div>
-          </CardContent>
-        </Card>
+        <MiniStatCard label="Waiting / In Progress" value={waitingCount} icon={Clock} gradient="from-amber-500 to-orange-600" />
+        <MiniStatCard label="Completed Today" value={completedCount} icon={UserCheck} gradient="from-emerald-500 to-emerald-600" />
+        <MiniStatCard label="Total OPD Today" value={todayOpdCount} icon={Activity} gradient="from-blue-500 to-blue-600" />
+        <MiniStatCard label="In Queue" value={queueEntries.length} icon={ListOrdered} gradient="from-purple-500 to-purple-600" />
       </div>
 
       {/* OPD Workflow Steps */}

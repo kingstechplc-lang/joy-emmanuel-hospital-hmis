@@ -15,7 +15,7 @@ import {
   Users, Activity, FileText, CheckCircle2, AlertCircle, Loader2, Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
@@ -153,31 +153,28 @@ export function RecordsDeskView() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <ClipboardCheck className="w-6 h-6 text-emerald-600" />
-            Records Desk
-          </h2>
-          <p className="text-sm text-slate-500">
-            First point of entry — verify patient, check NHIS eligibility, open encounter
-          </p>
-        </div>
-        <Button onClick={() => setView("patient_new")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <UserPlus className="w-4 h-4" /> Register New Patient
-        </Button>
-      </div>
+    <div className="space-y-6 fade-in-up">
+      {/* Header — gradient banner */}
+      <PageHeader
+        title="Records Desk"
+        description="First point of entry — verify patient, check NHIS eligibility, open encounter"
+        icon={ClipboardCheck}
+        gradient="from-emerald-500 to-teal-600"
+        actions={
+          <Button onClick={() => setView("patient_new")} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+            <UserPlus className="w-4 h-4 mr-1" /> Register New Patient
+          </Button>
+        }
+      />
 
-      {/* Stats Cards */}
+      {/* Stats Cards — colorful gradients */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatMini label="Today's Check-ins" value={stats?.todayCheckIns ?? "—"} icon={Clock} color="emerald" />
-        <StatMini label="Active Encounters" value={stats?.activeEncounters ?? "—"} icon={Activity} color="blue" />
-        <StatMini label="New Patients Today" value={stats?.todayNewPatients ?? "—"} icon={UserPlus} color="purple" />
-        <StatMini label="NHIS Valid" value={stats?.insuranceBreakdown?.nhisValid ?? "—"} icon={ShieldCheck} color="emerald" />
-        <StatMini label="Self-Pay" value={stats?.insuranceBreakdown?.selfPay ?? "—"} icon={ShieldX} color="slate" />
-        <StatMini label="NHIS Expired" value={stats?.insuranceBreakdown?.expired ?? "—"} icon={ShieldAlert} color="rose" />
+        <MiniStatCard label="Today's Check-ins" value={stats?.todayCheckIns ?? "—"} icon={Clock} gradient="from-emerald-500 to-emerald-600" />
+        <MiniStatCard label="Active Encounters" value={stats?.activeEncounters ?? "—"} icon={Activity} gradient="from-blue-500 to-blue-600" />
+        <MiniStatCard label="New Patients Today" value={stats?.todayNewPatients ?? "—"} icon={UserPlus} gradient="from-purple-500 to-purple-600" />
+        <MiniStatCard label="NHIS Valid" value={stats?.insuranceBreakdown?.nhisValid ?? "—"} icon={ShieldCheck} gradient="from-emerald-500 to-teal-600" />
+        <MiniStatCard label="Self-Pay" value={stats?.insuranceBreakdown?.selfPay ?? "—"} icon={ShieldX} gradient="from-slate-500 to-slate-600" />
+        <MiniStatCard label="NHIS Expired" value={stats?.insuranceBreakdown?.expired ?? "—"} icon={ShieldAlert} gradient="from-rose-500 to-red-600" />
       </div>
 
       {/* Patient Search + Check-in */}

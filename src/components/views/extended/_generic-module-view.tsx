@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, RefreshCcw, Eye, Pencil, Trash2, AlertCircle, Download, FileSpreadsheet, TrendingUp, Clock, CheckCircle2, XCircle, Activity } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson} from "@/components/ui-helpers";
+import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
 // =====================================================================
@@ -65,6 +65,7 @@ export type ModuleConfig = {
   auditActionCreate: string;
   auditActionUpdate: string;
   accentColor?: string;
+  gradient?: string; // gradient class for header, e.g. "from-rose-500 to-red-600"
   workflowActions?: WorkflowAction[];
   statusField?: string; // which field is the "status" field for workflow
 };
@@ -263,28 +264,28 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-            <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-700"}`} /> {config.title}
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">{config.description}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length}>
-            <Download className="w-4 h-4 mr-1" /> Export CSV
-          </Button>
-          {canManage && (
-            <Button size="sm" onClick={() => setShowForm(true)}>
-              <Plus className="w-4 h-4 mr-1" /> New Record
+      {/* Header — gradient banner */}
+      <PageHeader
+        title={config.title}
+        description={config.description}
+        icon={config.icon}
+        gradient={config.gradient || "from-rose-500 to-red-600"}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <RefreshCcw className="w-4 h-4 mr-1" /> Refresh
             </Button>
-          )}
-        </div>
-      </div>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!items.length} className="bg-white/90 border-0 text-slate-700 hover:bg-white">
+              <Download className="w-4 h-4 mr-1" /> Export CSV
+            </Button>
+            {canManage && (
+              <Button size="sm" onClick={() => setShowForm(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+                <Plus className="w-4 h-4 mr-1" /> New Record
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -529,20 +530,20 @@ function RecordListItem({
   const [showActions, setShowActions] = useState(false);
   return (
     <div
-      className="border border-slate-200 rounded-md p-3 hover:bg-slate-50 transition-colors"
+      className="border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-slate-300 transition-all bg-white card-hover-lift"
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             {config.numberField && item[config.numberField] && (
-              <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+              <span className="font-mono text-xs text-white bg-gradient-to-r from-slate-600 to-slate-700 px-2 py-0.5 rounded-md font-semibold">
                 {item[config.numberField]}
               </span>
             )}
             {config.fields.slice(0, 1).map((f) => (
-              <span key={f.name} className="font-medium text-slate-900">
+              <span key={f.name} className="font-bold text-slate-900 text-base">
                 {item[f.name]}
               </span>
             ))}

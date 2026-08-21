@@ -44,13 +44,201 @@ export async function safeFetchJson(url: string, options?: RequestInit): Promise
   return data;
 }
 
+// =====================================================================
+// COLORFUL PAGE HEADER — gradient banner with icon, title, description
+// =====================================================================
+export function PageHeader({
+  title,
+  description,
+  icon: Icon,
+  gradient = "from-rose-500 to-red-600",
+  actions,
+}: {
+  title: string;
+  description?: string;
+  icon?: any;
+  gradient?: string;
+  actions?: ReactNode;
+}) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${gradient} text-white p-5 shadow-lg fade-in-up`}>
+      {/* Watermark icon */}
+      {Icon && (
+        <div className="absolute top-3 right-4 text-white/15 pointer-events-none">
+          <Icon className="w-20 h-20" strokeWidth={1.5} />
+        </div>
+      )}
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-1">
+          {Icon && <Icon className="w-5 h-5 text-white/90" />}
+          <h2 className="text-xl font-bold text-white">{title}</h2>
+        </div>
+        {description && <p className="text-sm text-white/80">{description}</p>}
+        {actions && <div className="mt-3 flex flex-wrap gap-2">{actions}</div>}
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// COLORFUL STAT CARD — compact gradient stat for sub-pages
+// =====================================================================
+export function MiniStatCard({
+  label,
+  value,
+  icon: Icon,
+  gradient = "from-blue-500 to-blue-600",
+  sublabel,
+}: {
+  label: string;
+  value: string | number;
+  icon?: any;
+  gradient?: string;
+  sublabel?: string;
+}) {
+  return (
+    <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} text-white p-4 shadow-md card-hover-lift`}>
+      {Icon && (
+        <div className="absolute top-2 right-2 text-white/20 pointer-events-none">
+          <Icon className="w-8 h-8" strokeWidth={1.5} />
+        </div>
+      )}
+      <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-1">{label}</p>
+      <p className="text-2xl font-extrabold text-white tabular-nums">{value}</p>
+      {sublabel && <p className="text-[10px] text-white/70 mt-0.5">{sublabel}</p>}
+    </div>
+  );
+}
+
+// =====================================================================
+// COLORFUL TABLE — attractive table with gradient header
+// =====================================================================
+export function ColorfulTable({
+  headers,
+  children,
+  headerGradient = "from-slate-700 to-slate-800",
+}: {
+  headers: string[];
+  children: ReactNode;
+  headerGradient?: string;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+      <table className="w-full">
+        <thead>
+          <tr className={`bg-gradient-to-r ${headerGradient} text-white`}>
+            {headers.map((h, i) => (
+              <th
+                key={i}
+                className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {children}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// =====================================================================
+// TABLE ROW — hoverable row with status color
+// =====================================================================
+export function StatusTableRow({
+  children,
+  statusColor,
+}: {
+  children: ReactNode;
+  statusColor?: string;
+}) {
+  return (
+    <tr className="hover:bg-slate-50 transition-colors border-l-4 border-transparent hover:border-l-4"
+      style={statusColor ? { borderLeftColor: statusColor } : undefined}
+    >
+      {children}
+    </tr>
+  );
+}
+
+// =====================================================================
+// GRADIENT BUTTON — colorful action button
+// =====================================================================
+export function GradientButton({
+  children,
+  onClick,
+  gradient = "from-rose-500 to-red-600",
+  size = "sm",
+  className = "",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  gradient?: string;
+  size?: "sm" | "md";
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${gradient} text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ${
+        size === "sm" ? "px-3 py-1.5 text-sm" : "px-4 py-2 text-base"
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// =====================================================================
+// COLORFUL BADGE — status badge with color
+// =====================================================================
+export function ColorfulBadge({ status, label }: { status: string; label?: string }) {
+  const colorMap: Record<string, string> = {
+    // Clinical statuses
+    active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    admitted: "bg-amber-100 text-amber-700 border-amber-200",
+    open: "bg-blue-100 text-blue-700 border-blue-200",
+    in_progress: "bg-amber-100 text-amber-700 border-amber-200",
+    completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    discharged: "bg-slate-100 text-slate-600 border-slate-200",
+    cancelled: "bg-rose-100 text-rose-700 border-rose-200",
+    pending: "bg-amber-100 text-amber-700 border-amber-200",
+    ordered: "bg-blue-100 text-blue-700 border-blue-200",
+    collected: "bg-cyan-100 text-cyan-700 border-cyan-200",
+    processing: "bg-purple-100 text-purple-700 border-purple-200",
+    resulted: "bg-purple-100 text-purple-700 border-purple-200",
+    verified: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    released: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    dispensed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    available: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    occupied: "bg-rose-100 text-rose-700 border-rose-200",
+    // Severity
+    low: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    medium: "bg-amber-100 text-amber-700 border-amber-200",
+    high: "bg-orange-100 text-orange-700 border-orange-200",
+    critical: "bg-rose-100 text-rose-700 border-rose-200",
+    urgent: "bg-orange-100 text-orange-700 border-orange-200",
+    emergency: "bg-rose-100 text-rose-700 border-rose-200",
+    routine: "bg-slate-100 text-slate-600 border-slate-200",
+  };
+  const classes = colorMap[status] || "bg-slate-100 text-slate-600 border-slate-200";
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${classes}`}>
+      {label || status.replace(/_/g, " ")}
+    </span>
+  );
+}
+
 // Empty state
 export function EmptyState({ title, description, action, icon: Icon }: { title: string; description?: string; action?: ReactNode; icon?: any }) {
   const FinalIcon = Icon || SearchX;
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 ring-1 ring-slate-200/60 flex items-center justify-center mb-4 shadow-sm">
-        <FinalIcon className="w-7 h-7 text-slate-400" />
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-50 to-red-100 ring-1 ring-rose-200/60 flex items-center justify-center mb-4 shadow-sm">
+        <FinalIcon className="w-7 h-7 text-rose-400" />
       </div>
       <h3 className="text-sm font-semibold text-slate-900 mb-1">{title}</h3>
       {description && <p className="text-xs text-slate-500 mb-4 max-w-sm leading-relaxed">{description}</p>}
