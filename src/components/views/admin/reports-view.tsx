@@ -1,342 +1,671 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useAppStore } from "@/stores/app-store";
+import { useSession } from "next-auth/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Download, RefreshCcw, FileText, Activity, FlaskConical, Pill, DollarSign, Bed } from "lucide-react";
-import { toast } from "sonner";
-import {LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import {
+  FileText, Activity, FlaskConical, Pill, DollarSign, Bed,
+  Calendar, Users, Boxes, ScrollText, Scissors, Skull, ShieldCheck,
+  Download, RefreshCcw, BarChart3, TrendingUp, Clock, AlertCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  EmptyState, LoadingState, ErrorState, formatDate, safeJson,
+  PageHeader, MiniStatCard,
+} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
-    const e = await safeJson(res).catch(() => ({}));
+    const e = await safeJson(res);
     throw new Error(e.error || `Failed: ${res.status}`);
   }
   return safeJson(res);
 }
 
+// =====================================================================
+// REPORT TYPE DEFINITIONS
+// =====================================================================
 const REPORT_TYPES = [
-  { value: "patients", label: "Patient Reports", icon: FileText, color: "emerald", description: "Patient demographics, new vs returning, age distribution" },
-  { value: "clinical", label: "Clinical Reports", icon: Activity, color: "teal", description: "Encounters, admissions, discharges, diagnoses" },
-  { value: "lab", label: "Lab Reports", icon: FlaskConical, color: "cyan", description: "Tests performed, pending, critical results" },
-  { value: "pharmacy", label: "Pharmacy Reports", icon: Pill, color: "amber", description: "Dispensing, low stock, expiring medicines" },
-  { value: "financial", label: "Financial Reports", icon: DollarSign, color: "emerald", description: "Revenue, payments, outstanding, insurance" },
-  { value: "operational", label: "Operational Reports", icon: Bed, color: "violet", description: "Bed occupancy, waiting times, staff activity" },
+  { type: "patients", label: "Patient Reports", icon: FileText, gradient: "from-emerald-500 to-teal-600", desc: "Demographics, new vs returning, age distribution" },
+  { type: "clinical", label: "Clinical Reports", icon: Activity, gradient: "from-blue-500 to-blue-600", desc: "Encounters, admissions, diagnoses, procedures" },
+  { type: "appointments", label: "Appointment Reports", icon: Calendar, gradient: "from-cyan-500 to-cyan-600", desc: "Booked, completed, cancelled, no-shows" },
+  { type: "lab", label: "Laboratory Reports", icon: FlaskConical, gradient: "from-purple-500 to-purple-600", desc: "Tests ordered, pending, critical results" },
+  { type: "pharmacy", label: "Pharmacy Reports", icon: Pill, gradient: "from-amber-500 to-orange-600", desc: "Prescriptions, dispensing, low stock" },
+  { type: "financial", label: "Financial Reports", icon: DollarSign, gradient: "from-rose-500 to-red-600", desc: "Revenue, payments, outstanding, claims" },
+  { type: "insurance", label: "Insurance / NHIS", icon: ShieldCheck, gradient: "from-indigo-500 to-blue-600", desc: "Claims submitted, approved, rejected, paid" },
+  { type: "operational", label: "Operational Reports", icon: Bed, gradient: "from-violet-500 to-purple-600", desc: "Bed occupancy, staff activity, encounters" },
+  { type: "hr", label: "HR / Staff Reports", icon: Users, gradient: "from-slate-600 to-slate-800", desc: "Staff headcount, roles, employment types" },
+  { type: "inventory", label: "Inventory Reports", icon: Boxes, gradient: "from-teal-500 to-teal-600", desc: "Stock levels, low stock, out of stock" },
+  { type: "theatre", label: "Theatre Reports", icon: Scissors, gradient: "from-blue-500 to-indigo-600", desc: "Surgical cases, procedures, utilization" },
+  { type: "mortuary", label: "Mortuary Reports", icon: Skull, gradient: "from-slate-600 to-slate-800", desc: "Admissions, releases, place of death" },
+  { type: "audit", label: "Audit Reports", icon: ScrollText, gradient: "from-slate-500 to-slate-700", desc: "System events, user activity, security" },
+] as const;
+
+// Quick date ranges
+const QUICK_RANGES = [
+  { label: "Today", getRange: () => { const d = new Date(); return { from: d.toISOString().slice(0, 10), to: d.toISOString().slice(0, 10) }; } },
+  { label: "Last 7 Days", getRange: () => { const d = new Date(); const d2 = new Date(d); d2.setDate(d2.getDate() - 7); return { from: d2.toISOString().slice(0, 10), to: d.toISOString().slice(0, 10) }; } },
+  { label: "Last 30 Days", getRange: () => { const d = new Date(); const d2 = new Date(d); d2.setDate(d2.getDate() - 30); return { from: d2.toISOString().slice(0, 10), to: d.toISOString().slice(0, 10) }; } },
+  { label: "This Month", getRange: () => { const d = new Date(); const d2 = new Date(d.getFullYear(), d.getMonth(), 1); return { from: d2.toISOString().slice(0, 10), to: d.toISOString().slice(0, 10) }; } },
+  { label: "This Quarter", getRange: () => { const d = new Date(); const q = Math.floor(d.getMonth() / 3); const d2 = new Date(d.getFullYear(), q * 3, 1); return { from: d2.toISOString().slice(0, 10), to: d.toISOString().slice(0, 10) }; } },
+  { label: "This Year", getRange: () => { const d = new Date(); const d2 = new Date(d.getFullYear(), 0, 1); return { from: d2.toISOString().slice(0, 10), to: d.toISOString().slice(0, 10) }; } },
 ];
 
-const COLORS = ["#059669", "#0d9488", "#06b6d4", "#f59e0b", "#8b5cf6", "#ef4444", "#10b981", "#6366f1"];
+const CHART_COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1", "#14b8a6", "#e11d48"];
 
+// =====================================================================
+// MAIN REPORTS VIEW
+// =====================================================================
 export function ReportsView() {
-  const [reportType, setReportType] = useState("patients");
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [facilityId, setFacilityId] = useState("__none__");
-  const [generatedReport, setGeneratedReport] = useState<any | null>(null);
+  const [facilityId, setFacilityId] = useState(activeFacilityId || "");
+  const [generatedReport, setGeneratedReport] = useState<any>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
-  const facilitiesQ = useQuery({
-    queryKey: ["facilities-for-reports"],
+  // Fetch facilities
+  const { data: facilitiesData } = useQuery({
+    queryKey: ["facilities"],
     queryFn: () => fetchJson("/api/facilities"),
   });
-  const facilities = facilitiesQ.data?.facilities || [];
+  const facilities = facilitiesData?.facilities || [];
 
-  const params = new URLSearchParams();
-  if (dateFrom) params.set("dateFrom", dateFrom);
-  if (dateTo) params.set("dateTo", dateTo);
-  if (facilityId && facilityId !== "__none__") params.set("facilityId", facilityId);
-
-  const { isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["report", reportType, dateFrom, dateTo, facilityId],
-    queryFn: () => fetchJson(`/api/reports/${reportType}?${params.toString()}`),
-    enabled: false, // Manual trigger
-  });
-
+  // Generate report
   const generate = async () => {
+    if (!selectedType) return;
+    setIsGenerating(true);
+    setGenerateError(null);
     try {
-      const data = await fetchJson(`/api/reports/${reportType}?${params.toString()}`);
+      const params = new URLSearchParams();
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+      if (facilityId && facilityId !== "__none__") params.set("facilityId", facilityId);
+      const data = await fetchJson(`/api/reports/${selectedType}?${params.toString()}`);
       setGeneratedReport(data);
-      toast.success("Report generated");
+      toast.success("Report generated successfully");
     } catch (e: any) {
+      setGenerateError(e.message || "Failed to generate report");
       toast.error(e.message || "Failed to generate report");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const exportCsv = () => {
-    if (!generatedReport?.tableRows?.length) {
-      toast.error("No tabular data to export");
-      return;
+  // CSV export — full report (stats + table + detail sections)
+  const exportCSV = () => {
+    if (!generatedReport) return;
+    const lines: string[] = [];
+    const reportType = REPORT_TYPES.find((r) => r.type === generatedReport.type);
+    const facName = facilities.find((f: any) => f.id === facilityId)?.name || "All Facilities";
+
+    // Header
+    lines.push(`Joy Emmanuel Hospital HMIS`);
+    lines.push(`Report: ${reportType?.label || generatedReport.type}`);
+    lines.push(`Facility: ${facName}`);
+    lines.push(`Date Range: ${dateFrom || "All"} to ${dateTo || "All"}`);
+    lines.push(`Generated: ${new Date().toLocaleString()}`);
+    lines.push("");
+
+    // Stats
+    lines.push("=== SUMMARY STATISTICS ===");
+    if (generatedReport.stats) {
+      for (const [key, value] of Object.entries(generatedReport.stats)) {
+        lines.push(`"${key}","${value}"`);
+      }
     }
-    const headers = generatedReport.tableColumns || [];
-    const rows = generatedReport.tableRows || [];
-    const csv = [headers, ...rows].map((r: any[]) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    lines.push("");
+
+    // Table data
+    if (generatedReport.tableRows?.length > 0) {
+      lines.push("=== BREAKDOWN TABLE ===");
+      lines.push(generatedReport.tableColumns.map((c: string) => `"${c}"`).join(","));
+      generatedReport.tableRows.forEach((row: any[]) => {
+        lines.push(row.map((c) => `"${String(c)}"`).join(","));
+      });
+      lines.push("");
+    }
+
+    // Detail sections (lowStock, expiringSoon, etc.)
+    if (generatedReport.lowStock?.length > 0) {
+      lines.push("=== LOW STOCK ITEMS ===");
+      lines.push('"Item Name","SKU","Current Qty","Min Qty"');
+      generatedReport.lowStock.forEach((item: any) => {
+        lines.push(`"${item.itemName}","${item.sku}","${item.currentQty}","${item.minQty}"`);
+      });
+      lines.push("");
+    }
+    if (generatedReport.expiringSoon?.length > 0) {
+      lines.push("=== EXPIRING SOON ===");
+      lines.push('"Item Name","Batch","Expiry","Quantity","Facility"');
+      generatedReport.expiringSoon.forEach((item: any) => {
+        lines.push(`"${item.itemName}","${item.batchNumber}","${formatDate(item.expiryDate)}","${item.quantity}","${item.facility}"`);
+      });
+      lines.push("");
+    }
+    if (generatedReport.recentLogs?.length > 0) {
+      lines.push("=== RECENT AUDIT LOGS ===");
+      lines.push('"Action","User","Resource Type","Time"');
+      generatedReport.recentLogs.forEach((log: any) => {
+        lines.push(`"${log.action}","${log.user}","${log.resourceType}","${formatDate(log.time, true)}"`);
+      });
+      lines.push("");
+    }
+
+    const csv = lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${reportType}-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${generatedReport.type}-report-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Report exported");
+    toast.success("Report exported to CSV");
   };
 
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-emerald-600" />
-          Reports
-        </h2>
-        <p className="text-sm text-slate-500">Generate operational, clinical, and financial reports across facilities</p>
-      </div>
+  // Print report
+  const printReport = () => {
+    window.print();
+  };
 
-      {/* Report type selector */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-        {REPORT_TYPES.map((r) => {
-          const Icon = r.icon;
-          const isActive = reportType === r.value;
-          return (
-            <button
-              key={r.value}
-              onClick={() => { setReportType(r.value); setGeneratedReport(null); }}
-              className={`text-left p-3 rounded-lg border transition-all ${
-                isActive
-                  ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-200"
-                  : "bg-white border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/50"
-              }`}
-            >
-              <Icon className={`w-5 h-5 mb-1.5 ${isActive ? "text-emerald-600" : "text-slate-500"}`} />
-              <div className={`text-xs font-semibold ${isActive ? "text-emerald-700" : "text-slate-700"}`}>{r.label}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Date From</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Date To</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Facility</Label>
-            <Select value={facilityId || undefined} onValueChange={setFacilityId}>
-              <SelectTrigger><SelectValue placeholder="All facilities" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">All Facilities</SelectItem>
-                {facilities.map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end gap-2">
-            <Button onClick={generate} disabled={isLoading || isFetching} className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
-              {(isLoading || isFetching) ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
-              Generate
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Description */}
-      <div className="text-sm text-slate-600">
-        {REPORT_TYPES.find((r) => r.value === reportType)?.description}
-      </div>
-
-      {/* Results */}
-      {isError ? (
-        <ErrorState message="Failed to generate report" onRetry={() => refetch()} />
-      ) : !generatedReport ? (
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center text-slate-500 text-sm">
-              Select date range and facility, then click <span className="font-medium text-emerald-700">Generate</span> to produce a report.
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <ReportResults report={generatedReport} reportType={reportType} onExportCsv={exportCsv} />
-      )}
-    </div>
-  );
-}
-
-function ReportResults({ report, reportType, onExportCsv }: { report: any; reportType: string; onExportCsv: () => void }) {
-  const stats = report.stats || {};
-  const chartData = report.byStatus || report.byType || report.bySex || report.byAgeGroup || report.byPriority || report.activeEncounters || report.staffActivity || [];
+  const selectedReportType = REPORT_TYPES.find((r) => r.type === selectedType);
 
   return (
-    <div className="space-y-4">
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Object.entries(stats).filter(([k, v]) => typeof v === "number" && !["occupancyRate"].includes(k)).slice(0, 8).map(([key, value]: [string, any]) => (
-          <Card key={key}>
-            <CardContent className="p-4">
-              <div className="text-xs text-slate-500 capitalize">{key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase())}</div>
-              <div className="text-2xl font-bold text-slate-900 mt-1">{typeof value === "number" ? value.toLocaleString() : value}</div>
-            </CardContent>
-          </Card>
-        ))}
-        {stats.occupancyRate !== undefined && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-slate-500">Occupancy Rate</div>
-              <div className="text-2xl font-bold text-emerald-700 mt-1">{stats.occupancyRate}%</div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+    <div className="space-y-6 fade-in-up">
+      {/* Header */}
+      <PageHeader
+        title="Reports & Analytics"
+        description="Hospital-wide reporting and management intelligence center"
+        icon={BarChart3}
+        gradient="from-rose-500 to-red-600"
+        actions={
+          generatedReport && (
+            <>
+              <Button size="sm" onClick={exportCSV} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+                <Download className="w-4 h-4 mr-1" /> Export CSV
+              </Button>
+              <Button size="sm" onClick={printReport} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+                <FileText className="w-4 h-4 mr-1" /> Print
+              </Button>
+            </>
+          )
+        }
+      />
 
-      {/* Charts */}
-      {chartData && chartData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                {reportType === "patients" || reportType === "operational" ? (
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#059669" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                ) : (
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      dataKey="value"
-                      nameKey="label"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={90}
-                      label={(e: any) => `${e.label}: ${e.value}`}
-                      labelLine={false}
-                    >
-                      {chartData.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                  </PieChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Report Type Selection — colorful cards */}
+      {!selectedType && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {REPORT_TYPES.map((rt) => {
+            const Icon = rt.icon;
+            return (
+              <Card
+                key={rt.type}
+                onClick={() => setSelectedType(rt.type)}
+                className="group cursor-pointer overflow-hidden border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 rounded-xl"
+              >
+                <div className={`relative h-24 bg-gradient-to-br ${rt.gradient} flex items-center px-4`}>
+                  <Icon className="w-10 h-10 text-white/90" />
+                  <div className="absolute top-2 right-2 text-white/20">
+                    <Icon className="w-12 h-12" strokeWidth={1} />
+                  </div>
+                  <div className="absolute bottom-2 left-4">
+                    <h3 className="text-white font-bold text-base">{rt.label}</h3>
+                  </div>
+                </div>
+                <CardContent className="p-3">
+                  <p className="text-xs text-slate-600 leading-relaxed">{rt.desc}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
-      {/* Additional sections for pharmacy report */}
-      {reportType === "pharmacy" && (
+      {/* Report Builder — filters + generate */}
+      {selectedType && (
         <>
-          {report.lowStock && report.lowStock.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Low Stock Items</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b bg-slate-50">
-                      <tr>
-                        <th className="text-left p-3 font-semibold text-slate-700">Item</th>
-                        <th className="text-left p-3 font-semibold text-slate-700">SKU</th>
-                        <th className="text-right p-3 font-semibold text-slate-700">Current Qty</th>
-                        <th className="text-right p-3 font-semibold text-slate-700">Min Qty</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.lowStock.map((l: any, i: number) => (
-                        <tr key={i} className="border-b">
-                          <td className="p-3 text-slate-900">{l.itemName}</td>
-                          <td className="p-3 text-xs text-slate-500">{l.sku}</td>
-                          <td className="p-3 text-right text-rose-600 font-medium">{l.currentQty}</td>
-                          <td className="p-3 text-right text-slate-500">{l.minQty}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {/* Back button + selected report header */}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => { setSelectedType(null); setGeneratedReport(null); }}>
+              ← Back to Reports
+            </Button>
+            <h3 className="text-lg font-bold text-slate-900">{selectedReportType?.label}</h3>
+          </div>
+
+          {/* Filters */}
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="p-4 space-y-3">
+              {/* Quick date ranges */}
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider self-center mr-1">Quick Range:</span>
+                {QUICK_RANGES.map((qr) => (
+                  <Button
+                    key={qr.label}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
+                    onClick={() => {
+                      const { from, to } = qr.getRange();
+                      setDateFrom(from);
+                      setDateTo(to);
+                    }}
+                  >
+                    {qr.label}
+                  </Button>
+                ))}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => { setDateFrom(""); setDateTo(""); }}
+                >
+                  Clear Dates
+                </Button>
+              </div>
+
+              {/* Date inputs + facility + generate */}
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">From Date</label>
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">To Date</label>
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Facility</label>
+                  <Select value={facilityId || "__none__"} onValueChange={setFacilityId}>
+                    <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">All Facilities</SelectItem>
+                      {facilities.map((f: any) => (
+                        <SelectItem key={f.id} value={f.id}>{f.code} — {f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={generate}
+                  disabled={isGenerating}
+                  className="bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white shadow-md"
+                >
+                  {isGenerating ? <RefreshCcw className="w-4 h-4 mr-1 animate-spin" /> : <BarChart3 className="w-4 h-4 mr-1" />}
+                  {isGenerating ? "Generating..." : "Generate Report"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Generated Report Display */}
+          {generateError && (
+            <ErrorState message={generateError} onRetry={generate} />
           )}
-          {report.expiringSoon && report.expiringSoon.length > 0 && (
+
+          {isGenerating && (
+            <Card><CardContent className="py-12"><LoadingState rows={4} /></CardContent></Card>
+          )}
+
+          {generatedReport && !isGenerating && (
+            <GeneratedReportDisplay report={generatedReport} />
+          )}
+
+          {!generatedReport && !isGenerating && !generateError && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Expiring Medicines (90 days)</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b bg-slate-50">
-                      <tr>
-                        <th className="text-left p-3 font-semibold text-slate-700">Item</th>
-                        <th className="text-left p-3 font-semibold text-slate-700">Facility</th>
-                        <th className="text-left p-3 font-semibold text-slate-700">Batch</th>
-                        <th className="text-left p-3 font-semibold text-slate-700">Expiry</th>
-                        <th className="text-right p-3 font-semibold text-slate-700">Qty</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.expiringSoon.map((b: any, i: number) => (
-                        <tr key={i} className="border-b">
-                          <td className="p-3 text-slate-900">{b.itemName}</td>
-                          <td className="p-3 text-slate-700">{b.facility}</td>
-                          <td className="p-3 text-xs text-slate-500">{b.batchNumber}</td>
-                          <td className="p-3 text-amber-700">{new Date(b.expiryDate).toLocaleDateString("en-GB")}</td>
-                          <td className="p-3 text-right">{b.quantity}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <CardContent className="py-12">
+                <EmptyState
+                  title="No report generated yet"
+                  description="Select a date range and facility, then click Generate Report to see the data."
+                  icon={BarChart3}
+                />
               </CardContent>
             </Card>
           )}
         </>
       )}
+    </div>
+  );
+}
 
-      {/* Table view */}
-      {report.tableRows && report.tableRows.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Breakdown Table</CardTitle>
-              <Button onClick={onExportCsv} variant="outline" size="sm" className="gap-2">
-                <Download className="w-4 h-4" /> Export CSV
-              </Button>
-            </div>
+// =====================================================================
+// GENERATED REPORT DISPLAY — stat cards + charts + tables
+// =====================================================================
+function GeneratedReportDisplay({ report }: { report: any }) {
+  const stats = report.stats || {};
+  const statEntries = Object.entries(stats).filter(([, v]) => typeof v === "number" || typeof v === "string");
+
+  // Determine chart data
+  const chartData = report.byStatus || report.byType || report.bySex || report.byAgeGroup || report.byPriority || report.byBedStatus || report.byRole || report.byAction || report.byPlaceOfDeath || report.byEmploymentType || report.byFacility || [];
+
+  // Determine top items for horizontal bar chart
+  const topItems = report.topDiagnoses || report.topTests || report.topMedications || [];
+
+  return (
+    <div className="space-y-4">
+      {/* Summary KPI Cards — colorful gradients */}
+      {statEntries.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {statEntries.slice(0, 12).map(([key, value], i) => {
+            const gradients = [
+              "from-blue-500 to-blue-600",
+              "from-emerald-500 to-emerald-600",
+              "from-rose-500 to-red-600",
+              "from-amber-500 to-orange-600",
+              "from-purple-500 to-purple-600",
+              "from-cyan-500 to-cyan-600",
+              "from-indigo-500 to-indigo-600",
+              "from-teal-500 to-teal-600",
+              "from-pink-500 to-rose-600",
+              "from-violet-500 to-violet-600",
+              "from-slate-600 to-slate-800",
+              "from-orange-500 to-red-600",
+            ];
+            const gradient = gradients[i % gradients.length];
+            const label = key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+            const displayValue = key.toLowerCase().includes("rate") || key.toLowerCase().includes("occupancy")
+              ? `${value}%`
+              : key.toLowerCase().includes("revenue") || key.toLowerCase().includes("amount") || key.toLowerCase().includes("paid") || key.toLowerCase().includes("outstanding") || key.toLowerCase().includes("discount") || key.toLowerCase().includes("claim")
+                ? `₵${Number(value).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : String(value);
+            return (
+              <MiniStatCard
+                key={key}
+                label={label}
+                value={displayValue}
+                gradient={gradient}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Main breakdown chart */}
+        {chartData.length > 0 && (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-4 rounded-full bg-gradient-to-b from-rose-500 to-red-600" />
+                Breakdown Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} interval={0} angle={-15} textAnchor="end" height={50} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {chartData.map((_: any, i: number) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Top items horizontal bar chart */}
+        {topItems.length > 0 && (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-4 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                Top 10 Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={topItems} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis type="category" dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} width={120} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    {topItems.map((_: any, i: number) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pie chart for status distribution */}
+        {chartData.length > 0 && chartData.length <= 8 && (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-4 rounded-full bg-gradient-to-b from-emerald-500 to-emerald-600" />
+                Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="label"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    innerRadius={45}
+                    label={(entry: any) => `${entry.label}: ${entry.value}`}
+                    labelLine={false}
+                  >
+                    {chartData.map((_: any, i: number) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Staff activity or active encounters */}
+        {report.staffActivity?.length > 0 && (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-4 rounded-full bg-gradient-to-b from-violet-500 to-purple-600" />
+                Staff by Role
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={report.staffActivity}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} angle={-20} textAnchor="end" height={60} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                  <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Breakdown Table */}
+      {report.tableRows?.length > 0 && (
+        <Card className="shadow-sm border-slate-200 overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span className="w-2 h-4 rounded-full bg-gradient-to-b from-rose-500 to-red-600" />
+              Detailed Breakdown
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b bg-slate-50">
-                  <tr>
-                    {(report.tableColumns || []).map((c: string, i: number) => (
-                      <th key={i} className="text-left p-3 font-semibold text-slate-700">{c}</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                    {report.tableColumns.map((col: string, i: number) => (
+                      <th key={i} className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">{col}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {report.tableRows.map((row: any[], i: number) => (
-                    <tr key={i} className="border-b hover:bg-slate-50">
-                      {row.map((c, j) => (
-                        <td key={j} className={`p-3 ${j === 0 ? "text-slate-900 font-medium" : "text-slate-700"}`}>{c}</td>
+                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                      {row.map((cell, j) => (
+                        <td key={j} className="px-4 py-2.5 text-sm text-slate-700">{cell}</td>
                       ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Low Stock Items */}
+      {report.lowStock?.length > 0 && (
+        <Card className="shadow-sm border-slate-200 overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
+            <CardTitle className="text-sm font-bold text-amber-800 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Low Stock Items ({report.lowStock.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-amber-600 to-orange-600 text-white">
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Item</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">SKU</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Current Qty</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Min Qty</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {report.lowStock.slice(0, 20).map((item: any, i: number) => (
+                    <tr key={i} className="hover:bg-amber-50/50 transition-colors">
+                      <td className="px-4 py-2 text-sm font-medium text-slate-900">{item.itemName}</td>
+                      <td className="px-4 py-2 text-xs text-slate-500 font-mono">{item.sku || "—"}</td>
+                      <td className="px-4 py-2 text-sm text-rose-600 font-bold">{item.currentQty}</td>
+                      <td className="px-4 py-2 text-sm text-slate-500">{item.minQty}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Expiring Soon */}
+      {report.expiringSoon?.length > 0 && (
+        <Card className="shadow-sm border-slate-200 overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-rose-50 to-red-50 border-b border-rose-200">
+            <CardTitle className="text-sm font-bold text-rose-800 flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Expiring Soon (90 days) — {report.expiringSoon.length} items
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-rose-600 to-red-600 text-white">
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Item</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Batch</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Expiry</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Qty</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Facility</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {report.expiringSoon.slice(0, 20).map((item: any, i: number) => (
+                    <tr key={i} className="hover:bg-rose-50/50 transition-colors">
+                      <td className="px-4 py-2 text-sm font-medium text-slate-900">{item.itemName}</td>
+                      <td className="px-4 py-2 text-xs text-slate-500 font-mono">{item.batchNumber}</td>
+                      <td className="px-4 py-2 text-sm text-rose-600 font-semibold">{formatDate(item.expiryDate)}</td>
+                      <td className="px-4 py-2 text-sm text-slate-700">{item.quantity}</td>
+                      <td className="px-4 py-2 text-xs text-slate-500">{item.facility}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Audit Logs */}
+      {report.recentLogs?.length > 0 && (
+        <Card className="shadow-sm border-slate-200 overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <ScrollText className="w-4 h-4" />
+              Recent Audit Events ({report.recentLogs.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Action</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">User</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Resource</th>
+                    <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {report.recentLogs.map((log: any, i: number) => (
+                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-2 text-sm font-semibold text-slate-900">{log.action}</td>
+                      <td className="px-4 py-2 text-sm text-slate-700">{log.user}</td>
+                      <td className="px-4 py-2 text-xs text-slate-500">{log.resourceType}</td>
+                      <td className="px-4 py-2 text-xs text-slate-400">{formatDate(log.time, true)}</td>
                     </tr>
                   ))}
                 </tbody>
