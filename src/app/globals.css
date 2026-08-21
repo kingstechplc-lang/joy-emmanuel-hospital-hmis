@@ -204,11 +204,32 @@ tbody td {
   vertical-align: middle;
 }
 
-/* Table container — rounded corners + shadow when it wraps a table */
-.overflow-x-auto > table,
-.overflow-x-auto:has(> table) {
-  border-radius: 0.75rem;
-  overflow: hidden;
+/* Table container — rounded corners + horizontal scroll on small screens */
+.overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
+  max-width: 100%;
+}
+
+.overflow-x-auto > table {
+  min-width: 600px; /* ensure table doesn't shrink below readable width */
+}
+
+/* Ensure table cells don't shrink too much */
+table th, table td {
+  white-space: nowrap;
+}
+
+/* But allow wrapping in cells with long text */
+table td.break-words, table td .break-words {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* DataTable container */
+.dataTables_wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ===================================================================== */

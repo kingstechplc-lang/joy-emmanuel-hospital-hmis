@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, User } from "lucide-react";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -46,15 +46,17 @@ export function PatientsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Patients</h2>
-          <p className="text-sm text-slate-500">Master patient index — search by name, patient number, phone, or Ghana Card</p>
-        </div>
-        <Button onClick={() => setView("patient_new")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Patients"
+        description="Search and manage all patient records"
+        icon={Users}
+        gradient="from-emerald-500 to-teal-600"
+        actions={
+          <Button onClick={() => setView("patient_new")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> Register New Patient
         </Button>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-4">

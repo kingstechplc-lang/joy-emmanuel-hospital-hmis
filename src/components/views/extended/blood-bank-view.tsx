@@ -38,14 +38,21 @@ const COMPONENT_TYPES = [
   { value: "cryo", label: "Cryoprecipitate" },
 ];
 
-export function BloodBankView() {
+export function BloodBankView({ initialTab }: { initialTab?: string }) {
   const { data: session } = useSession();
   const user = session?.user as any;
   const perms: string[] = user?.permissions || [];
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
   const canManage = can("bloodbank.manage");
   const canView = can("bloodbank.view");
-  const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Map sidebar view keys to tabs
+  const tabFromKey: Record<string, string> = {
+    blood_donors: "donors",
+    blood_units: "inventory",
+    blood_transfusions: "transfusions",
+  };
+  const [activeTab, setActiveTab] = useState(initialTab ? (tabFromKey[initialTab] || "dashboard") : "dashboard");
 
   if (!canView) {
     return (

@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, AlertTriangle, History } from "lucide-react";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -68,12 +68,12 @@ export function LabResultsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Lab Results</h2>
-          <p className="text-sm text-slate-500">Verified and released results. Click a row to expand details.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Laboratory Results"
+        description="View, verify, and release lab test results"
+        icon={TestTube}
+        gradient="from-cyan-500 to-blue-600"
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view lab results.</CardContent></Card>

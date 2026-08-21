@@ -92,8 +92,8 @@ export function DataTable({
   return (
     <div className="space-y-3">
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-        <table className="w-full">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
+        <table className="w-full" style={{ minWidth: "600px" }}>
           <thead>
             <tr className={`bg-gradient-to-r ${gradient} text-white`}>
               {headers.map((h, i) => (

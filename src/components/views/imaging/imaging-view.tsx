@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, ScanLine, Search, CalendarClock, Stethoscope, FileText, CheckCircle2, Send, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -68,15 +68,17 @@ export function ImagingView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Imaging</h2>
-          <p className="text-sm text-slate-500">Imaging orders: Schedule → Perform → Report → Verify → Release</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("imaging.order")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Radiology & Imaging"
+        description="Manage imaging requests, reports, and verification"
+        icon={ScanLine}
+        gradient="from-blue-500 to-indigo-600"
+        actions={
+          <Button onClick={() => setShowNew(true)} disabled={!can("imaging.order")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Imaging Order
         </Button>
-      </div>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view imaging orders.</CardContent></Card>

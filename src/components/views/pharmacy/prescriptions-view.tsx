@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, CheckCircle2, X, Pill, Search, Eye, Activity, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
@@ -71,15 +71,17 @@ export function PrescriptionsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Prescriptions</h2>
-          <p className="text-sm text-slate-500">Manage patient prescriptions and pharmacy approval workflow</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("pharmacy.prescribe")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Prescriptions"
+        description="View and manage patient prescriptions"
+        icon={FileText}
+        gradient="from-blue-500 to-blue-600"
+        actions={
+          <Button onClick={() => setShowNew(true)} disabled={!can("pharmacy.prescribe")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Prescription
         </Button>
-      </div>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view prescriptions.</CardContent></Card>

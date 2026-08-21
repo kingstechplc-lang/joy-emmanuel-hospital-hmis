@@ -253,6 +253,9 @@ export function ViewRenderer({ view }: { view: ViewKey }) {
   const isSuperAdmin = user?.roles?.includes("super_admin");
   const userPermissions: string[] = user?.permissions || [];
 
+  // Blood Bank views pass the view key as initialTab
+  const isBloodBankView = view === "blood_donors" || view === "blood_units" || view === "blood_transfusions";
+
   const requiredPerm = PERMISSION_MAP[view];
   if (requiredPerm && !isSuperAdmin && !userPermissions.includes(requiredPerm)) {
     return (
@@ -271,5 +274,8 @@ export function ViewRenderer({ view }: { view: ViewKey }) {
   }
 
   const ViewComponent = VIEW_MAP[view] || DashboardView;
+  if (isBloodBankView) {
+    return <BloodBankView initialTab={view} />;
+  }
   return <ViewComponent />;
 }

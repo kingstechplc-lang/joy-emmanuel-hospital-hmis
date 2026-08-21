@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, FlaskConical, Search, TestTube, Microscope, CheckCircle2, Send, X, Beaker, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -71,15 +71,17 @@ export function LabOrdersView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Lab Orders</h2>
-          <p className="text-sm text-slate-500">Track laboratory orders from collection to release</p>
-        </div>
-        <Button onClick={() => setShowNew(true)} disabled={!can("lab.order")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+      <PageHeader
+        title="Laboratory Orders"
+        description="Manage lab test orders and track sample collection"
+        icon={FlaskConical}
+        gradient="from-purple-500 to-purple-600"
+        actions={
+          <Button onClick={() => setShowNew(true)} disabled={!can("lab.order")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> New Lab Order
         </Button>
-      </div>
+        }
+      />
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view lab orders.</CardContent></Card>
