@@ -24,7 +24,8 @@ export function SpecialtyClinicsView() {
   return <ExtendedModuleView config={MODULE_CONFIGS.specialty} />;
 }
 export function SupportServicesView() {
-  return <ExtendedModuleView config={MODULE_CONFIGS.service_requests} />;
+  // Now uses the dedicated Support Services view (imported in view-renderer.tsx)
+  return null;
 }
 export function PatientRelationsView() {
   return <ExtendedModuleView config={MODULE_CONFIGS.patient_feedback} />;

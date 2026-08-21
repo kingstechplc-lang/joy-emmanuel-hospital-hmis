@@ -2597,6 +2597,9 @@ model ServiceRequest {
   quantity        Int?     // e.g., 50 linens
   unit            String?  // pcs | kg | meal | bag | trip
   itemsDetail     String?  // JSON: [{name, qty, condition}]
+  equipmentId     String?
+  verifiedAt      DateTime?
+  verifiedByName  String?
   cost            Float?
   notes           String?
   createdById     String?
@@ -3190,4 +3193,56 @@ model SLAPolicy {
   updatedAt       DateTime @updatedAt
 
   @@index([organizationId, isActive])
+}
+
+// ---------------------------------------------------------------------
+// SUPPORT SERVICES — Maintenance Schedule, Facility Inspection
+// ---------------------------------------------------------------------
+
+model MaintenanceSchedule {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  equipmentId     String?
+  maintenanceType String   // preventive | corrective | calibration | inspection
+  title           String
+  description     String?
+  scheduledDate   DateTime
+  completedAt     DateTime?
+  assignedToName  String?
+  status          String   @default("scheduled") // scheduled | in_progress | completed | overdue
+  frequency       String?  // daily | weekly | monthly | quarterly | annually
+  nextDueAt       DateTime?
+  cost            Float?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([status, scheduledDate])
+}
+
+model FacilityInspection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  inspectionType  String   // safety | cleanliness | electrical | plumbing | fire_safety | equipment | security
+  title           String
+  description     String?
+  inspectorName   String?
+  location        String?
+  departmentCode  String?
+  findings        String?
+  severity        String   @default("low") // low | medium | high | critical
+  correctiveAction String?
+  followUpDate    DateTime?
+  status          String   @default("open") // open | in_progress | resolved | closed
+  inspectedAt     DateTime @default(now())
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([inspectionType, status])
 }

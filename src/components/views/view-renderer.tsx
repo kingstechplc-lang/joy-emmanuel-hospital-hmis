@@ -67,10 +67,11 @@ import type { ViewKey } from "@/stores/app-store";
 import { MortuaryView } from "@/components/views/extended/mortuary-view";
 import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import { ITSupportView } from "@/components/views/extended/it-support-view";
+import { SupportServicesView } from "@/components/views/extended/support-services-view";
 import {
   BloodDonorsView, BloodUnitsView, BloodTransfusionsView,
   TheatreView, CriticalCareView, SpecialtyClinicsView,
-  SupportServicesView, PatientRelationsView, QualityAssuranceView,
+  PatientRelationsView, QualityAssuranceView,
   RiskManagementView, LegalComplianceView, ResearchView,
   PublicRelationsView, CodingClaimsView,
   CommunityHealthView, HomeCareView, HistopathologyView,
