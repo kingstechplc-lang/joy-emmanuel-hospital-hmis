@@ -65,6 +65,39 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No facility selected. Choose a facility first." }, { status: 400 });
   }
 
+  // ─── 0. Verify the facility exists and belongs to this org ─────
+  // This prevents foreign key constraint violations when a stale/invalid
+  // facilityId is sent (e.g., from browser localStorage of a previous session)
+  let facility;
+  try {
+    facility = await db.facility.findUnique({
+      where: { id: facilityId },
+      select: { id: true, name: true, code: true, organizationId: true },
+    });
+  } catch (dbErr: any) {
+    console.error("[check-in] Database error looking up facility:", dbErr?.message);
+    return NextResponse.json(
+      { error: `Database error verifying facility: ${dbErr?.message || "Unknown error"}` },
+      { status: 500 }
+    );
+  }
+
+  if (!facility) {
+    return NextResponse.json(
+      {
+        error: `Facility not found (ID: ${facilityId}). This usually means your browser has a stale facility selection from a previous session. Please select a facility from the top bar dropdown and try again. If no facilities appear in the dropdown, the database may need to be seeded (run: bun run seed).`,
+      },
+      { status: 400 }
+    );
+  }
+
+  if (facility.organizationId !== session.user.organizationId) {
+    return NextResponse.json(
+      { error: "Facility does not belong to your organization. Please select a valid facility." },
+      { status: 403 }
+    );
+  }
+
   // ─── 1. Verify patient exists and belongs to this org ─────────
   let patient;
   try {
@@ -174,6 +207,7 @@ export async function POST(req: Request) {
   }
 
   // Resolve department — default to OPD if not specified
+  // Also validate that the department belongs to this facility
   let resolvedDeptId = departmentId;
   if (!resolvedDeptId) {
     try {
@@ -184,6 +218,22 @@ export async function POST(req: Request) {
     } catch (err: any) {
       console.error("[check-in] Error finding OPD department:", err?.message);
       // Continue without department — not critical
+    }
+  } else {
+    // Validate that the provided departmentId belongs to this facility
+    try {
+      const dept = await db.department.findUnique({
+        where: { id: resolvedDeptId },
+        select: { id: true, facilityId: true },
+      });
+      if (!dept || dept.facilityId !== facilityId) {
+        // Department doesn't belong to this facility — clear it to avoid FK violation
+        console.warn("[check-in] Department does not belong to facility, clearing departmentId");
+        resolvedDeptId = null;
+      }
+    } catch {
+      // If we can't validate, clear it to be safe
+      resolvedDeptId = null;
     }
   }
 

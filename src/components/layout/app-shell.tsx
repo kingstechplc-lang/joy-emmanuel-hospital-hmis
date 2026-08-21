@@ -1,6 +1,6 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { NAV_ITEMS, NAV_CATEGORIES, useAppStore } from "@/stores/app-store";
 import * as Icons from "lucide-react";
 import { OfflineIndicator } from "@/components/offline/offline-indicator";
@@ -56,6 +56,20 @@ export function AppShell() {
   });
 
   const facilities = facilitiesData?.facilities || [];
+
+  // Auto-clear stale activeFacilityId if it doesn't exist in the fetched facilities
+  // This prevents foreign key violations when switching between deployments
+  // (e.g., from preview URL to Vercel URL) where facility IDs differ
+  useEffect(() => {
+    if (facilities.length > 0 && activeFacilityId) {
+      const stillExists = facilities.some((f: any) => f.id === activeFacilityId);
+      if (!stillExists) {
+        // The persisted facility ID is stale — clear it
+        setActiveFacility(null);
+        toast.info("Your previous facility selection was cleared. Please select a facility.");
+      }
+    }
+  }, [facilities, activeFacilityId, setActiveFacility]);
 
   const user = session?.user as any;
   const userPermissions: string[] = user?.permissions || [];
