@@ -68,6 +68,7 @@ import { MortuaryView } from "@/components/views/extended/mortuary-view";
 import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import { ITSupportView } from "@/components/views/extended/it-support-view";
 import { SupportServicesView } from "@/components/views/extended/support-services-view";
+import { BloodBankView } from "@/components/views/extended/blood-bank-view";
 import {
   BloodDonorsView, BloodUnitsView, BloodTransfusionsView,
   TheatreView, CriticalCareView, SpecialtyClinicsView,
@@ -141,9 +142,9 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   settings_system: SystemSettingsView,
   // Extended modules
   mortuary: MortuaryView,
-  blood_donors: BloodDonorsView,
-  blood_units: BloodUnitsView,
-  blood_transfusions: BloodTransfusionsView,
+  blood_donors: BloodBankView,
+  blood_units: BloodBankView,
+  blood_transfusions: BloodBankView,
   theatre: TheatreView,
   critical_care: CriticalCareView,
   specialty_clinics: SpecialtyClinicsView,

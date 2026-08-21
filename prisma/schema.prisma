@@ -2369,6 +2369,7 @@ model BloodDonor {
   updatedAt       DateTime @updatedAt
 
   bloodUnits      BloodUnit[]
+  donations       BloodDonation[]
 
   @@index([organizationId, facilityId])
   @@index([bloodGroup])
@@ -2402,6 +2403,7 @@ model BloodUnit {
   updatedAt       DateTime @updatedAt
 
   transfusions    BloodTransfusion[]
+  crossmatches    BloodCrossmatch[]
 
   @@index([organizationId, facilityId])
   @@index([status])
@@ -3416,4 +3418,58 @@ model MortuaryProperty {
   updatedAt       DateTime @updatedAt
 
   @@index([mortuaryAdmissionId])
+}
+
+// ---------------------------------------------------------------------
+// BLOOD BANK — Donation tracking, Crossmatch, Reservations
+// ---------------------------------------------------------------------
+
+model BloodDonation {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  donationNumber  String   @unique
+  donorId         String
+  donor           BloodDonor @relation(fields: [donorId], references: [id])
+  donationType    String   @default("whole_blood") // whole_blood | plasmapheresis | plateletpheresis
+  bloodGroup      String
+  volumeMl        Int      @default(450)
+  unitId          String?  // link to BloodUnit if created
+  collectionDate  DateTime @default(now())
+  status          String   @default("collected") // collected | tested | processed | rejected
+  screeningResult String?  // JSON: {hbsAg, hcvAb, hivAb, syphilis, malaria}
+  notes           String?
+  collectedById   String?
+  collectedByName String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([donorId])
+  @@index([status])
+}
+
+model BloodCrossmatch {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  crossmatchNumber String  @unique
+  patientId       String?
+  patientName     String
+  patientBloodGroup String?
+  unitId          String
+  unit            BloodUnit @relation(fields: [unitId], references: [id])
+  unitNumber      String
+  donorBloodGroup String
+  crossmatchResult String  @default("pending") // compatible | incompatible | pending
+  method          String?  // gel_card | tube | immediate_spin
+  testedBy        String?
+  testedAt        DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([crossmatchResult])
 }
