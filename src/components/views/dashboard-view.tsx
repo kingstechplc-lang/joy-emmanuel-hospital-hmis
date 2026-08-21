@@ -363,10 +363,10 @@ function StatCard({
   label: string;
   value: React.ReactNode;
   icon: any;
-  color: "emerald" | "blue" | "amber" | "purple" | "pink" | "cyan" | "rose" | "teal" | "orange";
+  color: string;
   onClick?: () => void;
 }) {
-  const colorMap = {
+  const colorMap: Record<string, { bg: string; text: string; ring: string; bar: string }> = {
     emerald: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200/60", bar: "bg-emerald-500" },
     blue: { bg: "bg-blue-50", text: "text-blue-700", ring: "ring-blue-200/60", bar: "bg-blue-500" },
     amber: { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200/60", bar: "bg-amber-500" },
@@ -376,8 +376,14 @@ function StatCard({
     rose: { bg: "bg-rose-50", text: "text-rose-700", ring: "ring-rose-200/60", bar: "bg-rose-500" },
     teal: { bg: "bg-teal-50", text: "text-teal-700", ring: "ring-teal-200/60", bar: "bg-teal-500" },
     orange: { bg: "bg-orange-50", text: "text-orange-700", ring: "ring-orange-200/60", bar: "bg-orange-500" },
+    indigo: { bg: "bg-indigo-50", text: "text-indigo-700", ring: "ring-indigo-200/60", bar: "bg-indigo-500" },
+    slate: { bg: "bg-slate-50", text: "text-slate-700", ring: "ring-slate-200/60", bar: "bg-slate-500" },
+    green: { bg: "bg-green-50", text: "text-green-700", ring: "ring-green-200/60", bar: "bg-green-500" },
+    red: { bg: "bg-red-50", text: "text-red-700", ring: "ring-red-200/60", bar: "bg-red-500" },
+    yellow: { bg: "bg-yellow-50", text: "text-yellow-700", ring: "ring-yellow-200/60", bar: "bg-yellow-500" },
+    violet: { bg: "bg-violet-50", text: "text-violet-700", ring: "ring-violet-200/60", bar: "bg-violet-500" },
   };
-  const c = colorMap[color];
+  const c = colorMap[color] || colorMap.slate;
   return (
     <Card
       onClick={onClick}
