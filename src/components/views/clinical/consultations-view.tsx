@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, ClipboardList, PenSquare, Save, Check, X, Lock } from "lucide-react";
+import { Plus, ClipboardList, PenSquare, Save, Check, X, Lock, Share2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
+import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -30,6 +31,8 @@ export function ConsultationsView() {
   const canSign = user?.roles?.includes("super_admin") || perms.includes("clinical.sign");
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const selectPatient = useAppStore((s) => s.selectPatient);
+  const setView = useAppStore((s) => s.setView);
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [viewConsult, setViewConsult] = useState<any | null>(null);
@@ -48,11 +51,20 @@ export function ConsultationsView() {
         icon={ClipboardList}
         gradient="from-purple-500 to-purple-600"
         actions={
-          canCreate ? (
-            <Button onClick={() => setShowNew(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
-              <Plus className="w-4 h-4 mr-1" /> New Consultation
-            </Button>
-          ) : undefined
+          <>
+            <SpecialtyReferralButton
+              label="Refer to Specialty"
+              fromDepartment="OPD"
+              variant="default"
+              size="sm"
+              className="bg-white/20 border border-white/30 text-white hover:bg-white/30"
+            />
+            {canCreate ? (
+              <Button onClick={() => setShowNew(true)} className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
+                <Plus className="w-4 h-4 mr-1" /> New Consultation
+              </Button>
+            ) : undefined}
+          </>
         }
       />
 
@@ -77,10 +89,13 @@ export function ConsultationsView() {
       ) : (
         <div className="space-y-2">
           {data.items.map((c: any) => (
-            <Card key={c.id} className="hover:shadow-sm cursor-pointer" onClick={() => setViewConsult(c)}>
+            <Card key={c.id} className="hover:shadow-sm">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => setViewConsult(c)}
+                  >
                     <div className="font-medium text-slate-900 truncate">
                       {c.patient?.firstName} {c.patient?.lastName} — {c.chiefComplaint || "No chief complaint"}
                     </div>
@@ -88,7 +103,30 @@ export function ConsultationsView() {
                       {c.clinician ? `Dr. ${c.clinician.firstName} ${c.clinician.lastName}` : "Unassigned"} • {c.encounter?.facility?.name || "—"} • {formatDate(c.createdAt, true)}
                     </div>
                   </div>
-                  <StatusBadge status={c.status} />
+                  <div className="flex items-center gap-1 shrink-0">
+                    {c.patientId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-slate-600 hover:text-emerald-700"
+                        onClick={() => { selectPatient(c.patientId); setView("patient_360"); }}
+                        title="View Patient 360"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {c.patient && (
+                      <SpecialtyReferralButton
+                        patient={c.patient}
+                        fromDepartment="OPD"
+                        label=""
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-amber-600 hover:text-amber-700"
+                      />
+                    )}
+                    <StatusBadge status={c.status} />
+                  </div>
                 </div>
               </CardContent>
             </Card>

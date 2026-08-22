@@ -24,6 +24,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
+import { DepartmentSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 import { useAppStore } from "@/stores/app-store";
 
 async function fetchJson(url: string) {
@@ -488,8 +489,9 @@ function RequestsTab() {
 
 function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: boolean }) {
   const [patient, setPatient] = useState<PatientPickerValue | null>(null);
+  const [department, setDepartment] = useState<EntitySelectValue | null>(null);
   const [form, setForm] = useState({
-    requestingDepartment: "", requestingStaffName: "",
+    requestingStaffName: "",
     purpose: "", priority: "routine",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
@@ -500,6 +502,7 @@ function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loadin
       patientId: patient.patientId,
       patientName: patient.patientName,
       patientNumber: patient.patientNumber,
+      requestingDepartment: department?.label || null,
     });
   };
   return (
@@ -510,6 +513,17 @@ function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loadin
           required
           value={patient}
           onChange={setPatient}
+          onRegisterNew={() => {
+            // caller can hook this if needed
+          }}
+        />
+      </div>
+      <div className="col-span-2">
+        <DepartmentSelect
+          label="Requesting Department"
+          value={department}
+          onChange={setDepartment}
+          allowManual
         />
       </div>
       <div>
@@ -519,7 +533,6 @@ function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loadin
           <SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="emergency">Emergency</SelectItem></SelectContent>
         </Select>
       </div>
-      <div><Label>Requesting Department</Label><Input value={form.requestingDepartment} onChange={(e) => set("requestingDepartment", e.target.value)} placeholder="OPD, Ward, Lab..." /></div>
       <div><Label>Requesting Staff</Label><Input value={form.requestingStaffName} onChange={(e) => set("requestingStaffName", e.target.value)} /></div>
       <div className="col-span-2"><Label>Purpose</Label><Textarea value={form.purpose} onChange={(e) => set("purpose", e.target.value)} rows={2} placeholder="Why is the record needed?" /></div>
       <DialogFooter><Button onClick={submit} disabled={loading || !patient?.patientName}>{loading ? "Creating..." : "Create Request"}</Button></DialogFooter>

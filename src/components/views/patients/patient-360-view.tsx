@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
   formatDate, formatCurrency, calculateAge, safeJson} from "@/components/ui-helpers";
+import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -121,6 +122,14 @@ export function Patient360View() {
               <Button variant="outline" onClick={() => setView("appointments")} className="gap-2">
                 <Calendar className="w-4 h-4" /> Book Appointment
               </Button>
+              <SpecialtyReferralButton
+                patient={p}
+                fromDepartment="OPD"
+                label="Refer to Specialty"
+                variant="outline"
+                size="sm"
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+              />
             </div>
           </div>
         </CardContent>

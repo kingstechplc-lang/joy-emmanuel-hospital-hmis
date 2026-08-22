@@ -15,7 +15,21 @@ export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.DEPARTMENT_MANAGE) && !hasPermission(session, PERMISSIONS.FACILITY_MANAGE)) {
+  // Anyone who needs to pick a department (clinical, billing, HR, admin) can browse.
+  // We allow any authenticated user with a basic clinical/admin permission to GET.
+  // Write operations (POST/PATCH/DELETE) still require department.manage.
+  const canBrowse =
+    hasPermission(session, PERMISSIONS.DEPARTMENT_MANAGE) ||
+    hasPermission(session, PERMISSIONS.FACILITY_MANAGE) ||
+    hasPermission(session, PERMISSIONS.PATIENT_VIEW) ||
+    hasPermission(session, PERMISSIONS.CLINICAL_VIEW) ||
+    hasPermission(session, PERMISSIONS.ENCOUNTER_VIEW) ||
+    hasPermission(session, PERMISSIONS.BILLING_VIEW) ||
+    hasPermission(session, PERMISSIONS.STAFF_VIEW) ||
+    hasPermission(session, PERMISSIONS.SETTINGS_VIEW) ||
+    hasPermission(session, PERMISSIONS.SPECIALTY_VIEW) ||
+    hasPermission(session, PERMISSIONS.SUPPORT_SERVICES_VIEW);
+  if (!canBrowse) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

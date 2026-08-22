@@ -23,6 +23,7 @@ import {
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
+import { DepartmentSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -308,9 +309,10 @@ function RequestsTab({ canManage }: { canManage: boolean }) {
 
 function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; onOpenChange: (o: boolean) => void; onSubmit: (d: any) => void; loading: boolean }) {
   const [patient, setPatient] = useState<PatientPickerValue | null>(null);
+  const [department, setDepartment] = useState<EntitySelectValue | null>(null);
   const [form, setForm] = useState({
     serviceType: "housekeeping", title: "", description: "", priority: "routine",
-    location: "", departmentCode: "", quantity: "", unit: "pcs",
+    location: "", quantity: "", unit: "pcs",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
 
@@ -319,6 +321,9 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
     if (patient) {
       payload.patientId = patient.patientId;
       payload.patientName = patient.patientName;
+    }
+    if (department) {
+      payload.departmentCode = department.code || department.label;
     }
     onSubmit(payload);
   };
@@ -352,9 +357,16 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
           <div className="col-span-2"><FieldLabel>Title</FieldLabel><Input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Brief summary of the request" /></div>
           <div className="col-span-2"><FieldLabel>Description</FieldLabel><Textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={3} placeholder="Detailed description..." /></div>
           <div><Label>Location</Label><Input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="Ward / Room / Area" /></div>
-          <div><Label>Department Code</Label><Input value={form.departmentCode} onChange={(e) => set("departmentCode", e.target.value)} placeholder="e.g., OPD, ICU" /></div>
           <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={(e) => set("quantity", e.target.value)} placeholder="e.g., 50" /></div>
           <div><Label>Unit</Label><Input value={form.unit} onChange={(e) => set("unit", e.target.value)} placeholder="pcs / kg / meal / bag / trip" /></div>
+          <div className="col-span-2">
+            <DepartmentSelect
+              label="Department (optional)"
+              value={department}
+              onChange={setDepartment}
+              allowManual
+            />
+          </div>
           <div className="col-span-2">
             <PatientPicker
               label="Patient (optional — link if service is patient-related)"

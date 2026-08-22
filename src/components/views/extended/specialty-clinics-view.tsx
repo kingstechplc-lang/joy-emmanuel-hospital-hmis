@@ -26,6 +26,7 @@ import {
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
+import { DepartmentSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 import { useAppStore } from "@/stores/app-store";
 
 async function fetchJson(url: string) {
@@ -1421,8 +1422,9 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
 function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const setView = useAppStore((s) => s.setView);
   const [patient, setPatient] = useState<PatientPickerValue | null>(null);
+  const [fromDept, setFromDept] = useState<EntitySelectValue | null>(null);
   const [form, setForm] = useState({
-    fromDepartment: "OPD", fromClinicianName: "",
+    fromClinicianName: "",
     toDepartmentCode: "CARDIO", toClinicianName: "",
     urgency: "routine", reason: "", clinicalSummary: "",
   });
@@ -1460,7 +1462,15 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div><Label>Urgency</Label><Select value={form.urgency} onValueChange={(v) => set("urgency", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="emergency">Emergency</SelectItem></SelectContent></Select></div>
-          <div><Label>From Department</Label><Input value={form.fromDepartment} onChange={(e) => set("fromDepartment", e.target.value)} placeholder="e.g., OPD, ER" /></div>
+          <div className="col-span-2">
+            <DepartmentSelect
+              label="From Department"
+              required
+              value={fromDept}
+              onChange={setFromDept}
+              allowManual
+            />
+          </div>
           <div><Label>Referring Clinician</Label><Input value={form.fromClinicianName} onChange={(e) => set("fromClinicianName", e.target.value)} /></div>
           <div>
             <FieldLabel>To Specialty</FieldLabel>
@@ -1489,6 +1499,7 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
               if (!patient) return;
               const payload: any = {
                 ...form,
+                fromDepartment: fromDept?.label || null,
                 patientId: patient.patientId,
                 patientName: patient.patientName,
                 patientAge: patient.patientAge || null,
@@ -1497,7 +1508,7 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
               };
               createMut.mutate(payload);
             }}
-            disabled={createMut.isPending || !patient?.patientName || !form.reason}
+            disabled={createMut.isPending || !patient?.patientName || !form.reason || !fromDept?.label}
             className="bg-gradient-to-r from-amber-500 to-orange-600 text-white"
           >
             {createMut.isPending ? "Creating..." : "Create Referral"}

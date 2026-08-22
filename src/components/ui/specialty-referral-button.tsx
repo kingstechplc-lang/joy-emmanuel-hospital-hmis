@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { safeJson, calculateAge } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
+import { DepartmentSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 
 const SPECIALTIES = [
   { code: "DENTAL", label: "Dental" },
@@ -86,8 +87,10 @@ export function SpecialtyReferralButton({
     : null;
 
   const [pickerPatient, setPickerPatient] = useState<PatientPickerValue | null>(null);
+  const [fromDept, setFromDept] = useState<EntitySelectValue | null>(
+    fromDepartment ? { id: null, label: fromDepartment } : null
+  );
   const [form, setForm] = useState({
-    fromDepartment,
     fromClinicianName: "",
     toDepartmentCode: "CARDIO",
     toClinicianName: "",
@@ -104,7 +107,6 @@ export function SpecialtyReferralButton({
       setOpen(false);
       // Reset form
       setForm({
-        fromDepartment,
         fromClinicianName: "",
         toDepartmentCode: "CARDIO",
         toClinicianName: "",
@@ -113,6 +115,7 @@ export function SpecialtyReferralButton({
         clinicalSummary: "",
       });
       setPickerPatient(null);
+      setFromDept(fromDepartment ? { id: null, label: fromDepartment } : null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -187,9 +190,14 @@ export function SpecialtyReferralButton({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>From Department</Label>
-                <Input value={form.fromDepartment} onChange={(e) => set("fromDepartment", e.target.value)} placeholder="e.g., OPD, ER" />
+              <div className="col-span-2">
+                <DepartmentSelect
+                  label="From Department"
+                  required
+                  value={fromDept}
+                  onChange={setFromDept}
+                  allowManual
+                />
               </div>
               <div>
                 <Label>Referring Clinician</Label>
@@ -227,6 +235,7 @@ export function SpecialtyReferralButton({
                   if (!effectivePatient) return;
                   createMut.mutate({
                     ...form,
+                    fromDepartment: fromDept?.label || null,
                     patientId: effectivePatient.patientId,
                     patientName: effectivePatient.patientName,
                     patientAge: effectivePatient.patientAge || null,
@@ -234,7 +243,7 @@ export function SpecialtyReferralButton({
                     patientPhone: effectivePatient.patientPhone || null,
                   });
                 }}
-                disabled={createMut.isPending || !effectivePatient?.patientName || !form.reason}
+                disabled={createMut.isPending || !effectivePatient?.patientName || !form.reason || !fromDept?.label}
                 className="bg-gradient-to-r from-amber-500 to-orange-600 text-white"
               >
                 {createMut.isPending ? "Creating..." : "Create Referral"}

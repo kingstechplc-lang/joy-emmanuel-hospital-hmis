@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Stethoscope, Save } from "lucide-react";
+import { Activity, Stethoscope, Save, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
+import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -39,7 +40,14 @@ export function TriageView() {
         icon={Activity}
         gradient="from-rose-500 to-red-600"
         actions={
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
+            <SpecialtyReferralButton
+              label="Refer to Specialty"
+              fromDepartment="ER"
+              variant="default"
+              size="sm"
+              className="bg-white/20 border border-white/30 text-white hover:bg-white/30"
+            />
             <Button size="sm" variant={mode === "form" ? "default" : "ghost"} onClick={() => setMode("form")} className={mode === "form" ? "bg-white text-rose-600" : "bg-white/20 text-white border border-white/30"}>
               New Triage
             </Button>
@@ -279,6 +287,8 @@ function VitalInput({ label, value, onChange, placeholder }: { label: string; va
 }
 
 function TriageHistory({ facilityId }: { facilityId: string | null }) {
+  const selectPatient = useAppStore((s) => s.selectPatient);
+  const setView = useAppStore((s) => s.setView);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["triage", facilityId],
     queryFn: () => fetchJson(`/api/triage?facilityId=${facilityId}`),
@@ -307,6 +317,7 @@ function TriageHistory({ facilityId }: { facilityId: string | null }) {
                   <th className="text-left p-3 font-semibold text-slate-700">Pulse</th>
                   <th className="text-left p-3 font-semibold text-slate-700">Category</th>
                   <th className="text-left p-3 font-semibold text-slate-700">Time</th>
+                  <th className="text-right p-3 font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -319,6 +330,31 @@ function TriageHistory({ facilityId }: { facilityId: string | null }) {
                     <td className="p-3">{t.pulse ? `${t.pulse}` : "—"}</td>
                     <td className="p-3"><StatusBadge status={t.triageCategory || "—"} /></td>
                     <td className="p-3 text-slate-600">{formatDate(t.recordedAt, true)}</td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {t.patientId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-slate-600 hover:text-emerald-700"
+                            onClick={() => { selectPatient(t.patientId); setView("patient_360"); }}
+                            title="View Patient 360"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {t.patient && (
+                          <SpecialtyReferralButton
+                            patient={t.patient}
+                            fromDepartment="ER"
+                            label=""
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-amber-600 hover:text-amber-700"
+                          />
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
