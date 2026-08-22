@@ -49,7 +49,9 @@ export async function GET(req: Request) {
 }
 
 // POST /api/insurance-claims
-// body: { patientId, facilityId, insuranceProviderId, invoiceId, claimAmount, status? }
+// body: { patientId, facilityId, insuranceProviderId, invoiceId, claimAmount,
+//         claimType?, nhisNumber?, primaryDiagnosisCatalogId?, primaryDiagnosisCode?,
+//         primaryDiagnosisName?, encounterId? }
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -64,7 +66,12 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
-  const { patientId, facilityId, insuranceProviderId, invoiceId, claimAmount } = body;
+  const {
+    patientId, facilityId, insuranceProviderId, invoiceId, claimAmount,
+    claimType, nhisNumber,
+    primaryDiagnosisCatalogId, primaryDiagnosisCode, primaryDiagnosisName,
+    encounterId,
+  } = body;
 
   if (!patientId || !facilityId || !insuranceProviderId || !invoiceId) {
     return NextResponse.json({ error: "patientId, facilityId, insuranceProviderId, invoiceId are required" }, { status: 400 });
@@ -80,6 +87,43 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invoice has no outstanding balance to claim against" }, { status: 400 });
   }
 
+  // NHIS validation — if the provider is NHIS, require ICD-10 + NHIS number
+  const provider = await db.insuranceProvider.findUnique({ where: { id: insuranceProviderId } });
+  const isNhis = provider?.code?.toUpperCase().includes("NHIS") || provider?.name?.toUpperCase().includes("NHIS") || false;
+
+  let isNhisValidated = false;
+  let validationNotes: string[] = [];
+
+  if (isNhis) {
+    if (!nhisNumber) validationNotes.push("NHIS membership number is required for NHIS claims");
+    if (!primaryDiagnosisCode) validationNotes.push("Primary ICD-10 diagnosis code is required for NHIS claims");
+    if (!primaryDiagnosisName) validationNotes.push("Primary diagnosis name is required for NHIS claims");
+    isNhisValidated = validationNotes.length === 0;
+  } else {
+    // For non-NHIS, validation is optional but recommended
+    if (!primaryDiagnosisCode) validationNotes.push("Primary diagnosis code recommended (not required for non-NHIS)");
+    isNhisValidated = true; // non-NHIS claims pass validation
+  }
+
+  // If catalog ID provided, snapshot the code + name from catalog
+  let finalDxCode = primaryDiagnosisCode;
+  let finalDxName = primaryDiagnosisName;
+  let finalDxCatalogId = primaryDiagnosisCatalogId || null;
+  let gdrgCode: string | null = null;
+  let gdrgName: string | null = null;
+  let nhisTariff: number | null = null;
+
+  if (finalDxCatalogId) {
+    const catalogEntry = await db.diagnosisCatalog.findUnique({ where: { id: finalDxCatalogId } });
+    if (catalogEntry) {
+      finalDxCode = finalDxCode || catalogEntry.code;
+      finalDxName = finalDxName || catalogEntry.name;
+      gdrgCode = catalogEntry.nhisGdrgCode || null;
+      gdrgName = catalogEntry.nhisGdrgName || null;
+      nhisTariff = catalogEntry.nhisTariff || null;
+    }
+  }
+
   const claimNumber = await nextClaimNumber(facilityId);
 
   const claim = await db.insuranceClaim.create({
@@ -88,9 +132,20 @@ export async function POST(req: Request) {
       facilityId,
       insuranceProviderId,
       invoiceId,
+      encounterId: encounterId || null,
       claimNumber,
       claimAmount: Number(claimAmount) || invoice.balance,
       approvedAmount: 0,
+      claimType: claimType || "outpatient",
+      nhisNumber: nhisNumber || null,
+      primaryDiagnosisCode: finalDxCode || null,
+      primaryDiagnosisName: finalDxName || null,
+      primaryDiagnosisCatalogId: finalDxCatalogId || null,
+      gdrgCode,
+      gdrgName,
+      nhisTariff,
+      isNhisValidated,
+      nhisValidationNotes: validationNotes.length > 0 ? validationNotes.join("; ") : null,
       status: "draft",
     },
     include: {
@@ -100,6 +155,20 @@ export async function POST(req: Request) {
     },
   });
 
+  // If primary diagnosis was provided, create a ClaimDiagnosis record
+  if (finalDxCode && finalDxName) {
+    await db.claimDiagnosis.create({
+      data: {
+        claimId: claim.id,
+        catalogId: finalDxCatalogId || null,
+        diagnosisCode: finalDxCode,
+        diagnosisName: finalDxName,
+        diagnosisType: "primary",
+        isPrimary: true,
+      },
+    });
+  }
+
   await auditLog({
     userId: session.user.id,
     organizationId: session.user.organizationId,
@@ -107,7 +176,7 @@ export async function POST(req: Request) {
     action: "CLAIM_CREATED",
     resourceType: "insurance_claim",
     resourceId: claim.id,
-    newValues: { claimNumber, patientId, invoiceId, insuranceProviderId, claimAmount: claim.claimAmount },
+    newValues: { claimNumber, patientId, invoiceId, insuranceProviderId, claimAmount: claim.claimAmount, isNhis, isNhisValidated, primaryDiagnosisCode: finalDxCode },
   });
 
   return NextResponse.json({ item: claim }, { status: 201 });

@@ -540,6 +540,173 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
       });
     }
 
+    // =====================================================================
+    // DIAGNOSES REPORT — frequency, top diagnoses, trends by dept/specialty/facility
+    // =====================================================================
+    case "diagnoses": {
+      const dxWhere: any = {};
+      if (Object.keys(dateFilter).length > 0) {
+        dxWhere.diagnosedAt = dateFilter;
+      }
+      // Filter by patient → encounter → facility
+      const encounterWhere: any = {};
+      if (resolvedFacilityId) {
+        encounterWhere.facilityId = resolvedFacilityId;
+      } else {
+        encounterWhere.facilityId = { in: orgFacilityIds };
+      }
+
+      // Get diagnoses with encounter + patient info
+      const allDiagnoses = await db.diagnosis.findMany({
+        where: {
+          ...dxWhere,
+          encounter: encounterWhere,
+        },
+        select: {
+          id: true,
+          diagnosisCode: true,
+          diagnosisName: true,
+          diagnosisType: true,
+          clinicalStatus: true,
+          isPrimary: true,
+          isChronic: true,
+          diagnosedAt: true,
+          patient: { select: { sex: true, dateOfBirth: true } },
+          encounter: {
+            select: {
+              id: true,
+              encounterType: true,
+              facility: { select: { id: true, name: true } },
+              department: { select: { id: true, name: true, code: true } },
+            },
+          },
+          catalog: { select: { id: true, category: true, specialty: true, isChronicDefault: true, nhisGdrgCode: true, isNhisClaimable: true } },
+        },
+        take: 5000,
+      });
+
+      // Top diagnoses (by name + code)
+      const topMap: Record<string, { name: string; code: string; count: number }> = {};
+      allDiagnoses.forEach((d) => {
+        const key = `${d.diagnosisCode || "NOCODE"}|${d.diagnosisName}`;
+        if (!topMap[key]) topMap[key] = { name: d.diagnosisName, code: d.diagnosisCode || "—", count: 0 };
+        topMap[key].count += 1;
+      });
+      const topDiagnoses = Object.values(topMap).sort((a, b) => b.count - a.count).slice(0, 15);
+
+      // By category (from catalog)
+      const byCategoryMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        const cat = d.catalog?.category || "uncategorized";
+        byCategoryMap[cat] = (byCategoryMap[cat] || 0) + 1;
+      });
+      const byCategory = Object.entries(byCategoryMap).map(([label, value]) => ({ label: label.replace(/_/g, " "), value })).sort((a, b) => b.value - a.value);
+
+      // By department
+      const byDeptMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        const dept = d.encounter.department?.name || d.encounter.department?.code || "Unassigned";
+        byDeptMap[dept] = (byDeptMap[dept] || 0) + 1;
+      });
+      const byDepartment = Object.entries(byDeptMap).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+
+      // By facility
+      const byFacMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        const fac = d.encounter.facility?.name || "Unknown";
+        byFacMap[fac] = (byFacMap[fac] || 0) + 1;
+      });
+      const byFacility = Object.entries(byFacMap).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+
+      // By specialty (from catalog)
+      const bySpecMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        const spec = d.catalog?.specialty || "General";
+        bySpecMap[spec] = (bySpecMap[spec] || 0) + 1;
+      });
+      const bySpecialty = Object.entries(bySpecMap).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+
+      // By type (primary/secondary/etc.)
+      const byTypeMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        byTypeMap[d.diagnosisType] = (byTypeMap[d.diagnosisType] || 0) + 1;
+      });
+      const byType = Object.entries(byTypeMap).map(([label, value]) => ({ label, value }));
+
+      // By status
+      const byStatusMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        byStatusMap[d.clinicalStatus] = (byStatusMap[d.clinicalStatus] || 0) + 1;
+      });
+      const byStatusData = Object.entries(byStatusMap).map(([label, value]) => ({ label, value }));
+
+      // Monthly trend (last 12 months)
+      const trendMap: Record<string, number> = {};
+      allDiagnoses.forEach((d) => {
+        const monthKey = new Date(d.diagnosedAt).toISOString().slice(0, 7); // YYYY-MM
+        trendMap[monthKey] = (trendMap[monthKey] || 0) + 1;
+      });
+      const trend = Object.entries(trendMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-12)
+        .map(([label, value]) => ({ label, value }));
+
+      // Demographics
+      const bySexMap: Record<string, number> = { male: 0, female: 0, unknown: 0 };
+      const ageGroups: Record<string, number> = { "0-17": 0, "18-39": 0, "40-59": 0, "60+": 0, unknown: 0 };
+      allDiagnoses.forEach((d) => {
+        const sex = d.patient?.sex || "unknown";
+        bySexMap[sex] = (bySexMap[sex] || 0) + 1;
+        if (!d.patient?.dateOfBirth) { ageGroups.unknown += 1; return; }
+        const age = now.getFullYear() - new Date(d.patient.dateOfBirth).getFullYear();
+        if (age < 18) ageGroups["0-17"] += 1;
+        else if (age < 40) ageGroups["18-39"] += 1;
+        else if (age < 60) ageGroups["40-59"] += 1;
+        else ageGroups["60+"] += 1;
+      });
+      const bySex = Object.entries(bySexMap).map(([label, value]) => ({ label, value }));
+      const byAgeGroup = Object.entries(ageGroups).map(([label, value]) => ({ label, value }));
+
+      // NHIS claimability
+      const nhisClaimable = allDiagnoses.filter((d) => d.catalog?.isNhisClaimable !== false).length;
+      const nhisNotClaimable = allDiagnoses.length - nhisClaimable;
+
+      // Chronic vs acute
+      const chronic = allDiagnoses.filter((d) => d.isChronic).length;
+      const acute = allDiagnoses.length - chronic;
+
+      return NextResponse.json({
+        type: "diagnoses",
+        stats: {
+          total: allDiagnoses.length,
+          primary: allDiagnoses.filter((d) => d.isPrimary || d.diagnosisType === "primary").length,
+          secondary: allDiagnoses.filter((d) => d.diagnosisType === "secondary").length,
+          provisional: allDiagnoses.filter((d) => d.diagnosisType === "provisional").length,
+          differential: allDiagnoses.filter((d) => d.diagnosisType === "differential").length,
+          chronic,
+          acute,
+          active: byStatusMap.active || 0,
+          resolved: byStatusMap.resolved || 0,
+          ruledOut: byStatusMap.ruled_out || 0,
+          nhisClaimable,
+          nhisNotClaimable,
+        },
+        topDiagnoses,
+        topItems: topDiagnoses.map((d) => ({ label: `${d.code} — ${d.name.slice(0, 30)}${d.name.length > 30 ? "..." : ""}`, value: d.count, code: d.code, name: d.name })),
+        byCategory,
+        byDepartment,
+        byFacility,
+        bySpecialty,
+        byType,
+        byStatus: byStatusData,
+        trend,
+        bySex,
+        byAgeGroup,
+        tableColumns: ["Diagnosis", "Code", "Count"],
+        tableRows: topDiagnoses.map((d) => [d.name, d.code, String(d.count)]),
+      });
+    }
+
     default:
       return NextResponse.json({ error: `Unknown report type: ${type}` }, { status: 400 });
   }

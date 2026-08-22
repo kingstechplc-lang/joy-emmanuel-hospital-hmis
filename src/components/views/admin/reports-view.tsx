@@ -15,6 +15,7 @@ import {
   FileText, Activity, FlaskConical, Pill, DollarSign, Bed,
   Calendar, Users, Boxes, ScrollText, Scissors, Skull, ShieldCheck,
   Download, RefreshCcw, BarChart3, TrendingUp, Clock, AlertCircle,
+  Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,6 +38,7 @@ async function fetchJson(url: string) {
 const REPORT_TYPES = [
   { type: "patients", label: "Patient Reports", icon: FileText, gradient: "from-emerald-500 to-teal-600", desc: "Demographics, new vs returning, age distribution" },
   { type: "clinical", label: "Clinical Reports", icon: Activity, gradient: "from-blue-500 to-blue-600", desc: "Encounters, admissions, diagnoses, procedures" },
+  { type: "diagnoses", label: "Diagnosis Reports", icon: Stethoscope, gradient: "from-indigo-500 to-purple-600", desc: "Top diagnoses, trends, by department/specialty/facility, NHIS claimability" },
   { type: "appointments", label: "Appointment Reports", icon: Calendar, gradient: "from-cyan-500 to-cyan-600", desc: "Booked, completed, cancelled, no-shows" },
   { type: "lab", label: "Laboratory Reports", icon: FlaskConical, gradient: "from-purple-500 to-purple-600", desc: "Tests ordered, pending, critical results" },
   { type: "pharmacy", label: "Pharmacy Reports", icon: Pill, gradient: "from-amber-500 to-orange-600", desc: "Prescriptions, dispensing, low stock" },
@@ -563,6 +565,191 @@ function GeneratedReportDisplay({ report }: { report: any }) {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Diagnoses-specific: by Category, Department, Specialty + Trend */}
+      {report.type === "diagnoses" && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {report.byCategory?.length > 0 && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-200">
+                  <CardTitle className="text-sm font-bold text-indigo-800 flex items-center gap-2">
+                    <span className="w-2 h-4 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600" />
+                    Diagnoses by Category
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={report.byCategory}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} angle={-20} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {report.byCategory.map((_: any, i: number) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {report.byDepartment?.length > 0 && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
+                  <CardTitle className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                    <span className="w-2 h-4 rounded-full bg-gradient-to-b from-blue-500 to-cyan-600" />
+                    Diagnoses by Department
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={report.byDepartment} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <YAxis type="category" dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} width={120} />
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]} fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {report.bySpecialty?.length > 0 && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                  <CardTitle className="text-sm font-bold text-purple-800 flex items-center gap-2">
+                    <span className="w-2 h-4 rounded-full bg-gradient-to-b from-purple-500 to-pink-600" />
+                    Diagnoses by Specialty
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={report.bySpecialty}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} angle={-20} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#8b5cf6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {report.trend?.length > 0 && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-200">
+                  <CardTitle className="text-sm font-bold text-emerald-800 flex items-center gap-2">
+                    <span className="w-2 h-4 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600" />
+                    Diagnosis Trend (Monthly)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={report.trend}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                      <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ r: 4, fill: "#10b981" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* NHIS Claimability + Demographics */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {report.stats?.nhisClaimable != null && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-200">
+                  <CardTitle className="text-sm font-bold text-indigo-800 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    NHIS Claimability
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { label: "Claimable", value: report.stats.nhisClaimable },
+                          { label: "Not Claimable", value: report.stats.nhisNotClaimable },
+                        ]}
+                        dataKey="value"
+                        nameKey="label"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        innerRadius={35}
+                        label={(entry: any) => `${entry.label}: ${entry.value}`}
+                        labelLine={false}
+                      >
+                        <Cell fill="#10b981" />
+                        <Cell fill="#ef4444" />
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {report.bySex?.length > 0 && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-rose-50 to-pink-50 border-b border-rose-200">
+                  <CardTitle className="text-sm font-bold text-rose-800 flex items-center gap-2">
+                    <span className="w-2 h-4 rounded-full bg-gradient-to-b from-rose-500 to-pink-600" />
+                    By Sex
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={report.bySex}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {report.bySex.map((_: any, i: number) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {report.byAgeGroup?.length > 0 && (
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="pb-2 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
+                  <CardTitle className="text-sm font-bold text-amber-800 flex items-center gap-2">
+                    <span className="w-2 h-4 rounded-full bg-gradient-to-b from-amber-500 to-orange-600" />
+                    By Age Group
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={report.byAgeGroup}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#f59e0b" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
       )}
 
       {/* Low Stock Items */}

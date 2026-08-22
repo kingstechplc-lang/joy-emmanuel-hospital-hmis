@@ -888,16 +888,23 @@ model DiagnosisCatalog {
   isActive        Boolean  @default(true)
   version         String?  // terminology version (e.g., "2024", "ICD-10-2023")
   source          String?  // e.g., "WHO", "Local"
+  // Ghana NHIS compliance fields
+  nhisGdrgCode    String?  // Ghana Diagnostic Related Groupings code (e.g., "GD-701")
+  nhisGdrgName    String?  // G-DRG description
+  nhisTariff      Float?   // NHIS tariff amount (GHS) for this diagnosis group
+  isNhisClaimable Boolean  @default(true) // whether this diagnosis is covered by NHIS
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   encounterDiagnoses Diagnosis[]
+  claimDiagnoses  ClaimDiagnosis[]
   favorites      DiagnosisFavorite[]
 
   @@unique([organizationId, code, codeSystem])
   @@index([organizationId, category])
   @@index([organizationId, specialty])
   @@index([organizationId, isActive])
+  @@index([organizationId, isNhisClaimable])
 }
 
 // ---------------------------------------------------------------------
@@ -1678,9 +1685,23 @@ model InsuranceClaim {
   insuranceProvider   InsuranceProvider @relation(fields: [insuranceProviderId], references: [id])
   invoiceId           String
   invoice             Invoice @relation(fields: [invoiceId], references: [id])
+  encounterId         String?  // link to encounter for diagnosis traceability
   claimNumber         String
   claimAmount         Float    @default(0)
   approvedAmount      Float    @default(0)
+  // Ghana NHIS compliance fields
+  claimType           String   @default("outpatient") // outpatient | inpatient | day_case
+  nhisNumber          String?  // patient's NHIS membership number (or Ghana Card merged)
+  primaryDiagnosisCode String? // ICD-10 code — primary (snapshotted from Diagnosis)
+  primaryDiagnosisName String? // ICD-10 name — primary
+  primaryDiagnosisCatalogId String? // link to catalog
+  secondaryDiagnosisCodes String? // JSON array of {code, name} — secondary diagnoses
+  gdrgCode            String?  // Ghana DRG code for this claim
+  gdrgName            String?  // Ghana DRG description
+  nhisTariff          Float?   // NHIS tariff amount for this G-DRG
+  isNhisValidated     Boolean  @default(false) // passed NHIS validation checks
+  nhisValidationNotes String?  // validation messages (missing ICD-10, invalid NHIS #, etc.)
+  claimSubmissionRef  String?  // reference from CLAIM-it system
   status              String   @default("draft") // draft | submitted | approved | partially_approved | rejected | paid | resubmitted
   submittedAt         DateTime?
   approvedAt          DateTime?
@@ -1689,7 +1710,33 @@ model InsuranceClaim {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  claimDiagnoses      ClaimDiagnosis[]
+
   @@unique([facilityId, claimNumber])
+  @@index([patientId])
+  @@index([encounterId])
+  @@index([status])
+  @@index([primaryDiagnosisCode])
+}
+
+// ---------------------------------------------------------------------
+// CLAIM DIAGNOSIS — Multiple diagnoses attached to an insurance claim
+// (NHIS allows primary + multiple secondary diagnoses per claim)
+// ---------------------------------------------------------------------
+model ClaimDiagnosis {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  catalogId       String?
+  catalog         DiagnosisCatalog? @relation(fields: [catalogId], references: [id])
+  diagnosisCode   String   // ICD-10 code (snapshotted)
+  diagnosisName   String   // ICD-10 name (snapshotted)
+  diagnosisType   String   @default("primary") // primary | secondary | complication
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([claimId])
+  @@index([catalogId])
 }
 
 // ---------------------------------------------------------------------

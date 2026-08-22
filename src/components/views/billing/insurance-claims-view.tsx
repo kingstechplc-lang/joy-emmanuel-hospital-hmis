@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, ShieldCheck, Search, Send, Check, X, DollarSign, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, ShieldCheck, Search, Send, Check, X, DollarSign, RefreshCw, Stethoscope, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
+import { EntitySelect, type EntitySelectValue } from "@/components/ui/entity-select";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -215,6 +217,9 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
   const [invoiceId, setInvoiceId] = useState("");
   const [providerId, setProviderId] = useState("");
   const [claimAmount, setClaimAmount] = useState(0);
+  const [claimType, setClaimType] = useState("outpatient");
+  const [nhisNumber, setNhisNumber] = useState("");
+  const [primaryDx, setPrimaryDx] = useState<EntitySelectValue | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data: patientsData } = useQuery({
@@ -223,7 +228,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
     enabled: patientQuery.length >= 2,
   });
 
-  // Get patient's full record to read insurance providers
+  // Get patient's full record to read insurance providers + NHIS number
   const { data: patientData } = useQuery({
     queryKey: ["patient-detail-claim", patientId],
     queryFn: () => fetchJson(`/api/patients/${patientId}`),
@@ -240,10 +245,27 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
   const outstandingInvoices = (invoicesData?.items || []).filter((i: any) => i.balance > 0 && i.status !== "cancelled");
   const insuranceProviders = patientData?.patient?.insurance || [];
 
+  // Detect if selected provider is NHIS
+  const selectedProvider = insuranceProviders.find((pi: any) => pi.insuranceProviderId === providerId);
+  const isNhisProvider = selectedProvider?.insuranceProvider?.code?.toUpperCase().includes("NHIS") ||
+    selectedProvider?.insuranceProvider?.name?.toUpperCase().includes("NHIS") || false;
+
+  // Auto-fill NHIS number from patient's insurance record
+  const providerNhishNumber = selectedProvider?.membershipNumber || "";
+
+  // NHIS validation checks
+  const nhisValidationIssues: string[] = [];
+  if (isNhisProvider) {
+    if (!nhisNumber) nhisValidationIssues.push("NHIS membership number required");
+    if (!primaryDx?.id) nhisValidationIssues.push("Primary ICD-10 diagnosis required (select from catalog)");
+  }
+  const isNhisValid = nhisValidationIssues.length === 0;
+
   const selectPatient = (p: any) => {
     setPatientId(p.id);
     setPatientQuery(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
     setInvoiceId(""); setProviderId(""); setClaimAmount(0);
+    setNhisNumber(""); setPrimaryDx(null);
   };
 
   const selectInvoice = (id: string) => {
@@ -254,11 +276,22 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
     }
   };
 
+  const selectProvider = (id: string) => {
+    setProviderId(id);
+    // Auto-fill NHIS number if available
+    const pi = insuranceProviders.find((p: any) => p.insuranceProviderId === id);
+    if (pi?.membershipNumber) setNhisNumber(pi.membershipNumber);
+  };
+
   const submit = async () => {
     if (!patientId) { toast.error("Please select a patient"); return; }
     if (!invoiceId) { toast.error("Please select an outstanding invoice"); return; }
     if (!providerId) { toast.error("Please select an insurance provider"); return; }
     if (!claimAmount || claimAmount <= 0) { toast.error("Claim amount must be > 0"); return; }
+    if (isNhisProvider && !isNhisValid) {
+      toast.error("NHIS validation failed: " + nhisValidationIssues.join(", "));
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/insurance-claims", {
@@ -270,14 +303,20 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
           insuranceProviderId: providerId,
           invoiceId,
           claimAmount,
+          claimType,
+          nhisNumber: nhisNumber || undefined,
+          primaryDiagnosisCatalogId: primaryDx?.id || undefined,
+          primaryDiagnosisCode: primaryDx?.code || undefined,
+          primaryDiagnosisName: primaryDx?.label || undefined,
         }),
       });
       if (!res.ok) {
         const err = await safeJson(res);
         throw new Error(err.error || "Failed");
       }
-      toast.success("Claim created as draft — submit it to the provider");
+      toast.success(isNhisProvider ? "NHIS claim created as draft — validated ✓" : "Claim created as draft");
       setPatientQuery(""); setPatientId(""); setInvoiceId(""); setProviderId(""); setClaimAmount(0);
+      setNhisNumber(""); setPrimaryDx(null); setClaimType("outpatient");
       onCreated();
     } catch (e: any) {
       toast.error(e.message);
@@ -288,10 +327,12 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-600" /> New Insurance Claim</DialogTitle>
-          <DialogDescription>File a claim against an outstanding invoice using one of the patient's registered insurance providers.</DialogDescription>
+          <DialogDescription>
+            File a claim against an outstanding invoice. NHIS claims require ICD-10 diagnosis codes and NHIS membership number per Ghana NHIS policy.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -319,18 +360,86 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
                 {insuranceProviders.length === 0 ? (
                   <div className="text-xs text-amber-700 bg-amber-50 p-2 rounded">This patient has no registered insurance. Add insurance in the patient record first.</div>
                 ) : (
-                  <Select value={providerId || undefined} onValueChange={setProviderId}>
+                  <Select value={providerId || undefined} onValueChange={selectProvider}>
                     <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
                     <SelectContent>
                       {insuranceProviders.map((pi: any) => (
                         <SelectItem key={pi.id} value={pi.insuranceProviderId}>
-                          {pi.insuranceProvider?.name} {pi.membershipNumber ? `• ${pi.membershipNumber}` : ""}
+                          {pi.insuranceProvider?.name}
+                          {pi.insuranceProvider?.code?.toUpperCase().includes("NHIS") && <Badge variant="secondary" className="ml-2 text-[9px]">NHIS</Badge>}
+                          {pi.membershipNumber ? ` • ${pi.membershipNumber}` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               </div>
+
+              {/* NHIS fields — shown when NHIS provider is selected */}
+              {isNhisProvider && (
+                <div className="border border-indigo-200 rounded-lg p-3 bg-indigo-50/30 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Ghana NHIS Compliance
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel required>NHIS Membership Number</FieldLabel>
+                      <Input value={nhisNumber} onChange={(e) => setNhisNumber(e.target.value)} placeholder="NHIS number or Ghana Card" />
+                      {providerNhishNumber && providerNhishNumber !== nhisNumber && (
+                        <p className="text-[10px] text-slate-500 mt-1">Auto-filled from patient record</p>
+                      )}
+                    </div>
+                    <div>
+                      <FieldLabel required>Claim Type</FieldLabel>
+                      <Select value={claimType} onValueChange={setClaimType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="outpatient">Outpatient</SelectItem>
+                          <SelectItem value="inpatient">Inpatient</SelectItem>
+                          <SelectItem value="day_case">Day Case</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Primary Diagnosis — ICD-10 from catalog */}
+                  <EntitySelect
+                    label="Primary Diagnosis (ICD-10) — required for NHIS"
+                    required
+                    endpoint="/api/diagnoses/catalog"
+                    queryParam="q"
+                    queryParams={{ limit: "20" }}
+                    getLabel={(item: any) => item.name}
+                    getId={(item: any) => item.id}
+                    getSubtitle={(item: any) => {
+                      const parts = [item.category, item.nhisGdrgCode ? `G-DRG: ${item.nhisGdrgCode}` : null].filter(Boolean);
+                      return parts.length ? parts.join(" · ") : null;
+                    }}
+                    getCode={(item: any) => item.code}
+                    placeholder="Search ICD-10 diagnosis by name or code (e.g., 'I10', 'malaria')..."
+                    value={primaryDx}
+                    onChange={setPrimaryDx}
+                    allowManual
+                  />
+
+                  {/* NHIS validation status */}
+                  {nhisValidationIssues.length > 0 ? (
+                    <div className="flex items-start gap-2 p-2 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">NHIS Validation Issues:</p>
+                        <ul className="list-disc list-inside mt-1">
+                          {nhisValidationIssues.map((issue, i) => <li key={i}>{issue}</li>)}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700">
+                      <CheckCircle2 className="w-4 h-4" /> NHIS validation passed — ready for CLAIM-it submission
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <FieldLabel required>Outstanding Invoice</FieldLabel>
@@ -360,8 +469,8 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={saving || !patientId || !invoiceId || !providerId || !claimAmount} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            {saving ? "Creating..." : "Create Draft Claim"}
+          <Button onClick={submit} disabled={saving || !patientId || !invoiceId || !providerId || !claimAmount || (isNhisProvider && !isNhisValid)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            {saving ? "Creating..." : <><ShieldCheck className="w-4 h-4" /> Create Draft Claim</>}
           </Button>
         </DialogFooter>
       </DialogContent>
