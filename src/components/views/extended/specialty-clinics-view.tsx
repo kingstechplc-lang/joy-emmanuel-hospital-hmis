@@ -25,6 +25,7 @@ import {
 } from "@/components/ui-helpers";
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -387,8 +388,8 @@ function EncountersTab({ canManage }: { canManage: boolean }) {
 // NEW ENCOUNTER DIALOG
 // =====================================================================
 function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
-    patientName: "", patientId: "", patientAge: "", patientSex: "male",
     departmentCode: "CARDIO", clinicType: "new", chiefComplaint: "",
     clinicianName: "",
   });
@@ -416,11 +417,15 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
           <DialogDescription>Create a clinical encounter for a specialty consultation, procedure, or follow-up.</DialogDescription>
         </DialogHeader>
 
+        <PatientPicker
+          label="Patient"
+          required
+          value={patient}
+          onChange={setPatient}
+          className="col-span-2 md:col-span-3"
+        />
+
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} placeholder="Full name" /></div>
-          <div><Label>Patient ID (optional)</Label><Input value={form.patientId} onChange={(e) => set("patientId", e.target.value)} placeholder="Existing MRN" /></div>
-          <div><Label>Age</Label><Input type="number" value={form.patientAge} onChange={(e) => set("patientAge", e.target.value)} /></div>
-          <div><Label>Sex</Label><Select value={form.patientSex} onValueChange={(v) => set("patientSex", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
           <div>
             <FieldLabel>Specialty</FieldLabel>
             <Select value={form.departmentCode} onValueChange={(v) => set("departmentCode", v)}>
@@ -457,11 +462,17 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => {
-              const payload: any = { ...form };
-              if (payload.patientAge) payload.patientAge = parseInt(payload.patientAge);
+              if (!patient) return;
+              const payload: any = {
+                ...form,
+                patientId: patient.patientId,
+                patientName: patient.patientName,
+                patientAge: patient.patientAge || null,
+                patientSex: patient.patientSex || null,
+              };
               createMutation.mutate(payload);
             }}
-            disabled={createMutation.isPending || !form.patientName || !form.chiefComplaint}
+            disabled={createMutation.isPending || !patient?.patientName || !form.chiefComplaint}
             className="bg-gradient-to-r from-purple-500 to-purple-600 text-white"
           >
             {createMutation.isPending ? "Creating..." : "Create Encounter"}
@@ -949,8 +960,8 @@ function AppointmentsTab({ canManage }: { canManage: boolean }) {
 // NEW APPOINTMENT DIALOG
 // =====================================================================
 function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
-    patientName: "", patientAge: "", patientSex: "male", patientPhone: "",
     departmentCode: "CARDIO", clinicId: "", clinicianName: "",
     appointmentDate: new Date().toISOString().slice(0, 10),
     startTime: "09:00", endTime: "09:30",
@@ -977,11 +988,14 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
           <DialogDescription>Schedule a patient for a specialty consultation, follow-up, or procedure.</DialogDescription>
         </DialogHeader>
 
+        <PatientPicker
+          label="Patient"
+          required
+          value={patient}
+          onChange={setPatient}
+        />
+
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
-          <div><Label>Phone</Label><Input value={form.patientPhone} onChange={(e) => set("patientPhone", e.target.value)} placeholder="Optional" /></div>
-          <div><Label>Age</Label><Input type="number" value={form.patientAge} onChange={(e) => set("patientAge", e.target.value)} /></div>
-          <div><Label>Sex</Label><Select value={form.patientSex} onValueChange={(v) => set("patientSex", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
           <div><FieldLabel>Specialty</FieldLabel><Select value={form.departmentCode} onValueChange={(v) => set("departmentCode", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent></Select></div>
           <div><Label>Appointment Date</Label><Input type="date" value={form.appointmentDate} onChange={(e) => set("appointmentDate", e.target.value)} /></div>
           <div><Label>Start Time</Label><Input type="time" value={form.startTime} onChange={(e) => set("startTime", e.target.value)} /></div>
@@ -1006,12 +1020,19 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => {
-              const payload: any = { ...form };
-              if (payload.patientAge) payload.patientAge = parseInt(payload.patientAge);
+              if (!patient) return;
+              const payload: any = {
+                ...form,
+                patientId: patient.patientId,
+                patientName: patient.patientName,
+                patientAge: patient.patientAge || null,
+                patientSex: patient.patientSex || null,
+                patientPhone: patient.patientPhone || null,
+              };
               payload.appointmentDate = new Date(form.appointmentDate + "T00:00:00");
               createMut.mutate(payload);
             }}
-            disabled={createMut.isPending || !form.patientName || !form.appointmentDate}
+            disabled={createMut.isPending || !patient?.patientName || !form.appointmentDate}
             className="bg-gradient-to-r from-blue-500 to-blue-600 text-white"
           >
             {createMut.isPending ? "Scheduling..." : "Schedule Appointment"}
@@ -1343,8 +1364,8 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
 // NEW REFERRAL DIALOG
 // =====================================================================
 function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
-    patientName: "", patientAge: "", patientSex: "male", patientPhone: "",
     fromDepartment: "OPD", fromClinicianName: "",
     toDepartmentCode: "CARDIO", toClinicianName: "",
     urgency: "routine", reason: "", clinicalSummary: "",
@@ -1370,11 +1391,14 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
           <DialogDescription>Refer a patient to a specialty clinic for consultation or procedure.</DialogDescription>
         </DialogHeader>
 
+        <PatientPicker
+          label="Patient"
+          required
+          value={patient}
+          onChange={setPatient}
+        />
+
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
-          <div><Label>Phone</Label><Input value={form.patientPhone} onChange={(e) => set("patientPhone", e.target.value)} placeholder="Optional" /></div>
-          <div><Label>Age</Label><Input type="number" value={form.patientAge} onChange={(e) => set("patientAge", e.target.value)} /></div>
-          <div><Label>Sex</Label><Select value={form.patientSex} onValueChange={(v) => set("patientSex", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
           <div><Label>Urgency</Label><Select value={form.urgency} onValueChange={(v) => set("urgency", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="emergency">Emergency</SelectItem></SelectContent></Select></div>
           <div><Label>From Department</Label><Input value={form.fromDepartment} onChange={(e) => set("fromDepartment", e.target.value)} placeholder="e.g., OPD, ER" /></div>
           <div><Label>Referring Clinician</Label><Input value={form.fromClinicianName} onChange={(e) => set("fromClinicianName", e.target.value)} /></div>
@@ -1402,11 +1426,18 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => {
-              const payload: any = { ...form };
-              if (payload.patientAge) payload.patientAge = parseInt(payload.patientAge);
+              if (!patient) return;
+              const payload: any = {
+                ...form,
+                patientId: patient.patientId,
+                patientName: patient.patientName,
+                patientAge: patient.patientAge || null,
+                patientSex: patient.patientSex || null,
+                patientPhone: patient.patientPhone || null,
+              };
               createMut.mutate(payload);
             }}
-            disabled={createMut.isPending || !form.patientName || !form.reason}
+            disabled={createMut.isPending || !patient?.patientName || !form.reason}
             className="bg-gradient-to-r from-amber-500 to-orange-600 text-white"
           >
             {createMut.isPending ? "Creating..." : "Create Referral"}

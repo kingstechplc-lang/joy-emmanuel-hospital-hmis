@@ -22,6 +22,7 @@ import {
 } from "@/components/ui-helpers";
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -306,11 +307,21 @@ function RequestsTab({ canManage }: { canManage: boolean }) {
 }
 
 function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; onOpenChange: (o: boolean) => void; onSubmit: (d: any) => void; loading: boolean }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
     serviceType: "housekeeping", title: "", description: "", priority: "routine",
-    location: "", departmentCode: "", patientName: "", quantity: "", unit: "pcs",
+    location: "", departmentCode: "", quantity: "", unit: "pcs",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+
+  const submit = () => {
+    const payload: any = { ...form };
+    if (patient) {
+      payload.patientId = patient.patientId;
+      payload.patientName = patient.patientName;
+    }
+    onSubmit(payload);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -344,10 +355,18 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
           <div><Label>Department Code</Label><Input value={form.departmentCode} onChange={(e) => set("departmentCode", e.target.value)} placeholder="e.g., OPD, ICU" /></div>
           <div><Label>Quantity</Label><Input type="number" value={form.quantity} onChange={(e) => set("quantity", e.target.value)} placeholder="e.g., 50" /></div>
           <div><Label>Unit</Label><Input value={form.unit} onChange={(e) => set("unit", e.target.value)} placeholder="pcs / kg / meal / bag / trip" /></div>
+          <div className="col-span-2">
+            <PatientPicker
+              label="Patient (optional — link if service is patient-related)"
+              value={patient}
+              onChange={setPatient}
+              allowManual
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => onSubmit(form)} disabled={loading || !form.title}>{loading ? "Creating..." : "Create Request"}</Button>
+          <Button onClick={submit} disabled={loading || !form.title}>{loading ? "Creating..." : "Create Request"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

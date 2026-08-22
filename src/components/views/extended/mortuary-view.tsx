@@ -23,6 +23,7 @@ import {
 } from "@/components/ui-helpers";
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -272,14 +273,26 @@ function CasesTab({ canManage }: { canManage: boolean }) {
 // ADMIT FORM
 // =====================================================================
 function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; onOpenChange: (o: boolean) => void; onSubmit: (d: any) => void; loading: boolean }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
-    deceasedName: "", deceasedAge: "", deceasedSex: "male", deceasedDob: "", nationalId: "",
+    deceasedAge: "", deceasedSex: "male", deceasedDob: "", nationalId: "",
     nextOfKinName: "", nextOfKinPhone: "", nextOfKinRelation: "",
     dateOfDeath: "", placeOfDeath: "facility", causeOfDeath: "", deathCertificateNo: "",
     broughtBy: "", broughtByPhone: "", sourceFacility: "", sourceNotes: "",
     storageLocation: "", bodyTag: "",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+
+  const submit = () => {
+    const payload: any = { ...form };
+    if (patient) {
+      payload.patientId = patient.patientId;
+      payload.deceasedName = patient.patientName;
+      if (patient.patientAge != null) payload.deceasedAge = patient.patientAge;
+      if (patient.patientSex) payload.deceasedSex = patient.patientSex;
+    }
+    onSubmit(payload);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -289,10 +302,24 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
           <DialogDescription>Record a deceased person — works for both facility deaths and bodies brought in from outside.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <PatientPicker
+            label="Deceased Patient (link to record if known)"
+            value={patient}
+            onChange={setPatient}
+            placeholder="Search patient record if deceased was a facility patient..."
+            allowManual
+          />
+          {!patient?.patientId && (
+            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              No patient record linked — enter the deceased name manually below.
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="col-span-2"><FieldLabel>Deceased Name</FieldLabel><Input value={form.deceasedName} onChange={(e) => set("deceasedName", e.target.value)} /></div>
-            <div><Label>Age</Label><Input type="number" value={form.deceasedAge} onChange={(e) => set("deceasedAge", e.target.value)} /></div>
-            <div><Label>Sex</Label><Select value={form.deceasedSex} onValueChange={(v) => set("deceasedSex", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="unknown">Unknown</SelectItem></SelectContent></Select></div>
+            {!patient?.patientId && (
+              <div className="col-span-2"><FieldLabel>Deceased Name</FieldLabel><Input value={patient?.patientName || ""} onChange={(e) => setPatient({ patientId: null, patientName: e.target.value })} placeholder="Full name" /></div>
+            )}
+            <div><Label>Age</Label><Input type="number" value={form.deceasedAge} onChange={(e) => set("deceasedAge", e.target.value)} disabled={!!patient?.patientAge} placeholder={patient?.patientAge ? `${patient.patientAge} (from record)` : ""} /></div>
+            <div><Label>Sex</Label><Select value={form.deceasedSex} onValueChange={(v) => set("deceasedSex", v)} disabled={!!patient?.patientSex}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="unknown">Unknown</SelectItem></SelectContent></Select></div>
             <div><Label>Date of Birth</Label><Input type="date" value={form.deceasedDob} onChange={(e) => set("deceasedDob", e.target.value)} /></div>
             <div><Label>National ID</Label><Input value={form.nationalId} onChange={(e) => set("nationalId", e.target.value)} /></div>
             <div><FieldLabel>Date & Time of Death</FieldLabel><Input type="datetime-local" value={form.dateOfDeath} onChange={(e) => set("dateOfDeath", e.target.value)} /></div>
@@ -320,7 +347,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => onSubmit(form)} disabled={loading || !form.deceasedName || !form.dateOfDeath}>{loading ? "Admitting..." : "Admit to Mortuary"}</Button>
+          <Button onClick={submit} disabled={loading || !patient?.patientName || !form.dateOfDeath}>{loading ? "Admitting..." : "Admit to Mortuary"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

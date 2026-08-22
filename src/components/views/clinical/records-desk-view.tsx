@@ -23,6 +23,7 @@ import {
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 import { useAppStore } from "@/stores/app-store";
 
 async function fetchJson(url: string) {
@@ -486,15 +487,31 @@ function RequestsTab() {
 }
 
 function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: boolean }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
-    patientName: "", patientNumber: "", requestingDepartment: "", requestingStaffName: "",
+    requestingDepartment: "", requestingStaffName: "",
     purpose: "", priority: "routine",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+  const submit = () => {
+    if (!patient) return;
+    onSubmit({
+      ...form,
+      patientId: patient.patientId,
+      patientName: patient.patientName,
+      patientNumber: patient.patientNumber,
+    });
+  };
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
-      <div><Label>MRN / Patient Number</Label><Input value={form.patientNumber} onChange={(e) => set("patientNumber", e.target.value)} /></div>
+      <div className="col-span-2">
+        <PatientPicker
+          label="Patient"
+          required
+          value={patient}
+          onChange={setPatient}
+        />
+      </div>
       <div>
         <Label>Priority</Label>
         <Select value={form.priority} onValueChange={(v) => set("priority", v)}>
@@ -505,7 +522,7 @@ function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loadin
       <div><Label>Requesting Department</Label><Input value={form.requestingDepartment} onChange={(e) => set("requestingDepartment", e.target.value)} placeholder="OPD, Ward, Lab..." /></div>
       <div><Label>Requesting Staff</Label><Input value={form.requestingStaffName} onChange={(e) => set("requestingStaffName", e.target.value)} /></div>
       <div className="col-span-2"><Label>Purpose</Label><Textarea value={form.purpose} onChange={(e) => set("purpose", e.target.value)} rows={2} placeholder="Why is the record needed?" /></div>
-      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.patientName}>{loading ? "Creating..." : "Create Request"}</Button></DialogFooter>
+      <DialogFooter><Button onClick={submit} disabled={loading || !patient?.patientName}>{loading ? "Creating..." : "Create Request"}</Button></DialogFooter>
     </div>
   );
 }
@@ -626,13 +643,29 @@ function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
 }
 
 function AmendmentForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: boolean }) {
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
-    patientName: "", amendmentType: "demographic", field: "", originalValue: "", correctedValue: "", reason: "",
+    amendmentType: "demographic", field: "", originalValue: "", correctedValue: "", reason: "",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+  const submit = () => {
+    if (!patient) return;
+    onSubmit({
+      ...form,
+      patientId: patient.patientId,
+      patientName: patient.patientName,
+    });
+  };
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="col-span-2"><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
+      <div className="col-span-2">
+        <PatientPicker
+          label="Patient"
+          required
+          value={patient}
+          onChange={setPatient}
+        />
+      </div>
       <div>
         <FieldLabel>Amendment Type</FieldLabel>
         <Select value={form.amendmentType} onValueChange={(v) => set("amendmentType", v)}>
@@ -649,7 +682,7 @@ function AmendmentForm({ onSubmit, loading }: { onSubmit: (d: any) => void; load
       <div><Label>Original Value</Label><Input value={form.originalValue} onChange={(e) => set("originalValue", e.target.value)} /></div>
       <div><Label>Corrected Value</Label><Input value={form.correctedValue} onChange={(e) => set("correctedValue", e.target.value)} /></div>
       <div className="col-span-2"><FieldLabel>Reason</FieldLabel><Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={3} placeholder="Why is this correction needed?" /></div>
-      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.patientName || !form.reason}>{loading ? "Submitting..." : "Submit Request"}</Button></DialogFooter>
+      <DialogFooter><Button onClick={submit} disabled={loading || !patient?.patientName || !form.reason}>{loading ? "Submitting..." : "Submit Request"}</Button></DialogFooter>
     </div>
   );
 }

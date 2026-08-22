@@ -22,6 +22,7 @@ import {
 } from "@/components/ui-helpers";
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -589,18 +590,29 @@ function CrossmatchTab({ canManage }: { canManage: boolean }) {
 }
 
 function CrossmatchForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; onOpenChange: (o: boolean) => void; onSubmit: (d: any) => void; loading: boolean }) {
-  const [form, setForm] = useState({ patientName: "", patientId: "", patientBloodGroup: "O+", unitId: "", crossmatchResult: "pending", method: "gel_card", notes: "" });
+  const [patient, setPatient] = useState<PatientPickerValue | null>(null);
+  const [form, setForm] = useState({ patientBloodGroup: "O+", unitId: "", crossmatchResult: "pending", method: "gel_card", notes: "" });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+  const submit = () => {
+    if (!patient) return;
+    onSubmit({
+      ...form,
+      patientId: patient.patientId,
+      patientName: patient.patientName,
+    });
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle className="flex items-center gap-2"><Beaker className="w-5 h-5 text-rose-600" /> New Crossmatch Test</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><FieldLabel>Patient Name</FieldLabel><Input value={form.patientName} onChange={(e) => set("patientName", e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Patient ID</Label><Input value={form.patientId} onChange={(e) => set("patientId", e.target.value)} /></div>
-            <div><Label>Patient Blood Group</Label><Select value={form.patientBloodGroup} onValueChange={(v) => set("patientBloodGroup", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}</SelectContent></Select></div>
-          </div>
+          <PatientPicker
+            label="Patient (recipient)"
+            required
+            value={patient}
+            onChange={setPatient}
+          />
+          <div><Label>Patient Blood Group</Label><Select value={form.patientBloodGroup} onValueChange={(v) => set("patientBloodGroup", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}</SelectContent></Select></div>
           <div><FieldLabel>Blood Unit ID</FieldLabel><Input value={form.unitId} onChange={(e) => set("unitId", e.target.value)} placeholder="Unit ID from blood inventory" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Result</Label><Select value={form.crossmatchResult} onValueChange={(v) => set("crossmatchResult", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pending</SelectItem><SelectItem value="compatible">Compatible</SelectItem><SelectItem value="incompatible">Incompatible</SelectItem></SelectContent></Select></div>
@@ -608,7 +620,7 @@ function CrossmatchForm({ open, onOpenChange, onSubmit, loading }: { open: boole
           </div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.patientName || !form.unitId}>{loading ? "Recording..." : "Record Test"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={submit} disabled={loading || !patient?.patientName || !form.unitId}>{loading ? "Recording..." : "Record Test"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
