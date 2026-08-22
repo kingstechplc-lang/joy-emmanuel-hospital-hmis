@@ -1,15 +1,14 @@
 // =====================================================================
-// API: /api/specialty/[id]
-//   GET    — fetch single record
-//   PATCH  — update record
-//   DELETE — remove record
+// API: /api/specialty/referrals/[id]
+//   GET    — fetch single referral
+//   PATCH  — update referral (accept/decline/schedule/complete)
+//   DELETE — remove referral
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
-import { notifySpecialtyEncounterCompleted } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -20,13 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;
-  const item = await db.specialtyEncounter.findUnique({
-    where: { id },
-    include: {
-      procedures: { orderBy: { startedAt: "desc" } },
-      notes: { orderBy: { authoredAt: "desc" } },
-    },
-  });
+  const item = await db.specialtyReferral.findUnique({ where: { id } });
   if (!item || item.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -36,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.SPECIALTY_MANAGE)) {
+  if (!hasPermission(session, PERMISSIONS.SPECIALTY_REFERRALS) && !hasPermission(session, PERMISSIONS.SPECIALTY_MANAGE)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;
@@ -48,15 +41,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
 
-  const existing = await db.specialtyEncounter.findUnique({ where: { id } });
+  const existing = await db.specialtyReferral.findUnique({ where: { id } });
   if (!existing || existing.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Strip protected fields
   const { id: _id, organizationId: _orgId, createdAt: _c, updatedAt: _u, createdById: _cb, ...updateData } = body;
 
-  const updated = await db.specialtyEncounter.update({
+  // Auto-set responseDate when status changes from "pending"
+  if (updateData.status && updateData.status !== "pending" && !existing.responseDate) {
+    updateData.responseDate = new Date();
+  }
+
+  const updated = await db.specialtyReferral.update({
     where: { id },
     data: updateData,
   });
@@ -65,27 +62,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     userId: session.user.id,
     organizationId: session.user.organizationId,
     facilityId: existing.facilityId || undefined,
-    action: "SPECIALTY_ENCOUNTER_UPDATED",
-    resourceType: "specialtyEncounter",
+    action: "SPECIALTY_REFERRAL_UPDATED",
+    resourceType: "specialtyReferral",
     resourceId: id,
     oldValues: existing,
     newValues: updateData,
   });
-
-  // 🔔 Fire completion notification when status flips to "completed"
-  if (updateData.status === "completed" && existing.status !== "completed") {
-    await notifySpecialtyEncounterCompleted({
-      organizationId: session.user.organizationId,
-      facilityId: existing.facilityId,
-      encounterNumber: updated.encounterNumber,
-      patientName: updated.patientName,
-      departmentCode: updated.departmentCode,
-      diagnosis: updated.diagnosis,
-      encounterId: updated.id,
-      followUpDate: updated.followUpDate,
-      clinicianId: updated.clinicianId || undefined,
-    });
-  }
 
   return NextResponse.json({ item: updated });
 }
@@ -97,17 +79,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;
-  const existing = await db.specialtyEncounter.findUnique({ where: { id } });
+  const existing = await db.specialtyReferral.findUnique({ where: { id } });
   if (!existing || existing.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  await db.specialtyEncounter.delete({ where: { id } });
+  await db.specialtyReferral.delete({ where: { id } });
   await auditLog({
     userId: session.user.id,
     organizationId: session.user.organizationId,
-    facilityId: existing.facilityId || undefined,
-    action: "SPECIALTY_ENCOUNTER_DELETED",
-    resourceType: "specialtyEncounter",
+    action: "SPECIALTY_REFERRAL_DELETED",
+    resourceType: "specialtyReferral",
     resourceId: id,
   });
   return NextResponse.json({ ok: true });

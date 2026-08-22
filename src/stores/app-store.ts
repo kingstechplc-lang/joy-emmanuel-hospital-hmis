@@ -72,6 +72,9 @@ export type ViewKey =
   | "theatre"
   | "critical_care"
   | "specialty_clinics"
+  | "specialty_clinics_appointments"
+  | "specialty_clinics_referrals"
+  | "specialty_clinics_clinics"
   | "support_services"
   | "patient_relations"
   | "quality_assurance"
@@ -206,6 +209,9 @@ export const NAV_ITEMS: NavItem[] = [
 
   // Extended Clinical — Specialty & Critical Care
   { key: "specialty_clinics", label: "Specialty Clinics", icon: "Stethoscope", permission: "specialty.view", category: "Specialty Clinics" },
+  { key: "specialty_clinics_appointments", label: "Specialty Appointments", icon: "Calendar", permission: "specialty.view", category: "Specialty Clinics" },
+  { key: "specialty_clinics_referrals", label: "Specialty Referrals", icon: "Share2", permission: "specialty.view", category: "Specialty Clinics" },
+  { key: "specialty_clinics_clinics", label: "Clinic Configuration", icon: "Building2", permission: "specialty.view", category: "Specialty Clinics" },
   { key: "theatre", label: "Operating Theatre", icon: "Scissors", permission: "theatre.view", category: "Specialty Clinics" },
   { key: "recovery_room", label: "Recovery Room", icon: "BedDouble", permission: "recovery.view", category: "Specialty Clinics" },
   { key: "critical_care", label: "ICU / NICU", icon: "Activity", permission: "critical_care.view", category: "Specialty Clinics" },

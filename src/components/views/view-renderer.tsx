@@ -149,6 +149,9 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   theatre: TheatreView,
   critical_care: CriticalCareView,
   specialty_clinics: SpecialtyClinicsView,
+  specialty_clinics_appointments: SpecialtyClinicsView,
+  specialty_clinics_referrals: SpecialtyClinicsView,
+  specialty_clinics_clinics: SpecialtyClinicsView,
   support_services: SupportServicesView,
   patient_relations: PatientRelationsView,
   quality_assurance: QualityAssuranceView,
@@ -232,6 +235,9 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   theatre: "theatre.view",
   critical_care: "critical_care.view",
   specialty_clinics: "specialty.view",
+  specialty_clinics_appointments: "specialty.view",
+  specialty_clinics_referrals: "specialty.view",
+  specialty_clinics_clinics: "specialty.view",
   support_services: "support_services.view",
   patient_relations: "patient_relations.view",
   quality_assurance: "qa.view",
@@ -256,6 +262,7 @@ export function ViewRenderer({ view }: { view: ViewKey }) {
 
   // Blood Bank views pass the view key as initialTab
   const isBloodBankView = view === "blood_donors" || view === "blood_units" || view === "blood_transfusions";
+  const isSpecialtyClinicsView = view === "specialty_clinics" || view === "specialty_clinics_appointments" || view === "specialty_clinics_referrals" || view === "specialty_clinics_clinics";
 
   const requiredPerm = PERMISSION_MAP[view];
   if (requiredPerm && !isSuperAdmin && !userPermissions.includes(requiredPerm)) {
@@ -277,6 +284,9 @@ export function ViewRenderer({ view }: { view: ViewKey }) {
   const ViewComponent = VIEW_MAP[view] || DashboardView;
   if (isBloodBankView) {
     return <BloodBankView initialTab={view} />;
+  }
+  if (isSpecialtyClinicsView) {
+    return <SpecialtyClinicsView initialTab={view} />;
   }
   return <ViewComponent />;
 }

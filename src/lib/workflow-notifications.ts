@@ -60,7 +60,10 @@ export type WorkflowEvent =
   | "it_ticket_resolved"
   | "home_care_visit_scheduled"
   | "home_care_visit_completed"
-  | "community_outreach_scheduled";
+  | "community_outreach_scheduled"
+  | "specialty_encounter_completed"
+  | "specialty_appointment_scheduled"
+  | "specialty_referral_received";
 
 // Permission code → recipient role mapping
 // When an event fires, we look up users with these permissions in the same facility
@@ -109,6 +112,9 @@ const RECIPIENT_PERMISSIONS: Record<WorkflowEvent, string[]> = {
   home_care_visit_scheduled: ["home_care.view", "home_care.manage"],
   home_care_visit_completed: ["clinical.view", "home_care.view"],
   community_outreach_scheduled: ["community_health.view", "community_health.manage"],
+  specialty_encounter_completed: ["specialty.view", "specialty.manage"],
+  specialty_appointment_scheduled: ["specialty.view", "specialty.appointments"],
+  specialty_referral_received: ["specialty.view", "specialty.referrals", "specialty.manage"],
 };
 
 type NotifyParams = {
@@ -718,6 +724,84 @@ export async function notifySpecialtyEncounterCreated(opts: {
     referenceType: "specialty_encounter",
     referenceId: opts.encounterId,
     directRecipientIds: opts.clinicianId ? [opts.clinicianId] : [],
+  });
+}
+
+export async function notifySpecialtyEncounterCompleted(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  encounterNumber: string;
+  patientName: string;
+  departmentCode: string;
+  diagnosis?: string | null;
+  encounterId: string;
+  followUpDate?: Date | null;
+  clinicianId?: string;
+}) {
+  const specialtyLabel = opts.departmentCode.replace(/_/g, " ");
+  const followUpNote = opts.followUpDate
+    ? ` · Follow-up: ${new Date(opts.followUpDate).toLocaleDateString()}`
+    : "";
+  return sendWorkflowNotification({
+    event: "specialty_encounter_completed",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `✅ ${specialtyLabel} Encounter Completed: ${opts.encounterNumber}`,
+    message: `${opts.patientName} — ${(opts.diagnosis || "No diagnosis recorded").slice(0, 100)}${followUpNote}`,
+    referenceType: "specialty_encounter",
+    referenceId: opts.encounterId,
+    directRecipientIds: opts.clinicianId ? [opts.clinicianId] : [],
+  });
+}
+
+export async function notifySpecialtyAppointmentScheduled(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  appointmentNumber: string;
+  patientName: string;
+  departmentCode: string;
+  appointmentDate: Date;
+  startTime?: string | null;
+  clinicianId?: string;
+  appointmentId: string;
+}) {
+  const specialtyLabel = opts.departmentCode.replace(/_/g, " ");
+  const dateStr = new Date(opts.appointmentDate).toLocaleDateString(undefined, {
+    weekday: "short", month: "short", day: "numeric",
+  });
+  return sendWorkflowNotification({
+    event: "specialty_appointment_scheduled",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📅 ${specialtyLabel} Appointment: ${opts.appointmentNumber}`,
+    message: `${opts.patientName} — ${dateStr}${opts.startTime ? ` @ ${opts.startTime}` : ""}`,
+    referenceType: "specialty_appointment",
+    referenceId: opts.appointmentId,
+    directRecipientIds: opts.clinicianId ? [opts.clinicianId] : [],
+  });
+}
+
+export async function notifySpecialtyReferralReceived(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  referralNumber: string;
+  patientName: string;
+  toDepartmentCode: string;
+  fromDepartment?: string | null;
+  reason: string;
+  urgency: string;
+  referralId: string;
+}) {
+  const specialtyLabel = opts.toDepartmentCode.replace(/_/g, " ");
+  const urgencyIcon = opts.urgency === "emergency" ? "🚨" : opts.urgency === "urgent" ? "⚠️" : "📨";
+  return sendWorkflowNotification({
+    event: "specialty_referral_received",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `${urgencyIcon} ${specialtyLabel} Referral: ${opts.referralNumber}`,
+    message: `${opts.patientName} from ${opts.fromDepartment || "OPD"} — ${opts.reason.slice(0, 100)}`,
+    referenceType: "specialty_referral",
+    referenceId: opts.referralId,
   });
 }
 

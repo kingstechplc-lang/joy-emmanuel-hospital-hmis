@@ -1,14 +1,14 @@
 // =====================================================================
-// API: /api/specialty
-//   GET  — list records (filter by facility, status, etc.)
-//   POST — create a new record
+// API: /api/specialty/appointments
+//   GET  — list appointments (filter by facility, date, status, department)
+//   POST — create a new appointment
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
-import { notifySpecialtyEncounterCreated } from "@/lib/workflow-notifications";
+import { notifySpecialtyAppointmentScheduled } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -21,10 +21,14 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId");
-  const search = url.searchParams.get("search");
+  const departmentCode = url.searchParams.get("departmentCode");
+  const status = url.searchParams.get("status");
+  const date = url.searchParams.get("date"); // YYYY-MM-DD
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
+  const patientId = url.searchParams.get("patientId");
   const limit = parseInt(url.searchParams.get("limit") || "200");
 
-  // Scope to user's facilities
   const orgFacilities = await db.facility.findMany({
     where: { organizationId: session.user.organizationId },
     select: { id: true },
@@ -37,43 +41,23 @@ export async function GET(req: Request) {
   } else {
     where.facilityId = { in: orgFacilityIds };
   }
-
-  // Apply filter params from URL (any param other than facilityId/search/limit)
-  for (const [k, v] of url.searchParams.entries()) {
-    if (["facilityId", "search", "limit"].includes(k)) continue;
-    if (v && v !== "all") {
-      if (k === "isActive") {
-        where[k] = v === "true";
-      } else {
-        where[k] = v;
-      }
-    }
+  if (departmentCode) where.departmentCode = departmentCode;
+  if (status) where.status = status;
+  if (patientId) where.patientId = patientId;
+  if (date) {
+    const dayStart = new Date(date + "T00:00:00");
+    const dayEnd = new Date(date + "T23:59:59");
+    where.appointmentDate = { gte: dayStart, lte: dayEnd };
+  } else if (from || to) {
+    where.appointmentDate = {};
+    if (from) where.appointmentDate.gte = new Date(from);
+    if (to) where.appointmentDate.lte = new Date(to);
   }
 
-  if (search) {
-    where.OR = [
-      { encounterNumber: { contains: search, mode: "insensitive" } },
-      { patientName: { contains: search, mode: "insensitive" } },
-      { chiefComplaint: { contains: search, mode: "insensitive" } },
-      { diagnosis: { contains: search, mode: "insensitive" } },
-      { clinicianName: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
-  const items = await db.specialtyEncounter.findMany({
+  const items = await db.specialtyAppointment.findMany({
     where,
-    orderBy: [{ createdAt: "desc" }],
+    orderBy: [{ appointmentDate: "asc" }, { startTime: "asc" }],
     take: limit,
-    include: {
-      procedures: {
-        orderBy: { startedAt: "desc" },
-        take: 20,
-      },
-      notes: {
-        orderBy: { authoredAt: "desc" },
-        take: 20,
-      },
-    },
   });
 
   return NextResponse.json({ items, count: items.length });
@@ -82,7 +66,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.SPECIALTY_MANAGE)) {
+  if (!hasPermission(session, PERMISSIONS.SPECIALTY_APPOINTMENTS) && !hasPermission(session, PERMISSIONS.SPECIALTY_MANAGE)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -94,12 +78,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
 
-  // Validate required fields
-  if (body.patientName === undefined || body.patientName === "" || body.patientName === null || body.departmentCode === undefined || body.departmentCode === "" || body.departmentCode === null || body.chiefComplaint === undefined || body.chiefComplaint === "" || body.chiefComplaint === null) {
-    return NextResponse.json({ error: "Missing required fields: patientName, departmentCode, chiefComplaint" }, { status: 400 });
+  if (!body.patientName || !body.departmentCode || !body.appointmentDate) {
+    return NextResponse.json({ error: "Missing required fields: patientName, departmentCode, appointmentDate" }, { status: 400 });
   }
 
-  // Validate facility scope
   let resolvedFacilityId = body.facilityId || session.user.facilityId || null;
   if (resolvedFacilityId) {
     const f = await db.facility.findUnique({ where: { id: resolvedFacilityId } });
@@ -108,18 +90,22 @@ export async function POST(req: Request) {
     }
   }
 
-  // Strip protected fields from body before passing to prisma.create
-  const { id: _id, organizationId: _orgId, createdAt: _c, updatedAt: _u, createdById: _cb, facilityId: _fId, ...createData } = body;
+  const { id: _id, organizationId: _orgId, createdAt: _c, updatedAt: _u, createdById: _cb, facilityId: _fId, encounterId: _eId, ...createData } = body;
   const year = new Date().getFullYear();
-  const count = await db.specialtyEncounter.count({ where: { organizationId: session.user.organizationId } });
-  const encounterNumber = `SPC-${year}-${String(count + 1).padStart(6, "0")}`;
+  const count = await db.specialtyAppointment.count({ where: { organizationId: session.user.organizationId } });
+  const appointmentNumber = `SPA-${year}-${String(count + 1).padStart(6, "0")}`;
 
-  const item = await db.specialtyEncounter.create({
+  // Normalize appointmentDate to ISO
+  if (typeof createData.appointmentDate === "string") {
+    createData.appointmentDate = new Date(createData.appointmentDate);
+  }
+
+  const item = await db.specialtyAppointment.create({
     data: {
       ...createData,
       organizationId: session.user.organizationId,
       facilityId: resolvedFacilityId,
-      encounterNumber,
+      appointmentNumber,
       createdById: session.user.id,
     },
   });
@@ -128,21 +114,22 @@ export async function POST(req: Request) {
     userId: session.user.id,
     organizationId: session.user.organizationId,
     facilityId: resolvedFacilityId || undefined,
-    action: "SPECIALTY_ENCOUNTER_CREATED",
-    resourceType: "specialtyEncounter",
+    action: "SPECIALTY_APPOINTMENT_CREATED",
+    resourceType: "specialtyAppointment",
     resourceId: item.id,
   });
 
-  // 🔔 Fire workflow notification to specialty clinicians
-  await notifySpecialtyEncounterCreated({
+  // 🔔 Fire workflow notification
+  await notifySpecialtyAppointmentScheduled({
     organizationId: session.user.organizationId,
     facilityId: resolvedFacilityId,
-    encounterNumber: item.encounterNumber,
+    appointmentNumber: item.appointmentNumber,
     patientName: item.patientName,
     departmentCode: item.departmentCode,
-    chiefComplaint: item.chiefComplaint,
-    encounterId: item.id,
+    appointmentDate: item.appointmentDate,
+    startTime: item.startTime,
     clinicianId: item.clinicianId || undefined,
+    appointmentId: item.id,
   });
 
   return NextResponse.json({ item }, { status: 201 });

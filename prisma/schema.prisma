@@ -2566,10 +2566,157 @@ model SpecialtyEncounter {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  procedures      SpecialtyProcedure[]
+  notes           SpecialtyClinicalNote[]
+
   @@index([organizationId, facilityId])
   @@index([departmentCode])
   @@index([patientId])
   @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// SPECIALTY CLINICS — Clinic configuration, appointments, procedures,
+// clinical notes, and referrals. Companion tables to SpecialtyEncounter.
+// ---------------------------------------------------------------------
+model SpecialtyClin {
+  id                String   @id @default(cuid())
+  organizationId    String
+  facilityId        String?
+  code              String   // DENTAL | OPHTH | ENT | PHYSIO | PSYCH | DERM | CARDIO | NEURO | ORTHO | URO | ENDO | PAED
+  name              String
+  description       String?
+  leadClinicianId   String?
+  leadClinicianName String?
+  location          String?  // room / suite number
+  clinicDays        String?  // JSON array: ["MON","WED","FRI"]
+  startTime         String?  // "08:00"
+  endTime           String?  // "13:00"
+  slotDurationMin   Int      @default(30)
+  maxDailyBookings  Int      @default(20)
+  color             String?  // hex color for UI
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, facilityId])
+}
+
+model SpecialtyAppointment {
+  id                String   @id @default(cuid())
+  organizationId    String
+  facilityId        String?
+  appointmentNumber String   @unique
+  patientId         String?
+  patientName       String
+  patientAge        Int?
+  patientSex        String?
+  patientPhone      String?
+  departmentCode    String
+  clinicId          String?
+  clinicianId       String?
+  clinicianName     String?
+  appointmentDate   DateTime
+  startTime         String?  // "09:00"
+  endTime           String?  // "09:30"
+  type              String   @default("new") // new | follow_up | review | procedure
+  reason            String?
+  status            String   @default("scheduled") // scheduled | checked_in | in_consult | completed | cancelled | no_show
+  source            String   @default("walk_in") // walk_in | referral | online | phone
+  referralFrom      String?
+  notes             String?
+  checkedInAt       DateTime?
+  completedAt       DateTime?
+  encounterId       String?  // link to resulting specialty encounter
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([departmentCode, appointmentDate])
+  @@index([patientId])
+  @@index([status])
+  @@index([clinicId])
+}
+
+model SpecialtyProcedure {
+  id                      String   @id @default(cuid())
+  organizationId          String
+  facilityId              String?
+  specialtyEncounterId    String
+  specialtyEncounter      SpecialtyEncounter @relation(fields: [specialtyEncounterId], references: [id], onDelete: Cascade)
+  procedureName           String
+  procedureCode           String?
+  bodySite                String?
+  laterality              String?  // left | right | bilateral | n/a
+  performedById           String?
+  performedByName         String?
+  assistedBy              String?
+  startedAt               DateTime @default(now())
+  endedAt                 DateTime?
+  durationMin             Int?
+  findings                String?
+  complications           String?
+  anesthesiaType          String?  // local | general | sedation | topical | none
+  specimenSent            Boolean  @default(false)
+  specimenLabel           String?
+  status                  String   @default("in_progress") // in_progress | completed | aborted
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([organizationId, specialtyEncounterId])
+  @@index([status])
+}
+
+model SpecialtyClinicalNote {
+  id                      String   @id @default(cuid())
+  organizationId          String
+  specialtyEncounterId    String
+  specialtyEncounter      SpecialtyEncounter @relation(fields: [specialtyEncounterId], references: [id], onDelete: Cascade)
+  noteType                String   @default("addendum") // addendum | nursing | observation | phone_call | handover
+  content                 String
+  authoredById            String?
+  authoredByName          String?
+  authoredAt              DateTime @default(now())
+  createdAt               DateTime @default(now())
+
+  @@index([specialtyEncounterId])
+  @@index([organizationId])
+}
+
+model SpecialtyReferral {
+  id                String   @id @default(cuid())
+  organizationId    String
+  facilityId        String?
+  referralNumber    String   @unique
+  patientId         String?
+  patientName       String
+  patientAge        Int?
+  patientSex        String?
+  patientPhone      String?
+  fromDepartment    String?  // referring dept (e.g., OPD, ER)
+  toDepartmentCode  String   // specialty code (CARDIO, DERM, etc.)
+  fromClinicianId   String?
+  fromClinicianName String?
+  toClinicianId     String?
+  toClinicianName   String?
+  reason            String
+  clinicalSummary   String?
+  urgency           String   @default("routine") // routine | urgent | emergency
+  status            String   @default("pending") // pending | accepted | scheduled | completed | declined
+  referralDate      DateTime @default(now())
+  responseDate      DateTime?
+  responseNotes     String?
+  encounterId       String?  // resulting specialty encounter
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId, toDepartmentCode])
+  @@index([status])
+  @@index([patientId])
 }
 
 // ---------------------------------------------------------------------
