@@ -809,21 +809,34 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 // =====================================================================
-// EDIT PATIENT DIALOG — edit biographic/demographic information
+// EDIT PATIENT DIALOG — comprehensive edit matching registration form
+// Handles: personal info, contact, address, emergency contact, next of kin,
+// insurance (NHIS), identifiers (Ghana Card, passport)
 // =====================================================================
 function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClose: () => void; onSaved: () => void }) {
   const [saving, setSaving] = useState(false);
+
+  // Extract existing sub-records
+  const existingEC = patient.emergencyContacts?.[0] || {};
+  const existingNOK = patient.nextOfKin?.[0] || {};
+  const existingIns = patient.insurance?.[0] || {};
+  const existingGhanaCard = patient.identifiers?.find((i: any) => i.identifierType === "ghana_card")?.identifierValue || "";
+  const existingPassport = patient.identifiers?.find((i: any) => i.identifierType === "passport")?.identifierValue || "";
+
   const [form, setForm] = useState({
+    // Personal
     firstName: patient.firstName || "",
     middleName: patient.middleName || "",
     lastName: patient.lastName || "",
     previousName: patient.previousName || "",
     dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().slice(0, 10) : "",
-    sex: patient.sex || "unknown",
-    gender: patient.gender || "",
+    sex: patient.sex || "",
     maritalStatus: patient.maritalStatus || "",
     nationality: patient.nationality || "Ghanaian",
     occupation: patient.occupation || "",
+    bloodGroup: patient.bloodGroup || "",
+    preferredLanguage: patient.preferredLanguage || "en",
+    // Contact
     phone: patient.phone || "",
     alternativePhone: patient.alternativePhone || "",
     email: patient.email || "",
@@ -831,8 +844,25 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
     city: patient.city || "",
     region: patient.region || "",
     country: patient.country || "Ghana",
-    preferredLanguage: patient.preferredLanguage || "English",
-    bloodGroup: patient.bloodGroup || "",
+    // Emergency Contact
+    emergencyContactName: existingEC.name || "",
+    emergencyContactRelationship: existingEC.relationship || "",
+    emergencyContactPhone: existingEC.phone || "",
+    // Next of Kin
+    nextOfKinName: existingNOK.name || "",
+    nextOfKinRelationship: existingNOK.relationship || "",
+    nextOfKinPhone: existingNOK.phone || "",
+    // Insurance
+    membershipNumber: existingIns.membershipNumber || "",
+    policyNumber: existingIns.policyNumber || "",
+    principalMember: existingIns.principalMember || "",
+    relationshipToPrincipal: existingIns.relationshipToPrincipal || "self",
+    coverageStart: existingIns.coverageStart ? new Date(existingIns.coverageStart).toISOString().slice(0, 10) : "",
+    coverageEnd: existingIns.coverageEnd ? new Date(existingIns.coverageEnd).toISOString().slice(0, 10) : "",
+    // Identifiers
+    ghanaCard: existingGhanaCard,
+    passport: existingPassport,
+    // Status
     status: patient.status || "active",
   });
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
@@ -844,10 +874,54 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
     }
     setSaving(true);
     try {
+      const payload = {
+        // Core patient fields
+        firstName: form.firstName,
+        middleName: form.middleName || null,
+        lastName: form.lastName,
+        previousName: form.previousName || null,
+        dateOfBirth: form.dateOfBirth || null,
+        sex: form.sex || null,
+        maritalStatus: form.maritalStatus || null,
+        nationality: form.nationality || null,
+        occupation: form.occupation || null,
+        bloodGroup: form.bloodGroup || null,
+        preferredLanguage: form.preferredLanguage || null,
+        phone: form.phone || null,
+        alternativePhone: form.alternativePhone || null,
+        email: form.email || null,
+        address: form.address || null,
+        city: form.city || null,
+        region: form.region || null,
+        country: form.country || null,
+        status: form.status,
+        // Sub-records
+        emergencyContact: form.emergencyContactName
+          ? { name: form.emergencyContactName, relationship: form.emergencyContactRelationship, phone: form.emergencyContactPhone }
+          : null,
+        nextOfKin: form.nextOfKinName
+          ? { name: form.nextOfKinName, relationship: form.nextOfKinRelationship, phone: form.nextOfKinPhone }
+          : null,
+        insurance: form.membershipNumber || form.policyNumber
+          ? {
+              membershipNumber: form.membershipNumber,
+              policyNumber: form.policyNumber,
+              principalMember: form.principalMember,
+              relationshipToPrincipal: form.relationshipToPrincipal,
+              coverageStart: form.coverageStart || null,
+              coverageEnd: form.coverageEnd || null,
+            }
+          : null,
+        identifier: {
+          ghanaCard: form.ghanaCard,
+          passport: form.passport,
+        },
+      };
+
       const res = await fetch(`/api/patients/${patient.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await safeJson(res);
@@ -864,7 +938,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Edit className="w-5 h-5 text-emerald-600" />
@@ -879,7 +953,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
 
         <div className="space-y-4">
           {/* Personal Information */}
-          <div>
+          <div className="border border-slate-200 rounded-lg p-3">
             <h4 className="text-sm font-semibold text-slate-700 mb-2">Personal Information</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div><Label>First Name *</Label><Input value={form.firstName} onChange={(e) => set("firstName", e.target.value)} /></div>
@@ -889,8 +963,8 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
               <div><Label>Date of Birth</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} /></div>
               <div>
                 <Label>Sex</Label>
-                <Select value={form.sex} onValueChange={(v) => set("sex", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={form.sex || undefined} onValueChange={(v) => set("sex", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
@@ -899,26 +973,25 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Gender (optional)</Label><Input value={form.gender} onChange={(e) => set("gender", e.target.value)} placeholder="e.g., Male, Female, Non-binary" /></div>
               <div>
                 <Label>Marital Status</Label>
-                <Select value={form.maritalStatus || "undefined"} onValueChange={(v) => set("maritalStatus", v === "undefined" ? "" : v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={form.maritalStatus || undefined} onValueChange={(v) => set("maritalStatus", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="undefined">—</SelectItem>
                     <SelectItem value="single">Single</SelectItem>
                     <SelectItem value="married">Married</SelectItem>
                     <SelectItem value="divorced">Divorced</SelectItem>
                     <SelectItem value="widowed">Widowed</SelectItem>
-                    <SelectItem value="separated">Separated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Blood Group</Label>
-                <Select value={form.bloodGroup || "undefined"} onValueChange={(v) => set("bloodGroup", v === "undefined" ? "" : v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+              <div><Label>Nationality</Label><Input value={form.nationality} onChange={(e) => set("nationality", e.target.value)} /></div>
+              <div><Label>Occupation</Label><Input value={form.occupation} onChange={(e) => set("occupation", e.target.value)} /></div>
+              <div>
+                <Label>Blood Group</Label>
+                <Select value={form.bloodGroup || undefined} onValueChange={(v) => set("bloodGroup", v)}>
+                  <SelectTrigger><SelectValue placeholder="Unknown" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="undefined">—</SelectItem>
                     <SelectItem value="A+">A+</SelectItem>
                     <SelectItem value="A-">A-</SelectItem>
                     <SelectItem value="B+">B+</SelectItem>
@@ -930,37 +1003,20 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="border-t pt-3">
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">Contact Information</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="e.g., 0241234567" /></div>
-              <div><Label>Alternative Phone</Label><Input value={form.alternativePhone} onChange={(e) => set("alternativePhone", e.target.value)} /></div>
-              <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></div>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="border-t pt-3">
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">Address</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="col-span-2 md:col-span-3"><Label>Address</Label><Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Street / House number" /></div>
-              <div><Label>City</Label><Input value={form.city} onChange={(e) => set("city", e.target.value)} /></div>
-              <div><Label>Region</Label><Input value={form.region} onChange={(e) => set("region", e.target.value)} placeholder="e.g., Greater Accra" /></div>
-              <div><Label>Country</Label><Input value={form.country} onChange={(e) => set("country", e.target.value)} /></div>
-            </div>
-          </div>
-
-          {/* Other */}
-          <div className="border-t pt-3">
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">Other Information</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div><Label>Nationality</Label><Input value={form.nationality} onChange={(e) => set("nationality", e.target.value)} /></div>
-              <div><Label>Occupation</Label><Input value={form.occupation} onChange={(e) => set("occupation", e.target.value)} /></div>
-              <div><Label>Preferred Language</Label><Input value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} /></div>
+              <div>
+                <Label>Preferred Language</Label>
+                <Select value={form.preferredLanguage || undefined} onValueChange={(v) => set("preferredLanguage", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="tw">Twi</SelectItem>
+                    <SelectItem value="ga">Ga</SelectItem>
+                    <SelectItem value="ee">Ewe</SelectItem>
+                    <SelectItem value="ha">Hausa</SelectItem>
+                    <SelectItem value="dag">Dagbani</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Patient Status</Label>
                 <Select value={form.status} onValueChange={(v) => set("status", v)}>
@@ -973,6 +1029,83 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="border border-slate-200 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Contact Information</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="e.g. 024 123 4567" /></div>
+              <div><Label>Alternative Phone</Label><Input value={form.alternativePhone} onChange={(e) => set("alternativePhone", e.target.value)} /></div>
+              <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Address */}
+          <div className="border border-slate-200 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Address</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="col-span-2 md:col-span-3"><Label>Address</Label><Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Street / House number" /></div>
+              <div><Label>City / Town</Label><Input value={form.city} onChange={(e) => set("city", e.target.value)} /></div>
+              <div><Label>Region</Label><Input value={form.region} onChange={(e) => set("region", e.target.value)} placeholder="e.g., Greater Accra" /></div>
+              <div><Label>Country</Label><Input value={form.country} onChange={(e) => set("country", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Emergency Contact */}
+          <div className="border border-slate-200 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Emergency Contact</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>Full Name</Label><Input value={form.emergencyContactName} onChange={(e) => set("emergencyContactName", e.target.value)} /></div>
+              <div><Label>Relationship</Label><Input value={form.emergencyContactRelationship} onChange={(e) => set("emergencyContactRelationship", e.target.value)} placeholder="e.g. Parent, Spouse" /></div>
+              <div><Label>Phone</Label><Input value={form.emergencyContactPhone} onChange={(e) => set("emergencyContactPhone", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Next of Kin */}
+          <div className="border border-slate-200 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Next of Kin</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>Full Name</Label><Input value={form.nextOfKinName} onChange={(e) => set("nextOfKinName", e.target.value)} /></div>
+              <div><Label>Relationship</Label><Input value={form.nextOfKinRelationship} onChange={(e) => set("nextOfKinRelationship", e.target.value)} /></div>
+              <div><Label>Phone</Label><Input value={form.nextOfKinPhone} onChange={(e) => set("nextOfKinPhone", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Insurance */}
+          <div className="border border-slate-200 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Insurance Information (NHIS)</h4>
+            <p className="text-[10px] text-slate-500 mb-2">NHIS or private insurance membership details.</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>Membership / Insurance Number</Label><Input value={form.membershipNumber} onChange={(e) => set("membershipNumber", e.target.value)} /></div>
+              <div><Label>Policy Number</Label><Input value={form.policyNumber} onChange={(e) => set("policyNumber", e.target.value)} /></div>
+              <div><Label>Principal Member</Label><Input value={form.principalMember} onChange={(e) => set("principalMember", e.target.value)} placeholder="Self or name of principal" /></div>
+              <div>
+                <Label>Relationship to Principal</Label>
+                <Select value={form.relationshipToPrincipal || undefined} onValueChange={(v) => set("relationshipToPrincipal", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self">Self</SelectItem>
+                    <SelectItem value="spouse">Spouse</SelectItem>
+                    <SelectItem value="child">Child</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Coverage Start</Label><Input type="date" value={form.coverageStart} onChange={(e) => set("coverageStart", e.target.value)} /></div>
+              <div><Label>Coverage End</Label><Input type="date" value={form.coverageEnd} onChange={(e) => set("coverageEnd", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Identifiers */}
+          <div className="border border-slate-200 rounded-lg p-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Identifiers</h4>
+            <p className="text-[10px] text-slate-500 mb-2">Ghana Card is used for duplicate detection across the organization.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Ghana Card Number</Label><Input value={form.ghanaCard} onChange={(e) => set("ghanaCard", e.target.value)} placeholder="e.g. GHA-123456789-0" /></div>
+              <div><Label>Passport Number</Label><Input value={form.passport} onChange={(e) => set("passport", e.target.value)} /></div>
             </div>
           </div>
         </div>

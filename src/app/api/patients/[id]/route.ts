@@ -170,6 +170,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     registrationDate: _rd,
     createdAt: _c,
     updatedAt: _u,
+    // Sub-records handled separately
+    emergencyContact: emergencyContactData,
+    nextOfKin: nextOfKinData,
+    insurance: insuranceData,
+    identifier: identifierData,
     ...updateData
   } = body;
 
@@ -192,6 +197,166 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id },
     data: updateData,
   });
+
+  // ---- Upsert Emergency Contact (first record) ----
+  if (emergencyContactData !== undefined) {
+    const existingEC = await db.emergencyContact.findFirst({ where: { patientId: id } });
+    if (emergencyContactData === null) {
+      // Delete if null
+      if (existingEC) await db.emergencyContact.delete({ where: { id: existingEC.id } });
+    } else if (existingEC) {
+      // Update
+      await db.emergencyContact.update({
+        where: { id: existingEC.id },
+        data: {
+          name: emergencyContactData.name || existingEC.name,
+          relationship: emergencyContactData.relationship || existingEC.relationship,
+          phone: emergencyContactData.phone ?? existingEC.phone,
+          address: emergencyContactData.address ?? existingEC.address,
+        },
+      });
+    } else if (emergencyContactData.name) {
+      // Create
+      await db.emergencyContact.create({
+        data: {
+          patientId: id,
+          name: emergencyContactData.name,
+          relationship: emergencyContactData.relationship || null,
+          phone: emergencyContactData.phone || null,
+          address: emergencyContactData.address || null,
+        },
+      });
+    }
+  }
+
+  // ---- Upsert Next of Kin (first record) ----
+  if (nextOfKinData !== undefined) {
+    const existingNOK = await db.nextOfKin.findFirst({ where: { patientId: id } });
+    if (nextOfKinData === null) {
+      if (existingNOK) await db.nextOfKin.delete({ where: { id: existingNOK.id } });
+    } else if (existingNOK) {
+      await db.nextOfKin.update({
+        where: { id: existingNOK.id },
+        data: {
+          name: nextOfKinData.name || existingNOK.name,
+          relationship: nextOfKinData.relationship || existingNOK.relationship,
+          phone: nextOfKinData.phone ?? existingNOK.phone,
+          email: nextOfKinData.email ?? existingNOK.email,
+          address: nextOfKinData.address ?? existingNOK.address,
+        },
+      });
+    } else if (nextOfKinData.name) {
+      await db.nextOfKin.create({
+        data: {
+          patientId: id,
+          name: nextOfKinData.name,
+          relationship: nextOfKinData.relationship || null,
+          phone: nextOfKinData.phone || null,
+          email: nextOfKinData.email || null,
+          address: nextOfKinData.address || null,
+        },
+      });
+    }
+  }
+
+  // ---- Upsert Insurance (first record) ----
+  if (insuranceData !== undefined) {
+    const existingIns = await db.patientInsurance.findFirst({ where: { patientId: id } });
+    if (insuranceData === null) {
+      if (existingIns) await db.patientInsurance.delete({ where: { id: existingIns.id } });
+    } else if (existingIns) {
+      await db.patientInsurance.update({
+        where: { id: existingIns.id },
+        data: {
+          membershipNumber: insuranceData.membershipNumber ?? existingIns.membershipNumber,
+          policyNumber: insuranceData.policyNumber ?? existingIns.policyNumber,
+          principalMember: insuranceData.principalMember ?? existingIns.principalMember,
+          relationshipToPrincipal: insuranceData.relationshipToPrincipal ?? existingIns.relationshipToPrincipal,
+          coverageStart: insuranceData.coverageStart ? new Date(insuranceData.coverageStart) : existingIns.coverageStart,
+          coverageEnd: insuranceData.coverageEnd ? new Date(insuranceData.coverageEnd) : existingIns.coverageEnd,
+          insuranceProviderId: insuranceData.insuranceProviderId || existingIns.insuranceProviderId,
+        },
+      });
+    } else if (insuranceData.membershipNumber || insuranceData.insuranceProviderId) {
+      // Only create if we have at least a provider or membership number
+      // Need to find an NHIS provider if not specified
+      let providerId = insuranceData.insuranceProviderId;
+      if (!providerId) {
+        const nhisProvider = await db.insuranceProvider.findFirst({
+          where: { OR: [
+            { code: { contains: "NHIS", mode: "insensitive" } },
+            { name: { contains: "NHIS", mode: "insensitive" } },
+          ] },
+        });
+        providerId = nhisProvider?.id;
+      }
+      if (providerId) {
+        await db.patientInsurance.create({
+          data: {
+            patientId: id,
+            insuranceProviderId: providerId,
+            membershipNumber: insuranceData.membershipNumber || null,
+            policyNumber: insuranceData.policyNumber || null,
+            principalMember: insuranceData.principalMember || null,
+            relationshipToPrincipal: insuranceData.relationshipToPrincipal || "self",
+            coverageStart: insuranceData.coverageStart ? new Date(insuranceData.coverageStart) : null,
+            coverageEnd: insuranceData.coverageEnd ? new Date(insuranceData.coverageEnd) : null,
+            status: "active",
+          },
+        });
+      }
+    }
+  }
+
+  // ---- Upsert Identifiers (Ghana Card + Passport) ----
+  if (identifierData !== undefined) {
+    // Ghana Card
+    if (identifierData.ghanaCard !== undefined) {
+      const existingGC = await db.patientIdentifier.findFirst({
+        where: { patientId: id, identifierType: "ghana_card" },
+      });
+      if (identifierData.ghanaCard === "" || identifierData.ghanaCard === null) {
+        if (existingGC) await db.patientIdentifier.delete({ where: { id: existingGC.id } });
+      } else if (existingGC) {
+        await db.patientIdentifier.update({
+          where: { id: existingGC.id },
+          data: { identifierValue: identifierData.ghanaCard },
+        });
+      } else {
+        await db.patientIdentifier.create({
+          data: {
+            patientId: id,
+            identifierType: "ghana_card",
+            identifierValue: identifierData.ghanaCard,
+            isPrimary: true,
+          },
+        });
+      }
+    }
+    // Passport
+    if (identifierData.passport !== undefined) {
+      const existingPP = await db.patientIdentifier.findFirst({
+        where: { patientId: id, identifierType: "passport" },
+      });
+      if (identifierData.passport === "" || identifierData.passport === null) {
+        if (existingPP) await db.patientIdentifier.delete({ where: { id: existingPP.id } });
+      } else if (existingPP) {
+        await db.patientIdentifier.update({
+          where: { id: existingPP.id },
+          data: { identifierValue: identifierData.passport },
+        });
+      } else {
+        await db.patientIdentifier.create({
+          data: {
+            patientId: id,
+            identifierType: "passport",
+            identifierValue: identifierData.passport,
+            isPrimary: false,
+          },
+        });
+      }
+    }
+  }
 
   await auditLog({
     userId: session.user.id,

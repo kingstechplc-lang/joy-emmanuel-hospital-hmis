@@ -118,7 +118,7 @@ export function AppShell() {
   };
 
   const handleFacilityChange = (id: string) => {
-    if (id === "all") {
+    if (id === "__all__") {
       setActiveFacility(null);
       toast.success("Switched to All Facilities");
     } else {
@@ -188,17 +188,17 @@ export function AppShell() {
           <div className="flex items-center gap-2">
             {/* Facility Switcher */}
             {facilities.length > 0 && (
-              <Select value={activeFacilityId || "all"} onValueChange={handleFacilityChange}>
+              <Select value={activeFacilityId || "__all__"} onValueChange={handleFacilityChange}>
                 <SelectTrigger className="w-44 hidden md:flex border-slate-200 hover:border-rose-300">
                   <div className="flex items-center gap-2 truncate">
                     <Hospital className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span className="truncate text-sm font-medium text-slate-700">
+                    <SelectValue placeholder="All Facilities">
                       {activeFacility ? activeFacility.code : "All Facilities"}
-                    </span>
+                    </SelectValue>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Facilities</SelectItem>
+                  <SelectItem value="__all__">All Facilities</SelectItem>
                   {facilities.map((f: any) => (
                     <SelectItem key={f.id} value={f.id}>
                       <div className="flex flex-col">
