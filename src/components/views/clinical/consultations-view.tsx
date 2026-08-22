@@ -15,6 +15,7 @@ import { Plus, ClipboardList, PenSquare, Save, Check, X, Lock, Share2, Eye } fro
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
+import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -367,6 +368,21 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
           <Field label="Review of Systems" value={editable.reviewOfSystems || ""} onChange={(v) => setField("reviewOfSystems", v)} multiline />
           <Field label="Physical Examination" value={editable.physicalExamination || ""} onChange={(v) => setField("physicalExamination", v)} multiline />
           <Field label="Assessment" value={editable.assessment || ""} onChange={(v) => setField("assessment", v)} multiline />
+
+          {/* Diagnoses — Centralized Diagnosis Engine */}
+          {c.patientId && c.encounterId && (
+            <div className="border border-indigo-200 rounded-lg p-3 bg-indigo-50/30 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                <ClipboardList className="w-3.5 h-3.5" /> Diagnoses
+              </p>
+              <DiagnosisPicker
+                patientId={c.patientId}
+                encounterId={c.encounterId}
+                canManage={canEdit}
+              />
+            </div>
+          )}
+
           <Field label="Treatment Plan" value={editable.treatmentPlan || ""} onChange={(v) => setField("treatmentPlan", v)} multiline />
           <Field label="Follow-up Plan" value={editable.followUpPlan || ""} onChange={(v) => setField("followUpPlan", v)} multiline />
         </div>

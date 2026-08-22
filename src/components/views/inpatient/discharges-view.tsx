@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, LogOut, Search } from "lucide-react";
+import { Plus, LogOut, Search, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
+import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -38,6 +39,7 @@ export function DischargesView() {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
+  const [diagnosisDischarge, setDiagnosisDischarge] = useState<any | null>(null);
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
@@ -102,6 +104,7 @@ export function DischargesView() {
                     <th className="text-left p-3 font-semibold text-slate-700">Disposition</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Discharged</th>
                     <th className="text-left p-3 font-semibold text-slate-700">By</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -119,6 +122,11 @@ export function DischargesView() {
                       <td className="p-3"><StatusBadge status={d.disposition || "home"} /></td>
                       <td className="p-3 text-xs text-slate-600">{formatDate(d.dischargedAt, true)}</td>
                       <td className="p-3 text-xs text-slate-600">{d.dischargedBy?.firstName} {d.dischargedBy?.lastName}</td>
+                      <td className="p-3 text-right">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-indigo-600 hover:text-indigo-700" onClick={() => setDiagnosisDischarge(d)} title="View / Manage Diagnoses">
+                          <Stethoscope className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -129,6 +137,14 @@ export function DischargesView() {
       )}
 
       <NewDischargeDialog open={showNew} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); invalidate(); }} facilityId={activeFacilityId} />
+
+      {diagnosisDischarge && (
+        <DiagnosisDialog
+          discharge={diagnosisDischarge}
+          canManage={can("diagnosis.create")}
+          onClose={() => setDiagnosisDischarge(null)}
+        />
+      )}
     </div>
   );
 }
@@ -162,6 +178,10 @@ function NewDischargeDialog({ open, onClose, onCreated, facilityId }: { open: bo
     setPatientQuery(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
     setAdmissionId("");
   };
+
+  // Find the selected admission to get encounterId for DiagnosisPicker
+  const selectedAdmission = (admissionsData?.items || []).find((a: any) => a.id === admissionId);
+  const encounterId = selectedAdmission?.encounterId;
 
   const submit = async () => {
     if (!admissionId) { toast.error("Please select an admission to discharge"); return; }
@@ -268,12 +288,70 @@ function NewDischargeDialog({ open, onClose, onCreated, facilityId }: { open: bo
             <Label>Follow-up Plan</Label>
             <Textarea value={followUpPlan} onChange={(e) => setFollowUpPlan(e.target.value)} rows={2} placeholder="Follow-up instructions, appointment date, etc." />
           </div>
+
+          {/* Discharge Diagnoses — Centralized Diagnosis Engine */}
+          {patientId && encounterId && (
+            <div className="border border-indigo-200 rounded-lg p-3 bg-indigo-50/30 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                <Stethoscope className="w-3.5 h-3.5" /> Discharge Diagnoses (Structured)
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Record structured discharge diagnoses (principal, final, secondary) from the centralized catalog. These appear in the patient's diagnosis history and flow into reporting.
+              </p>
+              <DiagnosisPicker
+                patientId={patientId}
+                encounterId={encounterId}
+                canManage={true}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !admissionId} className="gap-2 bg-rose-600 hover:bg-rose-700">
             {saving ? "Discharging..." : <><LogOut className="w-4 h-4" /> Confirm Discharge</>}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================
+// Diagnosis Dialog — view/manage diagnoses for a discharge's encounter
+// ============================================================
+function DiagnosisDialog({ discharge, canManage, onClose }: { discharge: any; canManage: boolean; onClose: () => void }) {
+  const patientId = discharge.patientId || discharge.patient?.id;
+  const encounterId = discharge.admission?.encounterId;
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Stethoscope className="w-5 h-5 text-indigo-600" />
+            Diagnoses — {discharge.patient?.firstName} {discharge.patient?.lastName}
+          </DialogTitle>
+          <DialogDescription>
+            Discharge {discharge.admission?.admissionNumber || ""}
+            {discharge.finalDiagnosis && ` • Final Dx: ${discharge.finalDiagnosis}`}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {patientId && encounterId ? (
+            <DiagnosisPicker
+              patientId={patientId}
+              encounterId={encounterId}
+              canManage={canManage}
+            />
+          ) : (
+            <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg">
+              No linked encounter found for this discharge. Diagnoses require an encounter to attach to.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

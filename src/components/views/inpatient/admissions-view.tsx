@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, BedDouble, LogOut, Search, XCircle } from "lucide-react";
+import { Plus, BedDouble, LogOut, Search, XCircle, Stethoscope, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader} from "@/components/ui-helpers";
+import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -48,6 +49,7 @@ export function AdmissionsView() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
   const [dischargeAdmission, setDischargeAdmission] = useState<any | null>(null);
+  const [diagnosisAdmission, setDiagnosisAdmission] = useState<any | null>(null);
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
@@ -154,11 +156,16 @@ export function AdmissionsView() {
                         </td>
                         <td className="p-3"><StatusBadge status={a.status} /></td>
                         <td className="p-3 text-right">
-                          {a.status === "admitted" && can("admission.discharge") && (
-                            <Button size="sm" onClick={() => setDischargeAdmission(a)} className="gap-1 h-7 text-xs bg-rose-600 hover:bg-rose-700">
-                              <LogOut className="w-3 h-3" /> Discharge
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-indigo-600 hover:text-indigo-700" onClick={() => setDiagnosisAdmission(a)} title="View / Manage Diagnoses">
+                              <Stethoscope className="w-3.5 h-3.5" />
                             </Button>
-                          )}
+                            {a.status === "admitted" && can("admission.discharge") && (
+                              <Button size="sm" onClick={() => setDischargeAdmission(a)} className="gap-1 h-7 text-xs bg-rose-600 hover:bg-rose-700">
+                                <LogOut className="w-3 h-3" /> Discharge
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -182,6 +189,14 @@ export function AdmissionsView() {
           admission={dischargeAdmission}
           onClose={() => setDischargeAdmission(null)}
           onDone={() => { setDischargeAdmission(null); invalidate(); }}
+        />
+      )}
+
+      {diagnosisAdmission && (
+        <DiagnosisDialog
+          admission={diagnosisAdmission}
+          canManage={can("diagnosis.create")}
+          onClose={() => setDiagnosisAdmission(null)}
         />
       )}
     </div>
@@ -471,12 +486,67 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
             <Label>Follow-up Plan</Label>
             <Textarea value={followUpPlan} onChange={(e) => setFollowUpPlan(e.target.value)} rows={2} placeholder="Follow-up instructions, appointment date, etc." />
           </div>
+
+          {/* Discharge Diagnoses — Centralized Diagnosis Engine */}
+          {admission.patientId && admission.encounterId && (
+            <div className="border border-indigo-200 rounded-lg p-3 bg-indigo-50/30 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                <Stethoscope className="w-3.5 h-3.5" /> Discharge Diagnoses (Structured)
+              </p>
+              <p className="text-[10px] text-slate-500">
+                Record structured discharge diagnoses (principal, final, secondary) from the centralized catalog. These appear in the patient's diagnosis history.
+              </p>
+              <DiagnosisPicker
+                patientId={admission.patientId}
+                encounterId={admission.encounterId}
+                canManage={true}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-rose-600 hover:bg-rose-700">
             {saving ? "Discharging..." : <><XCircle className="w-4 h-4" /> Confirm Discharge</>}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================
+// Diagnosis Dialog — view/manage diagnoses for an admission's encounter
+// ============================================================
+function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; canManage: boolean; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Stethoscope className="w-5 h-5 text-indigo-600" />
+            Diagnoses — {admission.patient?.firstName} {admission.patient?.lastName}
+          </DialogTitle>
+          <DialogDescription>
+            Admission {admission.admissionNumber} • {admission.encounter?.encounterNumber || "Encounter linked"}
+            {admission.admissionDiagnosis && ` • Admission Dx: ${admission.admissionDiagnosis}`}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {admission.patientId && admission.encounterId ? (
+            <DiagnosisPicker
+              patientId={admission.patientId}
+              encounterId={admission.encounterId}
+              canManage={canManage}
+            />
+          ) : (
+            <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg">
+              This admission has no linked encounter. Diagnoses require an encounter to attach to.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
