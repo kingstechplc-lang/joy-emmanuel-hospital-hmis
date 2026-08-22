@@ -38,6 +38,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           items: { include: { service: { select: { id: true, name: true } } } },
         },
       },
+      claimDiagnoses: { include: { catalog: { select: { code: true, name: true, codeSystem: true, category: true } } } },
+      claimItems: { orderBy: { createdAt: "asc" } },
+      claimQueries: { orderBy: { queriedAt: "desc" } },
+      claimPayments: { orderBy: { paymentDate: "desc" } },
+      batch: { select: { id: true, batchNumber: true, status: true } },
     },
   });
 

@@ -498,6 +498,7 @@ model Patient {
   discharges         DischargeRecord[]
   breakGlassEvents   BreakGlassEvent[]
   accessLogs         PatientAccessLog[]
+  eligibilityVerifications EligibilityVerification[]
   mergeEventsSource  PatientMergeEvent[] @relation("mergeSource")
   mergeEventsTarget  PatientMergeEvent[] @relation("mergeTarget")
   tasks              Task[]
@@ -1702,6 +1703,7 @@ model InsuranceClaim {
   isNhisValidated     Boolean  @default(false) // passed NHIS validation checks
   nhisValidationNotes String?  // validation messages (missing ICD-10, invalid NHIS #, etc.)
   claimSubmissionRef  String?  // reference from CLAIM-it system
+  batchId             String?
   status              String   @default("draft") // draft | submitted | approved | partially_approved | rejected | paid | resubmitted
   submittedAt         DateTime?
   approvedAt          DateTime?
@@ -1711,6 +1713,10 @@ model InsuranceClaim {
   updatedAt           DateTime @updatedAt
 
   claimDiagnoses      ClaimDiagnosis[]
+  claimItems          ClaimItem[]
+  claimQueries        ClaimQuery[]
+  claimPayments       ClaimPayment[]
+  batch               ClaimBatch? @relation("claims", fields: [batchId], references: [id])
 
   @@unique([facilityId, claimNumber])
   @@index([patientId])
@@ -1737,6 +1743,128 @@ model ClaimDiagnosis {
 
   @@index([claimId])
   @@index([catalogId])
+}
+
+// ---------------------------------------------------------------------
+// CLAIM ITEMS — Structured line items per claim (services, meds, labs)
+// ---------------------------------------------------------------------
+model ClaimItem {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  itemType        String   // consultation | lab | pharmacy | imaging | procedure | bed_charge | other
+  serviceCode     String?  // NHIS/payer service code
+  description     String   // service name / description
+  serviceDate     DateTime @default(now())
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  claimedAmount   Float    @default(0)
+  approvedAmount  Float?
+  rejectedAmount  Float?
+  adjustmentReason String?
+  status          String   @default("pending") // pending | approved | rejected | adjusted
+  createdAt       DateTime @default(now())
+
+  @@index([claimId])
+  @@index([itemType])
+}
+
+// ---------------------------------------------------------------------
+// CLAIM BATCHES — Group multiple claims for batch submission
+// ---------------------------------------------------------------------
+model ClaimBatch {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  batchNumber     String   @unique
+  insuranceProviderId String
+  claimCount      Int      @default(0)
+  totalAmount     Float    @default(0)
+  status          String   @default("draft") // draft | validated | submitted | failed | accepted | rejected | partially_accepted | reconciled
+  submissionMethod String  @default("manual") // manual | electronic
+  submissionRef   String?  // external submission reference
+  submittedAt     DateTime?
+  submittedById   String?
+  submittedByName String?
+  responseReceivedAt DateTime?
+  responseNotes   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  claims          InsuranceClaim[] @relation("claims")
+
+  @@index([organizationId, facilityId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// CLAIM QUERIES — Track payer queries on claims
+// ---------------------------------------------------------------------
+model ClaimQuery {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  queryReason     String   // e.g., "Missing diagnosis", "Invalid member number"
+  queryCode       String?  // payer-specific query code
+  queriedAt       DateTime @default(now())
+  responseDeadline DateTime?
+  assignedToId    String?
+  assignedToName  String?
+  response        String?
+  responseAt      DateTime?
+  status          String   @default("open") // open | assigned | in_progress | responded | resubmitted | closed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([claimId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// CLAIM PAYMENTS — Track payer payments separately from invoice payments
+// ---------------------------------------------------------------------
+model ClaimPayment {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  paymentReference String?  // payer payment reference
+  paymentDate     DateTime @default(now())
+  amount          Float    @default(0)
+  adjustment      Float    @default(0)
+  paymentStatus   String   @default("received") // received | cleared | disputed
+  notes           String?
+  recordedById    String?
+  recordedByName  String?
+  createdAt       DateTime @default(now())
+
+  @@index([claimId])
+}
+
+// ---------------------------------------------------------------------
+// ELIGIBILITY VERIFICATION — Track NHIS/insurance eligibility checks
+// ---------------------------------------------------------------------
+model EligibilityVerification {
+  id              String   @id @default(cuid())
+  organizationId  String
+  patientId       String
+  patient         Patient @relation(fields: [patientId], references: [id])
+  insuranceProviderId String?
+  membershipNumber String?
+  verificationDate DateTime @default(now())
+  verificationStatus String @default("not_verified") // not_verified | verified | active | inactive | expired | unable_to_verify | pending
+  coverageStatus  String?  // active | expired | suspended
+  coverageStart   DateTime?
+  coverageEnd     DateTime?
+  verificationSource String @default("manual") // manual | api | card_check
+  verificationReference String?  // external reference
+  verifiedById    String?
+  verifiedByName  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([verificationStatus])
 }
 
 // ---------------------------------------------------------------------
