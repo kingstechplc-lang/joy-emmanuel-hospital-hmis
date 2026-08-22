@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Activity, Search, RefreshCw } from "lucide-react";
+import { Plus, Activity, Search, RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
+import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -152,6 +153,7 @@ export function EncountersView() {
                     <th className="text-left p-3 font-semibold text-slate-700">Priority</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Status</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Started</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -167,6 +169,16 @@ export function EncountersView() {
                       <td className="p-3"><StatusBadge status={e.priority} /></td>
                       <td className="p-3"><StatusBadge status={e.status} /></td>
                       <td className="p-3 text-slate-600">{formatDate(e.startAt, true)}</td>
+                      <td className="p-3 text-right" onClick={(ev) => ev.stopPropagation()}>
+                        <SpecialtyReferralButton
+                          patient={e.patient}
+                          fromDepartment={e.encounterType?.toUpperCase() || "OPD"}
+                          label=""
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-amber-600 hover:text-amber-700"
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

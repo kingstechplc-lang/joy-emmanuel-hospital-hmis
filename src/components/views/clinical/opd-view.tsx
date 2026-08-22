@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Stethoscope, Users, Clock, Activity, UserPlus, ClipboardCheck,
   ListOrdered, Calendar, FlaskConical, Pill, ArrowRight, UserCheck,
+  Share2, Eye, FileText,
 } from "lucide-react";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
+import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -60,6 +62,13 @@ export function OPDView() {
             <Button onClick={() => setView("patient_new")} size="sm" className="bg-white/20 border border-white/30 text-white hover:bg-white/30">
               <UserPlus className="w-4 h-4 mr-1" /> Register New
             </Button>
+            <SpecialtyReferralButton
+              label="Refer to Specialty"
+              fromDepartment="OPD"
+              variant="default"
+              size="sm"
+              className="bg-white/20 border border-white/30 text-white hover:bg-white/30"
+            />
           </>
         }
       />
@@ -140,10 +149,12 @@ export function OPDView() {
                 {encounters.slice(0, 15).map((e: any) => (
                   <div
                     key={e.id}
-                    onClick={() => { selectPatient(e.patientId); setView("patient_360"); }}
-                    className="flex items-center justify-between p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer"
+                    className="flex items-center justify-between p-2 rounded border border-slate-100 hover:bg-slate-50"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      onClick={() => { selectPatient(e.patientId); setView("patient_360"); }}
+                      className="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
+                    >
                       <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-semibold text-xs flex items-center justify-center shrink-0">
                         {e.patient?.firstName?.[0]}{e.patient?.lastName?.[0]}
                       </div>
@@ -152,7 +163,24 @@ export function OPDView() {
                         <p className="text-xs text-slate-500">{e.encounterNumber} • {formatDate(e.startAt, true)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-slate-600 hover:text-emerald-700"
+                        onClick={() => { selectPatient(e.patientId); setView("patient_360"); }}
+                        title="View Patient 360"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </Button>
+                      <SpecialtyReferralButton
+                        patient={e.patient}
+                        fromDepartment="OPD"
+                        label=""
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-amber-600 hover:text-amber-700"
+                      />
                       <StatusBadge status={e.status} />
                     </div>
                   </div>

@@ -16,7 +16,7 @@ import {
   Heart, Eye as EyeIcon, Ear, Brain, Bone, Pill, Baby, Syringe, User,
   CheckCircle2, Clock, ArrowRight, Calendar, FileText, TrendingUp,
   CalendarPlus, ClipboardList, Building2, Share2, Phone, MapPin,
-  Trash2, Edit, ChevronRight, Users, Clipboard,
+  Trash2, Edit, ChevronRight, Users, Clipboard, FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -26,6 +26,7 @@ import {
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
+import { useAppStore } from "@/stores/app-store";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -388,6 +389,7 @@ function EncountersTab({ canManage }: { canManage: boolean }) {
 // NEW ENCOUNTER DIALOG
 // =====================================================================
 function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const setView = useAppStore((s) => s.setView);
   const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
     departmentCode: "CARDIO", clinicType: "new", chiefComplaint: "",
@@ -417,45 +419,50 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
           <DialogDescription>Create a clinical encounter for a specialty consultation, procedure, or follow-up.</DialogDescription>
         </DialogHeader>
 
-        <PatientPicker
-          label="Patient"
-          required
-          value={patient}
-          onChange={setPatient}
-          className="col-span-2 md:col-span-3"
-        />
+        <div className="space-y-3">
+          <PatientPicker
+            label="Patient"
+            required
+            value={patient}
+            onChange={setPatient}
+            onRegisterNew={() => {
+              onClose();
+              setView("patient_new");
+            }}
+          />
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div>
-            <FieldLabel>Specialty</FieldLabel>
-            <Select value={form.departmentCode} onValueChange={(v) => set("departmentCode", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <FieldLabel>Specialty</FieldLabel>
+              <Select value={form.departmentCode} onValueChange={(v) => set("departmentCode", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Visit Type</Label>
+              <Select value={form.clinicType} onValueChange={(v) => set("clinicType", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New Consultation</SelectItem>
+                  <SelectItem value="follow_up">Follow-up</SelectItem>
+                  <SelectItem value="review">Review</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Clinician</Label><Input value={form.clinicianName} onChange={(e) => set("clinicianName", e.target.value)} placeholder="Doctor name" /></div>
+            <div className="col-span-2 md:col-span-3"><FieldLabel>Chief Complaint</FieldLabel><Textarea value={form.chiefComplaint} onChange={(e) => set("chiefComplaint", e.target.value)} rows={2} placeholder="Presenting complaint..." /></div>
           </div>
-          <div>
-            <Label>Visit Type</Label>
-            <Select value={form.clinicType} onValueChange={(v) => set("clinicType", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New Consultation</SelectItem>
-                <SelectItem value="follow_up">Follow-up</SelectItem>
-                <SelectItem value="review">Review</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div><Label>Clinician</Label><Input value={form.clinicianName} onChange={(e) => set("clinicianName", e.target.value)} placeholder="Doctor name" /></div>
-          <div className="col-span-2 md:col-span-3"><FieldLabel>Chief Complaint</FieldLabel><Textarea value={form.chiefComplaint} onChange={(e) => set("chiefComplaint", e.target.value)} rows={2} placeholder="Presenting complaint..." /></div>
-        </div>
 
-        <div className={`p-3 rounded-xl bg-gradient-to-r ${selectedSpecialty.gradient} text-white`}>
-          <div className="flex items-center gap-2">
-            <selectedSpecialty.icon className="w-5 h-5" />
-            <span className="font-bold">{selectedSpecialty.label}</span>
+          <div className={`p-3 rounded-xl bg-gradient-to-r ${selectedSpecialty.gradient} text-white`}>
+            <div className="flex items-center gap-2">
+              <selectedSpecialty.icon className="w-5 h-5" />
+              <span className="font-bold">{selectedSpecialty.label}</span>
+            </div>
+            <p className="text-xs text-white/80 mt-1">
+              After creating the encounter, you can record history, examination, diagnosis, treatment plan, procedures, prescriptions, and follow-up.
+            </p>
           </div>
-          <p className="text-xs text-white/80 mt-1">
-            After creating the encounter, you can record history, examination, diagnosis, treatment plan, procedures, prescriptions, and follow-up.
-          </p>
         </div>
 
         <DialogFooter>
@@ -490,6 +497,8 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
   encounter: any; canManage: boolean; onClose: () => void; onUpdate: (id: string, data: any) => void; loading: boolean;
 }) {
   const qc = useQueryClient();
+  const setView = useAppStore((s) => s.setView);
+  const selectPatient = useAppStore((s) => s.selectPatient);
   const sp = SPECIALTY_MAP[encounter.departmentCode] || SPECIALTIES[0];
   const [form, setForm] = useState({
     chiefComplaint: encounter.chiefComplaint || "",
@@ -581,12 +590,53 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Patient info */}
+        {/* Patient info — with internal links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
-          <div><Label className="text-slate-500">Patient</Label><div className="font-semibold">{encounter.patientName}</div></div>
+          <div>
+            <Label className="text-slate-500">Patient</Label>
+            {encounter.patientId ? (
+              <button
+                onClick={() => { selectPatient(encounter.patientId); onClose(); setView("patient_360"); }}
+                className="font-semibold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1"
+                title="View Patient 360"
+              >
+                {encounter.patientName}
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            ) : (
+              <div className="font-semibold text-amber-700 flex items-center gap-1" title="Not linked to a patient record">
+                {encounter.patientName}
+                <AlertCircle className="w-3 h-3" />
+              </div>
+            )}
+          </div>
           <div><Label className="text-slate-500">Age/Sex</Label><div>{encounter.patientAge ? `${encounter.patientAge}y` : "—"} {encounter.patientSex || ""}</div></div>
           <div><Label className="text-slate-500">Clinician</Label><div>{encounter.clinicianName || "—"}</div></div>
           <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={encounter.status} /></div></div>
+        </div>
+
+        {/* Quick actions — cross-module internal links */}
+        <div className="flex flex-wrap gap-2">
+          {encounter.patientId && (
+            <Button size="sm" variant="outline" onClick={() => { selectPatient(encounter.patientId); onClose(); setView("patient_360"); }} className="text-emerald-700">
+              <Eye className="w-3.5 h-3.5 mr-1" /> Patient 360
+            </Button>
+          )}
+          {encounter.patientId && (
+            <Button size="sm" variant="outline" onClick={() => { selectPatient(encounter.patientId); onClose(); setView("lab_orders"); }} className="text-blue-700">
+              <FlaskConical className="w-3.5 h-3.5 mr-1" /> Order Lab
+            </Button>
+          )}
+          {encounter.patientId && form.prescription && (
+            <Button size="sm" variant="outline" onClick={() => { selectPatient(encounter.patientId); onClose(); setView("prescriptions"); }} className="text-rose-700">
+              <Pill className="w-3.5 h-3.5 mr-1" /> Send to Pharmacy
+            </Button>
+          )}
+          {encounter.patientId && (
+            <Button size="sm" variant="outline" onClick={() => { selectPatient(encounter.patientId); onClose(); setView("imaging"); }} className="text-cyan-700">
+              <Activity className="w-3.5 h-3.5 mr-1" /> Order Imaging
+            </Button>
+          )}
         </div>
 
         {/* Clinical form */}
@@ -960,6 +1010,7 @@ function AppointmentsTab({ canManage }: { canManage: boolean }) {
 // NEW APPOINTMENT DIALOG
 // =====================================================================
 function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const setView = useAppStore((s) => s.setView);
   const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
     departmentCode: "CARDIO", clinicId: "", clinicianName: "",
@@ -993,6 +1044,10 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
           required
           value={patient}
           onChange={setPatient}
+          onRegisterNew={() => {
+            onClose();
+            setView("patient_new");
+          }}
         />
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1364,6 +1419,7 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
 // NEW REFERRAL DIALOG
 // =====================================================================
 function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const setView = useAppStore((s) => s.setView);
   const [patient, setPatient] = useState<PatientPickerValue | null>(null);
   const [form, setForm] = useState({
     fromDepartment: "OPD", fromClinicianName: "",
@@ -1396,6 +1452,10 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
           required
           value={patient}
           onChange={setPatient}
+          onRegisterNew={() => {
+            onClose();
+            setView("patient_new");
+          }}
         />
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

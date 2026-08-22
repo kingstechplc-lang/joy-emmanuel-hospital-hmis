@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, User, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, X, CheckCircle2, AlertCircle, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/required-label";
@@ -33,6 +33,7 @@ interface PatientPickerProps {
   allowManual?: boolean; // allow free-text entry if patient not found
   disabled?: boolean;
   className?: string;
+  onRegisterNew?: () => void; // when provided, shows a "Register new patient" shortcut button
 }
 
 /**
@@ -43,6 +44,10 @@ interface PatientPickerProps {
  *
  * If allowManual is true and no patient is found, the user can fall back to
  * typing a free-text name (patientId will be null in that case).
+ *
+ * If onRegisterNew is provided, a "Register new patient" button appears in the
+ * no-results state, letting the user jump to patient registration without
+ * leaving the current form.
  */
 export function PatientPicker({
   label = "Patient",
@@ -53,6 +58,7 @@ export function PatientPicker({
   allowManual = true,
   disabled = false,
   className = "",
+  onRegisterNew,
 }: PatientPickerProps) {
   const [query, setQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
@@ -125,7 +131,7 @@ export function PatientPicker({
   // ---- Render: patient already selected (chip) ----
   if (hasPatient || isManualEntry) {
     return (
-      <div className={className}>
+      <div className={`relative ${className}`}>
         {label && <FieldLabel required={required}>{label}</FieldLabel>}
         <div className={`flex items-center gap-2 p-2 border rounded-lg ${isManualEntry ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
           {isManualEntry ? (
@@ -160,10 +166,10 @@ export function PatientPicker({
 
   // ---- Render: search input + dropdown ----
   return (
-    <div className={className} ref={containerRef}>
+    <div className={`relative ${className}`} ref={containerRef}>
       {label && <FieldLabel required={required}>{label}</FieldLabel>}
       <div className="relative">
-        <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+        <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400 pointer-events-none z-10" />
         <Input
           placeholder={placeholder}
           value={manualMode ? (value?.patientName || "") : query}
@@ -182,17 +188,24 @@ export function PatientPicker({
       </div>
 
       {showResults && !manualMode && debouncedQuery.length >= 2 && (
-        <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+        <div className="absolute left-0 right-0 z-50 mt-1 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-xl">
           {isLoading || isFetching ? (
             <div className="p-3 text-xs text-slate-500 text-center">Searching...</div>
           ) : patients.length === 0 ? (
-            <div className="p-3 text-xs text-slate-500 text-center">
-              <p className="mb-2">No patients found matching &quot;{debouncedQuery}&quot;.</p>
-              {allowManual && (
-                <button type="button" onClick={switchToManual} className="text-emerald-600 hover:underline font-medium">
-                  Enter name manually instead →
-                </button>
-              )}
+            <div className="p-3 text-xs text-slate-500 text-center space-y-2">
+              <p>No patients found matching &quot;{debouncedQuery}&quot;.</p>
+              <div className="flex flex-col gap-1 items-center">
+                {onRegisterNew && (
+                  <button type="button" onClick={onRegisterNew} className="text-emerald-600 hover:underline font-medium flex items-center gap-1">
+                    <UserPlus className="w-3 h-3" /> Register new patient →
+                  </button>
+                )}
+                {allowManual && (
+                  <button type="button" onClick={switchToManual} className="text-slate-600 hover:underline">
+                    Enter name manually instead →
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <>
@@ -224,15 +237,26 @@ export function PatientPicker({
                   </button>
                 );
               })}
-              {allowManual && (
-                <button
-                  type="button"
-                  onClick={switchToManual}
-                  className="w-full text-left p-2 hover:bg-amber-50 text-xs text-amber-700 border-t border-slate-200 font-medium"
-                >
-                  Not found? Enter name manually →
-                </button>
-              )}
+              <div className="border-t border-slate-200 p-1.5 flex flex-col gap-1">
+                {onRegisterNew && (
+                  <button
+                    type="button"
+                    onClick={onRegisterNew}
+                    className="w-full text-left p-1.5 hover:bg-emerald-50 rounded text-xs text-emerald-700 font-medium flex items-center gap-1.5"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" /> Register new patient
+                  </button>
+                )}
+                {allowManual && (
+                  <button
+                    type="button"
+                    onClick={switchToManual}
+                    className="w-full text-left p-1.5 hover:bg-amber-50 rounded text-xs text-amber-700 font-medium"
+                  >
+                    Not found? Enter name manually →
+                  </button>
+                )}
+              </div>
             </>
           )}
         </div>
