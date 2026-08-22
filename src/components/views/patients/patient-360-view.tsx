@@ -15,6 +15,7 @@ import {
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
   formatDate, formatCurrency, calculateAge, safeJson} from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
+import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -534,30 +535,86 @@ export function Patient360View() {
           </Card>
         </TabsContent>
 
-        {/* Diagnoses */}
+        {/* Diagnoses — Centralized Diagnosis Engine */}
         <TabsContent value="diagnoses">
           <Card>
-            <CardHeader><CardTitle className="text-base">Diagnoses</CardTitle></CardHeader>
-            <CardContent className="p-0">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-indigo-600" />
+                  Diagnoses
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-1">
+                  Active conditions, history, and chronic conditions from the centralized Diagnosis Engine.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setView("settings_diagnoses")} className="text-indigo-700">
+                Manage Catalog
+              </Button>
+            </CardHeader>
+            <CardContent className="p-4">
+              {/* Active conditions summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold uppercase text-rose-700">Active</p>
+                  <p className="text-xl font-bold text-rose-800">{(p.diagnoses || []).filter((d: any) => d.clinicalStatus === "active").length}</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold uppercase text-slate-700">Historical</p>
+                  <p className="text-xl font-bold text-slate-800">{(p.diagnoses || []).filter((d: any) => ["resolved", "inactive", "ruled_out"].includes(d.clinicalStatus)).length}</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold uppercase text-amber-700">Chronic</p>
+                  <p className="text-xl font-bold text-amber-800">{(p.diagnoses || []).filter((d: any) => d.isChronic).length}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-[10px] font-bold uppercase text-purple-700">Provisional</p>
+                  <p className="text-xl font-bold text-purple-800">{(p.diagnoses || []).filter((d: any) => d.diagnosisType === "provisional" || d.verificationStatus === "provisional").length}</p>
+                </div>
+              </div>
+
+              {/* Diagnosis timeline — reverse chronological */}
               {(p.diagnoses || []).length === 0 ? (
-                <div className="p-6"><EmptyState title="No diagnoses on record" /></div>
+                <EmptyState title="No diagnoses on record" description="Diagnoses will appear here when this patient is seen in clinical encounters." icon={Stethoscope} />
               ) : (
-                <div className="divide-y">
-                  {p.diagnoses.map((d: any) => (
-                    <div key={d.id} className="p-4 hover:bg-slate-50">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-slate-900">{d.diagnosisName}</div>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="capitalize">{d.diagnosisType}</Badge>
-                          <StatusBadge status={d.clinicalStatus} />
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-700 mb-2">Diagnosis Timeline</p>
+                  {(p.diagnoses || [])
+                    .slice()
+                    .sort((a: any, b: any) => new Date(b.diagnosedAt).getTime() - new Date(a.diagnosedAt).getTime())
+                    .map((d: any) => {
+                      const isChronic = d.isChronic;
+                      const isActive = d.clinicalStatus === "active";
+                      const isProvisional = d.diagnosisType === "provisional" || d.verificationStatus === "provisional";
+                      return (
+                        <div key={d.id} className="border-l-2 pl-3 py-1 relative"
+                          style={{ borderColor: isActive ? (isChronic ? "#e11d48" : "#10b981") : isProvisional ? "#a855f7" : "#94a3b8" }}>
+                          <div className="absolute -left-1.5 top-2 w-2.5 h-2.5 rounded-full"
+                            style={{ background: isActive ? (isChronic ? "#e11d48" : "#10b981") : isProvisional ? "#a855f7" : "#94a3b8" }} />
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {d.diagnosisCode && (
+                                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">{d.diagnosisCode}</span>
+                              )}
+                              <span className="text-sm font-medium text-slate-900">{d.diagnosisName}</span>
+                              {isChronic && <Badge variant="outline" className="text-[9px] py-0 px-1 border-rose-300 text-rose-700 bg-rose-50">CHRONIC</Badge>}
+                            </div>
+                            <div className="flex gap-1 items-center">
+                              <Badge variant="outline" className={`text-[9px] capitalize ${d.diagnosisType === "primary" ? "border-rose-300 text-rose-700" : "border-slate-300 text-slate-600"}`}>
+                                {d.diagnosisType}
+                              </Badge>
+                              <StatusBadge status={d.clinicalStatus} />
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            {formatDate(d.diagnosedAt, true)}
+                            {d.encounter?.encounterNumber && ` · ${d.encounter.encounterNumber}`}
+                            {d.encounter?.facility?.name && ` · ${d.encounter.facility.name}`}
+                          </div>
+                          {d.notes && <p className="text-xs text-slate-600 mt-1 italic">&ldquo;{d.notes}&rdquo;</p>}
                         </div>
-                      </div>
-                      {d.diagnosisCode && (
-                        <div className="text-xs text-slate-500 mt-1 font-mono">{d.diagnosisCode}</div>
-                      )}
-                      <div className="text-xs text-slate-500 mt-1">Diagnosed: {formatDate(d.diagnosedAt)}</div>
-                    </div>
-                  ))}
+                      );
+                    })}
                 </div>
               )}
             </CardContent>

@@ -833,19 +833,104 @@ model Diagnosis {
   patient         Patient @relation(fields: [patientId], references: [id])
   encounterId     String
   encounter       Encounter @relation(fields: [encounterId], references: [id])
-  diagnosisCode   String? // ICD-10 / SNOMED
+  // Link to the master catalog (optional — historical records may be free-text)
+  catalogId       String?
+  catalog         DiagnosisCatalog? @relation(fields: [catalogId], references: [id])
+  // Snapshotted code + name at time of recording (preserves history even if catalog changes)
+  diagnosisCode   String? // ICD-10 / ICD-11 / SNOMED CT
+  codeSystem      String? @default("ICD-10") // ICD-10 | ICD-11 | SNOMED_CT | LOCAL | OTHER
   diagnosisName   String
-  diagnosisType   String   @default("primary") // primary | secondary | differential
-  clinicalStatus  String   @default("active") // active | resolved | relapse | inactive
+  diagnosisType   String   @default("primary") // primary | secondary | differential | provisional | confirmed | final | principal | admission | discharge | working | historical
+  clinicalStatus  String   @default("active") // active | resolved | relapse | inactive | ruled_out
+  verificationStatus String @default("confirmed") // unconfirmed | provisional | differential | confirmed | refuted
+  isPrimary       Boolean  @default(false)
+  isChronic       Boolean  @default(false)
   onsetDate       DateTime?
+  resolvedDate    DateTime?
   diagnosedById   String?
   diagnosedAt     DateTime @default(now())
   notes           String?
+  // Amendment tracking
+  amendedFromId   String?
+  amendmentReason String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  statusHistory   DiagnosisStatusHistory[]
+
   @@index([patientId])
   @@index([encounterId])
+  @@index([catalogId])
+  @@index([diagnosisCode])
+  @@index([clinicalStatus])
+}
+
+// ---------------------------------------------------------------------
+// DIAGNOSIS CATALOG — Master list of standardized diagnoses
+// (ICD-10, ICD-11, SNOMED CT, local codes)
+// ---------------------------------------------------------------------
+model DiagnosisCatalog {
+  id              String   @id @default(cuid())
+  organizationId  String
+  code            String   // e.g., I10, E11, J00
+  codeSystem      String   @default("ICD-10") // ICD-10 | ICD-11 | SNOMED_CT | LOCAL | OTHER
+  name            String   // Standardized name
+  description     String?
+  category        String?  // e.g., cardiovascular, endocrine, respiratory
+  parentCategory  String?  // higher-level grouping
+  synonyms        String?  // JSON array of strings: ["HTN", "High BP", "Hypertension"]
+  searchTerms     String?  // JSON array — additional searchable keywords
+  sexRestriction  String?  // null | male | female — informational only, does NOT block
+  minAgeYears     Int?     // informational only — does NOT block
+  maxAgeYears     Int?     // informational only — does NOT block
+  isChronicDefault Boolean @default(false) // hint that this is typically chronic
+  specialty       String?  // e.g., CARDIO, DERM — for specialty filtering
+  isActive        Boolean  @default(true)
+  version         String?  // terminology version (e.g., "2024", "ICD-10-2023")
+  source          String?  // e.g., "WHO", "Local"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  encounterDiagnoses Diagnosis[]
+  favorites      DiagnosisFavorite[]
+
+  @@unique([organizationId, code, codeSystem])
+  @@index([organizationId, category])
+  @@index([organizationId, specialty])
+  @@index([organizationId, isActive])
+}
+
+// ---------------------------------------------------------------------
+// DIAGNOSIS STATUS HISTORY — Audit trail of status changes
+// ---------------------------------------------------------------------
+model DiagnosisStatusHistory {
+  id              String   @id @default(cuid())
+  diagnosisId     String
+  diagnosis       Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  fromStatus      String?
+  toStatus        String
+  fromVerification String?
+  toVerification  String?
+  changedById     String?
+  changedByName   String?
+  reason          String?
+  changedAt       DateTime @default(now())
+
+  @@index([diagnosisId])
+}
+
+// ---------------------------------------------------------------------
+// DIAGNOSIS FAVORITES — Per-clinician favorites for fast access
+// ---------------------------------------------------------------------
+model DiagnosisFavorite {
+  id              String   @id @default(cuid())
+  userId          String
+  catalogId       String
+  catalog         DiagnosisCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, catalogId])
+  @@index([userId])
 }
 
 model Allergy {

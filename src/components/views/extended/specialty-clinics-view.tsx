@@ -27,6 +27,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 import { DepartmentSelect, type EntitySelectValue } from "@/components/ui/entity-select";
+import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 import { useAppStore } from "@/stores/app-store";
 
 async function fetchJson(url: string) {
@@ -695,6 +696,26 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
 
         {/* Procedures section */}
         <ProceduresSection encounterId={encounter.id} procedures={procedures} canManage={canManage} />
+
+        {/* Diagnosis section — centralized Diagnosis Engine */}
+        {encounter.patientId && (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-4 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600" />
+                Diagnoses
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <DiagnosisPicker
+                patientId={encounter.patientId}
+                encounterId={encounter.id}
+                specialty={encounter.departmentCode}
+                canManage={canManage}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Clinical notes section */}
         <ClinicalNotesSection encounterId={encounter.id} notes={notes} canManage={canManage} />

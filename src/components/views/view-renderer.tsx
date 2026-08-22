@@ -59,6 +59,7 @@ import { PermissionsAdminView } from "@/components/views/admin/permissions-admin
 import { ServicesAdminView } from "@/components/views/admin/services-admin-view";
 import { LabTestsAdminView } from "@/components/views/admin/lab-tests-admin-view";
 import { MedicationsAdminView } from "@/components/views/admin/medications-admin-view";
+import { DiagnosisEngineView } from "@/components/views/admin/diagnosis-engine-view";
 import { InsuranceProvidersAdminView } from "@/components/views/admin/insurance-providers-admin-view";
 import { SystemSettingsView } from "@/components/views/admin/system-settings-view";
 import type { ViewKey } from "@/stores/app-store";
@@ -139,6 +140,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   settings_services: ServicesAdminView,
   settings_lab_tests: LabTestsAdminView,
   settings_medications: MedicationsAdminView,
+  settings_diagnoses: DiagnosisEngineView,
   settings_insurance_providers: InsuranceProvidersAdminView,
   settings_system: SystemSettingsView,
   // Extended modules
@@ -225,6 +227,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   settings_services: "settings.view",
   settings_lab_tests: "settings.view",
   settings_medications: "settings.view",
+  settings_diagnoses: "diagnosis.view",
   settings_insurance_providers: "settings.view",
   settings_system: "settings.view",
   // Extended modules
