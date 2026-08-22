@@ -3,14 +3,14 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ShieldCheck, Search, Send, Check, X, DollarSign, RefreshCw, Stethoscope, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, ShieldCheck, Search, Send, Check, X, DollarSign, RefreshCw, Stethoscope, AlertCircle, CheckCircle2, Download, Layers } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
 import { EntitySelect, type EntitySelectValue } from "@/components/ui/entity-select";
@@ -43,12 +43,37 @@ export function InsuranceClaimsView() {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
   const [partialClaim, setPartialClaim] = useState<any | null>(null);
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
   if (statusFilter !== "all") params.set("status", statusFilter);
   const qs = params.toString() ? `?${params.toString()}` : "";
+
+  // Export handler — downloads CSV/TSV/JSON from the export API
+  const handleExport = async (format: "csv" | "tsv" | "json") => {
+    const exportParams = new URLSearchParams();
+    exportParams.set("format", format);
+    if (activeFacilityId) exportParams.set("facilityId", activeFacilityId);
+    if (statusFilter !== "all") exportParams.set("status", statusFilter);
+    try {
+      const res = await fetch(`/api/insurance-claims/export?${exportParams.toString()}`);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nhis-claims-${new Date().toISOString().slice(0, 10)}.${format === "tsv" ? "tsv" : format === "json" ? "json" : "csv"}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Exported as ${format.toUpperCase()}`);
+    } catch (e: any) {
+      toast.error(e.message || "Export failed");
+    }
+  };
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["insurance-claims", activeFacilityId, statusFilter],
@@ -86,14 +111,30 @@ export function InsuranceClaimsView() {
     <div className="space-y-4">
       <PageHeader
         title="Insurance Claims"
-        description="Manage NHIS and private insurance claims"
+        description="Manage NHIS and private insurance claims — bulk generation + multi-format export"
         icon={ShieldCheck}
         gradient="from-indigo-500 to-blue-600"
-      
+
         actions={
-                  <Button onClick={() => setShowNew(true)} disabled={!can("insurance.claim")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4" /> New Claim
-        </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => handleExport("csv")} disabled={!can("insurance.view")} className="gap-2 bg-white/20 border-white/30 text-white hover:bg-white/30">
+              <Download className="w-4 h-4" /> CSV
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("tsv")} disabled={!can("insurance.view")} className="gap-2 bg-white/20 border-white/30 text-white hover:bg-white/30">
+              <Download className="w-4 h-4" /> Excel
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("json")} disabled={!can("insurance.view")} className="gap-2 bg-white/20 border-white/30 text-white hover:bg-white/30">
+              <Download className="w-4 h-4" /> JSON
+            </Button>
+            {can("insurance.claim") && (
+              <Button onClick={() => setShowBulk(true)} className="gap-2 bg-white/20 border-white/30 text-white hover:bg-white/30">
+                <Layers className="w-4 h-4" /> Bulk Generate
+              </Button>
+            )}
+            <Button onClick={() => setShowNew(true)} disabled={!can("insurance.claim")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Plus className="w-4 h-4" /> New Claim
+            </Button>
+          </div>
         }
       />
 
@@ -203,6 +244,10 @@ export function InsuranceClaimsView() {
       )}
 
       <NewClaimDialog open={showNew} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); invalidate(); }} facilityId={activeFacilityId} />
+
+      {showBulk && (
+        <BulkClaimsDialog facilityId={activeFacilityId} onClose={() => setShowBulk(false)} onCreated={() => { setShowBulk(false); invalidate(); }} />
+      )}
 
       {partialClaim && (
         <PartialApprovalDialog claim={partialClaim} onClose={() => setPartialClaim(null)} onDone={() => { setPartialClaim(null); invalidate(); }} />
@@ -526,6 +571,326 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
             {saving ? "Approving..." : "Confirm Partial Approval"}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// BULK CLAIMS DIALOG — generate multiple NHIS claims in batch
+// =====================================================================
+function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: string | null; onClose: () => void; onCreated: () => void }) {
+  const [providerId, setProviderId] = useState("");
+  const [claimType, setClaimType] = useState("outpatient");
+  const [defaultDx, setDefaultDx] = useState<EntitySelectValue | null>(null);
+  const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
+  const [searchPatient, setSearchPatient] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [results, setResults] = useState<any>(null);
+
+  // Fetch all outstanding invoices for the facility
+  const { data: invoicesData, isLoading } = useQuery({
+    queryKey: ["bulk-invoices", facilityId],
+    queryFn: () => fetchJson(`/api/invoices?facilityId=${facilityId || ""}&status=unpaid&limit=200`),
+    enabled: !!facilityId,
+  });
+
+  // Fetch NHIS insurance providers
+  const { data: providersData } = useQuery({
+    queryKey: ["nhis-providers"],
+    queryFn: () => fetchJson("/api/insurance-providers"),
+  });
+  const providers = (providersData?.items || providersData?.providers || []).filter((p: any) =>
+    p.code?.toUpperCase().includes("NHIS") || p.name?.toUpperCase().includes("NHIS") || true
+  );
+
+  // Search patients to filter invoices
+  const { data: patientsData } = useQuery({
+    queryKey: ["bulk-patient-search", searchPatient],
+    queryFn: () => fetchJson(`/api/patients?q=${encodeURIComponent(searchPatient)}`),
+    enabled: searchPatient.length >= 2,
+  });
+
+  const allInvoices: any[] = invoicesData?.items || [];
+  const outstandingInvoices = allInvoices.filter((i: any) => i.balance > 0 && i.status !== "cancelled");
+
+  // Filter by patient search
+  const filteredInvoices = searchPatient.length >= 2 && patientsData?.patients
+    ? outstandingInvoices.filter((inv: any) =>
+        patientsData.patients.some((p: any) => p.id === inv.patientId))
+    : outstandingInvoices;
+
+  const toggleInvoice = (id: string) => {
+    setSelectedInvoices((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedInvoices(new Set(filteredInvoices.map((i: any) => i.id)));
+  };
+
+  const clearAll = () => {
+    setSelectedInvoices(new Set());
+  };
+
+  const submit = async () => {
+    if (!facilityId) { toast.error("No facility selected"); return; }
+    if (!providerId) { toast.error("Please select an insurance provider"); return; }
+    if (selectedInvoices.size === 0) { toast.error("Select at least one invoice"); return; }
+
+    setSaving(true);
+    setResults(null);
+    try {
+      const items = Array.from(selectedInvoices).map((invoiceId) => {
+        const inv = outstandingInvoices.find((i: any) => i.id === invoiceId);
+        return {
+          patientId: inv?.patientId,
+          invoiceId,
+          claimAmount: inv?.balance,
+          primaryDiagnosisCatalogId: defaultDx?.id,
+          primaryDiagnosisCode: defaultDx?.code,
+          primaryDiagnosisName: defaultDx?.label,
+        };
+      });
+
+      const res = await fetch("/api/insurance-claims/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          facilityId,
+          insuranceProviderId: providerId,
+          claimType,
+          items,
+        }),
+      });
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err.error || "Bulk generation failed");
+      }
+      const data = await safeJson(res);
+      setResults(data);
+      if (data.summary.failed === 0) {
+        toast.success(`Generated ${data.summary.success} claims successfully`);
+        onCreated();
+      } else {
+        toast.warning(`${data.summary.success} created, ${data.summary.failed} failed — see results`);
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-indigo-600" />
+            Bulk NHIS Claim Generation
+          </DialogTitle>
+          <DialogDescription>
+            Select multiple outstanding invoices and generate NHIS claims in a single batch.
+            All claims will be created as drafts with the same provider and diagnosis.
+          </DialogDescription>
+        </DialogHeader>
+
+        {results ? (
+          /* Results view */
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-700">{results.summary.success}</p>
+                <p className="text-xs text-emerald-600">Claims Created</p>
+              </div>
+              <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-rose-700">{results.summary.failed}</p>
+                <p className="text-xs text-rose-600">Failed</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-slate-700">{results.summary.total}</p>
+                <p className="text-xs text-slate-600">Total Processed</p>
+              </div>
+            </div>
+
+            {results.created.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-emerald-700">Created Claims ({results.created.length})</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-48 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 sticky top-0">
+                        <tr>
+                          <th className="text-left p-2">Claim #</th>
+                          <th className="text-left p-2">Amount</th>
+                          <th className="text-left p-2">Validated</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.created.map((c: any) => (
+                          <tr key={c.claimId} className="border-b">
+                            <td className="p-2 font-mono">{c.claimNumber}</td>
+                            <td className="p-2">{formatCurrency(c.claimAmount)}</td>
+                            <td className="p-2">{c.isNhisValidated ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-500" />}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {results.failed.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-rose-700">Failed ({results.failed.length})</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-32 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 sticky top-0">
+                        <tr>
+                          <th className="text-left p-2">Invoice ID</th>
+                          <th className="text-left p-2">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.failed.map((f: any, i: number) => (
+                          <tr key={i} className="border-b">
+                            <td className="p-2 font-mono text-[10px]">{f.invoiceId?.slice(-8) || "—"}</td>
+                            <td className="p-2 text-rose-600">{f.error}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <DialogFooter>
+              <Button onClick={onCreated} className="gap-2 bg-emerald-600 hover:bg-emerald-700">Done</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          /* Setup + selection view */
+          <div className="space-y-3">
+            {/* Provider + claim type + default diagnosis */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel required>Insurance Provider</FieldLabel>
+                <Select value={providerId || undefined} onValueChange={setProviderId}>
+                  <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
+                  <SelectContent>
+                    {providers.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                        {p.code?.toUpperCase().includes("NHIS") && <Badge variant="secondary" className="ml-2 text-[9px]">NHIS</Badge>}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <FieldLabel required>Claim Type</FieldLabel>
+                <Select value={claimType} onValueChange={setClaimType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="outpatient">Outpatient</SelectItem>
+                    <SelectItem value="inpatient">Inpatient</SelectItem>
+                    <SelectItem value="day_case">Day Case</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <EntitySelect
+              label="Default Primary Diagnosis (applied to all claims) — optional"
+              endpoint="/api/diagnoses/catalog"
+              queryParam="q"
+              queryParams={{ limit: "20" }}
+              getLabel={(item: any) => item.name}
+              getId={(item: any) => item.id}
+              getSubtitle={(item: any) => item.category}
+              getCode={(item: any) => item.code}
+              placeholder="Search ICD-10 diagnosis to apply to all claims..."
+              value={defaultDx}
+              onChange={setDefaultDx}
+              allowManual
+            />
+
+            {/* Patient search filter */}
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+              <Input
+                placeholder="Filter by patient name or number (optional)..."
+                value={searchPatient}
+                onChange={(e) => setSearchPatient(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+
+            {/* Invoice selection table */}
+            <Card>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm">
+                  Outstanding Invoices ({filteredInvoices.length})
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={selectAll} disabled={filteredInvoices.length === 0}>Select All</Button>
+                  <Button size="sm" variant="outline" onClick={clearAll} disabled={selectedInvoices.size === 0}>Clear</Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isLoading ? <LoadingState rows={4} /> :
+                 filteredInvoices.length === 0 ? <p className="p-4 text-sm text-slate-500 text-center">No outstanding invoices found.</p> :
+                 <div className="max-h-64 overflow-y-auto">
+                   <table className="w-full text-xs">
+                     <thead className="bg-slate-50 sticky top-0">
+                       <tr>
+                         <th className="p-2 w-8"><input type="checkbox" checked={selectedInvoices.size === filteredInvoices.length && filteredInvoices.length > 0} onChange={(e) => e.target.checked ? selectAll() : clearAll()} /></th>
+                         <th className="text-left p-2">Invoice #</th>
+                         <th className="text-left p-2">Patient</th>
+                         <th className="text-right p-2">Balance</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {filteredInvoices.slice(0, 100).map((inv: any) => (
+                         <tr key={inv.id} className={`border-b cursor-pointer hover:bg-slate-50 ${selectedInvoices.has(inv.id) ? "bg-emerald-50" : ""}`} onClick={() => toggleInvoice(inv.id)}>
+                           <td className="p-2"><input type="checkbox" checked={selectedInvoices.has(inv.id)} onChange={() => toggleInvoice(inv.id)} /></td>
+                           <td className="p-2 font-mono">{inv.invoiceNumber}</td>
+                           <td className="p-2">{inv.patient?.firstName} {inv.patient?.lastName} <span className="text-slate-400">({inv.patient?.patientNumber})</span></td>
+                           <td className="p-2 text-right font-semibold">{formatCurrency(inv.balance)}</td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                   {filteredInvoices.length > 100 && <p className="p-2 text-center text-xs text-slate-500">Showing first 100 of {filteredInvoices.length}. Refine search to see more.</p>}
+                 </div>}
+              </CardContent>
+            </Card>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">
+                <strong className="text-indigo-700">{selectedInvoices.size}</strong> invoice{selectedInvoices.size === 1 ? "" : "s"} selected
+              </span>
+              <span className="text-slate-500">
+                Total: {formatCurrency(Array.from(selectedInvoices).reduce((sum, id) => sum + (outstandingInvoices.find((i: any) => i.id === id)?.balance || 0), 0))}
+              </span>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={submit} disabled={saving || !providerId || selectedInvoices.size === 0} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                {saving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Layers className="w-4 h-4" /> Generate {selectedInvoices.size} Claims</>}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

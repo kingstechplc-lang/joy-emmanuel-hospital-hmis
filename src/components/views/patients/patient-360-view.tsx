@@ -1,17 +1,24 @@
 "use client";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Users, Activity, Stethoscope, HeartPulse, FlaskConical,
   Pill, ClipboardList, BedDouble, Receipt, FileText, ScrollText,
-  AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert,
+  AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert, Edit, Save,
+  RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
   formatDate, formatCurrency, calculateAge, safeJson} from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
@@ -24,10 +31,17 @@ async function fetchJson(url: string) {
 }
 
 export function Patient360View() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const perms: string[] = user?.permissions || [];
+  const canEdit = user?.roles?.includes("super_admin") || perms.includes("patient.edit");
+
   const selectedPatientId = useAppStore((s) => s.selectedPatientId);
   const setView = useAppStore((s) => s.setView);
   const selectEncounter = useAppStore((s) => s.selectEncounter);
+  const qc = useQueryClient();
   const [tab, setTab] = useState("overview");
+  const [showEdit, setShowEdit] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["patient-360", selectedPatientId],
@@ -117,9 +131,16 @@ export function Patient360View() {
               )}
             </div>
             <div className="flex flex-col gap-2 md:items-end">
-              <Button onClick={() => setView("encounters")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-                <Activity className="w-4 h-4" /> New Encounter
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setView("encounters")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                  <Activity className="w-4 h-4" /> New Encounter
+                </Button>
+                {canEdit && (
+                  <Button variant="outline" onClick={() => setShowEdit(true)} className="gap-2">
+                    <Edit className="w-4 h-4" /> Edit Patient
+                  </Button>
+                )}
+              </div>
               <Button variant="outline" onClick={() => setView("appointments")} className="gap-2">
                 <Calendar className="w-4 h-4" /> Book Appointment
               </Button>
@@ -763,6 +784,17 @@ export function Patient360View() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {showEdit && canEdit && (
+        <EditPatientDialog
+          patient={p}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => {
+            setShowEdit(false);
+            qc.invalidateQueries({ queryKey: ["patient-360", selectedPatientId] });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -773,5 +805,185 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
       <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">{label}</div>
       <div className="text-sm text-slate-900 mt-0.5">{value || "—"}</div>
     </div>
+  );
+}
+
+// =====================================================================
+// EDIT PATIENT DIALOG — edit biographic/demographic information
+// =====================================================================
+function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClose: () => void; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    firstName: patient.firstName || "",
+    middleName: patient.middleName || "",
+    lastName: patient.lastName || "",
+    previousName: patient.previousName || "",
+    dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().slice(0, 10) : "",
+    sex: patient.sex || "unknown",
+    gender: patient.gender || "",
+    maritalStatus: patient.maritalStatus || "",
+    nationality: patient.nationality || "Ghanaian",
+    occupation: patient.occupation || "",
+    phone: patient.phone || "",
+    alternativePhone: patient.alternativePhone || "",
+    email: patient.email || "",
+    address: patient.address || "",
+    city: patient.city || "",
+    region: patient.region || "",
+    country: patient.country || "Ghana",
+    preferredLanguage: patient.preferredLanguage || "English",
+    bloodGroup: patient.bloodGroup || "",
+    status: patient.status || "active",
+  });
+  const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
+
+  const save = async () => {
+    if (!form.firstName || !form.lastName) {
+      toast.error("First name and last name are required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/patients/${patient.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err.error || "Failed to update patient");
+      }
+      toast.success("Patient record updated");
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="w-5 h-5 text-emerald-600" />
+            Edit Patient Record
+          </DialogTitle>
+          <DialogDescription>
+            {patient.firstName} {patient.lastName} • {patient.patientNumber}
+            <br />
+            <span className="text-[10px] text-slate-500">All changes are audit-logged. Patient number and organization cannot be changed.</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Personal Information */}
+          <div>
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Personal Information</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>First Name *</Label><Input value={form.firstName} onChange={(e) => set("firstName", e.target.value)} /></div>
+              <div><Label>Middle Name</Label><Input value={form.middleName} onChange={(e) => set("middleName", e.target.value)} /></div>
+              <div><Label>Last Name *</Label><Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)} /></div>
+              <div><Label>Previous Name</Label><Input value={form.previousName} onChange={(e) => set("previousName", e.target.value)} /></div>
+              <div><Label>Date of Birth</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} /></div>
+              <div>
+                <Label>Sex</Label>
+                <Select value={form.sex} onValueChange={(v) => set("sex", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="intersex">Intersex</SelectItem>
+                    <SelectItem value="unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Gender (optional)</Label><Input value={form.gender} onChange={(e) => set("gender", e.target.value)} placeholder="e.g., Male, Female, Non-binary" /></div>
+              <div>
+                <Label>Marital Status</Label>
+                <Select value={form.maritalStatus || "undefined"} onValueChange={(v) => set("maritalStatus", v === "undefined" ? "" : v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="undefined">—</SelectItem>
+                    <SelectItem value="single">Single</SelectItem>
+                    <SelectItem value="married">Married</SelectItem>
+                    <SelectItem value="divorced">Divorced</SelectItem>
+                    <SelectItem value="widowed">Widowed</SelectItem>
+                    <SelectItem value="separated">Separated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Blood Group</Label>
+                <Select value={form.bloodGroup || "undefined"} onValueChange={(v) => set("bloodGroup", v === "undefined" ? "" : v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="undefined">—</SelectItem>
+                    <SelectItem value="A+">A+</SelectItem>
+                    <SelectItem value="A-">A-</SelectItem>
+                    <SelectItem value="B+">B+</SelectItem>
+                    <SelectItem value="B-">B-</SelectItem>
+                    <SelectItem value="AB+">AB+</SelectItem>
+                    <SelectItem value="AB-">AB-</SelectItem>
+                    <SelectItem value="O+">O+</SelectItem>
+                    <SelectItem value="O-">O-</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="border-t pt-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Contact Information</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="e.g., 0241234567" /></div>
+              <div><Label>Alternative Phone</Label><Input value={form.alternativePhone} onChange={(e) => set("alternativePhone", e.target.value)} /></div>
+              <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Address */}
+          <div className="border-t pt-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Address</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="col-span-2 md:col-span-3"><Label>Address</Label><Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Street / House number" /></div>
+              <div><Label>City</Label><Input value={form.city} onChange={(e) => set("city", e.target.value)} /></div>
+              <div><Label>Region</Label><Input value={form.region} onChange={(e) => set("region", e.target.value)} placeholder="e.g., Greater Accra" /></div>
+              <div><Label>Country</Label><Input value={form.country} onChange={(e) => set("country", e.target.value)} /></div>
+            </div>
+          </div>
+
+          {/* Other */}
+          <div className="border-t pt-3">
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Other Information</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div><Label>Nationality</Label><Input value={form.nationality} onChange={(e) => set("nationality", e.target.value)} /></div>
+              <div><Label>Occupation</Label><Input value={form.occupation} onChange={(e) => set("occupation", e.target.value)} /></div>
+              <div><Label>Preferred Language</Label><Input value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} /></div>
+              <div>
+                <Label>Patient Status</Label>
+                <Select value={form.status} onValueChange={(v) => set("status", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="merged">Merged</SelectItem>
+                    <SelectItem value="deceased">Deceased</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={save} disabled={saving || !form.firstName || !form.lastName} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            {saving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</> : <><Save className="w-4 h-4" /> Save Changes</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

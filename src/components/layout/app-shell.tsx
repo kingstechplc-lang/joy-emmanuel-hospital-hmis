@@ -59,7 +59,8 @@ export function AppShell() {
 
   // Auto-clear stale activeFacilityId if it doesn't exist in the fetched facilities
   // This prevents foreign key violations when switching between deployments
-  // (e.g., from preview URL to Vercel URL) where facility IDs differ
+  // (e.g., from preview URL to Vercel URL) where facility IDs differ.
+  // NOTE: null = "All Facilities" (intentional), so we skip the check when null.
   useEffect(() => {
     if (facilities.length > 0 && activeFacilityId) {
       const stillExists = facilities.some((f: any) => f.id === activeFacilityId);
@@ -117,8 +118,13 @@ export function AppShell() {
   };
 
   const handleFacilityChange = (id: string) => {
-    setActiveFacility(id);
-    toast.success(`Switched to ${facilities.find((f: any) => f.id === id)?.name || "facility"}`);
+    if (id === "all") {
+      setActiveFacility(null);
+      toast.success("Switched to All Facilities");
+    } else {
+      setActiveFacility(id);
+      toast.success(`Switched to ${facilities.find((f: any) => f.id === id)?.name || "facility"}`);
+    }
   };
 
   return (
@@ -182,7 +188,7 @@ export function AppShell() {
           <div className="flex items-center gap-2">
             {/* Facility Switcher */}
             {facilities.length > 0 && (
-              <Select value={activeFacilityId || undefined} onValueChange={handleFacilityChange}>
+              <Select value={activeFacilityId || "all"} onValueChange={handleFacilityChange}>
                 <SelectTrigger className="w-44 hidden md:flex border-slate-200 hover:border-rose-300">
                   <div className="flex items-center gap-2 truncate">
                     <Hospital className="w-4 h-4 text-rose-500 shrink-0" />

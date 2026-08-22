@@ -131,3 +131,78 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   return NextResponse.json({ patient });
 }
+
+// =====================================================================
+// PATCH — update patient biographic/demographic information
+//   Requires patient.edit permission. Audit-logged.
+//   Protected fields (patientNumber, organizationId) cannot be changed.
+// =====================================================================
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasPermission(session, PERMISSIONS.PATIENT_EDIT)) {
+    return NextResponse.json({ error: "Forbidden — patient.edit permission required" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  let body: any;
+  try {
+    const text = await req.text();
+    body = text && text.trim() !== "" ? JSON.parse(text) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+  }
+
+  // Fetch existing patient (with org scope check)
+  const existing = await db.patient.findUnique({ where: { id } });
+  if (!existing || existing.organizationId !== session.user.organizationId) {
+    return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+  }
+
+  // Strip protected fields — these can never be edited via this endpoint
+  const {
+    id: _id,
+    organizationId: _orgId,
+    patientNumber: _pn,
+    registeredAtFacilityId: _raf,
+    registeredBy: _rb,
+    registrationDate: _rd,
+    createdAt: _c,
+    updatedAt: _u,
+    ...updateData
+  } = body;
+
+  // Convert dateOfBirth string to Date if provided
+  if (updateData.dateOfBirth) {
+    updateData.dateOfBirth = new Date(updateData.dateOfBirth);
+  }
+
+  // Validate sex field if provided
+  if (updateData.sex && !["male", "female", "intersex", "unknown"].includes(updateData.sex)) {
+    return NextResponse.json({ error: "Invalid sex value" }, { status: 400 });
+  }
+
+  // Validate status field if provided
+  if (updateData.status && !["active", "inactive", "merged", "deceased"].includes(updateData.status)) {
+    return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+  }
+
+  const updated = await db.patient.update({
+    where: { id },
+    data: updateData,
+  });
+
+  await auditLog({
+    userId: session.user.id,
+    organizationId: session.user.organizationId,
+    facilityId: session.user.facilityId || undefined,
+    action: "PATIENT_UPDATED",
+    resourceType: "patient",
+    resourceId: id,
+    oldValues: existing,
+    newValues: updateData,
+  });
+
+  return NextResponse.json({ patient: updated });
+}
