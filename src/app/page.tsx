@@ -1,6 +1,6 @@
 "use client";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { LoginView } from "@/components/views/login-view";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAppStore } from "@/stores/app-store";
@@ -14,12 +14,21 @@ export default function Home() {
   const { data: session, status } = useSession();
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const setActiveFacility = useAppStore((s) => s.setActiveFacility);
+  const initialized = useRef(false);
 
-  // Set the active facility from session if not yet set
+  // Set the active facility from session ONLY ONCE on first login.
+  // We must NOT re-trigger when the user deliberately clears the facility
+  // (selecting "All Facilities" sets activeFacilityId to null intentionally).
+  // The initialized ref ensures this only runs once per session.
   useEffect(() => {
-    if (session && !activeFacilityId) {
-      const facilityId = (session.user as any)?.facilityId;
-      if (facilityId) setActiveFacility(facilityId);
+    if (session && !initialized.current) {
+      initialized.current = true;
+      // Only auto-set if the user doesn't already have a facility selected
+      // (e.g., from persisted zustand state)
+      if (!activeFacilityId) {
+        const facilityId = (session.user as any)?.facilityId;
+        if (facilityId) setActiveFacility(facilityId);
+      }
     }
   }, [session, activeFacilityId, setActiveFacility]);
 
