@@ -960,11 +960,22 @@ model Consultation {
   status                   String   @default("draft") // draft | signed | amended
   signedById               String?
   signedAt                 DateTime?
+  // Enhanced consultation fields
+  disposition              String? // outpatient | admission | referral | follow_up | pharmacy | lab | imaging | procedure | discharge | emergency | other
+  dispositionNotes         String?
+  patientInstructions      String?
+  addendumText             String?
+  addendumById             String?
+  addendumAt               DateTime?
+  consultationStart        DateTime? // when clinician started the consultation
+  consultationEnd          DateTime? // when finalized
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
   @@index([patientId])
   @@index([encounterId])
+  @@index([status])
+  @@index([disposition])
 }
 
 model Diagnosis {

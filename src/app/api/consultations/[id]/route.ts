@@ -58,14 +58,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (existing.status === "signed") {
       return NextResponse.json({ error: "Consultation is already signed" }, { status: 400 });
     }
+
+    // Check required fields before finalizing
+    if (!existing.chiefComplaint) {
+      return NextResponse.json({ error: "Cannot finalize: Chief complaint is required" }, { status: 400 });
+    }
+    if (!existing.assessment) {
+      return NextResponse.json({ error: "Cannot finalize: Assessment is required" }, { status: 400 });
+    }
+
     const updated = await db.consultation.update({
       where: { id },
       data: {
         status: "signed",
         signedById: session.user.id,
         signedAt: new Date(),
+        consultationEnd: existing.consultationEnd || new Date(),
       },
     });
+
+    // Close the encounter
+    await db.encounter.updateMany({
+      where: { id: existing.encounterId, status: { in: ["open", "in_progress"] } },
+      data: { status: "completed", endAt: new Date() },
+    });
+
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,
@@ -75,6 +92,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       resourceId: id,
       oldValues: { status: existing.status },
       newValues: { status: "signed", signedById: session.user.id },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  // Addendum action
+  if (action === "addendum") {
+    if (!hasPermission(session, PERMISSIONS.CLINICAL_AMEND)) {
+      return NextResponse.json({ error: "Missing clinical.amend permission for addendum" }, { status: 403 });
+    }
+    const updated = await db.consultation.update({
+      where: { id },
+      data: {
+        addendumText: body.addendumText,
+        addendumById: session.user.id,
+        addendumAt: new Date(),
+      },
+    });
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      action: "CONSULTATION_ADDENDUM",
+      resourceType: "consultation",
+      resourceId: id,
+      newValues: { addendumText: body.addendumText },
     });
     return NextResponse.json({ item: updated });
   }
@@ -94,6 +135,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     familyHistory, socialHistory, reviewOfSystems,
     physicalExamination, assessment, treatmentPlan, followUpPlan,
     clinicianId,
+    disposition, dispositionNotes, patientInstructions,
+    consultationStart,
   } = body;
 
   const data: any = {};
@@ -110,6 +153,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (treatmentPlan !== undefined) data.treatmentPlan = treatmentPlan;
   if (followUpPlan !== undefined) data.followUpPlan = followUpPlan;
   if (clinicianId !== undefined) data.clinicianId = clinicianId;
+  if (disposition !== undefined) data.disposition = disposition;
+  if (dispositionNotes !== undefined) data.dispositionNotes = dispositionNotes;
+  if (patientInstructions !== undefined) data.patientInstructions = patientInstructions;
+  if (consultationStart !== undefined) data.consultationStart = consultationStart ? new Date(consultationStart) : null;
+
+  // Auto-set consultationStart if not set and this is the first edit
+  if (!existing.consultationStart && !data.consultationStart) {
+    data.consultationStart = new Date();
+  }
 
   // If amending a signed consultation, mark as amended
   if (existing.status === "signed") {
