@@ -113,7 +113,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (existing.status === "dispensed" || existing.status === "cancelled") {
       return NextResponse.json({ error: "Cannot cancel a dispensed or already-cancelled prescription" }, { status: 400 });
     }
-    await db.prescription.update({ where: { id }, data: { status: "cancelled" } });
+    await db.prescription.update({
+      where: { id },
+      data: { status: "cancelled", cancelledReason: body.reason || null },
+    });
     await db.prescriptionItem.updateMany({
       where: { prescriptionId: id, status: { in: ["pending", "partially_dispensed"] } },
       data: { status: "cancelled" },
@@ -127,9 +130,73 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       resourceType: "prescription",
       resourceId: id,
       oldValues: { status: existing.status },
-      newValues: { status: "cancelled" },
+      newValues: { status: "cancelled", reason: body.reason },
     });
     return NextResponse.json({ item: { ...existing, status: "cancelled" } });
+  }
+
+  // ---- DISCONTINUE ----
+  if (action === "discontinue") {
+    if (!hasPermission(session, PERMISSIONS.PHARMACY_PRESCRIBE)) {
+      return NextResponse.json({ error: "Missing pharmacy.prescribe permission" }, { status: 403 });
+    }
+    if (!["pending", "approved", "partially_dispensed"].includes(existing.status)) {
+      return NextResponse.json({ error: `Cannot discontinue prescription with status: ${existing.status}` }, { status: 400 });
+    }
+    if (!body.reason) {
+      return NextResponse.json({ error: "Discontinuation reason is required" }, { status: 400 });
+    }
+    await db.prescription.update({
+      where: { id },
+      data: {
+        status: "discontinued",
+        discontinuedAt: new Date(),
+        discontinuedById: session.user.id,
+        discontinuedReason: body.reason,
+      },
+    });
+    await db.prescriptionItem.updateMany({
+      where: { prescriptionId: id, status: { in: ["pending", "partially_dispensed"] } },
+      data: { status: "discontinued" },
+    });
+
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      action: "PRESCRIPTION_DISCONTINUED",
+      resourceType: "prescription",
+      resourceId: id,
+      oldValues: { status: existing.status },
+      newValues: { status: "discontinued", reason: body.reason },
+    });
+    return NextResponse.json({ item: { ...existing, status: "discontinued" } });
+  }
+
+  // ---- FINALIZE (draft → pending) ----
+  if (action === "finalize") {
+    if (!hasPermission(session, PERMISSIONS.PHARMACY_PRESCRIBE)) {
+      return NextResponse.json({ error: "Missing pharmacy.prescribe permission" }, { status: 403 });
+    }
+    if (existing.status !== "draft") {
+      return NextResponse.json({ error: "Only draft prescriptions can be finalized" }, { status: 400 });
+    }
+    const updated = await db.prescription.update({
+      where: { id },
+      data: { status: "pending", finalizedAt: new Date() },
+    });
+
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      action: "PRESCRIPTION_FINALIZED",
+      resourceType: "prescription",
+      resourceId: id,
+      oldValues: { status: existing.status },
+      newValues: { status: "pending", finalizedAt: new Date() },
+    });
+    return NextResponse.json({ item: updated });
   }
 
   // ---- UPDATE NOTES ----

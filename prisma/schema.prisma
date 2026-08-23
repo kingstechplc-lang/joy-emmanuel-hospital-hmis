@@ -1205,15 +1205,25 @@ model Prescription {
   prescriber        User?    @relation("rxPrescriber", fields: [prescriberId], references: [id])
   facilityId       String
   facility          Facility @relation(fields: [facilityId], references: [id])
-  status            String   @default("pending") // pending | approved | partially_dispensed | dispensed | cancelled
+  status            String   @default("pending") // draft | pending | approved | partially_dispensed | dispensed | cancelled | discontinued
   prescribedAt      DateTime @default(now())
+  finalizedAt       DateTime?
+  discontinuedAt    DateTime?
+  discontinuedById  String?
+  discontinuedReason String?
+  cancelledReason   String?
   notes             String?
+  // Safety tracking
+  allergyWarnings   String?  // JSON array of allergy warnings shown
+  duplicateWarnings String?  // JSON array of duplicate medication warnings
+  warningsAcknowledged Boolean @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@unique([facilityId, prescriptionNumber])
   @@index([patientId, status])
   @@index([facilityId, status])
+  @@index([status])
 
   items             PrescriptionItem[]
 }
@@ -1228,10 +1238,21 @@ model PrescriptionItem {
   frequency         String? // BD | TDS | QDS | PRN | STAT | once weekly
   route             String?
   duration          String? // 5 days | 2 weeks | 1 month
+  durationValue     Int?    // numeric duration (e.g., 5)
+  durationUnit      String? // days | weeks | months
   quantity          Int      @default(0)
+  quantityCalculated Boolean @default(false)
   instructions      String?
+  isPRN             Boolean  @default(false)
+  prnIndication     String?  // condition for PRN use
+  prnMaxFrequency   String?  // max PRN frequency
+  isSTAT            Boolean  @default(false)
+  isOneTime         Boolean  @default(false)
+  startDate         DateTime?
+  endDate           DateTime?
+  diagnosisId       String?  // link to diagnosis/indication
   dispensedQuantity Int      @default(0)
-  status            String   @default("pending") // pending | dispensed | partially_dispensed | cancelled
+  status            String   @default("pending") // pending | dispensed | partially_dispensed | cancelled | discontinued
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

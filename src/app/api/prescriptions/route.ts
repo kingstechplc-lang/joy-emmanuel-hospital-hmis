@@ -93,6 +93,9 @@ export async function POST(req: Request) {
   // Validate patient + encounter belong together
   const patient = await db.patient.findFirst({
     where: { id: patientId, organizationId: session.user.organizationId },
+    include: {
+      allergies: { where: { status: "active" }, select: { allergen: true, severity: true, reaction: true } },
+    },
   });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
 
@@ -100,6 +103,38 @@ export async function POST(req: Request) {
     where: { id: encounterId, patientId, facilityId },
   });
   if (!encounter) return NextResponse.json({ error: "Encounter not found for this patient/facility" }, { status: 404 });
+
+  // --- Allergy check ---
+  const allergyWarnings: string[] = [];
+  for (const item of items) {
+    if (!item.medicationId) continue;
+    const med = await db.medication.findUnique({ where: { id: item.medicationId }, select: { genericName: true, brandName: true } });
+    if (!med) continue;
+    const medNameLower = (med.genericName + " " + (med.brandName || "")).toLowerCase();
+    for (const allergy of patient.allergies) {
+      if (allergy.allergen && medNameLower.includes(allergy.allergen.toLowerCase())) {
+        allergyWarnings.push(`ALLERGY ALERT: ${med.genericName} conflicts with documented allergy to ${allergy.allergen}${allergy.severity ? ` (${allergy.severity})` : ""}${allergy.reaction ? ` — Reaction: ${allergy.reaction}` : ""}`);
+      }
+    }
+  }
+
+  // --- Duplicate medication detection ---
+  const duplicateWarnings: string[] = [];
+  const activeRxItems = await db.prescriptionItem.findMany({
+    where: {
+      prescription: { patientId, status: { in: ["pending", "approved", "partially_dispensed"] } },
+      status: { in: ["pending", "partially_dispensed"] },
+    },
+    include: { medication: { select: { genericName: true, brandName: true } } },
+  });
+  for (const item of items) {
+    if (!item.medicationId) continue;
+    const dup = activeRxItems.find((a) => a.medicationId === item.medicationId);
+    if (dup) {
+      const medName = dup.medication.genericName + (dup.medication.brandName ? ` (${dup.medication.brandName})` : "");
+      duplicateWarnings.push(`DUPLICATE: Patient already has an active prescription for ${medName} (Rx item ID: ${dup.id})`);
+    }
+  }
 
   const prescriptionNumber = await nextPrescriptionNumber(facilityId);
 
@@ -115,6 +150,9 @@ export async function POST(req: Request) {
         status: "pending",
         notes: notes || null,
         prescribedAt: new Date(),
+        allergyWarnings: allergyWarnings.length > 0 ? JSON.stringify(allergyWarnings) : null,
+        duplicateWarnings: duplicateWarnings.length > 0 ? JSON.stringify(duplicateWarnings) : null,
+        warningsAcknowledged: body.acknowledgeWarnings === true,
       },
     });
 
@@ -128,8 +166,19 @@ export async function POST(req: Request) {
           frequency: it.frequency || null,
           route: it.route || null,
           duration: it.duration || null,
+          durationValue: it.durationValue ? parseInt(it.durationValue) : null,
+          durationUnit: it.durationUnit || null,
           quantity: Number(it.quantity) || 0,
+          quantityCalculated: it.quantityCalculated || false,
           instructions: it.instructions || null,
+          isPRN: it.isPRN || false,
+          prnIndication: it.prnIndication || null,
+          prnMaxFrequency: it.prnMaxFrequency || null,
+          isSTAT: it.isSTAT || false,
+          isOneTime: it.isOneTime || false,
+          startDate: it.startDate ? new Date(it.startDate) : null,
+          endDate: it.endDate ? new Date(it.endDate) : null,
+          diagnosisId: it.diagnosisId || null,
           dispensedQuantity: 0,
           status: "pending",
         },
