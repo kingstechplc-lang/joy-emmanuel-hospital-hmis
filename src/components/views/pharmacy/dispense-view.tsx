@@ -124,6 +124,39 @@ export function DispenseView() {
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
+  // ---- Bulk dispense preview (dry-run) state ----
+  // The bulk action works in two phases:
+  //   1. PLANNING — fetch FEFO batches for every selected item, build a
+  //      detailed plan, show it in a preview Dialog so the user can review
+  //      and toggle per-item "Bill to invoice" before committing.
+  //   2. EXECUTION — iterate the confirmed plan and POST to /api/dispense.
+  type BulkPlanEntry = {
+    itemId: string;
+    rxId: string;
+    facilityId: string;
+    patientId: string;
+    patientName: string;
+    medName: string;
+    medStrength?: string;
+    medForm?: string;
+    quantity: number;
+    // FEFO-resolved batch info (may be null if no valid batch)
+    batchId?: string;
+    batchNumber?: string;
+    batchExpiry?: string;
+    batchQuantity?: number;
+    daysUntilExpiry?: number | null;
+    isNearExpiry?: boolean;
+    isExpired?: boolean;
+    noBatch?: boolean; // true if no valid in-stock batch found
+    error?: string; // human-readable reason if noBatch
+  };
+  const [bulkPlan, setBulkPlan] = useState<BulkPlanEntry[]>([]);
+  const [showBulkPreview, setShowBulkPreview] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  // Per-item "Bill to invoice" choices, keyed by itemId. Defaults to true.
+  const [bulkInvoiceChoices, setBulkInvoiceChoices] = useState<Record<string, boolean>>({});
+
   // ---- Dashboard stats query (auto-refresh every 30s) ----
   const statsQs = activeFacilityId ? `?facilityId=${activeFacilityId}` : "";
   const {
@@ -430,24 +463,18 @@ export function DispenseView() {
     );
   }, 0);
 
-  // ---- Bulk Dispense action ----
-  // Walks every selected patient group, every prescription, every remaining
-  // item — fetches inventory batches for that item, picks the FEFO-recommended
-  // batch, and POSTs to /api/dispense. Reports progress in a dialog.
-  const handleBulkDispense = async () => {
+  // ---- Bulk Dispense — Phase 1: PLANNING (dry-run preview) ----
+  // Walks every selected patient's prescriptions, fetches inventory batches
+  // for each remaining item, picks the FEFO-recommended batch, and stores
+  // the result in `bulkPlan`. Then opens the preview Dialog so the user
+  // can review and toggle per-item "Bill to invoice" before committing.
+  const prepareBulkPlan = async () => {
     if (visibleSelectedGroups.length === 0) return;
 
-    // Build the plan first so we know the total up-front.
-    type PlanEntry = {
-      patientName: string;
-      medName: string;
-      itemId: string;
-      rxId: string;
-      facilityId: string;
-      medicationName: string;
-      quantity: number;
-    };
-    const plan: PlanEntry[] = [];
+    setPlanning(true);
+    const plan: BulkPlanEntry[] = [];
+    const invoiceChoices: Record<string, boolean> = {};
+
     for (const g of visibleSelectedGroups) {
       for (const rx of g.rxs) {
         for (const it of rx.items || []) {
@@ -458,69 +485,110 @@ export function DispenseView() {
           ) {
             continue;
           }
-          plan.push({
-            patientName: `${g.patient?.firstName || ""} ${g.patient?.lastName || ""}`.trim(),
-            medName: it.medication?.genericName || "Unknown",
-            itemId: it.id,
+          const itemId: string = it.id;
+          const medName: string = it.medication?.genericName || "Unknown";
+          const quantity: number = it.quantity - it.dispensedQuantity;
+          const entry: BulkPlanEntry = {
+            itemId,
             rxId: rx.id,
             facilityId: rx.facilityId,
-            medicationName: it.medication?.genericName || "",
-            quantity: it.quantity - it.dispensedQuantity,
-          });
+            patientId: g.pid,
+            patientName: `${g.patient?.firstName || ""} ${g.patient?.lastName || ""}`.trim(),
+            medName,
+            medStrength: it.medication?.strength,
+            medForm: it.medication?.dosageForm,
+            quantity,
+          };
+
+          try {
+            const invRes = await fetch(
+              `/api/inventory?facilityId=${rx.facilityId}&type=medication&q=${encodeURIComponent(medName)}`
+            );
+            if (!invRes.ok) {
+              entry.noBatch = true;
+              entry.error = `Inventory lookup failed (${invRes.status})`;
+              plan.push(entry);
+              invoiceChoices[itemId] = true;
+              continue;
+            }
+            const inv = await safeJson(invRes);
+            const match = (inv.items || []).find(
+              (invItem: any) =>
+                invItem.medication?.id === invItem.medicationId ||
+                invItem.name?.toLowerCase().includes(medName.toLowerCase())
+            );
+            const batches = match?.batches || [];
+            const rec = fefoRecommendedBatch(batches);
+            if (!rec) {
+              entry.noBatch = true;
+              entry.error = batches.length === 0 ? "No batches in stock" : "All batches expired or out of stock";
+              plan.push(entry);
+              invoiceChoices[itemId] = true;
+              continue;
+            }
+            entry.batchId = rec.id;
+            entry.batchNumber = rec.batchNumber;
+            entry.batchExpiry = rec.expiryDate;
+            entry.batchQuantity = rec.quantity;
+            entry.daysUntilExpiry = daysUntil(rec.expiryDate);
+            entry.isNearExpiry = isNearExpiry(rec.expiryDate);
+            entry.isExpired = isExpired(rec.expiryDate);
+            plan.push(entry);
+            invoiceChoices[itemId] = true; // default: bill to invoice
+          } catch (e: any) {
+            entry.noBatch = true;
+            entry.error = e?.message || "Inventory lookup error";
+            plan.push(entry);
+            invoiceChoices[itemId] = true;
+          }
         }
       }
     }
+
+    setPlanning(false);
 
     if (plan.length === 0) {
       toast.info("No items left to dispense across selected patients.");
       return;
     }
 
-    const ok = window.confirm(
-      `Dispense ${plan.length} item(s) across ${visibleSelectedGroups.length} patient(s) using FEFO-recommended batches?\n\n` +
-      `This action will bill each item to its patient's invoice (unless already configured otherwise). ` +
-      `Items without a valid in-stock batch will be skipped.`
-    );
-    if (!ok) return;
+    setBulkPlan(plan);
+    setBulkInvoiceChoices(invoiceChoices);
+    setShowBulkPreview(true);
+  };
 
+  // ---- Bulk Dispense — Phase 2: EXECUTION ----
+  // Runs after the user reviews the preview and clicks "Confirm dispense".
+  // Only items with a valid batchId and a checked "Bill to invoice" choice
+  // (or the default true) are sent. Items with no batch are skipped silently.
+  const executeBulkPlan = async () => {
+    const executable = bulkPlan.filter((p) => !p.noBatch && p.batchId);
+    if (executable.length === 0) {
+      toast.error("No items can be dispensed — none have a valid in-stock batch.");
+      setShowBulkPreview(false);
+      return;
+    }
+
+    setShowBulkPreview(false);
     setBulkDispensing(true);
-    setBulkProgress({ done: 0, total: plan.length, failed: 0 });
+    setBulkProgress({ done: 0, total: executable.length, failed: 0 });
 
     let success = 0;
     let failed = 0;
     const failures: string[] = [];
 
-    for (let i = 0; i < plan.length; i++) {
-      const p = plan[i];
+    for (let i = 0; i < executable.length; i++) {
+      const p = executable[i];
+      const createInvoice = bulkInvoiceChoices[p.itemId] ?? true;
       try {
-        // 1. Fetch inventory batches for this medication
-        const invRes = await fetch(
-          `/api/inventory?facilityId=${p.facilityId}&type=medication&q=${encodeURIComponent(p.medicationName)}`
-        );
-        if (!invRes.ok) throw new Error(`Inventory lookup failed (${invRes.status})`);
-        const inv = await safeJson(invRes);
-        const match = (inv.items || []).find(
-          (invItem: any) =>
-            invItem.medication?.id === (invItem as any).medicationId ||
-            invItem.name
-              ?.toLowerCase()
-              .includes(p.medicationName.toLowerCase())
-        );
-        const batches = match?.batches || [];
-        const rec = fefoRecommendedBatch(batches);
-        if (!rec) {
-          throw new Error("No valid in-stock batch (FEFO)");
-        }
-
-        // 2. POST to dispense API
         const res = await fetch("/api/dispense", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prescriptionItemId: p.itemId,
-            batchId: rec.id,
+            batchId: p.batchId,
             quantity: p.quantity,
-            createInvoice: true,
+            createInvoice,
           }),
         });
         const data = await safeJson(res);
@@ -532,11 +600,13 @@ export function DispenseView() {
         failed++;
         failures.push(`${p.patientName} · ${p.medName}: ${e.message}`);
       }
-      setBulkProgress({ done: i + 1, total: plan.length, failed });
+      setBulkProgress({ done: i + 1, total: executable.length, failed });
     }
 
     setBulkDispensing(false);
     setBulkProgress(null);
+    setBulkPlan([]);
+    setBulkInvoiceChoices({});
     clearSelection();
 
     if (success > 0) {
@@ -549,7 +619,6 @@ export function DispenseView() {
       toast.error(`All ${failed} item(s) failed to dispense.`);
     }
 
-    // Show first few failures in console + a toast for the first one.
     if (failures.length > 0) {
       console.error("Bulk dispense failures:", failures);
       toast.error(failures[0] + (failures.length > 1 ? ` (+${failures.length - 1} more)` : ""));
@@ -557,6 +626,34 @@ export function DispenseView() {
 
     invalidate();
   };
+
+  const cancelBulkPreview = () => {
+    setShowBulkPreview(false);
+    setBulkPlan([]);
+    setBulkInvoiceChoices({});
+  };
+
+  const toggleBulkInvoice = (itemId: string) =>
+    setBulkInvoiceChoices((prev) => ({ ...prev, [itemId]: !(prev[itemId] ?? true) }));
+
+  const setAllBulkInvoice = (value: boolean) => {
+    const next: Record<string, boolean> = {};
+    for (const p of bulkPlan) next[p.itemId] = value;
+    setBulkInvoiceChoices(next);
+  };
+
+  // Derived preview summary
+  const previewSummary = (() => {
+    const total = bulkPlan.length;
+    const dispensable = bulkPlan.filter((p) => !p.noBatch).length;
+    const noBatch = bulkPlan.filter((p) => p.noBatch).length;
+    const willBill = bulkPlan.filter(
+      (p) => !p.noBatch && (bulkInvoiceChoices[p.itemId] ?? true)
+    ).length;
+    const nearExpiry = bulkPlan.filter((p) => p.isNearExpiry).length;
+    const patientCount = new Set(bulkPlan.map((p) => p.patientId)).size;
+    return { total, dispensable, noBatch, willBill, nearExpiry, patientCount };
+  })();
 
   const kpis = statsData?.kpis || {};
 
@@ -991,7 +1088,7 @@ export function DispenseView() {
                           size="sm"
                           className="h-8 text-xs border-amber-300 bg-white hover:bg-amber-50"
                           onClick={selectAllVisible}
-                          disabled={filteredGroups.length === 0 || bulkDispensing}
+                          disabled={filteredGroups.length === 0 || bulkDispensing || planning}
                         >
                           <CheckSquare className="w-3.5 h-3.5" /> Select all visible
                         </Button>
@@ -1000,24 +1097,28 @@ export function DispenseView() {
                           size="sm"
                           className="h-8 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                           onClick={clearSelection}
-                          disabled={bulkDispensing}
+                          disabled={bulkDispensing || planning}
                         >
                           <X className="w-3.5 h-3.5" /> Clear selection
                         </Button>
                         <Button
                           size="sm"
                           className="h-8 text-xs gap-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
-                          onClick={handleBulkDispense}
-                          disabled={bulkDispensing || bulkPlannedItemCount === 0}
+                          onClick={prepareBulkPlan}
+                          disabled={bulkDispensing || planning || bulkPlannedItemCount === 0}
                         >
-                          {bulkDispensing ? (
+                          {planning ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : bulkDispensing ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Zap className="w-3.5 h-3.5" />
                           )}
-                          {bulkDispensing
+                          {planning
+                            ? "Preparing preview…"
+                            : bulkDispensing
                             ? `Dispensing… (${bulkProgress?.done ?? 0}/${bulkProgress?.total ?? 0})`
-                            : `Dispense ${bulkPlannedItemCount} item${bulkPlannedItemCount === 1 ? "" : "s"}`}
+                            : `Preview & dispense ${bulkPlannedItemCount} item${bulkPlannedItemCount === 1 ? "" : "s"}`}
                         </Button>
                       </div>
                     </div>
@@ -1090,7 +1191,7 @@ export function DispenseView() {
                       hasPrn={g.hasPrn}
                       selected={!!selectedPatientIds[g.pid]}
                       onToggleSelect={() => togglePatientSelection(g.pid)}
-                      bulkDispensing={bulkDispensing}
+                      bulkDispensing={bulkDispensing || planning}
                     />
                   ))}
                 </div>
@@ -1099,6 +1200,213 @@ export function DispenseView() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* ===== Bulk Dispense Preview Dialog (dry-run) ===== */}
+      <Dialog open={showBulkPreview} onOpenChange={(o) => !o && cancelBulkPreview()}>
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListChecks className="w-5 h-5 text-amber-600" />
+              Bulk Dispense Preview
+            </DialogTitle>
+            <DialogDescription>
+              Dry-run preview of the planned dispense. Review FEFO batch
+              assignments and toggle per-item &quot;Bill to invoice&quot; before
+              confirming. Items without a valid in-stock batch will be skipped.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Summary stat row */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <PreviewStat
+              label="Patients"
+              value={previewSummary.patientCount}
+              tone="slate"
+            />
+            <PreviewStat
+              label="Total items"
+              value={previewSummary.total}
+              tone="slate"
+            />
+            <PreviewStat
+              label="Dispensable"
+              value={previewSummary.dispensable}
+              tone="emerald"
+            />
+            <PreviewStat
+              label="No batch"
+              value={previewSummary.noBatch}
+              tone={previewSummary.noBatch > 0 ? "rose" : "slate"}
+            />
+            <PreviewStat
+              label="Near-expiry"
+              value={previewSummary.nearExpiry}
+              tone={previewSummary.nearExpiry > 0 ? "amber" : "slate"}
+            />
+            <PreviewStat
+              label="Will bill"
+              value={previewSummary.willBill}
+              tone="amber"
+            />
+          </div>
+
+          {/* Per-item table */}
+          <div className="flex-1 overflow-hidden border border-slate-200 rounded-lg">
+            <div className="overflow-auto max-h-[45vh]">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-slate-100 z-10">
+                  <tr className="text-left text-slate-600 border-b border-slate-200">
+                    <th className="px-2 py-2 font-semibold">Patient</th>
+                    <th className="px-2 py-2 font-semibold">Medication</th>
+                    <th className="px-2 py-2 font-semibold text-right">Qty</th>
+                    <th className="px-2 py-2 font-semibold">Batch (FEFO)</th>
+                    <th className="px-2 py-2 font-semibold">Expiry</th>
+                    <th className="px-2 py-2 font-semibold text-center">Bill to invoice</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {bulkPlan.map((p) => {
+                    const willBill = bulkInvoiceChoices[p.itemId] ?? true;
+                    return (
+                      <tr
+                        key={p.itemId}
+                        className={`align-top ${
+                          p.noBatch
+                            ? "bg-rose-50/50"
+                            : p.isNearExpiry
+                            ? "bg-amber-50/40"
+                            : "hover:bg-slate-50"
+                        }`}
+                      >
+                        <td className="px-2 py-2 text-slate-700">
+                          {p.patientName}
+                        </td>
+                        <td className="px-2 py-2">
+                          <div className="font-medium text-slate-800">
+                            {p.medName}
+                          </div>
+                          {(p.medStrength || p.medForm) && (
+                            <div className="text-[10px] text-slate-500">
+                              {p.medStrength}
+                              {p.medStrength && p.medForm ? " · " : ""}
+                              {p.medForm}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-2 py-2 text-right tabular-nums font-medium">
+                          {p.quantity}
+                        </td>
+                        <td className="px-2 py-2">
+                          {p.noBatch ? (
+                            <span className="text-rose-700 font-medium">
+                              — no batch —
+                            </span>
+                          ) : (
+                            <span className="font-mono text-slate-700">
+                              {p.batchNumber}
+                              <span className="text-slate-400 ml-1">
+                                ({p.batchQuantity}u)
+                              </span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          {p.noBatch ? (
+                            <span className="text-rose-600 text-[10px]">
+                              {p.error || "Unavailable"}
+                            </span>
+                          ) : p.batchExpiry ? (
+                            <span
+                              className={`inline-flex items-center gap-1 ${
+                                p.isNearExpiry ? "text-amber-700 font-medium" : "text-slate-600"
+                              }`}
+                            >
+                              {formatDate(p.batchExpiry)}
+                              {p.daysUntilExpiry !== null && p.daysUntilExpiry !== undefined && (
+                                <span
+                                  className={`text-[10px] ${
+                                    p.isNearExpiry ? "text-amber-600" : "text-slate-400"
+                                  }`}
+                                >
+                                  ({p.daysUntilExpiry}d)
+                                </span>
+                              )}
+                              {p.isNearExpiry && (
+                                <CalendarClock className="w-3 h-3 text-amber-600" />
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          {p.noBatch ? (
+                            <span className="text-[10px] text-slate-400">—</span>
+                          ) : (
+                            <Checkbox
+                              checked={willBill}
+                              onCheckedChange={() => toggleBulkInvoice(p.itemId)}
+                              className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Bulk invoice toggle helpers */}
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-slate-500">
+              <span>Quick toggle:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[11px]"
+                onClick={() => setAllBulkInvoice(true)}
+              >
+                Bill all
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[11px]"
+                onClick={() => setAllBulkInvoice(false)}
+              >
+                Bill none
+              </Button>
+            </div>
+            {previewSummary.noBatch > 0 && (
+              <span className="text-rose-600 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {previewSummary.noBatch} item(s) will be skipped (no valid batch)
+              </span>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={cancelBulkPreview}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white gap-1.5"
+              onClick={executeBulkPlan}
+              disabled={previewSummary.dispensable === 0}
+            >
+              <Zap className="w-4 h-4" />
+              Confirm dispense — {previewSummary.dispensable} item{previewSummary.dispensable === 1 ? "" : "s"}
+              {previewSummary.willBill !== previewSummary.dispensable && (
+                <span className="ml-1 text-[10px] opacity-90">
+                  ({previewSummary.willBill} billed)
+                </span>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1183,6 +1491,52 @@ function VerifyField({ label, value }: { label: string; value: string | undefine
       </div>
       <div className="text-sm font-medium text-slate-800 truncate">
         {value || "—"}
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// PREVIEW STAT — small stat tile for the bulk-dispense preview dialog
+// =====================================================================
+function PreviewStat({
+  label,
+  value,
+  tone = "slate",
+}: {
+  label: string;
+  value: number;
+  tone?: "slate" | "amber" | "rose" | "emerald";
+}) {
+  const tones = {
+    slate: {
+      wrap: "bg-slate-50 border-slate-200",
+      label: "text-slate-500",
+      value: "text-slate-800",
+    },
+    amber: {
+      wrap: "bg-amber-50 border-amber-200",
+      label: "text-amber-700",
+      value: "text-amber-800",
+    },
+    rose: {
+      wrap: "bg-rose-50 border-rose-200",
+      label: "text-rose-700",
+      value: "text-rose-800",
+    },
+    emerald: {
+      wrap: "bg-emerald-50 border-emerald-200",
+      label: "text-emerald-700",
+      value: "text-emerald-800",
+    },
+  }[tone];
+  return (
+    <div className={`rounded-md border px-3 py-2 ${tones.wrap}`}>
+      <div className={`text-[10px] font-semibold uppercase tracking-wider ${tones.label}`}>
+        {label}
+      </div>
+      <div className={`text-lg font-extrabold tabular-nums ${tones.value}`}>
+        {value}
       </div>
     </div>
   );
