@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -536,6 +536,7 @@ function NewPrescriptionDialog({
   const [activeRxMeds, setActiveRxMeds] = useState<{ medicationId: string; medName: string; rxNumber: string }[]>([]);
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const medPickerRef = useRef<HTMLDivElement>(null);
 
   // Load facilities
   useEffect(() => {
@@ -656,6 +657,14 @@ function NewPrescriptionDialog({
     ]);
     setMedPickerValue(null);
   };
+
+  // Auto-scroll to the medication picker after adding an item, so the user
+  // can immediately add another without scrolling up through the growing list.
+  useEffect(() => {
+    if (items.length > 0 && medPickerRef.current) {
+      medPickerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [items.length]);
 
   const updateItem = (idx: number, field: string, value: any) => {
     setItems((prev) =>
@@ -831,8 +840,10 @@ function NewPrescriptionDialog({
             </div>
           </div>
 
-          {/* Medication picker */}
-          <MedicationPicker value={medPickerValue} onChange={addMedication} disabled={!patientId} />
+          {/* Medication picker — auto-scrolls into view after each add */}
+          <div ref={medPickerRef}>
+            <MedicationPicker value={medPickerValue} onChange={addMedication} disabled={!patientId} />
+          </div>
 
           {/* Items list */}
           {items.length > 0 && (

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -238,6 +238,14 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
     { description: "", quantity: 1, unitPrice: 0, discount: 0, tax: 0 },
   ]);
   const [saving, setSaving] = useState(false);
+  const itemsEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to the newly added item so user can edit it without scrolling
+  useEffect(() => {
+    if (items.length > 1 && itemsEndRef.current) {
+      itemsEndRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [items.length]);
 
   const { data: patientsData } = useQuery({
     queryKey: ["patient-search-invoice", patientQuery],
@@ -430,6 +438,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
                 </div>
               ))}
             </div>
+            <div ref={itemsEndRef} />
           </div>
 
           <Separator />

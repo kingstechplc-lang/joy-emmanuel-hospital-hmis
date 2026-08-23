@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -195,6 +195,14 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
   const [inventory, setInventory] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const itemsEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to newly added item
+  useEffect(() => {
+    if (items.length > 0 && itemsEndRef.current) {
+      itemsEndRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [items.length]);
 
   useEffect(() => { fetchJson("/api/facilities").then((d) => setFacilities(d.facilities || [])).catch(() => {}); }, []);
 
@@ -295,6 +303,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
           )}
 
           {items.length > 0 && (
+            <>
             <div className="space-y-2">
               {items.map((it, idx) => (
                 <Card key={idx}>
@@ -327,6 +336,8 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
                 </Card>
               ))}
             </div>
+            <div ref={itemsEndRef} />
+            </>
           )}
 
           <div>

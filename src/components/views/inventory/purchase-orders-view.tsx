@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -203,6 +203,14 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
   const [invQuery, setInvQuery] = useState("");
   const [items, setItems] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const itemsEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to newly added item
+  useEffect(() => {
+    if (items.length > 0 && itemsEndRef.current) {
+      itemsEndRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [items.length]);
 
   useEffect(() => { fetchJson("/api/facilities").then((d) => setFacilities(d.facilities || [])).catch(() => {}); }, []);
   useEffect(() => { fetchJson("/api/suppliers").then((d) => setSuppliers(d.items || [])).catch(() => {}); }, []);
@@ -296,6 +304,7 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
           </div>
 
           {items.length > 0 && (
+            <>
             <div className="border rounded">
               <table className="w-full text-xs">
                 <thead className="border-b bg-slate-50">
@@ -330,6 +339,8 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
                 </tfoot>
               </table>
             </div>
+            <div ref={itemsEndRef} />
+            </>
           )}
 
           <div>
