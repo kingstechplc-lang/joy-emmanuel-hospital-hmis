@@ -119,6 +119,10 @@ model Facility {
   aefiRecords           AEFI[]
   vaccineWastage        VaccineWastage[]
   coldChainAlerts       ColdChainAlert[]
+  // Maternity back-relations
+  ancVisits             AncVisit[]
+  laborAndDeliveries    LaborAndDelivery[]
+  postnatalVisits       PostnatalVisit[]
   documents             Document[]
   notifications         Notification[]
   tasks                 Task[]
@@ -300,6 +304,12 @@ model User {
   vaccineWastageDisposed VaccineWastage[] @relation("wasteDisposedBy")
   coldChainRecorded  ColdChainAlert[] @relation("coldChainRecordedBy")
   coldChainAcked     ColdChainAlert[] @relation("coldChainAckedBy")
+  // Maternity back-relations
+  maternityRecords   MaternityRecord[] @relation("maternityCreator")
+  ancVisitsRecorded  AncVisit[] @relation("ancVisitRecorder")
+  laborClinician     LaborAndDelivery[] @relation("laborClinician")
+  laborMidwife       LaborAndDelivery[] @relation("laborMidwife")
+  postnatalVisitsRecorded PostnatalVisit[] @relation("postnatalRecorder")
   patientTransfers PatientTransfer[] @relation("ptRequestedBy")
   immunizations  Immunization[] @relation("immunizationAdmin")
   triageRecords  TriageRecord[] @relation("triageNurse")
@@ -492,6 +502,10 @@ model Patient {
   socialHistory      SocialHistory[]
   immunizations      Immunization[]
   aefiRecords        AEFI[]
+  // Maternity back-relations
+  ancVisits          AncVisit[]
+  laborAndDeliveries LaborAndDelivery[] @relation("laborPatient")
+  postnatalVisits    PostnatalVisit[] @relation("postnatalPatient")
   labOrders          LabOrder[]
   imagingOrders      ImagingOrder[]
   procedures         Procedure[]
@@ -2058,39 +2072,239 @@ model MaternityRecord {
   encounter           Encounter? @relation(fields: [encounterId], references: [id])
   facilityId          String
   facility            Facility @relation(fields: [facilityId], references: [id])
+  // Obstetric summary
   gravida             Int?
   para                Int?
-  expectedDeliveryDate DateTime?
-  pregnancyStatus     String   @default("active") // active | delivered | miscarried | terminated
+  abortions           Int?
+  livingChildren      Int?
+  // Pregnancy dating
+  lmp                 DateTime? // Last menstrual period
+  eddLmp              DateTime? // EDD calculated from LMP (LMP + 280 days)
+  eddUltrasound       DateTime? // EDD from ultrasound dating
+  eddClinical         DateTime? // Clinically assigned EDD
+  eddFinal            DateTime? // Final/active EDD (may differ from LMP-based)
+  eddConfidenceReason String?  // Why EDD was changed (if different from LMP-based)
+  // Pregnancy details
+  pregnancyNumber     Int?     // Which pregnancy for this patient (1, 2, 3...)
+  pregnancyStatus     String   @default("active") // active | delivered | miscarried | terminated | ectopic | referred | transferred | lost_to_followup | completed
+  pregnancyType       String?  // singleton | twin | triplet | higher_order
+  riskLevel           String   @default("low") // low | moderate | high
+  riskFactors         String?  // JSON array of risk factor strings
+  riskOverrideReason  String?  // If clinician manually set risk level
+  bloodGroup          String?
+  rhStatus            String?  // positive | negative
+  // Clinical notes
   antenatalNotes      String?
   deliveryNotes       String?
+  // Delivery summary (detailed capture in LaborAndDelivery model)
   deliveryDate        DateTime?
-  deliveryType        String? // normal | cesarean | assisted | vacuum
-  birthOutcome        String? // live_birth | still_birth | miscarriage
-  createdById        String?
+  deliveryType        String?  // normal | cesarean | assisted | vacuum | breech
+  birthOutcome        String?  // live_birth | still_birth | miscarriage | neonatal_death
+  // Metadata
+  createdById         String?
+  createdBy           User?    @relation("maternityCreator", fields: [createdById], references: [id])
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   newborns            NewbornRecord[]
+  ancVisits           AncVisit[]
+  laborAndDelivery    LaborAndDelivery?
+  postnatalVisits     PostnatalVisit[]
+
+  @@index([patientId, pregnancyStatus])
+  @@index([facilityId, pregnancyStatus])
+  @@index([eddFinal])
+  @@index([riskLevel, pregnancyStatus])
 }
 
 model NewbornRecord {
   id                String   @id @default(cuid())
   motherPatientId   String
   mother            Patient @relation("newbornMother", fields: [motherPatientId], references: [id])
-  patientId         String?
+  patientId         String?  // Link to newborn's own Patient record (created at birth)
   deliveryRecordId  String
   deliveryRecord    MaternityRecord @relation(fields: [deliveryRecordId], references: [id])
-  birthDate         DateTime @default(now())
-  sex               String?
-  birthWeight       Float?
+  birthDate         DateTime // Required — no default; must be explicitly set
+  sex               String?  // male | female | unknown
+  birthWeight       Float?   // kg
+  birthLength       Float?   // cm
+  headCircumference Float?   // cm
   apgar1            Int?
   apgar5            Int?
-  apgar10           Int?
-  gestationalAge    Int?
+  apgar10            Int?
+  gestationalAge    Int?     // weeks
+  feedingStatus     String?  // breastfeeding | formula | mixed | not_feeding
+  resuscitation     String?  // none | stimulation | oxygen | bag_mask | intubation | other
+  complications     String?  // Free-text or JSON of neonatal complications
+  outcome           String?  // stable | referred | admitted_nicu | expired | transferred
+  babyName          String?  // Optional — may not be named at birth
+  attendingStaffId  String?
   notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([motherPatientId])
+  @@index([deliveryRecordId])
+}
+
+// =====================================================================
+// ANC VISIT — Antenatal care visit record
+// =====================================================================
+model AncVisit {
+  id                String   @id @default(cuid())
+  maternityRecordId String
+  maternityRecord   MaternityRecord @relation(fields: [maternityRecordId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient @relation(fields: [patientId], references: [id])
+  encounterId       String?  // Optional link to the encounter created for this visit
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  visitDate         DateTime @default(now())
+  gestationalAge    Int?     // weeks at time of visit
+  // Maternal vitals
+  weight            Float?   // kg
+  bpSystolic        Int?
+  bpDiastolic       Int?
+  pulse             Int?
+  temperature       Float?   // °C
+  respiratoryRate   Int?
+  oxygenSaturation  Int?
+  // Obstetric examination
+  fundalHeight      Float?   // cm
+  fetalHeartRate    Int?     // bpm
+  fetalMovement     String?  // present | reduced | absent | not_assessed
+  presentation      String?  // cephalic | breech | transverse | unknown
+  edema             String?  // none | mild | moderate | severe
+  // Assessment
+  symptoms          String?  // Patient complaints
+  clinicalAssessment String?
+  riskFlags         String?  // JSON array of flags
+  nextVisitDate     DateTime?
+  // Education
+  educationTopics   String?  // JSON array of topics covered
+  notes             String?
+  recordedById      String?
+  recordedBy        User?    @relation("ancVisitRecorder", fields: [recordedById], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([maternityRecordId, visitDate])
+  @@index([patientId, visitDate])
+  @@index([facilityId, visitDate])
+}
+
+// =====================================================================
+// LABOR & DELIVERY — Structured labor monitoring + delivery record
+// =====================================================================
+model LaborAndDelivery {
+  id                String   @id @default(cuid())
+  maternityRecordId String   @unique // 1:1 with MaternityRecord
+  maternityRecord   MaternityRecord @relation(fields: [maternityRecordId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient @relation("laborPatient", fields: [patientId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  // Admission
+  admissionDate     DateTime? // When admitted for labor
+  admissionId       String?   // Link to Admission record (no FK to avoid circular)
+  // Labor assessment
+  onsetOfLabor      DateTime?
+  ruptureOfMembranes DateTime? // Time of ROM
+  membraneStatus    String?   // intact | ruptured | artificial_rupture
+  liquorColor       String?   // clear | meconium_stained | blood_stained | absent
+  // Cervical assessment
+  cervicalDilation  Int?      // cm (0-10)
+  effacement        Int?      // percentage
+  station           Int?      // -3 to +3
+  // Contractions
+  contractionFreq   Int?      // contractions per 10 minutes
+  contractionDur    Int?      // duration in seconds
+  contractionStrength String? // mild | moderate | strong
+  // Fetal monitoring
+  fetalHeartRate    Int?      // bpm
+  fetalHeartRateAbnormal Boolean @default(false)
+  // Maternal vitals during labor
+  maternalPulse     Int?
+  maternalBpSystolic Int?
+  maternalBpDiastolic Int?
+  maternalTemp      Float?
+  // Delivery
+  deliveryDate      DateTime?
+  deliveryType      String?   // spontaneous_vaginal | assisted_vaginal | cesarean | breech | vacuum | forceps
+  deliveryIndication String?  // Indication for C-section/assisted
+  presentation      String?   // cephalic | breech | transverse | compound
+  episiotomy        Boolean  @default(false)
+  episiotomyType    String?   // midline | mediolateral
+  // Post-delivery
+  placentaDelivered Boolean  @default(false)
+  placentaCondition String?   // complete | incomplete | retained
+  estimatedBloodLoss Int?     // mL
+  oxytocinUsed      Boolean  @default(false)
+  ivFluidsGiven     String?
+  urineOutput       String?
+  // Complications
+  maternalComplications String? // JSON array or free-text
+  neonatalComplications  String?
+  // Outcomes
+  maternalOutcome   String?   // stable | referred | transferred | postpartum_complication | expired
+  // Staff
+  attendingClinicianId String?
+  attendingMidwifeId   String?
+  attendingClinician   User? @relation("laborClinician", fields: [attendingClinicianId], references: [id])
+  attendingMidwife     User? @relation("laborMidwife", fields: [attendingMidwifeId], references: [id])
+  // Partograph data (JSON — flexible key-value for time-series readings)
+  partographData    String?   // JSON: [{ time, dilation, fhr, pulse, bp, contractions, ... }]
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([maternityRecordId])
+  @@index([patientId, deliveryDate])
+  @@index([facilityId, deliveryDate])
+}
+
+// =====================================================================
+// POSTNATAL VISIT — Postnatal care visit record
+// =====================================================================
+model PostnatalVisit {
+  id                String   @id @default(cuid())
+  maternityRecordId String
+  maternityRecord   MaternityRecord @relation(fields: [maternityRecordId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient @relation("postnatalPatient", fields: [patientId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  visitDate         DateTime @default(now())
+  visitType         String   @default("routine") // 6h | 6d | 6w | routine | follow_up
+  // Maternal assessment
+  maternalStatus    String?   // stable | complicated | critical
+  bpSystolic        Int?
+  bpDiastolic       Int?
+  pulse             Int?
+  temperature       Float?
+  bleeding          String?   // normal | light | moderate | heavy
+  pain              String?   // none | mild | moderate | severe
+  woundCondition    String?   // clean | inflamed | infected | dehisced | n/a
+  uterineAssessment String?   // well_involved | subinvolved | boggy
+  breastfeeding     String?   // established | difficulty | not_feeding | mixed
+  emotionalStatus   String?   // well | low_mood | distressed | referral_needed
+  // Newborn status (if applicable)
+  newbornStatus     String?   // healthy | concerns | referred | admitted
+  newbornNotes      String?
+  // Education + planning
+  familyPlanningCounseling Boolean @default(false)
+  familyPlanningMethod String?  // none | pills | iud | implant | injection | condoms | permanent | other
+  educationTopics   String?   // JSON array
+  // Follow-up
+  nextFollowUpDate  DateTime?
+  notes             String?
+  recordedById      String?
+  recordedBy        User?    @relation("postnatalRecorder", fields: [recordedById], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([maternityRecordId, visitDate])
+  @@index([patientId, visitDate])
 }
 
 // ---------------------------------------------------------------------
