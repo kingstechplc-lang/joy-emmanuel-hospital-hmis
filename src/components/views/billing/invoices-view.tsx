@@ -381,8 +381,8 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
           )}
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <Label>Line Items</Label>
+            <div className="sticky top-0 z-20 bg-white pb-1 mb-1 flex items-center justify-between border-b border-slate-100">
+              <Label>Line Items ({items.length})</Label>
               <Button size="sm" variant="outline" onClick={addItem} className="gap-1 h-7 text-xs"><Plus className="w-3 h-3" /> Add Item</Button>
             </div>
             <div className="space-y-2">

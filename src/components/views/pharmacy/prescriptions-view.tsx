@@ -537,6 +537,7 @@ function NewPrescriptionDialog({
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const medPickerRef = useRef<HTMLDivElement>(null);
+  const itemsEndRef = useRef<HTMLDivElement>(null);
 
   // Load facilities
   useEffect(() => {
@@ -658,11 +659,14 @@ function NewPrescriptionDialog({
     setMedPickerValue(null);
   };
 
-  // Auto-scroll to the medication picker after adding an item, so the user
-  // can immediately add another without scrolling up through the growing list.
+  // Auto-scroll to the newly added item so the user can immediately fill in details.
+  // The medication picker is sticky so it stays visible without scrolling.
   useEffect(() => {
-    if (items.length > 0 && medPickerRef.current) {
-      medPickerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (items.length > 0 && itemsEndRef.current) {
+      // Small delay to let DOM render the new item
+      setTimeout(() => {
+        itemsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
     }
   }, [items.length]);
 
@@ -840,9 +844,11 @@ function NewPrescriptionDialog({
             </div>
           </div>
 
-          {/* Medication picker — auto-scrolls into view after each add */}
-          <div ref={medPickerRef}>
-            <MedicationPicker value={medPickerValue} onChange={addMedication} disabled={!patientId} />
+          {/* Medication picker — STICKY so it stays visible while items scroll below */}
+          <div className="sticky top-0 z-20 bg-white pb-2 -mx-1 px-1 border-b border-slate-100">
+            <div ref={medPickerRef}>
+              <MedicationPicker value={medPickerValue} onChange={addMedication} disabled={!patientId} />
+            </div>
           </div>
 
           {/* Items list */}
@@ -857,6 +863,7 @@ function NewPrescriptionDialog({
                   onRemove={() => removeItem(idx)}
                 />
               ))}
+              <div ref={itemsEndRef} />
             </div>
           )}
 

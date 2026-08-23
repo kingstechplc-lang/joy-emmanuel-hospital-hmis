@@ -285,7 +285,7 @@ function NewTransferDialog({ open, onClose, onCreated, defaultFromFacilityId }: 
           </div>
 
           {fromFacilityId && (
-            <div>
+            <div className="sticky top-0 z-20 bg-white pb-2 border-b border-slate-100">
               <Label className="text-xs">Add items (from source facility stock)</Label>
               {inventory.length === 0 ? (
                 <div className="text-xs text-slate-500">No inventory items at source facility.</div>

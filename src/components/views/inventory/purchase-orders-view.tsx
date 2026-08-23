@@ -289,7 +289,7 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
             </div>
           </div>
 
-          <div>
+          <div className="sticky top-0 z-20 bg-white pb-2 border-b border-slate-100">
             <Label className="text-xs">Add inventory item</Label>
             <Input value={invQuery} onChange={(e) => setInvQuery(e.target.value)} placeholder="Search inventory items by name or SKU" disabled={!facilityId} />
             {inventory.length > 0 && (
