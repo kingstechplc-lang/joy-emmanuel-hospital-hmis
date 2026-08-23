@@ -1834,6 +1834,9 @@ model Immunization {
   indication        String?  // routine | catch_up | campaign | occupational | travel | maternal | clinical_indication | outbreak
   // Encounter linkage
   encounterId       String?  // Optional link to the source encounter
+  // Appointment linkage — auto-booked next-dose appointment (no FK to avoid
+  // circular relation; Appointment deletion does not cascade to Immunization)
+  appointmentId     String?
   // Consent (for minors / capable adults)
   consentStatus     String?  // obtained | declined | not_required | pending
   consentObtainedById String?
@@ -1894,6 +1897,10 @@ model VaccineCatalog {
   // Link to inventory — when this vaccine is administered, stock is deducted
   // from the InventoryItem with itemType="vaccine" linked here.
   inventoryItemId   String?  // FK to InventoryItem (optional — some vaccines may not be stock-tracked)
+  // Link to billing — when this vaccine is administered and createInvoice=true,
+  // an InvoiceItem is created using this Service's price.
+  serviceId         String?  // FK to Service (optional — for billable vaccines)
+  service           Service? @relation(fields: [serviceId], references: [id])
   // Schedule metadata
   totalDosesInSeries Int     @default(1) // e.g., PENTA has 3 doses, BCG has 1
   isActive          Boolean  @default(true)
@@ -2110,6 +2117,7 @@ model Service {
 
   facilityPrices  FacilityServicePrice[]
   invoiceItems     InvoiceItem[]
+  vaccineCatalogs  VaccineCatalog[]
 
   @@unique([organizationId, code])
   @@index([departmentId])

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyAEFIReported } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -99,6 +100,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       severity: aefi.severity,
       symptoms: symptoms.slice(0, 200),
     },
+  });
+
+  // 🔔 Fire workflow notification: AEFI reported
+  // Notify clinical staff + immunization AEFI reviewers
+  const patient = await db.patient.findUnique({
+    where: { id: immunization.patientId },
+    select: { firstName: true, lastName: true },
+  });
+  await notifyAEFIReported({
+    organizationId: session.user.organizationId,
+    facilityId: immunization.facilityId,
+    patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Unknown",
+    vaccineName: immunization.vaccineName,
+    severity: aefi.severity,
+    symptoms,
+    aefiId: aefi.id,
+    immunizationId: id,
+    reportedById: session.user.id,
   });
 
   return NextResponse.json({ item: aefi }, { status: 201 });

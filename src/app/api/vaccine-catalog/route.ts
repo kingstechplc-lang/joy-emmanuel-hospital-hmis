@@ -59,6 +59,7 @@ export async function POST(req: Request) {
   const {
     code, name, genericName, description, diseasePrevented, vaccineType,
     ageGroup, defaultRoute, defaultSite, doseVolumeMl, inventoryItemId,
+    serviceId,
     totalDosesInSeries, scheduleDoses,
   } = body;
 
@@ -93,6 +94,7 @@ export async function POST(req: Request) {
         defaultSite: defaultSite || null,
         doseVolumeMl: doseVolumeMl || null,
         inventoryItemId: inventoryItemId || null,
+        serviceId: serviceId || null,
         totalDosesInSeries: totalDosesInSeries || 1,
         isActive: true,
       },

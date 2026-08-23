@@ -5,9 +5,10 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, auditLog, hasPermission } from "@/lib/session";
+import { getSession, auditLog, hasPermission, nextInvoiceNumber, nextAppointmentNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { isDuplicateDose, getNextDueDose } from "@/lib/immunization-schedule";
+import { notifyVaccineAdministered, notifyVaccineStockOut } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -117,6 +118,9 @@ export async function POST(req: Request) {
     route, site, administeredAt, nextDueAt, facilityId,
     status, indication, encounterId, consentStatus, guardianName,
     notes, deductStock = true,
+    // Appointment auto-booking + billing integration
+    createAppointment = false,
+    createInvoice = false,
   } = body;
 
   if (!patientId || !vaccineName || !facilityId) {
@@ -251,14 +255,145 @@ export async function POST(req: Request) {
       });
     }
 
-    return immunization;
+    // 3. Auto-book next-dose appointment if requested
+    let appointmentId: string | null = null;
+    if (createAppointment && computedNextDueAt) {
+      const apptNumber = `APT-${new Date().getFullYear()}-${String(
+        await tx.appointment.count({ where: { facilityId } }) + 1
+      ).padStart(6, "0")}`;
+      const appt = await tx.appointment.create({
+        data: {
+          patientId,
+          facilityId,
+          appointmentNumber: apptNumber,
+          appointmentType: "follow_up",
+          scheduledStart: computedNextDueAt,
+          status: "scheduled",
+          reason: `Vaccination follow-up: ${vaccineName}${dose ? ` (${dose})` : ""}`,
+          notes: `Auto-booked from immunization record ${immunization.id}. Next dose due.`,
+          createdById: session.user.id,
+        },
+      });
+      appointmentId = appt.id;
+    }
+
+    // 4. Create invoice item if requested and vaccine has a linked Service
+    let invoiceId: string | null = null;
+    if (createInvoice && vaccineCatalogId) {
+      // Load the vaccine catalog to get the serviceId
+      const vaccine = await tx.vaccineCatalog.findUnique({
+        where: { id: vaccineCatalogId },
+        select: { serviceId: true, name: true },
+      });
+      if (vaccine?.serviceId) {
+        // Load the service to get the price
+        const service = await tx.service.findUnique({
+          where: { id: vaccine.serviceId },
+          select: { id: true, name: true, defaultPrice: true, nhisPrice: true },
+        });
+        if (service) {
+          // Check if the patient has an active/draft invoice at this facility
+          let invoice = await tx.invoice.findFirst({
+            where: {
+              patientId,
+              facilityId,
+              status: { in: ["draft", "issued", "partially_paid"] },
+            },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (!invoice) {
+            // Create a new invoice
+            const invNumber = `INV-${new Date().getFullYear()}-${String(
+              await tx.invoice.count({ where: { facilityId } }) + 1
+            ).padStart(6, "0")}`;
+            invoice = await tx.invoice.create({
+              data: {
+                patientId,
+                encounterId: encounterId || null,
+                facilityId,
+                invoiceNumber: invNumber,
+                status: "draft",
+                currency: "GHS",
+                createdById: session.user.id,
+              },
+            });
+          }
+
+          // Determine the unit price — prefer NHIS price if patient has NHIS
+          const patientInsurance = await tx.patientInsurance.findFirst({
+            where: {
+              patientId,
+              status: "active",
+              verificationStatus: "verified",
+            },
+            include: { insuranceProvider: { select: { name: true, code: true } } },
+          });
+          const isNhis = patientInsurance?.insuranceProvider?.code?.toUpperCase().includes("NHIS");
+          const unitPrice = isNhis && service.nhisPrice != null
+            ? service.nhisPrice
+            : service.defaultPrice;
+
+          // Create the invoice item
+          await tx.invoiceItem.create({
+            data: {
+              invoiceId: invoice.id,
+              serviceId: service.id,
+              description: `Vaccine administration: ${vaccineName}${dose ? ` (${dose})` : ""}`,
+              quantity: 1,
+              unitPrice,
+              total: unitPrice,
+              referenceType: "immunization",
+              referenceId: immunization.id,
+            },
+          });
+
+          // Recalculate invoice totals
+          const allItems = await tx.invoiceItem.findMany({
+            where: { invoiceId: invoice.id },
+            select: { total: true, discount: true, tax: true },
+          });
+          const subtotal = allItems.reduce((sum, it) => sum + it.total, 0);
+          const totalDiscount = allItems.reduce((sum, it) => sum + (it.discount || 0), 0);
+          const totalTax = allItems.reduce((sum, it) => sum + (it.tax || 0), 0);
+          const grandTotal = subtotal - totalDiscount + totalTax;
+          await tx.invoice.update({
+            where: { id: invoice.id },
+            data: {
+              subtotal,
+              discount: totalDiscount,
+              tax: totalTax,
+              total: grandTotal,
+              balance: grandTotal - (invoice.amountPaid || 0),
+            },
+          });
+          invoiceId = invoice.id;
+        }
+      }
+    }
+
+    // Update the immunization record with the appointment + invoice links
+    if (appointmentId || invoiceId) {
+      await tx.immunization.update({
+        where: { id: immunization.id },
+        data: {
+          ...(appointmentId ? { appointmentId } : {}),
+        },
+      });
+    }
+
+    return { immunization, appointmentId, invoiceId };
   }).catch((err) => ({ error: err.message }));
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const immunization: any = result;
+  const { immunization, appointmentId, invoiceId } = result as {
+    immunization: any;
+    appointmentId: string | null;
+    invoiceId: string | null;
+  };
 
   await auditLog({
     userId: session.user.id,
@@ -274,8 +409,52 @@ export async function POST(req: Request) {
       doseNumber,
       batchNumber: immunization.batchNumber,
       status: immunization.status,
+      appointmentId,
+      invoiceId,
     },
   });
+
+  // 🔔 Fire workflow notification: vaccine administered
+  // Load patient name for the notification
+  const patient = await db.patient.findUnique({
+    where: { id: patientId },
+    select: { firstName: true, lastName: true },
+  });
+  await notifyVaccineAdministered({
+    organizationId: session.user.organizationId,
+    facilityId,
+    patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Unknown",
+    vaccineName,
+    doseLabel: dose || undefined,
+    immunizationId: immunization.id,
+    administeredById: session.user.id,
+  });
+
+  // 🔔 Fire stock-out notification if the batch is now at/below reorder level
+  if (batchId && batch) {
+    const updatedBatch = await db.inventoryBatch.findUnique({
+      where: { id: batchId },
+      include: {
+        facilityInventory: {
+          select: { id: true, currentQuantity: true, minimumQuantity: true, inventoryItemId: true },
+        },
+      },
+    });
+    if (updatedBatch && updatedBatch.facilityInventory) {
+      const fi = updatedBatch.facilityInventory;
+      if (fi.currentQuantity <= 0 || (fi.minimumQuantity && fi.currentQuantity <= fi.minimumQuantity)) {
+        await notifyVaccineStockOut({
+          organizationId: session.user.organizationId,
+          facilityId,
+          vaccineName,
+          batchNumber: updatedBatch.batchNumber,
+          currentStock: fi.currentQuantity,
+          reorderLevel: fi.minimumQuantity || undefined,
+          inventoryItemId: fi.inventoryItemId,
+        });
+      }
+    }
+  }
 
   // Load the full record with relations for the response
   const fullRecord = await db.immunization.findUnique({
@@ -287,5 +466,8 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ item: fullRecord }, { status: 201 });
+  return NextResponse.json(
+    { item: fullRecord, appointmentId, invoiceId },
+    { status: 201 }
+  );
 }

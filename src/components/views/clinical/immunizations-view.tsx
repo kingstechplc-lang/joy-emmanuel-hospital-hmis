@@ -438,6 +438,8 @@ function AdministerImmunizationDialog({
   const [consentStatus, setConsentStatus] = useState("not_required");
   const [guardianName, setGuardianName] = useState("");
   const [indication, setIndication] = useState("routine");
+  const [createAppointment, setCreateAppointment] = useState(true);
+  const [createInvoice, setCreateInvoice] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Load vaccine catalog
@@ -513,13 +515,23 @@ function AdministerImmunizationDialog({
           guardianName: guardianName || undefined,
           notes: notes || undefined,
           deductStock: !!batchId,
+          createAppointment,
+          createInvoice,
         }),
       });
       const data = await safeJson(res);
       if (!res.ok) {
         throw new Error(data.error || "Failed");
       }
-      toast.success("Immunization recorded");
+      // Build a richer success message if appointment/invoice were created
+      const extras: string[] = [];
+      if (data.appointmentId) extras.push("appointment booked");
+      if (data.invoiceId) extras.push("invoice item created");
+      toast.success(
+        extras.length > 0
+          ? `Immunization recorded — ${extras.join(" + ")}`
+          : "Immunization recorded"
+      );
       onCreated();
     } catch (e: any) {
       toast.error(e.message);
@@ -735,6 +747,45 @@ function AdministerImmunizationDialog({
           <div>
             <Label>Notes</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Adverse reactions, observations…" />
+          </div>
+
+          {/* Post-administration actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createAppointment}
+                onChange={(e) => setCreateAppointment(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <div>
+                <div className="text-sm font-medium text-slate-700">Book next-dose appointment</div>
+                <div className="text-[10px] text-slate-500">
+                  Auto-creates a follow-up appointment on the next due date
+                </div>
+              </div>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createInvoice}
+                onChange={(e) => setCreateInvoice(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <div>
+                <div className="text-sm font-medium text-slate-700">
+                  Bill to invoice
+                  {!selectedVaccine?.serviceId && (
+                    <span className="ml-1 text-[10px] text-amber-600">
+                      (no service linked — will be skipped)
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  Creates an invoice item using the vaccine's linked service price
+                </div>
+              </div>
+            </label>
           </div>
         </div>
 

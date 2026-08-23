@@ -68,7 +68,12 @@ export type WorkflowEvent =
   | "community_outreach_scheduled"
   | "specialty_encounter_completed"
   | "specialty_appointment_scheduled"
-  | "specialty_referral_received";
+  | "specialty_referral_received"
+  | "vaccine_administered"
+  | "vaccine_due_soon"
+  | "vaccine_overdue"
+  | "aefi_reported"
+  | "vaccine_stock_out";
 
 // Permission code → recipient role mapping
 // When an event fires, we look up users with these permissions in the same facility
@@ -125,6 +130,11 @@ const RECIPIENT_PERMISSIONS: Record<WorkflowEvent, string[]> = {
   specialty_encounter_completed: ["specialty.view", "specialty.manage"],
   specialty_appointment_scheduled: ["specialty.view", "specialty.appointments"],
   specialty_referral_received: ["specialty.view", "specialty.referrals", "specialty.manage"],
+  vaccine_administered: ["immunization.view", "clinical.view"],
+  vaccine_due_soon: ["immunization.view", "immunization.record"],
+  vaccine_overdue: ["immunization.view", "immunization.record"],
+  aefi_reported: ["immunization.aefi", "immunization.view", "clinical.view"],
+  vaccine_stock_out: ["immunization.manage", "inventory.view", "inventory.adjust"],
 };
 
 type NotifyParams = {
@@ -1165,5 +1175,121 @@ export async function notifyAuditFindingCreated(opts: {
     referenceId: opts.findingId,
     directRecipientIds: opts.auditorId ? [opts.auditorId] : [],
     priority: opts.severity === "critical" ? "critical" : opts.severity === "high" ? "high" : "normal",
+  });
+}
+
+// =====================================================================
+// IMMUNIZATION / VACCINATION NOTIFICATIONS
+// =====================================================================
+
+export async function notifyVaccineAdministered(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  vaccineName: string;
+  doseLabel?: string;
+  immunizationId: string;
+  administeredById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "vaccine_administered",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `💉 Vaccine Administered: ${opts.vaccineName}`,
+    message: `${opts.patientName} received ${opts.vaccineName}${opts.doseLabel ? ` (${opts.doseLabel})` : ""}.`,
+    referenceType: "immunization",
+    referenceId: opts.immunizationId,
+    excludeUserId: opts.administeredById,
+  });
+}
+
+export async function notifyVaccineDueSoon(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  vaccineName: string;
+  doseLabel?: string;
+  dueDate: string;
+  patientId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "vaccine_due_soon",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📅 Vaccine Due Soon: ${opts.vaccineName}`,
+    message: `${opts.patientName} is due for ${opts.vaccineName}${opts.doseLabel ? ` (${opts.doseLabel})` : ""} on ${new Date(opts.dueDate).toLocaleDateString()}.`,
+    referenceType: "patient",
+    referenceId: opts.patientId,
+    priority: "normal",
+  });
+}
+
+export async function notifyVaccineOverdue(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  vaccineName: string;
+  doseLabel?: string;
+  overdueDate: string;
+  daysOverdue: number;
+  patientId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "vaccine_overdue",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `⚠️ Vaccine Overdue: ${opts.vaccineName}`,
+    message: `${opts.patientName} is ${opts.daysOverdue} day(s) overdue for ${opts.vaccineName}${opts.doseLabel ? ` (${opts.doseLabel})` : ""}. Was due ${new Date(opts.overdueDate).toLocaleDateString()}.`,
+    referenceType: "patient",
+    referenceId: opts.patientId,
+    priority: "high",
+  });
+}
+
+export async function notifyAEFIReported(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  vaccineName: string;
+  severity: string;
+  symptoms: string;
+  aefiId: string;
+  immunizationId: string;
+  reportedById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "aefi_reported",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🚨 AEFI Reported: ${opts.vaccineName} [${opts.severity.toUpperCase()}]`,
+    message: `Adverse event for ${opts.patientName} after ${opts.vaccineName}. Symptoms: ${opts.symptoms.slice(0, 150)}`,
+    referenceType: "aefi",
+    referenceId: opts.aefiId,
+    excludeUserId: opts.reportedById,
+    priority: opts.severity === "severe" || opts.severity === "fatal" ? "critical" : "high",
+  });
+}
+
+export async function notifyVaccineStockOut(opts: {
+  organizationId: string;
+  facilityId: string;
+  vaccineName: string;
+  batchNumber?: string;
+  currentStock: number;
+  reorderLevel?: number;
+  inventoryItemId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "vaccine_stock_out",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📦 Vaccine Stock Alert: ${opts.vaccineName}`,
+    message:
+      opts.currentStock <= 0
+        ? `${opts.vaccineName} is OUT OF STOCK${opts.batchNumber ? ` (batch ${opts.batchNumber})` : ""}.`
+        : `${opts.vaccineName} is at reorder level (${opts.currentStock} units, reorder at ${opts.reorderLevel}).`,
+    referenceType: "inventory_item",
+    referenceId: opts.inventoryItemId,
+    priority: opts.currentStock <= 0 ? "critical" : "high",
   });
 }
