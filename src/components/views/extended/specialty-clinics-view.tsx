@@ -1316,26 +1316,36 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
 // =====================================================================
 function ReferralsTab({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
+  const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
 
+  // Fetch from the unified /api/referrals endpoint with kind=specialty filter.
+  // This consolidates specialty referrals into the same lifecycle as
+  // inter-facility referrals (timeline, feedback, communication log, etc.).
   const params = new URLSearchParams();
+  if (activeFacilityId) params.set("facilityId", activeFacilityId);
+  params.set("kind", "specialty");
   if (specialtyFilter !== "all") params.set("toDepartmentCode", specialtyFilter);
   if (statusFilter !== "all") params.set("status", statusFilter);
+  params.set("limit", "200");
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["specialty-referrals", params.toString()],
-    queryFn: () => fetchJson(`/api/specialty/referrals?${params.toString()}`),
+    queryKey: ["specialty-referrals", activeFacilityId, params.toString()],
+    queryFn: () => fetchJson(`/api/referrals?${params.toString()}`),
+    enabled: !!activeFacilityId,
     staleTime: 0,
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => sendJson(`/api/specialty/referrals/${id}`, "PATCH", data),
+    mutationFn: async ({ id, data }: { id: string; data: any }) => sendJson(`/api/referrals/${id}`, "PATCH", data),
     onSuccess: () => {
       toast.success("Referral updated");
       qc.invalidateQueries({ queryKey: ["specialty-referrals"] });
       qc.invalidateQueries({ queryKey: ["specialty-stats"] });
+      qc.invalidateQueries({ queryKey: ["referrals"] });
+      qc.invalidateQueries({ queryKey: ["referrals-stats"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -1348,7 +1358,7 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="flex-1">
             <p className="text-sm font-semibold text-slate-700">Specialty Referrals</p>
-            <p className="text-xs text-slate-500">Incoming referrals from OPD/ER/other departments to specialty clinics.</p>
+            <p className="text-xs text-slate-500">Incoming referrals from OPD/ER/other departments to specialty clinics. Unified with the main Referrals lifecycle.</p>
           </div>
           <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
@@ -1358,11 +1368,13 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
             <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="sent">Pending</SelectItem>
+              <SelectItem value="acknowledged">Acknowledged</SelectItem>
               <SelectItem value="accepted">Accepted</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="declined">Declined</SelectItem>
+              <SelectItem value="rejected">Declined</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
           <Button size="sm" variant="outline" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Refreshed", error: "Failed" }); }} disabled={isFetching}>
@@ -1383,23 +1395,27 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
          rows={items.map((r) => {
            const sp = SPECIALTY_MAP[r.toDepartmentCode] || SPECIALTIES[0];
            const urgencyColor = r.urgency === "emergency" ? "bg-rose-100 text-rose-700" : r.urgency === "urgent" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700";
+           const patientName = r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : "Unknown";
            return {
              cells: [
-               <span key="n" className="font-mono text-xs text-white bg-gradient-to-r from-amber-500 to-orange-600 px-2 py-0.5 rounded-md font-semibold">{r.referralNumber}</span>,
-               <span key="p" className="text-sm font-medium text-slate-900">{r.patientName}</span>,
+               <span key="n" className="font-mono text-xs text-white bg-gradient-to-r from-amber-500 to-orange-600 px-2 py-0.5 rounded-md font-semibold">{r.referralNumber || r.id.slice(-8).toUpperCase()}</span>,
+               <span key="p" className="text-sm font-medium text-slate-900">{patientName}</span>,
                <span key="ts" className="text-xs text-slate-600">{sp.label}</span>,
-               <span key="fd" className="text-xs text-slate-500">{r.fromDepartment || "OPD"}</span>,
+               <span key="fd" className="text-xs text-slate-500">{r.referringDepartmentId || r.referringFacility?.name || "OPD"}</span>,
                <span key="u" className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${urgencyColor}`}>{r.urgency}</span>,
                <span key="r" className="text-xs text-slate-500 max-w-[160px] truncate inline-block">{r.reason}</span>,
                <StatusBadge key="st" status={r.status} />,
-               <span key="d" className="text-xs text-slate-500">{formatDate(r.referralDate)}</span>,
+               <span key="d" className="text-xs text-slate-500">{formatDate(r.referredAt)}</span>,
                <div key="a" className="flex gap-1">
-                 {r.status === "pending" && (
+                 {(r.status === "sent" || r.status === "acknowledged") && (
                    <>
                      <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] text-emerald-600" onClick={() => updateMutation.mutate({ id: r.id, data: { status: "accepted" } })}>
                        <CheckCircle2 className="w-3 h-3 mr-1" /> Accept
                      </Button>
-                     <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-rose-600" onClick={() => updateMutation.mutate({ id: r.id, data: { status: "declined" } })}>
+                     <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-rose-600" onClick={() => {
+                       const reason = window.prompt("Rejection reason:");
+                       if (reason) updateMutation.mutate({ id: r.id, data: { status: "rejected", rejectionReason: reason } });
+                     }}>
                        Decline
                      </Button>
                    </>
@@ -1416,7 +1432,7 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
                  )}
                </div>,
              ],
-             sortValues: [r.referralNumber, r.patientName, sp.label, r.fromDepartment || "", r.urgency, r.reason, r.status, r.referralDate, ""],
+             sortValues: [r.referralNumber || "", patientName, sp.label, r.referringDepartmentId || "", r.urgency, r.reason, r.status, r.referredAt, ""],
            };
          })}
          gradient="from-amber-500 to-orange-600"
@@ -1430,6 +1446,8 @@ function ReferralsTab({ canManage }: { canManage: boolean }) {
             setShowNew(false);
             qc.invalidateQueries({ queryKey: ["specialty-referrals"] });
             qc.invalidateQueries({ queryKey: ["specialty-stats"] });
+            qc.invalidateQueries({ queryKey: ["referrals"] });
+            qc.invalidateQueries({ queryKey: ["referrals-stats"] });
           }}
         />
       )}
@@ -1452,7 +1470,24 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
 
   const createMut = useMutation({
-    mutationFn: (payload: any) => sendJson("/api/specialty/referrals", "POST", payload),
+    mutationFn: async (payload: any) => {
+      // Transform into unified Referral schema (kind=specialty)
+      const referralPayload: any = {
+        kind: "specialty",
+        referralType: "specialist",
+        toDepartmentCode: payload.toDepartmentCode,
+        patientIdFrom: payload.patientId,
+        referringFacilityId: useAppStore.getState().activeFacilityId,
+        receivingFacilityName: `${payload.toDepartmentCode} Clinic${payload.toClinicianName ? ` — ${payload.toClinicianName}` : ""}`,
+        receivingProviderName: payload.toClinicianName || undefined,
+        referringDepartmentId: payload.fromDepartment || undefined,
+        reason: payload.reason,
+        clinicalSummary: payload.clinicalSummary || undefined,
+        urgency: payload.urgency || "routine",
+        status: "sent",
+      };
+      return sendJson("/api/referrals", "POST", referralPayload);
+    },
     onSuccess: () => { toast.success("Referral created"); onCreated(); },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -29,6 +29,8 @@ export async function GET(req: Request) {
   const urgency = url.searchParams.get("urgency");
   const referralType = url.searchParams.get("type");
   const feedbackStatus = url.searchParams.get("feedbackStatus");
+  const kind = url.searchParams.get("kind"); // inter_facility | specialty | all
+  const toDepartmentCode = url.searchParams.get("toDepartmentCode");
   const search = url.searchParams.get("search")?.trim();
   const dateFrom = url.searchParams.get("dateFrom");
   const dateTo = url.searchParams.get("dateTo");
@@ -39,16 +41,36 @@ export async function GET(req: Request) {
     return NextResponse.json({ items: [], count: 0 });
   }
 
-  const where: any = { OR: [] };
-  if (direction === "incoming") {
-    where.OR = [{ receivingFacilityId: facilityId }];
-  } else if (direction === "outgoing") {
-    where.OR = [{ referringFacilityId: facilityId }];
+  // For specialty referrals (kind=specialty), the "direction" concept
+  // doesn't apply the same way — specialty referrals are intra-facility
+  // (referringFacilityId === receivingFacilityId, or receivingFacilityId
+  // is null and toDepartmentCode points to an internal specialty clinic).
+  // So when kind=specialty, we filter by referringFacilityId only.
+  const where: any = {};
+  if (kind === "specialty") {
+    where.referringFacilityId = facilityId;
+    where.kind = "specialty";
+    if (toDepartmentCode && toDepartmentCode !== "all") {
+      where.toDepartmentCode = toDepartmentCode;
+    }
   } else {
-    where.OR = [
-      { referringFacilityId: facilityId },
-      { receivingFacilityId: facilityId },
-    ];
+    // Inter-facility referrals — filter by direction
+    where.OR = [];
+    if (direction === "incoming") {
+      where.OR = [{ receivingFacilityId: facilityId }];
+    } else if (direction === "outgoing") {
+      where.OR = [{ referringFacilityId: facilityId }];
+    } else {
+      where.OR = [
+        { referringFacilityId: facilityId },
+        { receivingFacilityId: facilityId },
+      ];
+    }
+    // When kind is explicitly "inter_facility", filter out specialty referrals
+    if (kind === "inter_facility") {
+      where.kind = "inter_facility";
+    }
+    // Default (kind=all or unspecified): show both kinds
   }
 
   const and: any[] = [];
@@ -153,14 +175,29 @@ export async function POST(req: Request) {
     primaryDiagnosisId,
     transportRequired, stabilizationPerformed,
     consentStatus, consentObtainedById,
+    // Specialty referral unification fields
+    kind, toDepartmentCode,
+    // For specialty referrals, the patient's demographic snapshot may be
+    // passed in (since the source might be a quick-create flow without a
+    // full patient record). These are stored on the Referral's patient
+    // relation — patientIdFrom is still required.
     // Allow the creator to pick a starting status (default: submitted —
     // most referrals skip draft and go straight to submitted/sent)
     status: initialStatus,
   } = body;
 
-  if (!patientIdFrom || !encounterId || !referringFacilityId) {
+  // For specialty referrals, encounterId is optional (the referral may be
+  // created from OPD without a formal encounter record). For inter-facility
+  // referrals, encounterId is required.
+  if (!patientIdFrom || !referringFacilityId) {
     return NextResponse.json(
-      { error: "patientIdFrom, encounterId, referringFacilityId are required" },
+      { error: "patientIdFrom and referringFacilityId are required" },
+      { status: 400 }
+    );
+  }
+  if (kind !== "specialty" && !encounterId) {
+    return NextResponse.json(
+      { error: "encounterId is required for inter-facility referrals" },
       { status: 400 }
     );
   }
@@ -184,10 +221,12 @@ export async function POST(req: Request) {
   const referral = await db.referral.create({
     data: {
       referralNumber,
-      referralType: referralType || "external",
+      kind: kind || "inter_facility",
+      toDepartmentCode: toDepartmentCode || null,
+      referralType: referralType || (kind === "specialty" ? "specialist" : "external"),
       patientIdFrom,
       patientIdTo: patientIdTo || null,
-      encounterId,
+      encounterId: encounterId || null,
       referringFacilityId,
       receivingFacilityId: receivingFacilityId || null,
       referringDepartmentId: referringDepartmentId || null,

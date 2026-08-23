@@ -101,7 +101,34 @@ export function SpecialtyReferralButton({
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
 
   const createMut = useMutation({
-    mutationFn: (payload: any) => sendJson("/api/specialty/referrals", "POST", payload),
+    mutationFn: async (payload: any) => {
+      // Transform the specialty-referral payload into the unified Referral
+      // schema. The /api/referrals POST endpoint now accepts a `kind` field
+      // ("specialty" vs "inter_facility") and stores toDepartmentCode.
+      const referralPayload: any = {
+        kind: "specialty",
+        referralType: "specialist",
+        toDepartmentCode: payload.toDepartmentCode,
+        patientIdFrom: payload.patientId,
+        // encounterId is optional for specialty referrals
+        encounterId: payload.encounterId || undefined,
+        referringFacilityId: payload.facilityId || useAppStore.getState().activeFacilityId,
+        // For specialty referrals, receiving facility is the same facility
+        // (intra-facility referral to a specialty clinic). We leave
+        // receivingFacilityId null and use toDepartmentCode instead.
+        receivingFacilityId: undefined,
+        receivingFacilityName: payload.toClinicianName
+          ? `${payload.toDepartmentCode} Clinic — ${payload.toClinicianName}`
+          : `${payload.toDepartmentCode} Clinic`,
+        receivingProviderName: payload.toClinicianName || undefined,
+        referringDepartmentId: payload.fromDepartment || undefined,
+        reason: payload.reason,
+        clinicalSummary: payload.clinicalSummary || undefined,
+        urgency: payload.urgency || "routine",
+        status: "sent", // specialty referrals go straight to "sent" (internal)
+      };
+      return sendJson("/api/referrals", "POST", referralPayload);
+    },
     onSuccess: () => {
       toast.success("Referral created — specialty clinic notified");
       setOpen(false);

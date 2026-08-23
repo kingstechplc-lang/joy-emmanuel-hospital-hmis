@@ -570,6 +570,7 @@ export function ReferralsView() {
           referralId={selectedReferralId}
           onClose={() => setSelectedReferralId(null)}
           onUpdated={invalidate}
+          activeFacilityId={activeFacilityId}
         />
       )}
     </div>
@@ -1067,10 +1068,12 @@ function ReferralDetailDialog({
   referralId,
   onClose,
   onUpdated,
+  activeFacilityId,
 }: {
   referralId: string;
   onClose: () => void;
   onUpdated: () => void;
+  activeFacilityId: string | null;
 }) {
   const [activeSection, setActiveSection] = useState<
     "overview" | "timeline" | "feedback" | "messages" | "actions"
@@ -1088,6 +1091,25 @@ function ReferralDetailDialog({
   });
 
   const r = data?.item;
+
+  // ---- Determine the user's role for this referral ----
+  // The referring facility is the sender; the receiving facility is the
+  // destination. Actions shown in the Actions tab are filtered by role so
+  // each side only sees the actions they're allowed to perform.
+  const isReferringFacility = !!r && !!activeFacilityId && r.referringFacilityId === activeFacilityId;
+  const isReceivingFacility =
+    !!r &&
+    !!activeFacilityId &&
+    !!r.receivingFacilityId &&
+    r.receivingFacilityId === activeFacilityId &&
+    r.referringFacilityId !== r.receivingFacilityId;
+  // If neither (e.g., a third-party facility viewing, or an external
+  // referral with no receiving facility in HMIS), show read-only.
+  const userRole: "referring" | "receiving" | "observer" = isReferringFacility
+    ? "referring"
+    : isReceivingFacility
+    ? "receiving"
+    : "observer";
 
   const patchReferral = async (body: any, successMsg: string) => {
     setActionLoading(true);
@@ -1545,178 +1567,356 @@ function ReferralDetailDialog({
         {/* ===== ACTIONS ===== */}
         {activeSection === "actions" && (
           <div className="space-y-3">
-            <p className="text-xs text-slate-500">
-              Lifecycle actions available based on the current status ({r.status}).
-              Each action validates the status transition and records a timeline event.
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {r.status === "submitted" && (
-                <ActionButton
-                  icon={Send}
-                  label="Send"
-                  color="blue"
-                  loading={actionLoading}
-                  onClick={() => handleStatusAction("sent", "Send")}
-                  description="Transmit to receiving facility"
-                />
-              )}
-              {r.status === "sent" && (
+            {/* Role indicator banner */}
+            <div className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
+              userRole === "referring"
+                ? "bg-blue-50 border-blue-200 text-blue-800"
+                : userRole === "receiving"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                : "bg-slate-50 border-slate-200 text-slate-600"
+            }`}>
+              {userRole === "referring" && (
                 <>
-                  <ActionButton
-                    icon={CheckCircle2}
-                    label="Acknowledge"
-                    color="blue"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("acknowledged", "Acknowledge")}
-                  />
-                  <ActionButton
-                    icon={CheckCheck}
-                    label="Accept"
-                    color="emerald"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("accepted", "Accept")}
-                  />
-                  <ActionButton
-                    icon={XCircle}
-                    label="Reject"
-                    color="rose"
-                    loading={actionLoading}
-                    onClick={() => {
-                      const reason = window.prompt("Rejection reason:");
-                      if (reason) patchReferral({ status: "rejected", rejectionReason: reason }, "Referral rejected");
-                    }}
-                  />
+                  <ArrowRight className="w-4 h-4" />
+                  <span>
+                    <strong>Referring facility.</strong> You are the sender. Actions
+                    below let you transmit, redirect, request information, and close
+                    the referral. Accept/Reject/Complete are performed by the
+                    receiving facility.
+                  </span>
                 </>
               )}
-              {r.status === "acknowledged" && (
+              {userRole === "receiving" && (
                 <>
-                  <ActionButton
-                    icon={CheckCheck}
-                    label="Accept"
-                    color="emerald"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("accepted", "Accept")}
-                  />
-                  <ActionButton
-                    icon={XCircle}
-                    label="Reject"
-                    color="rose"
-                    loading={actionLoading}
-                    onClick={() => {
-                      const reason = window.prompt("Rejection reason:");
-                      if (reason) patchReferral({ status: "rejected", rejectionReason: reason }, "Referral rejected");
-                    }}
-                  />
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>
+                    <strong>Receiving facility.</strong> You are the destination.
+                    Actions below let you acknowledge, accept/reject, schedule,
+                    confirm arrival, mark completion, and submit counter-referral
+                    feedback.
+                  </span>
                 </>
               )}
-              {r.status === "accepted" && (
+              {userRole === "observer" && (
                 <>
-                  <ActionButton
-                    icon={Calendar}
-                    label="Schedule"
-                    color="blue"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("scheduled", "Schedule")}
-                  />
-                  <ActionButton
-                    icon={MapPin}
-                    label="In Transit"
-                    color="amber"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("in_transit", "Mark in transit")}
-                  />
-                  <ActionButton
-                    icon={CheckCircle2}
-                    label="Complete"
-                    color="emerald"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("completed", "Complete")}
-                  />
+                  <FileText className="w-4 h-4" />
+                  <span>
+                    <strong>Read-only view.</strong> Your facility is neither the
+                    referrer nor the receiver for this referral. You can view the
+                    timeline and details but cannot perform lifecycle actions.
+                  </span>
                 </>
-              )}
-              {r.status === "scheduled" && (
-                <ActionButton
-                  icon={MapPin}
-                  label="In Transit"
-                  color="amber"
-                  loading={actionLoading}
-                  onClick={() => handleStatusAction("in_transit", "Mark in transit")}
-                />
-              )}
-              {r.status === "in_transit" && (
-                <ActionButton
-                  icon={MapPin}
-                  label="Arrived"
-                  color="emerald"
-                  loading={actionLoading}
-                  onClick={() => handleStatusAction("arrived", "Confirm arrival")}
-                />
-              )}
-              {r.status === "arrived" && (
-                <ActionButton
-                  icon={Stethoscope}
-                  label="Under Care"
-                  color="blue"
-                  loading={actionLoading}
-                  onClick={() => handleStatusAction("under_care", "Mark under care")}
-                />
-              )}
-              {r.status === "under_care" && (
-                <ActionButton
-                  icon={CheckCircle2}
-                  label="Complete"
-                  color="emerald"
-                  loading={actionLoading}
-                  onClick={() => handleStatusAction("completed", "Complete")}
-                />
-              )}
-              {r.status === "completed" && (
-                <>
-                  <ActionButton
-                    icon={ClipboardList}
-                    label="Feedback Received"
-                    color="indigo"
-                    loading={actionLoading}
-                    onClick={() => handleStatusAction("feedback_received", "Mark feedback received")}
-                  />
-                  <ActionButton
-                    icon={CheckCheck}
-                    label="Close"
-                    color="emerald"
-                    loading={actionLoading}
-                    onClick={() => {
-                      const reason = window.prompt("Closure reason:");
-                      if (reason) patchReferral({ action: "close", closureReason: reason }, "Referral closed");
-                    }}
-                  />
-                </>
-              )}
-              {r.status === "feedback_received" && (
-                <ActionButton
-                  icon={CheckCheck}
-                  label="Close"
-                  color="emerald"
-                  loading={actionLoading}
-                  onClick={() => {
-                    const reason = window.prompt("Closure reason:");
-                    if (reason) patchReferral({ action: "close", closureReason: reason }, "Referral closed");
-                  }}
-                />
-              )}
-              {/* Cancel — available from most non-terminal statuses */}
-              {!["cancelled", "closed", "expired"].includes(r.status) && (
-                <ActionButton
-                  icon={Ban}
-                  label="Cancel"
-                  color="rose"
-                  loading={actionLoading}
-                  onClick={() => {
-                    const reason = window.prompt("Cancellation reason:");
-                    if (reason) patchReferral({ action: "cancel", cancellationReason: reason }, "Referral cancelled");
-                  }}
-                />
               )}
             </div>
+
+            {userRole === "observer" ? (
+              <div className="text-center py-8 text-sm text-slate-400">
+                No actions available — your facility is not a party to this referral.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* ===== REFERRING FACILITY ACTIONS ===== */}
+                {userRole === "referring" && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                      <ArrowRight className="w-3.5 h-3.5" /> Referring Facility Actions
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {/* draft → submitted (advance from draft) */}
+                      {r.status === "draft" && (
+                        <ActionButton
+                          icon={FileText}
+                          label="Submit"
+                          color="blue"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("submitted", "Submit")}
+                          description="Mark as ready to send"
+                        />
+                      )}
+                      {/* submitted / authorized → sent (transmit) */}
+                      {["submitted", "authorized"].includes(r.status) && (
+                        <ActionButton
+                          icon={Send}
+                          label="Send"
+                          color="blue"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("sent", "Send")}
+                          description="Transmit to receiving facility"
+                        />
+                      )}
+                      {/* sent / acknowledged → redirect (change destination) */}
+                      {["sent", "acknowledged"].includes(r.status) && (
+                        <ActionButton
+                          icon={MapPin}
+                          label="Redirect"
+                          color="amber"
+                          loading={actionLoading}
+                          onClick={() => {
+                            const newFacilityId = window.prompt("Enter new receiving facility ID (from HMIS directory):");
+                            if (!newFacilityId) return;
+                            const reason = window.prompt("Reason for redirect:");
+                            if (reason) {
+                              patchReferral(
+                                { action: "redirect", newReceivingFacilityId: newFacilityId, redirectReason: reason },
+                                "Referral redirected"
+                              );
+                            }
+                          }}
+                          description="Change destination facility"
+                        />
+                      )}
+                      {/* completed → mark feedback received (after receiving submits feedback) */}
+                      {r.status === "completed" && (
+                        <ActionButton
+                          icon={ClipboardList}
+                          label="Mark Feedback Received"
+                          color="indigo"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("feedback_received", "Mark feedback received")}
+                          description="Acknowledge counter-referral"
+                        />
+                      )}
+                      {/* completed / feedback_received → close */}
+                      {["completed", "feedback_received", "follow_up", "rejected"].includes(r.status) && (
+                        <ActionButton
+                          icon={CheckCheck}
+                          label="Close"
+                          color="emerald"
+                          loading={actionLoading}
+                          onClick={() => {
+                            const reason = window.prompt("Closure reason:");
+                            if (reason) patchReferral({ action: "close", closureReason: reason }, "Referral closed");
+                          }}
+                          description="Finalize the referral lifecycle"
+                        />
+                      )}
+                      {/* Request more information (jump to Messages tab) */}
+                      {["sent", "acknowledged", "accepted", "scheduled", "in_transit", "arrived", "under_care", "completed"].includes(r.status) && (
+                        <ActionButton
+                          icon={MessageSquare}
+                          label="Request Information"
+                          color="indigo"
+                          loading={false}
+                          onClick={() => {
+                            setActiveSection("messages");
+                            setNewMessageType("info_request");
+                          }}
+                          description="Ask the receiving team a question"
+                        />
+                      )}
+                      {/* Cancel — available from most non-terminal statuses */}
+                      {!["cancelled", "closed", "expired", "rejected"].includes(r.status) && (
+                        <ActionButton
+                          icon={Ban}
+                          label="Cancel Referral"
+                          color="rose"
+                          loading={actionLoading}
+                          onClick={() => {
+                            const reason = window.prompt("Cancellation reason:");
+                            if (reason) patchReferral({ action: "cancel", cancellationReason: reason }, "Referral cancelled");
+                          }}
+                          description="Withdraw this referral"
+                        />
+                      )}
+                      {/* Delete — only for unsent drafts */}
+                      {r.status === "draft" && (
+                        <ActionButton
+                          icon={XCircle}
+                          label="Delete Draft"
+                          color="rose"
+                          loading={actionLoading}
+                          onClick={() => {
+                            if (window.confirm("Permanently delete this draft referral? This cannot be undone.")) {
+                              fetch(`/api/referrals/${referralId}`, { method: "DELETE" })
+                                .then(() => {
+                                  toast.success("Draft deleted");
+                                  onClose();
+                                  onUpdated();
+                                })
+                                .catch((e) => toast.error(e.message));
+                            }
+                          }}
+                          description="Permanently remove draft"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== RECEIVING FACILITY ACTIONS ===== */}
+                {userRole === "receiving" && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                      <ArrowLeft className="w-3.5 h-3.5" /> Receiving Facility Actions
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {/* sent → acknowledge (confirm receipt) */}
+                      {r.status === "sent" && (
+                        <ActionButton
+                          icon={CheckCircle2}
+                          label="Acknowledge"
+                          color="blue"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("acknowledged", "Acknowledge")}
+                          description="Confirm receipt of referral"
+                        />
+                      )}
+                      {/* sent / acknowledged → accept */}
+                      {["sent", "acknowledged"].includes(r.status) && (
+                        <ActionButton
+                          icon={CheckCheck}
+                          label="Accept"
+                          color="emerald"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("accepted", "Accept")}
+                          description="Agree to receive patient"
+                        />
+                      )}
+                      {/* sent / acknowledged → reject (with reason) */}
+                      {["sent", "acknowledged"].includes(r.status) && (
+                        <ActionButton
+                          icon={XCircle}
+                          label="Reject"
+                          color="rose"
+                          loading={actionLoading}
+                          onClick={() => {
+                            const reason = window.prompt("Rejection reason (required):");
+                            if (reason) patchReferral({ status: "rejected", rejectionReason: reason }, "Referral rejected");
+                          }}
+                          description="Decline to receive"
+                        />
+                      )}
+                      {/* accepted → schedule appointment */}
+                      {r.status === "accepted" && (
+                        <ActionButton
+                          icon={Calendar}
+                          label="Schedule"
+                          color="blue"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("scheduled", "Schedule")}
+                          description="Book appointment for patient"
+                        />
+                      )}
+                      {/* accepted / scheduled → mark in transit */}
+                      {["accepted", "scheduled"].includes(r.status) && (
+                        <ActionButton
+                          icon={MapPin}
+                          label="In Transit"
+                          color="amber"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("in_transit", "Mark in transit")}
+                          description="Patient is on the way"
+                        />
+                      )}
+                      {/* in_transit → confirm arrival */}
+                      {r.status === "in_transit" && (
+                        <ActionButton
+                          icon={MapPin}
+                          label="Confirm Arrival"
+                          color="emerald"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("arrived", "Confirm arrival")}
+                          description="Patient has arrived"
+                        />
+                      )}
+                      {/* arrived → mark under care */}
+                      {r.status === "arrived" && (
+                        <ActionButton
+                          icon={Stethoscope}
+                          label="Under Care"
+                          color="blue"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("under_care", "Mark under care")}
+                          description="Begin clinical management"
+                        />
+                      )}
+                      {/* under_care → complete */}
+                      {r.status === "under_care" && (
+                        <ActionButton
+                          icon={CheckCircle2}
+                          label="Complete"
+                          color="emerald"
+                          loading={actionLoading}
+                          onClick={() => handleStatusAction("completed", "Complete")}
+                          description="Finish clinical management"
+                        />
+                      )}
+                      {/* completed / feedback_received / follow_up → submit feedback (counter-referral) */}
+                      {["completed", "feedback_received", "follow_up"].includes(r.status) && (
+                        <ActionButton
+                          icon={ClipboardList}
+                          label="Submit Feedback"
+                          color="indigo"
+                          loading={false}
+                          onClick={() => {
+                            setActiveSection("feedback");
+                            setShowFeedbackForm(true);
+                          }}
+                          description="Send counter-referral to referring facility"
+                        />
+                      )}
+                      {/* Request more info (jump to Messages tab) */}
+                      {["sent", "acknowledged", "accepted", "scheduled", "in_transit", "arrived", "under_care", "completed"].includes(r.status) && (
+                        <ActionButton
+                          icon={MessageSquare}
+                          label="Request Information"
+                          color="indigo"
+                          loading={false}
+                          onClick={() => {
+                            setActiveSection("messages");
+                            setNewMessageType("info_request");
+                          }}
+                          description="Ask the referring team a question"
+                        />
+                      )}
+                      {/* Respond to info request (jump to Messages tab) */}
+                      <ActionButton
+                        icon={MessageSquare}
+                        label="Send Message"
+                        color="blue"
+                        loading={false}
+                        onClick={() => {
+                          setActiveSection("messages");
+                          setNewMessageType("info_response");
+                        }}
+                        description="Reply to referring facility"
+                      />
+                      {/* Cancel — receiving facility can also cancel (e.g., capacity unavailable) */}
+                      {!["cancelled", "closed", "expired", "rejected"].includes(r.status) && (
+                        <ActionButton
+                          icon={Ban}
+                          label="Cancel"
+                          color="rose"
+                          loading={actionLoading}
+                          onClick={() => {
+                            const reason = window.prompt("Cancellation reason:");
+                            if (reason) patchReferral({ action: "cancel", cancellationReason: reason }, "Referral cancelled");
+                          }}
+                          description="Cancel from receiving side"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== Current status info ===== */}
+                <div className="text-xs text-slate-500 bg-slate-50 rounded-md p-2 border border-slate-200">
+                  <strong className="text-slate-700">Current status:</strong>{" "}
+                  <span className="font-mono">{r.status}</span>
+                  {r.feedbackStatus && r.feedbackStatus !== "awaiting" && (
+                    <>
+                      {" · "}
+                      <strong className="text-slate-700">Feedback:</strong>{" "}
+                      <span className="font-mono">{r.feedbackStatus}</span>
+                    </>
+                  )}
+                  <div className="mt-1 text-[10px] text-slate-400">
+                    Only actions valid for the current status and your role are shown.
+                    Each action is validated server-side and records a timeline event.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {confirmDialogEl}

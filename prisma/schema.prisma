@@ -1617,13 +1617,24 @@ model CarePlan {
 model Referral {
   id                      String   @id @default(cuid())
   referralNumber          String?  @unique // REF-YYYY-000001 — null for legacy rows, populated on new ones
+  // 'kind' discriminates inter-facility referrals (sent to another facility)
+  // from specialty referrals (sent to a specialty clinic within the same
+  // facility). Specialty referrals use toDepartmentCode (CARDIO, DERM, etc.)
+  // and may not have a receivingFacilityId. This field enables the unified
+  // Referrals API to filter by kind=specialty for the Specialty Clinics view
+  // while kind=inter_facility (default) powers the main Referrals view.
+  kind                    String   @default("inter_facility") // inter_facility | specialty
+  toDepartmentCode        String?  // specialty code (CARDIO, DERM, OPHTH, ENT, PHYSIO, PSYCH, NEURO, ORTHO, URO, ENDO, PAED, DENTAL) — used when kind=specialty
   referralType            String   @default("external") // internal | external | inter_facility | specialist | emergency | routine | diagnostic | surgical | maternal | pediatric | mental_health | rehabilitation | laboratory | radiology | pharmacy | follow_up | counter_referral
   patientIdFrom           String
   patient                 Patient @relation("refPatientFrom", fields: [patientIdFrom], references: [id])
   patientIdTo             String?
   patientTo               Patient? @relation("refPatientTo", fields: [patientIdTo], references: [id])
-  encounterId             String
-  encounter               Encounter @relation(fields: [encounterId], references: [id])
+  // encounterId is optional for specialty referrals (kind=specialty) which
+  // may be created from OPD without a formal encounter record. Inter-facility
+  // referrals should still link to a source encounter.
+  encounterId             String?
+  encounter               Encounter? @relation(fields: [encounterId], references: [id])
   referringFacilityId     String
   referringFacility       Facility @relation("refFromFacility", fields: [referringFacilityId], references: [id])
   receivingFacilityId     String?
@@ -1696,6 +1707,8 @@ model Referral {
   @@index([status, feedbackStatus])
   @@index([urgency, status])
   @@index([referralNumber])
+  @@index([kind, toDepartmentCode])
+  @@index([kind, status])
 }
 
 // =====================================================================
