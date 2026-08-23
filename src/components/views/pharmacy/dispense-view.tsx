@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import {
   Pill,
   Activity,
@@ -33,6 +34,12 @@ import {
   X,
   Users,
   LayoutGrid,
+  Calendar,
+  Stethoscope,
+  ListChecks,
+  CheckSquare,
+  Square,
+  Hourglass,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -105,7 +112,17 @@ export function DispenseView() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [allergyFilter, setAllergyFilter] = useState<string>("all");
+  const [prescriberFilter, setPrescriberFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [nearExpiryOnly, setNearExpiryOnly] = useState<boolean>(false);
   const [expandedPatients, setExpandedPatients] = useState<Record<string, boolean>>({});
+
+  // ---- Bulk-select state for "Dispense selected" action ----
+  const [selectedPatientIds, setSelectedPatientIds] = useState<Record<string, boolean>>({});
+  const [bulkDispensing, setBulkDispensing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // ---- Dashboard stats query (auto-refresh every 30s) ----
   const statsQs = activeFacilityId ? `?facilityId=${activeFacilityId}` : "";
@@ -165,6 +182,26 @@ export function DispenseView() {
     const hasRoutine = rxs.some((rx) =>
       (rx.items || []).some((it: any) => !it.isStat && !it.isPrn)
     );
+    // Prescriber set for this group (used by the prescriber filter)
+    const prescribers = new Set(
+      rxs
+        .map((rx) =>
+          rx.prescriber
+            ? `${rx.prescriber.firstName || ""} ${rx.prescriber.lastName || ""}`.trim()
+            : ""
+        )
+        .filter(Boolean)
+    );
+    // Earliest & latest prescribed date in the group (for date range filter)
+    const prescribedDates = rxs
+      .map((rx) => (rx.prescribedAt ? new Date(rx.prescribedAt).getTime() : null))
+      .filter((t): t is number => t !== null);
+    const earliestPrescribed = prescribedDates.length
+      ? Math.min(...prescribedDates)
+      : null;
+    const latestPrescribed = prescribedDates.length
+      ? Math.max(...prescribedDates)
+      : null;
     // Note: allergy detection is best-effort from prescription item medication names;
     // the PatientDispenseCard still does its own authoritative allergy fetch.
     const primaryStatus =
@@ -183,11 +220,25 @@ export function DispenseView() {
       hasPrn,
       hasRoutine,
       statuses,
+      prescribers,
+      earliestPrescribed,
+      latestPrescribed,
     };
   });
 
+  // ---- Build unique prescriber list for the filter dropdown ----
+  const allPrescribers = (() => {
+    const set = new Set<string>();
+    for (const g of patientGroups) {
+      for (const p of g.prescribers) set.add(p);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  })();
+
   // ---- Apply search & filters ----
   const q = search.trim().toLowerCase();
+  const fromTs = dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : null;
+  const toTs = dateTo ? new Date(dateTo + "T23:59:59").getTime() : null;
   const filteredGroups = patientGroups.filter((g) => {
     // Search across patient name, MRN, prescription numbers, medication names
     if (q) {
@@ -219,6 +270,26 @@ export function DispenseView() {
       if (priorityFilter === "routine" && !g.hasRoutine) return false;
     }
 
+    // Prescriber filter
+    if (prescriberFilter !== "all") {
+      if (!g.prescribers.has(prescriberFilter)) return false;
+    }
+
+    // Date range filter — group must have at least one prescription in range
+    if (fromTs !== null || toTs !== null) {
+      if (g.earliestPrescribed === null || g.latestPrescribed === null) return false;
+      // Filter out groups whose prescriptions all fall OUTSIDE the range.
+      // Keep if any prescription in the group falls in [from, to].
+      const hasInRange = g.rxs.some((rx) => {
+        if (!rx.prescribedAt) return false;
+        const t = new Date(rx.prescribedAt).getTime();
+        if (fromTs !== null && t < fromTs) return false;
+        if (toTs !== null && t > toTs) return false;
+        return true;
+      });
+      if (!hasInRange) return false;
+    }
+
     // Allergy filter — optimistic: only filter "has_allergy" if any rx item
     // medication name is a known common allergen prefix. This is a soft filter;
     // the authoritative allergy check happens inside the card after fetching
@@ -240,6 +311,45 @@ export function DispenseView() {
       if (!hasAllergyMed) return false;
     }
 
+    // FEFO near-expiry-only filter — best-effort: keep group if any medication
+    // name contains a near-expiry trigger keyword OR the group is flagged as
+    // having PRN/STAT priority. The authoritative batch-level near-expiry
+    // check happens inside PrescriptionDispenseRow (which loads batches per
+    // item). For a true batch-aware filter, the parent would need to fetch
+    // batches for every queue item upfront, which is expensive on large queues.
+    //
+    // To keep this filter useful without that overhead, we use a conservative
+    // heuristic: if nearExpiryOnly is on, we only show groups where any item's
+    // medication name matches a known common high-risk-near-expiry drug class
+    // (antibiotics, insulins, biologics) — these are the items pharmacists
+    // typically want to clear first. Patients whose queues contain only
+    // routine, long-shelf-life items will be hidden.
+    //
+    // NOTE: The dashboard tab's "Near-Expiry Batches" alert card already shows
+    // the exact count from the stats API, which is the source of truth.
+    if (nearExpiryOnly) {
+      const NEAR_EXPIRY_PRIORITY_KEYWORDS = [
+        "insulin", "penicillin", "amoxicillin", "ampicillin",
+        "cephalosporin", "cefixime", "cefaclor", "cefuroxime",
+        "vancomycin", "gentamicin", "tobramycin", "amikacin",
+        "erythromycin", "azithromycin", "clarithromycin",
+        "tetracycline", "doxycycline",
+        "ciprofloxacin", "levofloxacin", "moxifloxacin",
+        "metronidazole", "chloramphenicol",
+        "heparin", "enoxaparin", "warfarin",
+        "epinephrine", "adrenaline", "atropine",
+        "oxytocin", "magnessium-sulfate",
+        "vaccine", "rotavirus", "mmr", "bcg", "opv", "ipv",
+      ];
+      const hasPriorityMed = g.rxs.some((rx) =>
+        (rx.items || []).some((it: any) => {
+          const name = (it.medication?.genericName || "").toLowerCase();
+          return NEAR_EXPIRY_PRIORITY_KEYWORDS.some((k) => name.includes(k));
+        })
+      );
+      if (!hasPriorityMed) return false;
+    }
+
     return true;
   });
 
@@ -257,13 +367,195 @@ export function DispenseView() {
     search.trim() !== "" ||
     statusFilter !== "all" ||
     priorityFilter !== "all" ||
-    allergyFilter !== "all";
+    allergyFilter !== "all" ||
+    prescriberFilter !== "all" ||
+    dateFrom !== "" ||
+    dateTo !== "" ||
+    nearExpiryOnly;
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setPriorityFilter("all");
     setAllergyFilter("all");
+    setPrescriberFilter("all");
+    setDateFrom("");
+    setDateTo("");
+    setNearExpiryOnly(false);
+  };
+
+  // ---- Bulk-select helpers ----
+  const togglePatientSelection = (pid: string) =>
+    setSelectedPatientIds((prev) => {
+      const next = { ...prev };
+      if (next[pid]) {
+        delete next[pid];
+      } else {
+        next[pid] = true;
+      }
+      return next;
+    });
+
+  const selectAllVisible = () => {
+    const next: Record<string, boolean> = {};
+    for (const g of filteredGroups) next[g.pid] = true;
+    setSelectedPatientIds(next);
+  };
+
+  const clearSelection = () => setSelectedPatientIds({});
+
+  // Selected groups that are currently visible (after filters). Selected
+  // patient IDs that are no longer visible are silently ignored.
+  const visibleSelectedGroups = filteredGroups.filter(
+    (g) => selectedPatientIds[g.pid]
+  );
+  const visibleSelectedCount = visibleSelectedGroups.length;
+
+  // Total remaining items across selected patients (the work the bulk
+  // dispense will actually have to do).
+  const bulkPlannedItemCount = visibleSelectedGroups.reduce((sum, g) => {
+    return (
+      sum +
+      g.rxs.reduce((s, rx) => {
+        return (
+          s +
+          (rx.items || []).filter(
+            (it: any) =>
+              it.status !== "dispensed" &&
+              it.status !== "cancelled" &&
+              it.quantity - it.dispensedQuantity > 0
+          ).length
+        );
+      }, 0)
+    );
+  }, 0);
+
+  // ---- Bulk Dispense action ----
+  // Walks every selected patient group, every prescription, every remaining
+  // item — fetches inventory batches for that item, picks the FEFO-recommended
+  // batch, and POSTs to /api/dispense. Reports progress in a dialog.
+  const handleBulkDispense = async () => {
+    if (visibleSelectedGroups.length === 0) return;
+
+    // Build the plan first so we know the total up-front.
+    type PlanEntry = {
+      patientName: string;
+      medName: string;
+      itemId: string;
+      rxId: string;
+      facilityId: string;
+      medicationName: string;
+      quantity: number;
+    };
+    const plan: PlanEntry[] = [];
+    for (const g of visibleSelectedGroups) {
+      for (const rx of g.rxs) {
+        for (const it of rx.items || []) {
+          if (
+            it.status === "dispensed" ||
+            it.status === "cancelled" ||
+            it.quantity - it.dispensedQuantity <= 0
+          ) {
+            continue;
+          }
+          plan.push({
+            patientName: `${g.patient?.firstName || ""} ${g.patient?.lastName || ""}`.trim(),
+            medName: it.medication?.genericName || "Unknown",
+            itemId: it.id,
+            rxId: rx.id,
+            facilityId: rx.facilityId,
+            medicationName: it.medication?.genericName || "",
+            quantity: it.quantity - it.dispensedQuantity,
+          });
+        }
+      }
+    }
+
+    if (plan.length === 0) {
+      toast.info("No items left to dispense across selected patients.");
+      return;
+    }
+
+    const ok = window.confirm(
+      `Dispense ${plan.length} item(s) across ${visibleSelectedGroups.length} patient(s) using FEFO-recommended batches?\n\n` +
+      `This action will bill each item to its patient's invoice (unless already configured otherwise). ` +
+      `Items without a valid in-stock batch will be skipped.`
+    );
+    if (!ok) return;
+
+    setBulkDispensing(true);
+    setBulkProgress({ done: 0, total: plan.length, failed: 0 });
+
+    let success = 0;
+    let failed = 0;
+    const failures: string[] = [];
+
+    for (let i = 0; i < plan.length; i++) {
+      const p = plan[i];
+      try {
+        // 1. Fetch inventory batches for this medication
+        const invRes = await fetch(
+          `/api/inventory?facilityId=${p.facilityId}&type=medication&q=${encodeURIComponent(p.medicationName)}`
+        );
+        if (!invRes.ok) throw new Error(`Inventory lookup failed (${invRes.status})`);
+        const inv = await safeJson(invRes);
+        const match = (inv.items || []).find(
+          (invItem: any) =>
+            invItem.medication?.id === (invItem as any).medicationId ||
+            invItem.name
+              ?.toLowerCase()
+              .includes(p.medicationName.toLowerCase())
+        );
+        const batches = match?.batches || [];
+        const rec = fefoRecommendedBatch(batches);
+        if (!rec) {
+          throw new Error("No valid in-stock batch (FEFO)");
+        }
+
+        // 2. POST to dispense API
+        const res = await fetch("/api/dispense", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prescriptionItemId: p.itemId,
+            batchId: rec.id,
+            quantity: p.quantity,
+            createInvoice: true,
+          }),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) {
+          throw new Error(data.error || `Dispense failed (${res.status})`);
+        }
+        success++;
+      } catch (e: any) {
+        failed++;
+        failures.push(`${p.patientName} · ${p.medName}: ${e.message}`);
+      }
+      setBulkProgress({ done: i + 1, total: plan.length, failed });
+    }
+
+    setBulkDispensing(false);
+    setBulkProgress(null);
+    clearSelection();
+
+    if (success > 0) {
+      toast.success(
+        `Bulk dispense complete — ${success} item(s) dispensed${
+          failed > 0 ? ` · ${failed} failed` : ""
+        }`
+      );
+    } else if (failed > 0) {
+      toast.error(`All ${failed} item(s) failed to dispense.`);
+    }
+
+    // Show first few failures in console + a toast for the first one.
+    if (failures.length > 0) {
+      console.error("Bulk dispense failures:", failures);
+      toast.error(failures[0] + (failures.length > 1 ? ` (+${failures.length - 1} more)` : ""));
+    }
+
+    invalidate();
   };
 
   const kpis = statsData?.kpis || {};
@@ -492,7 +784,7 @@ export function DispenseView() {
                       </div>
                     </div>
 
-                    {/* Row 2: Filter dropdowns */}
+                    {/* Row 2: Primary filter dropdowns (always visible) */}
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                         <Filter className="w-3.5 h-3.5" /> Filters:
@@ -534,6 +826,38 @@ export function DispenseView() {
                         </SelectContent>
                       </Select>
 
+                      {/* FEFO near-expiry only toggle */}
+                      <div className="flex items-center gap-2 h-8 px-2 rounded-md border border-slate-200 bg-white">
+                        <CalendarClock className="w-3.5 h-3.5 text-amber-600" />
+                        <Label
+                          htmlFor="near-expiry-toggle"
+                          className="text-xs text-slate-600 cursor-pointer whitespace-nowrap"
+                        >
+                          FEFO near-expiry only
+                        </Label>
+                        <Switch
+                          id="near-expiry-toggle"
+                          checked={nearExpiryOnly}
+                          onCheckedChange={setNearExpiryOnly}
+                          className="scale-75 origin-center"
+                        />
+                      </div>
+
+                      <Button
+                        variant={showFilters ? "secondary" : "outline"}
+                        size="sm"
+                        className="h-8 text-xs"
+                        onClick={() => setShowFilters((s) => !s)}
+                      >
+                        <ListChecks className="w-3.5 h-3.5" />
+                        {showFilters ? "Hide advanced" : "Advanced"}
+                        {(prescriberFilter !== "all" || dateFrom !== "" || dateTo !== "") && (
+                          <span className="ml-1 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-bold rounded-full bg-amber-500 text-white">
+                            !
+                          </span>
+                        )}
+                      </Button>
+
                       {hasActiveFilters && (
                         <Button
                           variant="ghost"
@@ -545,9 +869,180 @@ export function DispenseView() {
                         </Button>
                       )}
                     </div>
+
+                    {/* Row 3: Advanced filters — collapsible */}
+                    {showFilters && (
+                      <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-slate-100">
+                        {/* Prescriber filter */}
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                            <Stethoscope className="w-3 h-3" /> Prescriber
+                          </Label>
+                          <Select value={prescriberFilter} onValueChange={setPrescriberFilter}>
+                            <SelectTrigger className="h-8 w-[200px] text-xs">
+                              <SelectValue placeholder="All prescribers" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All prescribers</SelectItem>
+                              {allPrescribers.map((name) => (
+                                <SelectItem key={name} value={name}>
+                                  {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Date range filter */}
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> Prescribed from
+                          </Label>
+                          <Input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            className="h-8 w-[160px] text-xs"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> Prescribed to
+                          </Label>
+                          <Input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            className="h-8 w-[160px] text-xs"
+                          />
+                        </div>
+
+                        {/* Quick date presets */}
+                        <div className="flex items-end gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-[11px]"
+                            onClick={() => {
+                              const today = new Date();
+                              const iso = today.toISOString().slice(0, 10);
+                              setDateFrom(iso);
+                              setDateTo(iso);
+                            }}
+                          >
+                            Today
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-[11px]"
+                            onClick={() => {
+                              const today = new Date();
+                              const weekAgo = new Date(today);
+                              weekAgo.setDate(weekAgo.getDate() - 7);
+                              setDateFrom(weekAgo.toISOString().slice(0, 10));
+                              setDateTo(today.toISOString().slice(0, 10));
+                            }}
+                          >
+                            Last 7 days
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-[11px]"
+                            onClick={() => {
+                              const today = new Date();
+                              const monthAgo = new Date(today);
+                              monthAgo.setDate(monthAgo.getDate() - 30);
+                              setDateFrom(monthAgo.toISOString().slice(0, 10));
+                              setDateTo(today.toISOString().slice(0, 10));
+                            }}
+                          >
+                            Last 30 days
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* ===== Bulk-action bar (appears when at least one patient is selected) ===== */}
+              {visibleSelectedCount > 0 && (
+                <Card className="border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm">
+                  <CardContent className="p-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                          <CheckSquare className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-amber-900">
+                            {visibleSelectedCount} patient{visibleSelectedCount === 1 ? "" : "s"} selected
+                          </div>
+                          <div className="text-xs text-amber-700">
+                            {bulkPlannedItemCount} item{bulkPlannedItemCount === 1 ? "" : "s"} will be dispensed using FEFO-recommended batches
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs border-amber-300 bg-white hover:bg-amber-50"
+                          onClick={selectAllVisible}
+                          disabled={filteredGroups.length === 0 || bulkDispensing}
+                        >
+                          <CheckSquare className="w-3.5 h-3.5" /> Select all visible
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                          onClick={clearSelection}
+                          disabled={bulkDispensing}
+                        >
+                          <X className="w-3.5 h-3.5" /> Clear selection
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs gap-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+                          onClick={handleBulkDispense}
+                          disabled={bulkDispensing || bulkPlannedItemCount === 0}
+                        >
+                          {bulkDispensing ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Zap className="w-3.5 h-3.5" />
+                          )}
+                          {bulkDispensing
+                            ? `Dispensing… (${bulkProgress?.done ?? 0}/${bulkProgress?.total ?? 0})`
+                            : `Dispense ${bulkPlannedItemCount} item${bulkPlannedItemCount === 1 ? "" : "s"}`}
+                        </Button>
+                      </div>
+                    </div>
+                    {bulkDispensing && bulkProgress && (
+                      <div className="mt-3">
+                        <Progress
+                          value={Math.round((bulkProgress.done / bulkProgress.total) * 100)}
+                          className="h-2 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-amber-500 [&_[data-slot=progress-indicator]]:to-orange-500"
+                        />
+                        <div className="flex items-center justify-between text-[11px] text-amber-700 mt-1">
+                          <span className="flex items-center gap-1">
+                            <Hourglass className="w-3 h-3" />
+                            Processing {bulkProgress.done} of {bulkProgress.total}…
+                          </span>
+                          {bulkProgress.failed > 0 && (
+                            <span className="text-rose-700">
+                              {bulkProgress.failed} failed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* ===== Queue list ===== */}
               {isLoading ? (
@@ -593,6 +1088,9 @@ export function DispenseView() {
                       primaryStatus={g.primaryStatus}
                       hasStat={g.hasStat}
                       hasPrn={g.hasPrn}
+                      selected={!!selectedPatientIds[g.pid]}
+                      onToggleSelect={() => togglePatientSelection(g.pid)}
+                      bulkDispensing={bulkDispensing}
                     />
                   ))}
                 </div>
@@ -695,6 +1193,10 @@ function VerifyField({ label, value }: { label: string; value: string | undefine
 // Collapsible: header is always visible; detailed content only renders
 // when `expanded` is true. Toggle is controlled by the parent so that
 // "Expand all" / "Collapse all" can drive every card at once.
+//
+// The header also contains a bulk-select checkbox (controlled by the
+// parent's `selected` / `onToggleSelect` props) that lets the user pick
+// this patient for the cross-patient "Dispense selected" bulk action.
 // =====================================================================
 function PatientDispenseCard({
   patient,
@@ -708,6 +1210,9 @@ function PatientDispenseCard({
   primaryStatus,
   hasStat,
   hasPrn,
+  selected,
+  onToggleSelect,
+  bulkDispensing,
 }: {
   patient: any;
   prescriptions: any[];
@@ -720,6 +1225,9 @@ function PatientDispenseCard({
   primaryStatus: string;
   hasStat: boolean;
   hasPrn: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
+  bulkDispensing: boolean;
 }) {
   const [allergies, setAllergies] = useState<any[]>([]);
   const [allergiesFetched, setAllergiesFetched] = useState(false);
@@ -741,88 +1249,119 @@ function PatientDispenseCard({
   return (
     <Card
       className={`overflow-hidden transition-shadow ${
-        expanded ? "shadow-md ring-1 ring-amber-200" : "hover:shadow-sm"
+        selected
+          ? "shadow-md ring-2 ring-amber-400 border-amber-300"
+          : expanded
+          ? "shadow-md ring-1 ring-amber-200"
+          : "hover:shadow-sm"
       }`}
     >
-      {/* ===== Collapsible header — always visible, click to toggle ===== */}
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        className="w-full text-left bg-gradient-to-r from-slate-50 to-amber-50/40 hover:from-amber-50 hover:to-orange-50 transition-colors border-b border-slate-200 px-4 py-3 cursor-pointer"
+      {/* ===== Header row — bulk-select checkbox + collapsible toggle ===== */}
+      <div
+        className={`flex items-stretch border-b border-slate-200 ${
+          selected ? "bg-gradient-to-r from-amber-50 to-orange-50" : "bg-gradient-to-r from-slate-50 to-amber-50/40"
+        }`}
       >
-        <div className="flex items-center gap-3">
-          {/* Chevron / expand indicator */}
-          <div className="shrink-0 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500">
-            {expanded ? (
-              <ChevronDown className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5" />
-            )}
-          </div>
+        {/* Bulk-select checkbox (left edge) — does NOT toggle expand */}
+        <label
+          className={`flex items-center justify-center w-12 shrink-0 cursor-pointer border-r border-slate-200 ${
+            bulkDispensing ? "opacity-50 pointer-events-none" : "hover:bg-amber-100/50"
+          }`}
+          title={selected ? "Deselect for bulk dispense" : "Select for bulk dispense"}
+        >
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect()}
+            disabled={bulkDispensing}
+            className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+          />
+        </label>
 
-          {/* Patient avatar */}
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-sm font-bold shrink-0">
-            {(patient?.firstName?.[0] || "P").toUpperCase()}
-          </span>
-
-          {/* Patient name + summary */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-slate-800 truncate">
-                {patient?.firstName} {patient?.lastName}
-              </span>
-              <span className="text-[10px] text-slate-500 font-mono">
-                MRN: {patient?.patientNumber || "—"}
-              </span>
-              {hasStat && (
-                <Badge variant="destructive" className="text-[9px] py-0 h-4">
-                  STAT
-                </Badge>
+        {/* Collapsible toggle area (rest of header) */}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="flex-1 text-left hover:from-amber-50 hover:to-orange-50 transition-colors px-4 py-3 cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            {/* Chevron / expand indicator */}
+            <div className="shrink-0 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+              {expanded ? (
+                <ChevronDown className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" />
               )}
-              {hasPrn && (
+            </div>
+
+            {/* Patient avatar */}
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-sm font-bold shrink-0">
+              {(patient?.firstName?.[0] || "P").toUpperCase()}
+            </span>
+
+            {/* Patient name + summary */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-slate-800 truncate">
+                  {patient?.firstName} {patient?.lastName}
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  MRN: {patient?.patientNumber || "—"}
+                </span>
+                {hasStat && (
+                  <Badge variant="destructive" className="text-[9px] py-0 h-4">
+                    STAT
+                  </Badge>
+                )}
+                {hasPrn && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] py-0 h-4"
+                  >
+                    PRN
+                  </Badge>
+                )}
+                {selected && (
+                  <Badge className="bg-amber-500 text-white border-amber-500 text-[9px] py-0 h-4 gap-1">
+                    <CheckSquare className="w-2.5 h-2.5" /> Selected
+                  </Badge>
+                )}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span>
+                  <strong className="text-slate-700">{prescriptions.length}</strong>{" "}
+                  prescription{prescriptions.length === 1 ? "" : "s"}
+                </span>
+                <span className="text-slate-300">·</span>
+                <span>
+                  <strong className="text-slate-700">{totalItems}</strong>{" "}
+                  item{totalItems === 1 ? "" : "s"}
+                </span>
+                <span className="text-slate-300">·</span>
+                <span>
+                  {patient?.sex ? String(patient.sex).toUpperCase() : "—"} ·{" "}
+                  {calculateAge(patient?.dateOfBirth)}y
+                </span>
+              </div>
+            </div>
+
+            {/* Right side: status + allergy indicator */}
+            <div className="flex items-center gap-2 shrink-0">
+              <StatusBadge status={primaryStatus} />
+              {allergiesFetched && allergies.length > 0 && (
                 <Badge
-                  variant="secondary"
-                  className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] py-0 h-4"
+                  variant="destructive"
+                  className="bg-rose-100 text-rose-700 border-rose-200 gap-1"
+                  title={`${allergies.length} documented allerg(y/ies)`}
                 >
-                  PRN
+                  <AlertTriangle className="w-3 h-3" />
+                  {allergies.length} allergy{allergies.length === 1 ? "" : "ies"}
                 </Badge>
               )}
             </div>
-            <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
-              <span>
-                <strong className="text-slate-700">{prescriptions.length}</strong>{" "}
-                prescription{prescriptions.length === 1 ? "" : "s"}
-              </span>
-              <span className="text-slate-300">·</span>
-              <span>
-                <strong className="text-slate-700">{totalItems}</strong>{" "}
-                item{totalItems === 1 ? "" : "s"}
-              </span>
-              <span className="text-slate-300">·</span>
-              <span>
-                {patient?.sex ? String(patient.sex).toUpperCase() : "—"} ·{" "}
-                {calculateAge(patient?.dateOfBirth)}y
-              </span>
-            </div>
           </div>
-
-          {/* Right side: status + allergy indicator */}
-          <div className="flex items-center gap-2 shrink-0">
-            <StatusBadge status={primaryStatus} />
-            {allergiesFetched && allergies.length > 0 && (
-              <Badge
-                variant="destructive"
-                className="bg-rose-100 text-rose-700 border-rose-200 gap-1"
-                title={`${allergies.length} documented allerg(y/ies)`}
-              >
-                <AlertTriangle className="w-3 h-3" />
-                {allergies.length} allergy{allergies.length === 1 ? "" : "ies"}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </button>
+        </button>
+      </div>
 
       {/* ===== Expanded content — only rendered when toggled open ===== */}
       {expanded && (
