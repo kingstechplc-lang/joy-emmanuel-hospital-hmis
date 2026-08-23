@@ -36,6 +36,11 @@ export type WorkflowEvent =
   | "discharge_initiated"
   | "referral_made"
   | "referral_accepted"
+  | "referral_rejected"
+  | "referral_completed"
+  | "referral_cancelled"
+  | "referral_feedback_received"
+  | "referral_message_received"
   | "procedure_scheduled"
   | "procedure_completed"
   | "theatre_case_scheduled"
@@ -87,6 +92,11 @@ const RECIPIENT_PERMISSIONS: Record<WorkflowEvent, string[]> = {
   discharge_initiated: ["billing.view", "admission.view"],
   referral_made: ["clinical.view", "encounter.view"],
   referral_accepted: ["clinical.view", "encounter.view"],
+  referral_rejected: ["clinical.view", "encounter.view"],
+  referral_completed: ["clinical.view", "encounter.view"],
+  referral_cancelled: ["clinical.view", "encounter.view"],
+  referral_feedback_received: ["clinical.view", "encounter.view"],
+  referral_message_received: ["clinical.view", "encounter.view"],
   procedure_scheduled: ["procedure.perform", "procedure.view"],
   procedure_completed: ["clinical.view", "encounter.view"],
   theatre_case_scheduled: ["theatre.view", "theatre.perform"],
@@ -432,6 +442,139 @@ export async function notifyReferralMade(opts: {
     referenceType: "referral",
     referenceId: opts.referralId,
     directRecipientIds: opts.receivedById ? [opts.receivedById] : [],
+  });
+}
+
+// =====================================================================
+// Referral lifecycle notifications — fire on each status transition
+// so the referring facility gets a callback when their referral is
+// accepted, rejected, completed, or cancelled by the receiving facility.
+// =====================================================================
+
+export async function notifyReferralAccepted(opts: {
+  organizationId: string;
+  facilityId?: string | null; // referring facility (where we send the notification)
+  referralNumber: string;
+  patientName: string;
+  receivingFacilityName: string;
+  referralId: string;
+  acceptedById?: string;
+  notes?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "referral_accepted",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `✅ Referral Accepted: ${opts.referralNumber}`,
+    message: `${opts.receivingFacilityName} accepted referral for ${opts.patientName}.${opts.notes ? ` Notes: ${opts.notes.slice(0, 100)}` : ""}`,
+    referenceType: "referral",
+    referenceId: opts.referralId,
+    directRecipientIds: opts.acceptedById ? [opts.acceptedById] : [],
+  });
+}
+
+export async function notifyReferralRejected(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  referralNumber: string;
+  patientName: string;
+  receivingFacilityName: string;
+  referralId: string;
+  rejectionReason?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "referral_rejected",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `❌ Referral Rejected: ${opts.referralNumber}`,
+    message: `${opts.receivingFacilityName} rejected referral for ${opts.patientName}.${opts.rejectionReason ? ` Reason: ${opts.rejectionReason.slice(0, 100)}` : ""}`,
+    referenceType: "referral",
+    referenceId: opts.referralId,
+  });
+}
+
+export async function notifyReferralCompleted(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  referralNumber: string;
+  patientName: string;
+  receivingFacilityName: string;
+  referralId: string;
+  outcome?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "referral_completed",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `✅ Referral Completed: ${opts.referralNumber}`,
+    message: `${opts.receivingFacilityName} marked referral for ${opts.patientName} as completed.${opts.outcome ? ` Outcome: ${opts.outcome.slice(0, 100)}` : ""}`,
+    referenceType: "referral",
+    referenceId: opts.referralId,
+  });
+}
+
+export async function notifyReferralCancelled(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  referralNumber: string;
+  patientName: string;
+  referralId: string;
+  cancellationReason?: string;
+  cancelledById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "referral_cancelled",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🚫 Referral Cancelled: ${opts.referralNumber}`,
+    message: `Referral for ${opts.patientName} was cancelled.${opts.cancellationReason ? ` Reason: ${opts.cancellationReason.slice(0, 100)}` : ""}`,
+    referenceType: "referral",
+    referenceId: opts.referralId,
+    excludeUserId: opts.cancelledById,
+  });
+}
+
+export async function notifyReferralFeedbackReceived(opts: {
+  organizationId: string;
+  facilityId?: string | null; // referring facility
+  referralNumber: string;
+  patientName: string;
+  receivingFacilityName: string;
+  referralId: string;
+  feedbackType: string;
+  outcome?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "referral_feedback_received",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📋 Referral Feedback: ${opts.referralNumber}`,
+    message: `${opts.receivingFacilityName} submitted ${opts.feedbackType} feedback for ${opts.patientName}.${opts.outcome ? ` Outcome: ${opts.outcome.slice(0, 100)}` : ""}`,
+    referenceType: "referral",
+    referenceId: opts.referralId,
+  });
+}
+
+export async function notifyReferralMessageReceived(opts: {
+  organizationId: string;
+  facilityId?: string | null;
+  referralNumber: string;
+  patientName: string;
+  fromFacilityName: string;
+  referralId: string;
+  senderId?: string;
+  messageType: string;
+  preview: string;
+}) {
+  return sendWorkflowNotification({
+    event: "referral_message_received",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `💬 Referral Message: ${opts.referralNumber}`,
+    message: `${opts.fromFacilityName} (${opts.messageType}) re: ${opts.patientName} — ${opts.preview.slice(0, 120)}`,
+    referenceType: "referral",
+    referenceId: opts.referralId,
+    excludeUserId: opts.senderId,
   });
 }
 
