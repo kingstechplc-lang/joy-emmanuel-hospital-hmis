@@ -1,43 +1,88 @@
 // =====================================================================
 // API: /api/immunizations
-//   GET  — list immunizations (filter by facility/patient)
-//   POST — record immunization
-//   PATCH /api/immunizations/[id] — update
+//   GET  — list immunizations (filter by facility/patient/status/vaccine/date)
+//   POST — record immunization administration with batch + stock deduction
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { isDuplicateDose, getNextDueDose } from "@/lib/immunization-schedule";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
-// GET /api/immunizations?facilityId=...&patientId=...&limit=50
+// GET /api/immunizations?facilityId=...&patientId=...&status=...&vaccineCatalogId=...&dateFrom=...&dateTo=...&search=...&limit=100
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.PATIENT_VIEW)) {
+  if (!hasPermission(session, PERMISSIONS.IMMUNIZATION_VIEW)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || undefined;
   const patientId = url.searchParams.get("patientId");
-  const limit = parseInt(url.searchParams.get("limit") || "50");
+  const status = url.searchParams.get("status");
+  const vaccineCatalogId = url.searchParams.get("vaccineCatalogId");
+  const batchId = url.searchParams.get("batchId");
+  const dateFrom = url.searchParams.get("dateFrom");
+  const dateTo = url.searchParams.get("dateTo");
+  const search = url.searchParams.get("search")?.trim();
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "100"), 500);
 
   const where: any = {};
   if (facilityId) where.facilityId = facilityId;
   if (patientId) where.patientId = patientId;
+  if (status && status !== "all") where.status = status;
+  if (vaccineCatalogId && vaccineCatalogId !== "all") where.vaccineCatalogId = vaccineCatalogId;
+  if (batchId) where.batchId = batchId;
+
+  if (dateFrom || dateTo) {
+    const dateFilter: any = {};
+    if (dateFrom) dateFilter.gte = new Date(dateFrom + "T00:00:00");
+    if (dateTo) dateFilter.lte = new Date(dateTo + "T23:59:59");
+    where.administeredAt = dateFilter;
+  }
+
+  if (search) {
+    where.OR = [
+      { vaccineName: { contains: search, mode: "insensitive" } },
+      { batchNumber: { contains: search, mode: "insensitive" } },
+      {
+        patient: {
+          OR: [
+            { firstName: { contains: search, mode: "insensitive" } },
+            { lastName: { contains: search, mode: "insensitive" } },
+            { patientNumber: { contains: search, mode: "insensitive" } },
+          ],
+        },
+      },
+    ];
+  }
 
   const immunizations = await db.immunization.findMany({
     where,
     orderBy: { administeredAt: "desc" },
     take: limit,
     include: {
-      patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true, dateOfBirth: true, sex: true } },
+      patient: {
+        select: {
+          id: true,
+          patientNumber: true,
+          firstName: true,
+          lastName: true,
+          dateOfBirth: true,
+          sex: true,
+          phone: true,
+        },
+      },
       facility: { select: { id: true, name: true } },
       administeredBy: { select: { id: true, firstName: true, lastName: true } },
+      vaccineCatalog: { select: { id: true, code: true, name: true } },
+      aefiRecords: { select: { id: true, severity: true, status: true } },
+      _count: { select: { aefiRecords: true } },
     },
   });
 
@@ -45,10 +90,17 @@ export async function GET(req: Request) {
 }
 
 // POST /api/immunizations
+// Body: {
+//   patientId, vaccineCatalogId?, vaccineName, dose?, doseNumber?,
+//   batchId?, batchNumber?, manufacturer?, expiryDate?,
+//   route?, site?, administeredAt?, nextDueAt?, facilityId,
+//   status?, indication?, encounterId?, consentStatus?, guardianName?,
+//   notes?, deductStock?
+// }
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.TRIAGE_RECORD)) {
+  if (!hasPermission(session, PERMISSIONS.IMMUNIZATION_RECORD)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -60,31 +112,153 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
   const {
-    patientId, vaccineName, dose, batchNumber,
-    administeredAt, nextDueAt, facilityId, notes,
+    patientId, vaccineCatalogId, vaccineName, dose, doseNumber,
+    batchId, batchNumber, manufacturer, expiryDate,
+    route, site, administeredAt, nextDueAt, facilityId,
+    status, indication, encounterId, consentStatus, guardianName,
+    notes, deductStock = true,
   } = body;
 
   if (!patientId || !vaccineName || !facilityId) {
-    return NextResponse.json({ error: "patientId, vaccineName and facilityId are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "patientId, vaccineName, and facilityId are required" },
+      { status: 400 }
+    );
   }
 
-  const immunization = await db.immunization.create({
-    data: {
-      patientId,
-      vaccineName,
-      dose: dose || null,
-      batchNumber: batchNumber || null,
-      administeredAt: administeredAt ? new Date(administeredAt) : new Date(),
-      nextDueAt: nextDueAt ? new Date(nextDueAt) : null,
-      facilityId,
-      administeredById: session.user.id,
-      notes: notes || null,
-    },
-    include: {
-      patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
-      facility: { select: { id: true, name: true } },
-    },
-  });
+  // ---- Validate batch if provided ----
+  let batch: any = null;
+  if (batchId) {
+    batch = await db.inventoryBatch.findUnique({
+      where: { id: batchId },
+      include: {
+        facilityInventory: { select: { facilityId: true, inventoryItemId: true } },
+      },
+    });
+    if (!batch) {
+      return NextResponse.json({ error: "Batch not found" }, { status: 404 });
+    }
+    // Verify batch belongs to the administering facility
+    if (batch.facilityInventory.facilityId !== facilityId) {
+      return NextResponse.json(
+        { error: "Batch does not belong to the administering facility" },
+        { status: 400 }
+      );
+    }
+    // Reject expired batches
+    if (batch.expiryDate && new Date(batch.expiryDate) < new Date()) {
+      return NextResponse.json(
+        { error: `Batch ${batch.batchNumber} expired on ${new Date(batch.expiryDate).toLocaleDateString()}` },
+        { status: 400 }
+      );
+    }
+    // Reject out-of-stock batches
+    if (batch.quantity <= 0) {
+      return NextResponse.json(
+        { error: `Batch ${batch.batchNumber} has no available stock` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // ---- Duplicate dose check ----
+  if (vaccineCatalogId && doseNumber) {
+    const dup = await isDuplicateDose(patientId, vaccineCatalogId, doseNumber);
+    if (dup) {
+      return NextResponse.json(
+        {
+          error: `Duplicate dose detected: patient already has a completed record for ${vaccineName} dose ${doseNumber}. Use the amendment workflow if this is a correction.`,
+          code: "DUPLICATE_DOSE",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
+  // ---- Auto-compute nextDueAt from schedule if not provided ----
+  let computedNextDueAt: Date | null = nextDueAt ? new Date(nextDueAt) : null;
+  if (!computedNextDueAt && vaccineCatalogId) {
+    const nextDose = await getNextDueDose(patientId, vaccineCatalogId, session.user.organizationId);
+    if (nextDose) {
+      computedNextDueAt = nextDose.dueDate;
+    }
+  }
+
+  // ---- Create immunization record + deduct stock in a transaction ----
+  const result = await db.$transaction(async (tx) => {
+    // 1. Create the immunization record
+    const immunization = await tx.immunization.create({
+      data: {
+        patientId,
+        vaccineCatalogId: vaccineCatalogId || null,
+        vaccineName,
+        dose: dose || null,
+        doseNumber: doseNumber || null,
+        batchId: batchId || null,
+        batchNumber: batchNumber || batch?.batchNumber || null,
+        manufacturer: manufacturer || null,
+        expiryDate: expiryDate ? new Date(expiryDate) : batch?.expiryDate || null,
+        route: route || null,
+        site: site || null,
+        administeredAt: administeredAt ? new Date(administeredAt) : new Date(),
+        nextDueAt: computedNextDueAt,
+        status: status || "completed",
+        indication: indication || null,
+        encounterId: encounterId || null,
+        consentStatus: consentStatus || null,
+        consentObtainedAt: consentStatus === "obtained" ? new Date() : null,
+        guardianName: guardianName || null,
+        facilityId,
+        administeredById: session.user.id,
+        notes: notes || null,
+      },
+    });
+
+    // 2. Deduct stock from the batch (if requested and batch is linked)
+    if (deductStock && batchId && batch) {
+      const inventoryItemId = batch.facilityInventory.inventoryItemId;
+
+      // Decrement batch quantity
+      const updatedBatch = await tx.inventoryBatch.update({
+        where: { id: batchId },
+        data: { quantity: { decrement: 1 } },
+      });
+
+      if (updatedBatch.quantity < 0) {
+        throw new Error(`Batch ${batch.batchNumber} has insufficient stock (would go negative)`);
+      }
+
+      // Decrement facility inventory current quantity
+      await tx.facilityInventory.update({
+        where: { id: batch.facilityInventoryId },
+        data: { currentQuantity: { decrement: 1 } },
+      });
+
+      // Create inventory transaction record for audit trail
+      await tx.inventoryTransaction.create({
+        data: {
+          facilityId,
+          inventoryItemId,
+          batchId,
+          transactionType: "dispense",
+          quantity: -1, // 1 dose consumed
+          referenceType: "immunization",
+          referenceId: immunization.id,
+          performedById: session.user.id,
+          transactionAt: new Date(),
+          notes: `Vaccine administration: ${vaccineName}${dose ? ` (${dose})` : ""}`,
+        },
+      });
+    }
+
+    return immunization;
+  }).catch((err) => ({ error: err.message }));
+
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+
+  const immunization: any = result;
 
   await auditLog({
     userId: session.user.id,
@@ -93,8 +267,25 @@ export async function POST(req: Request) {
     action: "IMMUNIZATION_RECORDED",
     resourceType: "immunization",
     resourceId: immunization.id,
-    newValues: { patientId, vaccineName, dose, batchNumber },
+    newValues: {
+      patientId,
+      vaccineName,
+      dose,
+      doseNumber,
+      batchNumber: immunization.batchNumber,
+      status: immunization.status,
+    },
   });
 
-  return NextResponse.json({ item: immunization }, { status: 201 });
+  // Load the full record with relations for the response
+  const fullRecord = await db.immunization.findUnique({
+    where: { id: immunization.id },
+    include: {
+      patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
+      facility: { select: { id: true, name: true } },
+      vaccineCatalog: { select: { id: true, code: true, name: true } },
+    },
+  });
+
+  return NextResponse.json({ item: fullRecord }, { status: 201 });
 }

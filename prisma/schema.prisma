@@ -60,6 +60,10 @@ model Organization {
   incidentReports     IncidentReport[]
   shiftHandovers      ShiftHandover[]
   wardRounds          WardRound[]
+  vaccineCatalogs     VaccineCatalog[]
+  vaccineScheduleDoses VaccineScheduleDose[]
+  vaccineWastage      VaccineWastage[]
+  coldChainAlerts     ColdChainAlert[]
 }
 
 model Facility {
@@ -112,6 +116,9 @@ model Facility {
   referralsFrom         Referral[] @relation("refFromFacility")
   referralsTo           Referral[] @relation("refToFacility")
   immunizations         Immunization[]
+  aefiRecords           AEFI[]
+  vaccineWastage        VaccineWastage[]
+  coldChainAlerts       ColdChainAlert[]
   documents             Document[]
   notifications         Notification[]
   tasks                 Task[]
@@ -288,6 +295,11 @@ model User {
   referralEvents     ReferralEvent[] @relation("referralEventActor")
   referralFeedback   ReferralFeedback[] @relation("referralFeedbackAuthor")
   referralMessages   ReferralMessage[] @relation("referralMessageSender")
+  aefiReported       AEFI[] @relation("aefiReportedBy")
+  aefiReviewed       AEFI[] @relation("aefiReviewedBy")
+  vaccineWastageDisposed VaccineWastage[] @relation("wasteDisposedBy")
+  coldChainRecorded  ColdChainAlert[] @relation("coldChainRecordedBy")
+  coldChainAcked     ColdChainAlert[] @relation("coldChainAckedBy")
   patientTransfers PatientTransfer[] @relation("ptRequestedBy")
   immunizations  Immunization[] @relation("immunizationAdmin")
   triageRecords  TriageRecord[] @relation("triageNurse")
@@ -479,6 +491,7 @@ model Patient {
   familyHistory     FamilyHistory[]
   socialHistory      SocialHistory[]
   immunizations      Immunization[]
+  aefiRecords        AEFI[]
   labOrders          LabOrder[]
   imagingOrders      ImagingOrder[]
   procedures         Procedure[]
@@ -1799,20 +1812,235 @@ model Immunization {
   id                String   @id @default(cuid())
   patientId         String
   patient           Patient @relation(fields: [patientId], references: [id])
-  vaccineName       String
-  dose              String?
-  batchNumber       String?
+  // Vaccine identification — supports both catalog-linked and legacy free-text
+  vaccineCatalogId  String?  // FK to VaccineCatalog (null for legacy/historical records)
+  vaccineCatalog    VaccineCatalog? @relation(fields: [vaccineCatalogId], references: [id])
+  vaccineName       String   // Snapshotted name (preserves history even if catalog changes)
+  dose              String?  // Free-text dose label (e.g. "1st dose", "Birth dose", "Booster")
+  doseNumber        Int?     // Numeric dose in series (1, 2, 3...) for schedule tracking
+  seriesId          String?  // Groups multi-dose series (e.g., "PENTA-2026-patientX")
+  // Batch / lot tracking — links to InventoryBatch for stock traceability
+  batchId           String?  // FK to InventoryBatch (null for historical/external records)
+  batchNumber       String?  // Snapshotted batch number (preserves history)
+  manufacturer      String?  // Snapshotted manufacturer name
+  expiryDate        DateTime? // Snapshotted batch expiry at time of administration
+  // Administration details
+  route             String?  // IM | SC | Oral | Intradermal | Nasal | Other
+  site              String?  // Left deltoid | Right deltoid | Left thigh | Right thigh | Oral | Other
   administeredAt    DateTime @default(now())
   nextDueAt         DateTime?
+  // Status & lifecycle
+  status            String   @default("completed") // completed | scheduled | due | overdue | missed | declined | deferred | contraindicated | cancelled | not_available | unknown
+  indication        String?  // routine | catch_up | campaign | occupational | travel | maternal | clinical_indication | outbreak
+  // Encounter linkage
+  encounterId       String?  // Optional link to the source encounter
+  // Consent (for minors / capable adults)
+  consentStatus     String?  // obtained | declined | not_required | pending
+  consentObtainedById String?
+  consentObtainedAt DateTime?
+  guardianName      String?  // For pediatric patients — guardian who brought the child
+  // Facility & staff
   facilityId        String
   facility          Facility @relation(fields: [facilityId], references: [id])
   administeredById  String?
   administeredBy    User?    @relation("immunizationAdmin", fields: [administeredById], references: [id])
+  // Clinical
   notes             String?
+  // Deferral / decline tracking
+  deferralReason    String?
+  deferredUntil     DateTime?
+  declineReason     String?
+  // Amendment tracking (immutable clinical history — corrections via amendment)
+  amendedFromId     String?  // If this record corrects a previous one
+  amendmentReason   String?
+  // Recall tracking
+  recalledAt        DateTime? // If the batch was recalled, when was this record flagged
+  recallStatus      String?  // pending_review | contacted | resolved | no_action
+  // Outreach linkage
+  communityOutreachId String? // Link to CommunityOutreach session if administered during outreach
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  aefiRecords       AEFI[]
+
+  @@index([patientId, administeredAt])
+  @@index([facilityId, administeredAt])
+  @@index([status])
+  @@index([vaccineCatalogId])
+  @@index([batchId])
+  @@index([seriesId])
+}
+
+// =====================================================================
+// VACCINE CATALOG — Configurable master list of vaccines
+// =====================================================================
+// Org-level catalog of vaccines. Each vaccine has a code, default route/site,
+// and links to an InventoryItem (so administering a dose can deduct stock).
+// The schedule rules (which dose at which age) live in VaccineScheduleDose.
+model VaccineCatalog {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  code              String   // Unique vaccine code, e.g. "BCG", "OPV", "PENTA", "PCV", "MR", "HPV"
+  name              String   // Display name, e.g. "BCG Vaccine"
+  genericName       String?  // Standard/generic name, e.g. "Bacille Calmette-Guérin"
+  description       String?
+  diseasePrevented  String?  // e.g. "Tuberculosis"
+  vaccineType       String?  // routine_childhood | adolescent | adult | maternal | travel | occupational | catch_up | campaign | other
+  ageGroup          String?  // birth | under_1 | 1_5 | 5_10 | adolescent | adult | maternal | all
+  defaultRoute      String?  // IM | SC | Oral | Intradermal | Nasal | Other
+  defaultSite       String?  // Left deltoid | Right deltoid | Left thigh | Right thigh | Oral | Other
+  doseVolumeMl      Float?   // Volume per dose in mL
+  // Link to inventory — when this vaccine is administered, stock is deducted
+  // from the InventoryItem with itemType="vaccine" linked here.
+  inventoryItemId   String?  // FK to InventoryItem (optional — some vaccines may not be stock-tracked)
+  // Schedule metadata
+  totalDosesInSeries Int     @default(1) // e.g., PENTA has 3 doses, BCG has 1
+  isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  @@index([patientId, administeredAt])
+  immunizations     Immunization[]
+  scheduleDoses     VaccineScheduleDose[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
+}
+
+// =====================================================================
+// VACCINE SCHEDULE DOSE — Configurable EPI schedule rules
+// =====================================================================
+// Each row defines when a specific dose of a vaccine is due, based on age.
+// The schedule engine uses these rules + the patient's DOB + their existing
+// immunization history to compute due/overdue/upcoming doses.
+model VaccineScheduleDose {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  vaccineCatalogId  String
+  vaccineCatalog    VaccineCatalog @relation(fields: [vaccineCatalogId], references: [id])
+  doseNumber        Int      // 1, 2, 3, etc.
+  doseLabel         String   // "Birth dose", "6 weeks", "10 weeks", "14 weeks", "9 months", "Booster"
+  // When is this dose due? Expressed as age from birth.
+  ageAtDueDays      Int      // Age in days when the dose becomes due (0 = at birth)
+  ageAtOverdueDays  Int      // Age in days when the dose becomes overdue (e.g., 14 days after due)
+  // Interval from previous dose (for multi-dose series)
+  intervalFromPreviousDoseDays Int? // Minimum days since the previous dose
+  // Applicability
+  appliesToSex      String?  // male | female | all (null = all) — for HPV, etc.
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([vaccineCatalogId, doseNumber])
+  @@index([organizationId, isActive])
+}
+
+// =====================================================================
+// AEFI — Adverse Event Following Immunization
+// =====================================================================
+model AEFI {
+  id                String   @id @default(cuid())
+  immunizationId    String
+  immunization      Immunization @relation(fields: [immunizationId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient @relation(fields: [patientId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  // Event details
+  onsetAt           DateTime // When the adverse event started (may differ from administration time)
+  reportedAt        DateTime @default(now())
+  reportedById      String?
+  reportedBy        User?    @relation("aefiReportedBy", fields: [reportedById], references: [id])
+  // Clinical details
+  symptoms          String   // Description of symptoms/event
+  severity          String   @default("mild") // mild | moderate | severe | fatal
+  actionTaken       String?  // observation | medication | hospitalization | referral | other
+  treatment         String?  // Treatment provided
+  outcome           String?  // recovered | recovering | unresolved | death | unknown
+  // Follow-up
+  status            String   @default("open") // open | under_review | follow_up_required | referred | resolved | closed
+  reviewedById      String?
+  reviewedBy        User?    @relation("aefiReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  followUpNotes     String?
+  followUpDate      DateTime?
+  // Referral
+  referredToFacilityId String?
+  referralNotes     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([immunizationId])
+  @@index([patientId, reportedAt])
+  @@index([status])
+  @@index([severity])
+}
+
+// =====================================================================
+// VACCINE WASTAGE — Track wasted vaccine doses
+// =====================================================================
+model VaccineWastage {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  // What was wasted
+  inventoryItemId   String?  // FK to InventoryItem
+  batchId           String?  // FK to InventoryBatch
+  vaccineName       String   // Snapshotted vaccine name
+  batchNumber       String?  // Snapshotted batch number
+  quantity          Int      // Number of doses wasted
+  // Why
+  reason            String   // broken_vial | expired | damaged | cold_chain_issue | open_vial_wastage | spillage | other
+  notes             String?
+  // Who & when
+  disposedById      String?
+  disposedBy        User?    @relation("wasteDisposedBy", fields: [disposedById], references: [id])
+  disposedAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([facilityId, disposedAt])
+  @@index([batchId])
+  @@index([reason])
+}
+
+// =====================================================================
+// COLD CHAIN ALERT — Temperature monitoring records
+// =====================================================================
+// Manual temperature readings + alerts. Not real-time IoT — staff record
+// readings and the system flags excursions outside the safe range (2-8°C
+// for most vaccines).
+model ColdChainAlert {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  // Equipment / location
+  equipmentName     String?  // e.g., "Vaccine Fridge 1"
+  storageLocation   String?  // e.g., "Pharmacy Cold Room"
+  // Reading
+  temperatureC      Float    // Temperature in Celsius
+  recordedAt        DateTime @default(now())
+  recordedById      String?
+  recordedBy        User?    @relation("coldChainRecordedBy", fields: [recordedById], references: [id])
+  // Alert
+  isExcursion       Boolean  @default(false) // True if outside 2-8°C range
+  excursionDurationMinutes Int? // How long the excursion lasted (if known)
+  notes             String?
+  // Resolution
+  acknowledgedById  String?
+  acknowledgedBy    User?    @relation("coldChainAckedBy", fields: [acknowledgedById], references: [id])
+  acknowledgedAt    DateTime?
+  resolutionNotes   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([facilityId, recordedAt])
+  @@index([isExcursion])
 }
 
 model MaternityRecord {

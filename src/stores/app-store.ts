@@ -155,7 +155,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "prescriptions", label: "Prescriptions", icon: "FileText", permission: "pharmacy.view", category: "Clinical" },
   { key: "dispense", label: "Dispensing", icon: "Pill", permission: "pharmacy.dispense", category: "Clinical" },
   { key: "referrals", label: "Referrals", icon: "Share2", permission: "clinical.view", category: "Clinical" },
-  { key: "immunizations", label: "Immunizations", icon: "Syringe", permission: "clinical.view", category: "Clinical" },
+  { key: "immunizations", label: "Immunizations", icon: "Syringe", permission: "immunization.view", category: "Clinical" },
   { key: "maternity", label: "Maternity", icon: "Baby", permission: "maternity.view", category: "Clinical" },
 
   { key: "lab_orders", label: "Lab Orders", icon: "FlaskConical", permission: "lab.view", category: "Diagnostics" },
