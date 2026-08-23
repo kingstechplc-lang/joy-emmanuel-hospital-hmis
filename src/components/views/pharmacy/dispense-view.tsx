@@ -98,6 +98,37 @@ function fefoRecommendedBatch(batches: any[]): any | null {
   return sorted.find((b) => b.quantity > 0 && !isExpired(b.expiryDate)) || null;
 }
 
+/**
+ * Format a timestamp as a human-friendly relative time string, e.g.
+ * "just now", "32s ago", "5m ago", "2h ago", "3d ago". Used by the
+ * refresh button + auto-refresh indicator so the user can see at a glance
+ * when the data was last refreshed.
+ */
+function formatRelativeTime(timestamp: number | null | undefined): string {
+  if (!timestamp) return "—";
+  const diff = Date.now() - timestamp;
+  if (diff < 5_000) return "just now";
+  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
+/**
+ * Format a number as a currency string. Uses the user's locale when
+ * available; falls back to a plain number with 2 decimal places. We don't
+ * hard-code a currency symbol because the system may be configured for
+ * different currencies (GHS, USD, NGN, etc.) — the raw number with proper
+ * grouping is more useful than a wrong symbol.
+ */
+function formatCurrency(amount: number): string {
+  if (typeof amount !== "number" || isNaN(amount)) return "0.00";
+  return amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 // =====================================================================
 // MAIN VIEW
 // =====================================================================
@@ -150,6 +181,9 @@ export function DispenseView() {
     isExpired?: boolean;
     noBatch?: boolean; // true if no valid in-stock batch found
     error?: string; // human-readable reason if noBatch
+    // Cost info (from the FEFO-resolved batch's sellingPrice)
+    unitPrice?: number; // selling price per unit
+    lineTotal?: number; // unitPrice * quantity
   };
   const [bulkPlan, setBulkPlan] = useState<BulkPlanEntry[]>([]);
   const [showBulkPreview, setShowBulkPreview] = useState(false);
@@ -163,7 +197,9 @@ export function DispenseView() {
     data: statsData,
     isLoading: statsLoading,
     isError: statsError,
+    isFetching: statsFetching,
     refetch: refetchStats,
+    dataUpdatedAt: statsUpdatedAt,
   } = useQuery({
     queryKey: ["dispense-stats", activeFacilityId],
     queryFn: () => fetchJson(`/api/dispense/stats${statsQs}`),
@@ -176,7 +212,7 @@ export function DispenseView() {
   const qs = activeFacilityId
     ? `?facilityId=${activeFacilityId}&dispenseQueue=true`
     : "?dispenseQueue=true";
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["dispense-queue", activeFacilityId],
     queryFn: () => fetchJson(`/api/prescriptions${qs}`),
     enabled: !!activeFacilityId,
@@ -533,6 +569,10 @@ export function DispenseView() {
             entry.daysUntilExpiry = daysUntil(rec.expiryDate);
             entry.isNearExpiry = isNearExpiry(rec.expiryDate);
             entry.isExpired = isExpired(rec.expiryDate);
+            // Capture unit price (sellingPrice) + compute line total
+            const unitPrice = typeof rec.sellingPrice === "number" ? rec.sellingPrice : 0;
+            entry.unitPrice = unitPrice;
+            entry.lineTotal = unitPrice * quantity;
             plan.push(entry);
             invoiceChoices[itemId] = true; // default: bill to invoice
           } catch (e: any) {
@@ -652,7 +692,69 @@ export function DispenseView() {
     ).length;
     const nearExpiry = bulkPlan.filter((p) => p.isNearExpiry).length;
     const patientCount = new Set(bulkPlan.map((p) => p.patientId)).size;
-    return { total, dispensable, noBatch, willBill, nearExpiry, patientCount };
+    // Cost totals — only count items that will actually be billed
+    const willBillEntries = bulkPlan.filter(
+      (p) => !p.noBatch && (bulkInvoiceChoices[p.itemId] ?? true)
+    );
+    const grandTotal = willBillEntries.reduce((sum, p) => sum + (p.lineTotal || 0), 0);
+    const dispensableTotal = bulkPlan
+      .filter((p) => !p.noBatch)
+      .reduce((sum, p) => sum + (p.lineTotal || 0), 0);
+    return {
+      total,
+      dispensable,
+      noBatch,
+      willBill,
+      nearExpiry,
+      patientCount,
+      grandTotal,
+      dispensableTotal,
+    };
+  })();
+
+  // Per-patient breakdown for the preview's per-patient subtotal section
+  const previewByPatient = (() => {
+    const map = new Map<
+      string,
+      {
+        patientId: string;
+        patientName: string;
+        entries: typeof bulkPlan;
+        itemCount: number;
+        dispensableCount: number;
+        willBillCount: number;
+        subtotal: number;
+        billedSubtotal: number;
+      }
+    >();
+    for (const p of bulkPlan) {
+      if (!map.has(p.patientId)) {
+        map.set(p.patientId, {
+          patientId: p.patientId,
+          patientName: p.patientName,
+          entries: [],
+          itemCount: 0,
+          dispensableCount: 0,
+          willBillCount: 0,
+          subtotal: 0,
+          billedSubtotal: 0,
+        });
+      }
+      const g = map.get(p.patientId)!;
+      g.entries.push(p);
+      g.itemCount += 1;
+      if (!p.noBatch) {
+        g.dispensableCount += 1;
+        g.subtotal += p.lineTotal || 0;
+        if (bulkInvoiceChoices[p.itemId] ?? true) {
+          g.willBillCount += 1;
+          g.billedSubtotal += p.lineTotal || 0;
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) =>
+      a.patientName.localeCompare(b.patientName)
+    );
   })();
 
   const kpis = statsData?.kpis || {};
@@ -666,14 +768,71 @@ export function DispenseView() {
         icon={Pill}
         gradient="from-amber-500 to-orange-600"
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => (tab === "dashboard" ? refetchStats() : refetch())}
-            className="bg-white/20 text-white hover:bg-white/30 border-white/20"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Last-updated / refreshing indicator */}
+            <span className="text-[10px] text-white/80 flex items-center gap-1.5 bg-white/10 rounded-md px-2 py-1">
+              {tab === "dashboard" ? (
+                <>
+                  {statsFetching ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Refreshing…</span>
+                    </>
+                  ) : statsUpdatedAt ? (
+                    <>
+                      <Clock className="w-3 h-3" />
+                      <span>Updated {formatRelativeTime(statsUpdatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Loading…</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {isFetching ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Refreshing…</span>
+                    </>
+                  ) : dataUpdatedAt ? (
+                    <>
+                      <Clock className="w-3 h-3" />
+                      <span>Updated {formatRelativeTime(dataUpdatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Loading…</span>
+                    </>
+                  )}
+                </>
+              )}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const promise = tab === "dashboard" ? refetchStats() : refetch();
+                toast.promise(promise, {
+                  loading: "Refreshing…",
+                  success: "Data refreshed",
+                  error: "Refresh failed",
+                });
+              }}
+              disabled={tab === "dashboard" ? statsFetching : isFetching}
+              className="bg-white/20 text-white hover:bg-white/30 border-white/20 disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${
+                  (tab === "dashboard" ? statsFetching : isFetching) ? "animate-spin" : ""
+                }`}
+              />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -711,8 +870,23 @@ export function DispenseView() {
                   Dispensing KPIs
                   {statsLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
                 </h3>
-                <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <RefreshCw className="w-3 h-3" /> Auto-refresh every 30s
+                <span className="text-[10px] text-slate-500 flex items-center gap-1.5">
+                  {statsFetching ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                      <span className="text-amber-700 font-medium">Refreshing…</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3 h-3 text-slate-400" />
+                      <span>Auto-refresh every 30s</span>
+                      {statsUpdatedAt && (
+                        <span className="text-slate-400">
+                          · last {formatRelativeTime(statsUpdatedAt)}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </span>
               </div>
 
@@ -1211,20 +1385,20 @@ export function DispenseView() {
             </DialogTitle>
             <DialogDescription>
               Dry-run preview of the planned dispense. Review FEFO batch
-              assignments and toggle per-item &quot;Bill to invoice&quot; before
-              confirming. Items without a valid in-stock batch will be skipped.
+              assignments, per-item costs, and toggle &quot;Bill to invoice&quot;
+              before confirming. Items without a valid in-stock batch will be skipped.
             </DialogDescription>
           </DialogHeader>
 
           {/* Summary stat row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
             <PreviewStat
               label="Patients"
               value={previewSummary.patientCount}
               tone="slate"
             />
             <PreviewStat
-              label="Total items"
+              label="Items"
               value={previewSummary.total}
               tone="slate"
             />
@@ -1248,118 +1422,172 @@ export function DispenseView() {
               value={previewSummary.willBill}
               tone="amber"
             />
+            <PreviewCostStat
+              label="Grand total"
+              amount={previewSummary.grandTotal}
+              tone="emerald"
+            />
           </div>
 
-          {/* Per-item table */}
-          <div className="flex-1 overflow-hidden border border-slate-200 rounded-lg">
-            <div className="overflow-auto max-h-[45vh]">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-slate-100 z-10">
-                  <tr className="text-left text-slate-600 border-b border-slate-200">
-                    <th className="px-2 py-2 font-semibold">Patient</th>
-                    <th className="px-2 py-2 font-semibold">Medication</th>
-                    <th className="px-2 py-2 font-semibold text-right">Qty</th>
-                    <th className="px-2 py-2 font-semibold">Batch (FEFO)</th>
-                    <th className="px-2 py-2 font-semibold">Expiry</th>
-                    <th className="px-2 py-2 font-semibold text-center">Bill to invoice</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {bulkPlan.map((p) => {
-                    const willBill = bulkInvoiceChoices[p.itemId] ?? true;
-                    return (
-                      <tr
-                        key={p.itemId}
-                        className={`align-top ${
-                          p.noBatch
-                            ? "bg-rose-50/50"
-                            : p.isNearExpiry
-                            ? "bg-amber-50/40"
-                            : "hover:bg-slate-50"
-                        }`}
-                      >
-                        <td className="px-2 py-2 text-slate-700">
-                          {p.patientName}
-                        </td>
-                        <td className="px-2 py-2">
-                          <div className="font-medium text-slate-800">
-                            {p.medName}
-                          </div>
-                          {(p.medStrength || p.medForm) && (
-                            <div className="text-[10px] text-slate-500">
-                              {p.medStrength}
-                              {p.medStrength && p.medForm ? " · " : ""}
-                              {p.medForm}
+          {/* Per-patient sections with subtotals */}
+          <div className="flex-1 overflow-auto border border-slate-200 rounded-lg p-2 space-y-2 max-h-[45vh]">
+            {previewByPatient.map((pg) => (
+              <div
+                key={pg.patientId}
+                className="border border-slate-200 rounded-md overflow-hidden"
+              >
+                {/* Patient header bar */}
+                <div className="flex items-center justify-between bg-slate-100 px-3 py-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-800">
+                      {pg.patientName}
+                    </span>
+                    <span className="text-slate-500">
+                      {pg.dispensableCount}/{pg.itemCount} dispensable
+                      {pg.willBillCount !== pg.dispensableCount && (
+                        <span className="text-amber-700">
+                          {" "}· {pg.willBillCount} billed
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px]">
+                    <span className="text-slate-500">
+                      Subtotal:{" "}
+                      <span className="font-semibold text-slate-700 tabular-nums">
+                        {formatCurrency(pg.subtotal)}
+                      </span>
+                    </span>
+                    <span className="text-amber-700">
+                      Billed:{" "}
+                      <span className="font-semibold tabular-nums">
+                        {formatCurrency(pg.billedSubtotal)}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Items table for this patient */}
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50/80">
+                    <tr className="text-left text-slate-500 border-b border-slate-200">
+                      <th className="px-2 py-1.5 font-semibold">Medication</th>
+                      <th className="px-2 py-1.5 font-semibold text-right">Qty</th>
+                      <th className="px-2 py-1.5 font-semibold">Batch (FEFO)</th>
+                      <th className="px-2 py-1.5 font-semibold">Expiry</th>
+                      <th className="px-2 py-1.5 font-semibold text-right">Unit price</th>
+                      <th className="px-2 py-1.5 font-semibold text-right">Line total</th>
+                      <th className="px-2 py-1.5 font-semibold text-center">Bill</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pg.entries.map((p) => {
+                      const willBill = bulkInvoiceChoices[p.itemId] ?? true;
+                      return (
+                        <tr
+                          key={p.itemId}
+                          className={`align-top ${
+                            p.noBatch
+                              ? "bg-rose-50/50"
+                              : p.isNearExpiry
+                              ? "bg-amber-50/40"
+                              : "hover:bg-slate-50"
+                          }`}
+                        >
+                          <td className="px-2 py-1.5">
+                            <div className="font-medium text-slate-800">
+                              {p.medName}
                             </div>
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-right tabular-nums font-medium">
-                          {p.quantity}
-                        </td>
-                        <td className="px-2 py-2">
-                          {p.noBatch ? (
-                            <span className="text-rose-700 font-medium">
-                              — no batch —
-                            </span>
-                          ) : (
-                            <span className="font-mono text-slate-700">
-                              {p.batchNumber}
-                              <span className="text-slate-400 ml-1">
-                                ({p.batchQuantity}u)
+                            {(p.medStrength || p.medForm) && (
+                              <div className="text-[10px] text-slate-500">
+                                {p.medStrength}
+                                {p.medStrength && p.medForm ? " · " : ""}
+                                {p.medForm}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-2 py-1.5 text-right tabular-nums font-medium">
+                            {p.quantity}
+                          </td>
+                          <td className="px-2 py-1.5">
+                            {p.noBatch ? (
+                              <span className="text-rose-700 font-medium">
+                                — no batch —
                               </span>
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-2 py-2">
-                          {p.noBatch ? (
-                            <span className="text-rose-600 text-[10px]">
-                              {p.error || "Unavailable"}
-                            </span>
-                          ) : p.batchExpiry ? (
-                            <span
-                              className={`inline-flex items-center gap-1 ${
-                                p.isNearExpiry ? "text-amber-700 font-medium" : "text-slate-600"
-                              }`}
-                            >
-                              {formatDate(p.batchExpiry)}
-                              {p.daysUntilExpiry !== null && p.daysUntilExpiry !== undefined && (
-                                <span
-                                  className={`text-[10px] ${
-                                    p.isNearExpiry ? "text-amber-600" : "text-slate-400"
-                                  }`}
-                                >
-                                  ({p.daysUntilExpiry}d)
+                            ) : (
+                              <span className="font-mono text-slate-700">
+                                {p.batchNumber}
+                                <span className="text-slate-400 ml-1">
+                                  ({p.batchQuantity}u)
                                 </span>
-                              )}
-                              {p.isNearExpiry && (
-                                <CalendarClock className="w-3 h-3 text-amber-600" />
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          {p.noBatch ? (
-                            <span className="text-[10px] text-slate-400">—</span>
-                          ) : (
-                            <Checkbox
-                              checked={willBill}
-                              onCheckedChange={() => toggleBulkInvoice(p.itemId)}
-                              className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                            />
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-2 py-1.5">
+                            {p.noBatch ? (
+                              <span className="text-rose-600 text-[10px]">
+                                {p.error || "Unavailable"}
+                              </span>
+                            ) : p.batchExpiry ? (
+                              <span
+                                className={`inline-flex items-center gap-1 ${
+                                  p.isNearExpiry ? "text-amber-700 font-medium" : "text-slate-600"
+                                }`}
+                              >
+                                {formatDate(p.batchExpiry)}
+                                {p.daysUntilExpiry !== null && p.daysUntilExpiry !== undefined && (
+                                  <span
+                                    className={`text-[10px] ${
+                                      p.isNearExpiry ? "text-amber-600" : "text-slate-400"
+                                    }`}
+                                  >
+                                    ({p.daysUntilExpiry}d)
+                                  </span>
+                                )}
+                                {p.isNearExpiry && (
+                                  <CalendarClock className="w-3 h-3 text-amber-600" />
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-600">
+                            {p.noBatch ? (
+                              <span className="text-slate-400">—</span>
+                            ) : (
+                              formatCurrency(p.unitPrice || 0)
+                            )}
+                          </td>
+                          <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-slate-800">
+                            {p.noBatch ? (
+                              <span className="text-slate-400">—</span>
+                            ) : (
+                              formatCurrency(p.lineTotal || 0)
+                            )}
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            {p.noBatch ? (
+                              <span className="text-[10px] text-slate-400">—</span>
+                            ) : (
+                              <Checkbox
+                                checked={willBill}
+                                onCheckedChange={() => toggleBulkInvoice(p.itemId)}
+                                className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                              />
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           </div>
 
-          {/* Bulk invoice toggle helpers */}
-          <div className="flex items-center justify-between text-xs">
+          {/* Bulk invoice toggle helpers + grand total */}
+          <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
             <div className="flex items-center gap-2 text-slate-500">
               <span>Quick toggle:</span>
               <Button
@@ -1379,12 +1607,22 @@ export function DispenseView() {
                 Bill none
               </Button>
             </div>
-            {previewSummary.noBatch > 0 && (
-              <span className="text-rose-600 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                {previewSummary.noBatch} item(s) will be skipped (no valid batch)
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {previewSummary.noBatch > 0 && (
+                <span className="text-rose-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  {previewSummary.noBatch} will be skipped
+                </span>
+              )}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-md px-3 py-1.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                  Total billable
+                </div>
+                <div className="text-base font-extrabold tabular-nums text-emerald-800">
+                  {formatCurrency(previewSummary.grandTotal)}
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="gap-2">
@@ -1398,11 +1636,9 @@ export function DispenseView() {
             >
               <Zap className="w-4 h-4" />
               Confirm dispense — {previewSummary.dispensable} item{previewSummary.dispensable === 1 ? "" : "s"}
-              {previewSummary.willBill !== previewSummary.dispensable && (
-                <span className="ml-1 text-[10px] opacity-90">
-                  ({previewSummary.willBill} billed)
-                </span>
-              )}
+              <span className="ml-1 text-[10px] opacity-90">
+                ({formatCurrency(previewSummary.grandTotal)})
+              </span>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1537,6 +1773,52 @@ function PreviewStat({
       </div>
       <div className={`text-lg font-extrabold tabular-nums ${tones.value}`}>
         {value}
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// PREVIEW COST STAT — currency variant of PreviewStat for the grand total
+// =====================================================================
+function PreviewCostStat({
+  label,
+  amount,
+  tone = "emerald",
+}: {
+  label: string;
+  amount: number;
+  tone?: "slate" | "amber" | "rose" | "emerald";
+}) {
+  const tones = {
+    slate: {
+      wrap: "bg-slate-50 border-slate-200",
+      label: "text-slate-500",
+      value: "text-slate-800",
+    },
+    amber: {
+      wrap: "bg-amber-50 border-amber-200",
+      label: "text-amber-700",
+      value: "text-amber-800",
+    },
+    rose: {
+      wrap: "bg-rose-50 border-rose-200",
+      label: "text-rose-700",
+      value: "text-rose-800",
+    },
+    emerald: {
+      wrap: "bg-emerald-50 border-emerald-200",
+      label: "text-emerald-700",
+      value: "text-emerald-800",
+    },
+  }[tone];
+  return (
+    <div className={`rounded-md border px-3 py-2 ${tones.wrap}`}>
+      <div className={`text-[10px] font-semibold uppercase tracking-wider ${tones.label}`}>
+        {label}
+      </div>
+      <div className={`text-lg font-extrabold tabular-nums ${tones.value}`}>
+        {formatCurrency(amount)}
       </div>
     </div>
   );

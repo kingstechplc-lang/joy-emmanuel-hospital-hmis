@@ -532,7 +532,7 @@ function HistoryTab() {
   if (statusFilter !== "all") params.set("status", statusFilter);
   const qs = `?${params.toString()}`;
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["attendance", "history", activeFacilityId, dateFrom, dateTo, staffFilter, statusFilter],
     queryFn: () => fetchJson(`/api/attendance${qs}`),
     enabled: !!activeFacilityId,
@@ -593,10 +593,11 @@ function HistoryTab() {
           <Button
             variant="outline"
             size="sm"
+            disabled={isFetching}
             onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }}
             className="gap-2"
           >
-            <RefreshCcw className="w-4 h-4" /> Refresh
+            <RefreshCcw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
           </Button>
         </CardContent>
       </Card>

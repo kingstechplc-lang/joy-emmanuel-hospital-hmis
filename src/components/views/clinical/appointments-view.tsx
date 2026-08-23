@@ -70,7 +70,7 @@ export function AppointmentsView() {
     return `?${params.toString()}`;
   };
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["appointments", activeFacilityId, dateTab, statusFilter],
     queryFn: () => fetchJson(`/api/appointments${buildQuery()}`),
   });
@@ -248,8 +248,8 @@ export function AppointmentsView() {
                 <SelectItem value="no_show">No-Show</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Refreshed", error: "Failed" }); }}>
-              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh
+            <Button size="sm" variant="outline" disabled={isFetching} onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Refreshed", error: "Failed" }); }}>
+              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
           </div>
 

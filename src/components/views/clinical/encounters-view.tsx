@@ -51,7 +51,7 @@ export function EncountersView() {
     return `?${params.toString()}`;
   };
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["encounters", activeFacilityId, statusFilter, typeFilter],
     queryFn: () => fetchJson(`/api/encounters${buildQuery()}`),
   });
@@ -114,8 +114,8 @@ export function EncountersView() {
             </Select>
           </div>
           <div className="flex items-end">
-            <Button variant="outline" size="sm" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} className="gap-1">
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            <Button variant="outline" size="sm" disabled={isFetching} onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} className="gap-1">
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
           </div>
         </CardContent>

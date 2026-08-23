@@ -19,7 +19,7 @@ import {
 import {
   Activity, Stethoscope, Save, Eye, Heart, AlertTriangle, AlertOctagon,
   CheckCircle, RefreshCw, ChevronDown, Brain, ShieldAlert, Filter, Clock,
-  Droplet, Timer, TrendingUp,
+  Droplet, Timer, TrendingUp, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -215,7 +215,7 @@ export function TriageView() {
 // DASHBOARD TAB — KPIs + Escalations + Acuity breakdown (30s auto-refresh)
 // =====================================================================
 function TriageDashboard({ facilityId }: { facilityId: string | null }) {
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["triage-stats", facilityId],
     queryFn: () => fetchJson(`/api/triage/stats?facilityId=${facilityId || ""}`),
     enabled: !!facilityId,
@@ -244,12 +244,21 @@ function TriageDashboard({ facilityId }: { facilityId: string | null }) {
         <div>
           <h3 className="text-base font-semibold text-slate-800">Today&apos;s Triage Activity</h3>
           <p className="text-xs text-slate-500 flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" />
-            Auto-refreshes every 30 seconds
+            {isFetching ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin text-rose-600" />
+                <span className="text-rose-700 font-medium">Refreshing…</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-3 h-3" />
+                Auto-refreshes every 30 seconds
+              </>
+            )}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
+          <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
           Refresh Now
         </Button>
       </div>

@@ -307,7 +307,7 @@ function LiveQueueTab({ facilityId }: { facilityId: string }) {
   const [transferEntry, setTransferEntry] = useState<any | null>(null);
   const [skipEntry, setSkipEntry] = useState<any | null>(null);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["queue", facilityId, statusFilter],
     queryFn: () => {
       const statusParam = statusFilter !== "all" ? `&status=${statusFilter}` : "";
@@ -399,10 +399,11 @@ function LiveQueueTab({ facilityId }: { facilityId: string }) {
             variant="outline"
             size="icon"
             onClick={() => refetch()}
+            disabled={isFetching}
             title="Refresh"
             className="shrink-0"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
         </CardContent>
       </Card>
@@ -713,7 +714,7 @@ function QueueEntryRow({
 // DISPLAY BOARD TAB — large-font waiting-room view
 // =====================================================================
 function DisplayBoardTab({ facilityId }: { facilityId: string }) {
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["queue", facilityId, "board"],
     queryFn: () => fetchJson(`/api/queue?facilityId=${facilityId}`),
     enabled: !!facilityId,
@@ -779,10 +780,11 @@ function DisplayBoardTab({ facilityId }: { facilityId: string }) {
             variant="outline"
             size="icon"
             onClick={() => refetch()}
+            disabled={isFetching}
             className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white shrink-0"
             title="Refresh"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>

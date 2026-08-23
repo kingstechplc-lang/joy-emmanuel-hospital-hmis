@@ -223,7 +223,7 @@ export function ConsultationsView() {
 // CONSULTATIONS DASHBOARD — KPI grid + performance card, auto-refresh 30s
 // =====================================================================
 function ConsultationsDashboard({ facilityId, canCreate, onNew }: { facilityId: string | null; canCreate: boolean; onNew: () => void }) {
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["consultations-stats", facilityId],
     queryFn: () => fetchJson(`/api/consultations/stats?facilityId=${facilityId}`),
     enabled: !!facilityId,
@@ -264,8 +264,8 @@ function ConsultationsDashboard({ facilityId, canCreate, onNew }: { facilityId: 
             <Clock className="w-3 h-3" /> auto-refresh 30s
           </span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5 h-7 text-xs">
-          <RotateCw className="w-3.5 h-3.5" /> Refresh
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5 h-7 text-xs">
+          <RotateCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
 
