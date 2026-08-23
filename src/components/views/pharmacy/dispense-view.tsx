@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ClipboardList,
   PackageX,
   CalendarClock,
   XCircle,
@@ -29,6 +28,11 @@ import {
   FileText,
   Loader2,
   RefreshCw,
+  Search,
+  Filter,
+  X,
+  Users,
+  LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -96,6 +100,13 @@ export function DispenseView() {
   const [dispensing, setDispensing] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState("dashboard");
 
+  // ---- Queue search & filter state ----
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [allergyFilter, setAllergyFilter] = useState<string>("all");
+  const [expandedPatients, setExpandedPatients] = useState<Record<string, boolean>>({});
+
   // ---- Dashboard stats query (auto-refresh every 30s) ----
   const statsQs = activeFacilityId ? `?facilityId=${activeFacilityId}` : "";
   const {
@@ -136,14 +147,151 @@ export function DispenseView() {
     byPatient[pid].rxs.push(rx);
   }
 
+  // ---- Compute derived flags per patient group (for filtering & summary) ----
+  // React Compiler auto-memoizes this derivation, so no manual useMemo needed.
+  const patientGroups = Object.entries(byPatient).map(([pid, group]) => {
+    const rxs = group.rxs;
+    const totalItems = rxs.reduce(
+      (sum, rx) => sum + (rx.items?.length || 0),
+      0
+    );
+    const statuses = new Set(rxs.map((rx) => rx.status));
+    const hasStat = rxs.some((rx) =>
+      (rx.items || []).some((it: any) => it.isStat)
+    );
+    const hasPrn = rxs.some((rx) =>
+      (rx.items || []).some((it: any) => it.isPrn)
+    );
+    const hasRoutine = rxs.some((rx) =>
+      (rx.items || []).some((it: any) => !it.isStat && !it.isPrn)
+    );
+    // Note: allergy detection is best-effort from prescription item medication names;
+    // the PatientDispenseCard still does its own authoritative allergy fetch.
+    const primaryStatus =
+      statuses.has("pending") ? "pending"
+      : statuses.has("approved") ? "approved"
+      : statuses.has("partially_dispensed") ? "partially_dispensed"
+      : statuses.has("dispensed") ? "dispensed"
+      : rxs[0]?.status || "pending";
+    return {
+      pid,
+      patient: group.patient,
+      rxs,
+      totalItems,
+      primaryStatus,
+      hasStat,
+      hasPrn,
+      hasRoutine,
+      statuses,
+    };
+  });
+
+  // ---- Apply search & filters ----
+  const q = search.trim().toLowerCase();
+  const filteredGroups = patientGroups.filter((g) => {
+    // Search across patient name, MRN, prescription numbers, medication names
+    if (q) {
+      const patientName =
+        `${g.patient?.firstName || ""} ${g.patient?.lastName || ""}`.toLowerCase();
+      const mrn = (g.patient?.patientNumber || "").toLowerCase();
+      const rxNumbers = g.rxs
+        .map((rx) => (rx.prescriptionNumber || "").toLowerCase())
+        .join(" ");
+      const medNames = g.rxs
+        .flatMap((rx) => rx.items || [])
+        .map((it: any) =>
+          `${it.medication?.genericName || ""} ${it.medication?.brandName || ""}`.toLowerCase()
+        )
+        .join(" ");
+      const haystack = `${patientName} ${mrn} ${rxNumbers} ${medNames}`;
+      if (!haystack.includes(q)) return false;
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      if (!g.statuses.has(statusFilter)) return false;
+    }
+
+    // Priority filter
+    if (priorityFilter !== "all") {
+      if (priorityFilter === "stat" && !g.hasStat) return false;
+      if (priorityFilter === "prn" && !g.hasPrn) return false;
+      if (priorityFilter === "routine" && !g.hasRoutine) return false;
+    }
+
+    // Allergy filter — optimistic: only filter "has_allergy" if any rx item
+    // medication name is a known common allergen prefix. This is a soft filter;
+    // the authoritative allergy check happens inside the card after fetching
+    // patient allergies. We use a conservative keyword list here.
+    if (allergyFilter === "has_allergy") {
+      const KNOWN_ALLERGEN_KEYWORDS = [
+        "penicillin", "amoxicillin", "ampicillin", "sulfa", "sulfamethoxazole",
+        "aspirin", "ibuprofen", "naproxen", "diclofenac", "celecoxib",
+        "cephalosporin", "cefixime", "cefaclor", "vancomycin", "gentamicin",
+        "erythromycin", "azithromycin", "clarithromycin", "tetracycline",
+        "doxycycline", "ciprofloxacin", "metronidazole", "chloramphenicol",
+      ];
+      const hasAllergyMed = g.rxs.some((rx) =>
+        (rx.items || []).some((it: any) => {
+          const name = (it.medication?.genericName || "").toLowerCase();
+          return KNOWN_ALLERGEN_KEYWORDS.some((k) => name.includes(k));
+        })
+      );
+      if (!hasAllergyMed) return false;
+    }
+
+    return true;
+  });
+
+  const togglePatient = (pid: string) =>
+    setExpandedPatients((prev) => ({ ...prev, [pid]: !prev[pid] }));
+
+  const expandAll = () => {
+    const all: Record<string, boolean> = {};
+    for (const g of filteredGroups) all[g.pid] = true;
+    setExpandedPatients(all);
+  };
+  const collapseAll = () => setExpandedPatients({});
+
+  const hasActiveFilters =
+    search.trim() !== "" ||
+    statusFilter !== "all" ||
+    priorityFilter !== "all" ||
+    allergyFilter !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setAllergyFilter("all");
+  };
+
   const kpis = statsData?.kpis || {};
 
   return (
     <div className="space-y-4">
+      {/* ===== Unified section hero header — sits ABOVE the toggle tabs ===== */}
+      <PageHeader
+        title="Pharmacy Management"
+        description="Live dispensing dashboard & queue — FEFO-sorted batches, allergy safety checks, and real-time KPIs."
+        icon={Pill}
+        gradient="from-amber-500 to-orange-600"
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => (tab === "dashboard" ? refetchStats() : refetch())}
+            className="bg-white/20 text-white hover:bg-white/30 border-white/20"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </Button>
+        }
+      />
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="dashboard" className="gap-1.5">
-            <ClipboardList className="w-4 h-4" /> Dashboard
+            <LayoutGrid className="w-4 h-4" /> Dashboard
           </TabsTrigger>
           <TabsTrigger value="queue" className="gap-1.5">
             <Pill className="w-4 h-4" /> Dispense Queue
@@ -157,23 +305,6 @@ export function DispenseView() {
 
         {/* ====================== DASHBOARD TAB ====================== */}
         <TabsContent value="dashboard" className="space-y-4">
-          <PageHeader
-            title="Pharmacy Dashboard"
-            description="Live overview of dispensing activity, stock alerts and expiry warnings"
-            icon={Pill}
-            gradient="from-amber-500 to-orange-600"
-            actions={
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => refetchStats()}
-                className="bg-white/20 text-white hover:bg-white/30 border-white/20"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Refresh
-              </Button>
-            }
-          />
-
           {!activeFacilityId && (
             <Card>
               <CardContent className="p-4 text-sm text-amber-700 bg-amber-50">
@@ -298,13 +429,6 @@ export function DispenseView() {
 
         {/* ====================== DISPENSE QUEUE TAB ====================== */}
         <TabsContent value="queue" className="space-y-4">
-          <PageHeader
-            title="Pharmacy Dispensing Queue"
-            description="All prescriptions pending dispense, grouped by patient. Batches are sorted FEFO (First Expiry, First Out)."
-            icon={Pill}
-            gradient="from-amber-500 to-orange-600"
-          />
-
           {!activeFacilityId && (
             <Card>
               <CardContent className="p-4 text-sm text-amber-700 bg-amber-50">
@@ -313,38 +437,168 @@ export function DispenseView() {
             </Card>
           )}
 
-          {activeFacilityId &&
-            (isLoading ? (
-              <LoadingState rows={5} />
-            ) : isError ? (
-              <ErrorState
-                message="Failed to load dispense queue"
-                onRetry={() => refetch()}
-              />
-            ) : items.length === 0 ? (
-              <Card>
-                <CardContent className="p-6">
-                  <EmptyState
-                    title="Queue is empty"
-                    description="No prescriptions are currently pending dispense."
-                    icon={CheckCircle2}
-                  />
+          {activeFacilityId && (
+            <>
+              {/* ===== Search & Filters Bar ===== */}
+              <Card className="border-slate-200 shadow-sm">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col gap-3">
+                    {/* Row 1: Search input + result summary + expand/collapse all */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Input
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search by patient name, MRN, prescription #, or medication…"
+                          className="pl-8 h-9 text-sm"
+                        />
+                        {search && (
+                          <button
+                            type="button"
+                            onClick={() => setSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                            aria-label="Clear search"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-slate-500 flex items-center gap-1.5 whitespace-nowrap">
+                          <Users className="w-3.5 h-3.5" />
+                          <strong className="text-slate-700">{filteredGroups.length}</strong>
+                          of <strong className="text-slate-700">{patientGroups.length}</strong>
+                          {patientGroups.length === 1 ? " patient" : " patients"}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={expandAll}
+                          disabled={filteredGroups.length === 0}
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" /> Expand all
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={collapseAll}
+                          disabled={filteredGroups.length === 0}
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" /> Collapse all
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Filter dropdowns */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                        <Filter className="w-3.5 h-3.5" /> Filters:
+                      </div>
+
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-8 w-[150px] text-xs">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All statuses</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="partially_dispensed">Partially dispensed</SelectItem>
+                          <SelectItem value="dispensed">Dispensed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                        <SelectTrigger className="h-8 w-[150px] text-xs">
+                          <SelectValue placeholder="Priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All priorities</SelectItem>
+                          <SelectItem value="stat">STAT (urgent)</SelectItem>
+                          <SelectItem value="prn">PRN (as needed)</SelectItem>
+                          <SelectItem value="routine">Routine</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={allergyFilter} onValueChange={setAllergyFilter}>
+                        <SelectTrigger className="h-8 w-[180px] text-xs">
+                          <SelectValue placeholder="Allergy" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All patients</SelectItem>
+                          <SelectItem value="has_allergy">Likely allergy risk</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                          onClick={clearFilters}
+                        >
+                          <X className="w-3.5 h-3.5" /> Clear filters
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(byPatient).map(([pid, group]) => (
-                  <PatientDispenseCard
-                    key={pid}
-                    patient={group.patient}
-                    prescriptions={group.rxs}
-                    onDone={invalidate}
-                    dispensing={dispensing}
-                    setDispensing={setDispensing}
-                  />
-                ))}
-              </div>
-            ))}
+
+              {/* ===== Queue list ===== */}
+              {isLoading ? (
+                <LoadingState rows={5} />
+              ) : isError ? (
+                <ErrorState
+                  message="Failed to load dispense queue"
+                  onRetry={() => refetch()}
+                />
+              ) : items.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <EmptyState
+                      title="Queue is empty"
+                      description="No prescriptions are currently pending dispense."
+                      icon={CheckCircle2}
+                    />
+                  </CardContent>
+                </Card>
+              ) : filteredGroups.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <EmptyState
+                      title="No matching queues"
+                      description="No patient queues match your search or filter criteria. Try adjusting or clearing filters."
+                      icon={Search}
+                    />
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {filteredGroups.map((g) => (
+                    <PatientDispenseCard
+                      key={g.pid}
+                      patient={g.patient}
+                      prescriptions={g.rxs}
+                      onDone={invalidate}
+                      dispensing={dispensing}
+                      setDispensing={setDispensing}
+                      expanded={!!expandedPatients[g.pid]}
+                      onToggle={() => togglePatient(g.pid)}
+                      totalItems={g.totalItems}
+                      primaryStatus={g.primaryStatus}
+                      hasStat={g.hasStat}
+                      hasPrn={g.hasPrn}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -438,6 +692,9 @@ function VerifyField({ label, value }: { label: string; value: string | undefine
 
 // =====================================================================
 // PATIENT DISPENSE CARD — groups prescriptions for one patient
+// Collapsible: header is always visible; detailed content only renders
+// when `expanded` is true. Toggle is controlled by the parent so that
+// "Expand all" / "Collapse all" can drive every card at once.
 // =====================================================================
 function PatientDispenseCard({
   patient,
@@ -445,92 +702,184 @@ function PatientDispenseCard({
   onDone,
   dispensing,
   setDispensing,
+  expanded,
+  onToggle,
+  totalItems,
+  primaryStatus,
+  hasStat,
+  hasPrn,
 }: {
   patient: any;
   prescriptions: any[];
   onDone: () => void;
   dispensing: Record<string, boolean>;
   setDispensing: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  expanded: boolean;
+  onToggle: () => void;
+  totalItems: number;
+  primaryStatus: string;
+  hasStat: boolean;
+  hasPrn: boolean;
 }) {
   const [allergies, setAllergies] = useState<any[]>([]);
+  const [allergiesFetched, setAllergiesFetched] = useState(false);
 
+  // Fetch allergies only when the card is first expanded (lazy load)
   useEffect(() => {
-    if (!patient?.id) return;
+    if (!expanded || allergiesFetched || !patient?.id) return;
     fetchJson(`/api/patients/${patient.id}`)
-      .then((d) => setAllergies(d.patient?.allergies || []))
-      .catch(() => setAllergies([]));
-  }, [patient?.id]);
+      .then((d) => {
+        setAllergies(d.patient?.allergies || []);
+        setAllergiesFetched(true);
+      })
+      .catch(() => {
+        setAllergies([]);
+        setAllergiesFetched(true);
+      });
+  }, [expanded, allergiesFetched, patient?.id]);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs font-bold">
-                {(patient?.firstName?.[0] || "P").toUpperCase()}
+    <Card
+      className={`overflow-hidden transition-shadow ${
+        expanded ? "shadow-md ring-1 ring-amber-200" : "hover:shadow-sm"
+      }`}
+    >
+      {/* ===== Collapsible header — always visible, click to toggle ===== */}
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="w-full text-left bg-gradient-to-r from-slate-50 to-amber-50/40 hover:from-amber-50 hover:to-orange-50 transition-colors border-b border-slate-200 px-4 py-3 cursor-pointer"
+      >
+        <div className="flex items-center gap-3">
+          {/* Chevron / expand indicator */}
+          <div className="shrink-0 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+            {expanded ? (
+              <ChevronDown className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5" />
+            )}
+          </div>
+
+          {/* Patient avatar */}
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-sm font-bold shrink-0">
+            {(patient?.firstName?.[0] || "P").toUpperCase()}
+          </span>
+
+          {/* Patient name + summary */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-slate-800 truncate">
+                {patient?.firstName} {patient?.lastName}
               </span>
-              {patient?.firstName} {patient?.lastName}
-            </CardTitle>
-            <div className="text-xs text-slate-500 mt-1">
-              {prescriptions.length} prescription(s) pending
+              <span className="text-[10px] text-slate-500 font-mono">
+                MRN: {patient?.patientNumber || "—"}
+              </span>
+              {hasStat && (
+                <Badge variant="destructive" className="text-[9px] py-0 h-4">
+                  STAT
+                </Badge>
+              )}
+              {hasPrn && (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] py-0 h-4"
+                >
+                  PRN
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>
+                <strong className="text-slate-700">{prescriptions.length}</strong>{" "}
+                prescription{prescriptions.length === 1 ? "" : "s"}
+              </span>
+              <span className="text-slate-300">·</span>
+              <span>
+                <strong className="text-slate-700">{totalItems}</strong>{" "}
+                item{totalItems === 1 ? "" : "s"}
+              </span>
+              <span className="text-slate-300">·</span>
+              <span>
+                {patient?.sex ? String(patient.sex).toUpperCase() : "—"} ·{" "}
+                {calculateAge(patient?.dateOfBirth)}y
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Patient verification box — verify identity before dispensing */}
-        <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <VerifyField label="MRN" value={patient?.patientNumber} />
-          <VerifyField label="Age" value={`${calculateAge(patient?.dateOfBirth)}y`} />
-          <VerifyField
-            label="Sex"
-            value={patient?.sex ? String(patient.sex).toUpperCase() : "—"}
-          />
-          <VerifyField label="DOB" value={formatDate(patient?.dateOfBirth)} />
-          <VerifyField label="Phone" value={patient?.phone || "—"} />
+          {/* Right side: status + allergy indicator */}
+          <div className="flex items-center gap-2 shrink-0">
+            <StatusBadge status={primaryStatus} />
+            {allergiesFetched && allergies.length > 0 && (
+              <Badge
+                variant="destructive"
+                className="bg-rose-100 text-rose-700 border-rose-200 gap-1"
+                title={`${allergies.length} documented allerg(y/ies)`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                {allergies.length} allergy{allergies.length === 1 ? "" : "ies"}
+              </Badge>
+            )}
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {allergies.length > 0 && (
-          <div className="bg-rose-50 border border-rose-300 rounded p-3 flex items-start gap-2">
-            <AlertTriangle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-rose-800">
-                Allergy Warning
-              </div>
-              <div className="text-xs text-rose-700 mt-1 flex flex-wrap gap-2">
-                {allergies.map((a, i) => (
-                  <span key={i} className="inline-flex items-center gap-1">
-                    <Badge
-                      variant="destructive"
-                      className="bg-rose-100 text-rose-700 border-rose-200"
-                    >
-                      {a.allergen}
-                    </Badge>
-                    {a.severity && (
-                      <span className="text-rose-500">({a.severity})</span>
-                    )}
-                    {a.reaction && (
-                      <span className="text-rose-400">— {a.reaction}</span>
-                    )}
-                  </span>
-                ))}
+      </button>
+
+      {/* ===== Expanded content — only rendered when toggled open ===== */}
+      {expanded && (
+        <CardContent className="space-y-3 p-4">
+          {/* Patient verification box — verify identity before dispensing */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <VerifyField label="MRN" value={patient?.patientNumber} />
+            <VerifyField label="Age" value={`${calculateAge(patient?.dateOfBirth)}y`} />
+            <VerifyField
+              label="Sex"
+              value={patient?.sex ? String(patient.sex).toUpperCase() : "—"}
+            />
+            <VerifyField label="DOB" value={formatDate(patient?.dateOfBirth)} />
+            <VerifyField label="Phone" value={patient?.phone || "—"} />
+          </div>
+
+          {allergies.length > 0 && (
+            <div className="bg-rose-50 border border-rose-300 rounded p-3 flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-rose-800">
+                  Allergy Warning
+                </div>
+                <div className="text-xs text-rose-700 mt-1 flex flex-wrap gap-2">
+                  {allergies.map((a, i) => (
+                    <span key={i} className="inline-flex items-center gap-1">
+                      <Badge
+                        variant="destructive"
+                        className="bg-rose-100 text-rose-700 border-rose-200"
+                      >
+                        {a.allergen}
+                      </Badge>
+                      {a.severity && (
+                        <span className="text-rose-500">({a.severity})</span>
+                      )}
+                      {a.reaction && (
+                        <span className="text-rose-400">— {a.reaction}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {prescriptions.map((rx) => (
-          <PrescriptionDispenseRow
-            key={rx.id}
-            rx={rx}
-            allergies={allergies}
-            onDone={onDone}
-            dispensing={dispensing}
-            setDispensing={setDispensing}
-          />
-        ))}
-      </CardContent>
+          {prescriptions.map((rx) => (
+            <PrescriptionDispenseRow
+              key={rx.id}
+              rx={rx}
+              allergies={allergies}
+              onDone={onDone}
+              dispensing={dispensing}
+              setDispensing={setDispensing}
+            />
+          ))}
+        </CardContent>
+      )}
     </Card>
   );
 }
