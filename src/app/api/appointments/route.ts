@@ -73,6 +73,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "patientId, facilityId, scheduledStart are required" }, { status: 400 });
   }
 
+  // Double-booking prevention — check if patient has overlapping appointment
+  const overlapping = await db.appointment.findFirst({
+    where: {
+      patientId,
+      status: { notIn: ["cancelled", "no_show", "completed"] },
+      scheduledStart: { lt: scheduledEnd ? new Date(scheduledEnd) : new Date(new Date(scheduledStart).getTime() + 30 * 60 * 1000) },
+      scheduledEnd: { gt: new Date(scheduledStart) },
+    },
+  });
+  if (overlapping) {
+    return NextResponse.json({
+      error: "Patient has an overlapping appointment",
+      detail: `Existing: ${overlapping.appointmentNumber} on ${new Date(overlapping.scheduledStart).toLocaleString()}`,
+      existingId: overlapping.id,
+    }, { status: 409 });
+  }
+
   const appointmentNumber = await nextAppointmentNumber(facilityId);
 
   const appointment = await db.appointment.create({
@@ -93,6 +110,18 @@ export async function POST(req: Request) {
     include: {
       patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
       facility: { select: { id: true, name: true } },
+    },
+  });
+
+  // Record appointment history — created
+  await db.appointmentHistory.create({
+    data: {
+      appointmentId: appointment.id,
+      action: "created",
+      toStatus: "scheduled",
+      toDateTime: new Date(scheduledStart),
+      changedById: session.user.id,
+      changedByName: session.user.name || undefined,
     },
   });
 

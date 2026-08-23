@@ -499,6 +499,7 @@ model Patient {
   breakGlassEvents   BreakGlassEvent[]
   accessLogs         PatientAccessLog[]
   eligibilityVerifications EligibilityVerification[]
+  waitingList        WaitingList[]
   mergeEventsSource  PatientMergeEvent[] @relation("mergeSource")
   mergeEventsTarget  PatientMergeEvent[] @relation("mergeTarget")
   tasks              Task[]
@@ -689,9 +690,132 @@ model Appointment {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  history           AppointmentHistory[]
+
   @@unique([facilityId, appointmentNumber])
   @@index([patientId])
   @@index([facilityId, scheduledStart, status])
+  @@index([staffId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// CLINICIAN SCHEDULE — Working hours per clinician per day
+// ---------------------------------------------------------------------
+model ClinicianSchedule {
+  id              String   @id @default(cuid())
+  organizationId  String
+  staffId         String   // links to Staff record
+  staffName       String?
+  facilityId      String?
+  departmentId    String?
+  dayOfWeek       String   // MON | TUE | WED | THU | FRI | SAT | SUN
+  startTime       String   // "08:00"
+  endTime         String   // "17:00"
+  breakStart      String?  // "12:00"
+  breakEnd        String?  // "12:30"
+  slotDurationMin Int      @default(30)
+  maxDailyBookings Int     @default(20)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, staffId])
+  @@index([organizationId, facilityId])
+}
+
+// ---------------------------------------------------------------------
+// CLINIC SESSION — Specific clinic session (e.g., Cardiology Monday AM)
+// ---------------------------------------------------------------------
+model ClinicSession {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  departmentId    String?
+  staffId         String?
+  staffName       String?
+  sessionName     String   // e.g., "Cardiology Clinic"
+  specialty       String?  // e.g., CARDIO
+  dayOfWeek       String   // MON | TUE | WED | THU | FRI | SAT | SUN
+  startTime       String   // "08:00"
+  endTime         String   // "13:00"
+  slotDurationMin Int      @default(15)
+  maxBookings     Int      @default(20)
+  room            String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([organizationId, specialty])
+  @@index([organizationId, dayOfWeek])
+}
+
+// ---------------------------------------------------------------------
+// BLOCKED SLOT — Time slots blocked by admin/clinician
+// ---------------------------------------------------------------------
+model BlockedSlot {
+  id              String   @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  staffId         String?
+  blockedDate     DateTime
+  startTime       String   // "10:00"
+  endTime         String   // "11:00"
+  reason          String   // e.g., "Administrative meeting", "Training"
+  blockedById     String?
+  blockedByName   String?
+  createdAt       DateTime @default(now())
+
+  @@index([organizationId, facilityId, blockedDate])
+  @@index([organizationId, staffId, blockedDate])
+}
+
+// ---------------------------------------------------------------------
+// WAITING LIST — Patients waiting for an available slot
+// ---------------------------------------------------------------------
+model WaitingList {
+  id              String   @id @default(cuid())
+  organizationId  String
+  patientId       String
+  patient         Patient @relation(fields: [patientId], references: [id])
+  facilityId      String?
+  departmentId    String?
+  staffId         String?
+  specialty       String?
+  preferredDate   DateTime?
+  preferredTime   String?  // "morning" | "afternoon" | "any"
+  priority        String   @default("routine") // routine | urgent | high
+  contactMethod   String   @default("phone") // phone | sms | email
+  notes           String?
+  status          String   @default("waiting") // waiting | notified | booked | cancelled
+  notifiedAt      DateTime?
+  bookedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, facilityId, status])
+}
+
+// ---------------------------------------------------------------------
+// APPOINTMENT HISTORY — Audit trail of appointment changes
+// ---------------------------------------------------------------------
+model AppointmentHistory {
+  id              String   @id @default(cuid())
+  appointmentId   String
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  action          String   // created | confirmed | rescheduled | cancelled | checked_in | completed | no_show | modified
+  fromStatus      String?
+  toStatus        String?
+  fromDateTime    DateTime?
+  toDateTime      DateTime?
+  reason          String?
+  changedById     String?
+  changedByName   String?
+  changedAt       DateTime @default(now())
+
+  @@index([appointmentId])
 }
 
 model Queue {

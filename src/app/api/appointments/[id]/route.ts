@@ -27,6 +27,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       patient: true,
       facility: true,
       department: true,
+      history: { orderBy: { changedAt: "desc" } },
     },
   });
   if (!appointment) return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
@@ -70,6 +71,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (notes !== undefined) data.notes = notes;
 
   const updated = await db.appointment.update({ where: { id }, data });
+
+  // Record appointment history
+  let action = "modified";
+  if (status === "confirmed") action = "confirmed";
+  else if (status === "cancelled") action = "cancelled";
+  else if (status === "checked_in") action = "checked_in";
+  else if (status === "completed") action = "completed";
+  else if (status === "no_show") action = "no_show";
+  else if (scheduledStart) action = "rescheduled";
+
+  await db.appointmentHistory.create({
+    data: {
+      appointmentId: id,
+      action,
+      fromStatus: existing.status,
+      toStatus: status || existing.status,
+      fromDateTime: scheduledStart ? existing.scheduledStart : null,
+      toDateTime: scheduledStart ? new Date(scheduledStart) : null,
+      reason: reason || null,
+      changedById: session.user.id,
+      changedByName: session.user.name || undefined,
+    },
+  });
 
   await auditLog({
     userId: session.user.id,
