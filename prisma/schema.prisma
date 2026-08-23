@@ -886,6 +886,19 @@ model TriageRecord {
   triageCategory    String? // 1_immediate | 2_urgent | 3_standard | 4_non_urgent
   chiefComplaint    String?
   notes             String?
+  // Enhanced triage fields
+  generalAppearance String? // alert | distressed | confused | lethargic | unresponsive
+  painLocation      String?
+  painCharacter     String?
+  gcsEye            Int?    // 1-4
+  gcsVerbal         Int?    // 1-5
+  gcsMotor          Int?    // 1-6
+  gcsTotal          Int?    // 3-15 (auto-calculated)
+  isReassessment    Boolean  @default(false)
+  parentTriageId    String? // link to original triage if reassessment
+  abnormalVitalsAlert String? // JSON array of abnormal vital warnings
+  escalationLevel   String? // none | nurse | clinician | emergency_team
+  escalationReason  String?
   recordedById       String?
   recordedBy        User?    @relation("triageNurse", fields: [recordedById], references: [id])
   recordedAt        DateTime @default(now())
@@ -894,6 +907,8 @@ model TriageRecord {
 
   @@index([patientId])
   @@index([encounterId])
+  @@index([triageCategory])
+  @@index([isReassessment])
 }
 
 model VitalSign {
