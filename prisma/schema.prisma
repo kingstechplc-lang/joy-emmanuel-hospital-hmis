@@ -197,6 +197,7 @@ model Unit {
   staffFacilities StaffFacility[]
   appointments    Appointment[]
   queues          Queue[]
+  services        Service[]
 
   @@unique([departmentId, code])
 }
@@ -314,6 +315,10 @@ model User {
   // Medication back-relations
   medicationsCreated  Medication[] @relation("medicationCreator")
   medicationsUpdated  Medication[] @relation("medicationUpdater")
+  // Service back-relations
+  servicesCreated     Service[] @relation("serviceCreator")
+  servicesUpdated     Service[] @relation("serviceUpdater")
+  servicePriceChanges ServicePriceHistory[] @relation("servicePriceChanger")
   patientTransfers PatientTransfer[] @relation("ptRequestedBy")
   immunizations  Immunization[] @relation("immunizationAdmin")
   triageRecords  TriageRecord[] @relation("triageNurse")
@@ -2400,25 +2405,47 @@ model Service {
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id])
   name            String
+  shortName       String?
   code            String
-  category        String? // consultation | lab | imaging | procedure | pharmacy | admission | nursing | other
-  departmentId    String? // Link service to a specific department
+  category        String? // consultation | lab | imaging | procedure | pharmacy | admission | nursing | theatre | maternity | emergency | dental | eye | ent | physiotherapy | immunization | blood_bank | ambulance | medical_report | health_screening | administrative | other
+  serviceType     String? // consultation | investigation | procedure | treatment | admission | bed_room | professional | diagnostic | pharmacy_service | nursing_service | theatre_service | emergency_service | administrative_service | other
+  departmentId    String?
   department      Department? @relation(fields: [departmentId], references: [id])
-  unitId          String? // Link service to a specific unit (optional)
+  unitId          String?
+  unit            Unit?    @relation(fields: [unitId], references: [id])
   description     String?
+  // Pricing
   defaultPrice    Float    @default(0)
-  nhisPrice       Float?   // NHIS-insured price
-  insurancePrice  Float?   // Private insurance price (if different)
-  status          String   @default("active")
+  nhisPrice       Float?   // NHIS-insured price/tariff
+  insurancePrice  Float?   // Private insurance price
+  cashPrice       Float?   // Cash price (if different from default)
+  // Billing flags
+  isBillable      Boolean  @default(true)
+  isTaxable       Boolean  @default(false)
+  nhisEligible    Boolean  @default(false)
+  nhisServiceCode String?  // NHIS tariff/service code
+  // Unit of measure
+  unitOfMeasure   String?  // service | visit | test | procedure | day | hour | session | item | other
+  // Status
+  status          String   @default("active") // active | inactive | archived | temporarily_unavailable
+  // Ownership
+  createdById     String?
+  createdBy       User?    @relation("serviceCreator", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?    @relation("serviceUpdater", fields: [updatedById], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   facilityPrices  FacilityServicePrice[]
+  priceHistory    ServicePriceHistory[]
   invoiceItems     InvoiceItem[]
   vaccineCatalogs  VaccineCatalog[]
 
   @@unique([organizationId, code])
   @@index([departmentId])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+  @@index([organizationId, serviceType])
 }
 
 model FacilityServicePrice {
@@ -2428,6 +2455,7 @@ model FacilityServicePrice {
   serviceId       String
   service         Service @relation(fields: [serviceId], references: [id])
   price           Float
+  nhisPrice       Float?   // Facility-specific NHIS price override
   effectiveFrom   DateTime @default(now())
   effectiveTo     DateTime?
   status          String   @default("active")
@@ -2435,6 +2463,32 @@ model FacilityServicePrice {
   updatedAt       DateTime @updatedAt
 
   @@unique([facilityId, serviceId])
+  @@index([serviceId])
+  @@index([facilityId])
+}
+
+// =====================================================================
+// SERVICE PRICE HISTORY — Track all price changes for audit
+// =====================================================================
+model ServicePriceHistory {
+  id              String   @id @default(cuid())
+  organizationId  String
+  serviceId       String
+  service         Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  facilityId      String?  // null = org-level default price change
+  // Price snapshot
+  oldPrice        Float?
+  newPrice        Float
+  priceType       String   @default("default") // default | nhis | insurance | cash | facility
+  // Metadata
+  effectiveDate   DateTime @default(now())
+  reason          String?
+  changedById     String?
+  changedBy       User?    @relation("servicePriceChanger", fields: [changedById], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([serviceId, effectiveDate])
+  @@index([organizationId, effectiveDate])
 }
 
 model Invoice {
