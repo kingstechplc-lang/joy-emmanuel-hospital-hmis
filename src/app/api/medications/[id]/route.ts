@@ -1,7 +1,8 @@
 // =====================================================================
 // API: /api/medications/[id]
-//   PATCH  — update medication
-//   DELETE — soft-delete medication
+//   GET    — single medication with usage summary
+//   PATCH  — update medication (all new fields)
+//   DELETE — soft-deactivate medication
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -15,21 +16,42 @@ export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.PHARMACY_VIEW)) {
+  if (!hasPermission(session, PERMISSIONS.PHARMACY_VIEW) && !hasPermission(session, PERMISSIONS.SETTINGS_VIEW)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;
-  const med = await db.medication.findUnique({ where: { id } });
+  const med = await db.medication.findUnique({
+    where: { id },
+    include: {
+      createdBy: { select: { id: true, firstName: true, lastName: true } },
+      updatedBy: { select: { id: true, firstName: true, lastName: true } },
+      _count: {
+        select: { prescriptionItems: true, inventoryItems: true, administrations: true },
+      },
+    },
+  });
   if (!med || med.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json({ item: med });
+
+  // Get inventory items linked to this medication (for stock summary)
+  const inventoryItems = await db.inventoryItem.findMany({
+    where: { medicationId: id },
+    include: {
+      facilityInventory: {
+        select: { facilityId: true, currentQuantity: true, minimumQuantity: true },
+      },
+    },
+    take: 20,
+  });
+
+  return NextResponse.json({ item: med, inventoryItems });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.SETTINGS_MANAGE)) {
+  if (!hasPermission(session, PERMISSIONS.MEDICATION_MANAGE) && !hasPermission(session, PERMISSIONS.SETTINGS_MANAGE)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -41,22 +63,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } catch {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
-  const { genericName, brandName, strength, dosageForm, route, unit, description, status } = body;
 
   const existing = await db.medication.findUnique({ where: { id } });
   if (!existing || existing.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const updateData: any = {};
-  if (typeof genericName === "string") updateData.genericName = genericName;
-  if (typeof brandName === "string") updateData.brandName = brandName || null;
-  if (typeof strength === "string") updateData.strength = strength || null;
-  if (typeof dosageForm === "string") updateData.dosageForm = dosageForm || null;
-  if (typeof route === "string") updateData.route = route || null;
-  if (typeof unit === "string") updateData.unit = unit || null;
-  if (typeof description === "string") updateData.description = description || null;
-  if (typeof status === "string") updateData.status = status;
+  // Allow updating all fields
+  const allowedFields = [
+    "genericName", "brandName", "strength", "strengthValue", "strengthUnit",
+    "dosageForm", "route", "unit", "description",
+    "medicationCategory", "therapeuticClass", "atcCode",
+    "barcode", "productCode", "nhisCode",
+    "manufacturer", "countryOfOrigin",
+    "prescriptionStatus", "controlledStatus", "isHighAlert",
+    "pregnancyCategory", "lactationSafety",
+    "defaultDose", "defaultFrequency", "defaultRoute", "defaultDuration",
+    "formularyStatus", "storageConditions",
+    "status",
+  ];
+
+  const updateData: any = { updatedById: session.user.id };
+  for (const field of allowedFields) {
+    if (body[field] !== undefined) {
+      if (field === "isHighAlert") {
+        updateData[field] = !!body[field];
+      } else if (field === "strengthValue") {
+        updateData[field] = body[field] ? parseFloat(body[field]) : null;
+      } else {
+        updateData[field] = body[field] || null;
+      }
+    }
+  }
 
   const updated = await db.medication.update({ where: { id }, data: updateData });
 
@@ -66,7 +104,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     action: "MEDICATION_UPDATED",
     resourceType: "medication",
     resourceId: id,
-    oldValues: { genericName: existing.genericName, brandName: existing.brandName },
+    oldValues: {
+      genericName: existing.genericName,
+      brandName: existing.brandName,
+      strength: existing.strength,
+      dosageForm: existing.dosageForm,
+      route: existing.route,
+      status: existing.status,
+      therapeuticClass: existing.therapeuticClass,
+      medicationCategory: existing.medicationCategory,
+    },
     newValues: updateData,
   });
 
@@ -76,7 +123,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.SETTINGS_MANAGE)) {
+  if (!hasPermission(session, PERMISSIONS.MEDICATION_MANAGE) && !hasPermission(session, PERMISSIONS.SETTINGS_MANAGE)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -86,14 +133,18 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await db.medication.update({ where: { id }, data: { status: "inactive" } });
+  // Soft-deactivate (never hard-delete)
+  await db.medication.update({
+    where: { id },
+    data: { status: "inactive", updatedById: session.user.id },
+  });
   await auditLog({
     userId: session.user.id,
     organizationId: session.user.organizationId,
-    action: "MEDICATION_DELETED",
+    action: "MEDICATION_DEACTIVATED",
     resourceType: "medication",
     resourceId: id,
-    oldValues: { genericName: existing.genericName },
+    oldValues: { genericName: existing.genericName, status: existing.status },
   });
   return NextResponse.json({ ok: true });
 }

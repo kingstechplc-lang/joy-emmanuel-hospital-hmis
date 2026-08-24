@@ -310,6 +310,9 @@ model User {
   laborClinician     LaborAndDelivery[] @relation("laborClinician")
   laborMidwife       LaborAndDelivery[] @relation("laborMidwife")
   postnatalVisitsRecorded PostnatalVisit[] @relation("postnatalRecorder")
+  // Medication back-relations
+  medicationsCreated  Medication[] @relation("medicationCreator")
+  medicationsUpdated  Medication[] @relation("medicationUpdater")
   patientTransfers PatientTransfer[] @relation("ptRequestedBy")
   immunizations  Immunization[] @relation("immunizationAdmin")
   triageRecords  TriageRecord[] @relation("triageNurse")
@@ -1209,20 +1212,61 @@ model Medication {
   id              String   @id @default(cuid())
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id])
+  // Core identification
   genericName     String
   brandName       String?
-  strength        String?
-  dosageForm      String? // tablet | capsule | syrup | injection | cream | drops | inhaler
-  route           String? // oral | iv | im | topical | sublingual | inhaled
+  strength        String?  // e.g. "500mg", "250mg/5mL", "100mg/mL"
+  strengthValue   Float?   // Numeric strength for structured search
+  strengthUnit    String?  // mg | mL | % | IU | mcg
+  dosageForm      String?  // tablet | capsule | syrup | suspension | injection | cream | ointment | gel | drops | suppository | powder | sachet | inhaler | patch | other
+  route           String?  // oral | iv | im | sc | topical | rectal | vaginal | ophthalmic | otic | nasal | inhalation | sublingual | buccal | other
   unit            String?
   description     String?
-  status          String   @default("active")
+  // Classification
+  medicationCategory String? // analgesics | antibiotics | antimalarials | antihypertensives | antidiabetics | antihistamines | antacids | antiemetics | antifungals | antivirals | cardiovascular | respiratory | dermatological | obstetric | paediatric | emergency | surgical | vitamins_supplements | other
+  therapeuticClass  String?  // e.g. "Penicillin", "NSAID", "ACE inhibitor"
+  atcCode           String?  // WHO ATC code (e.g. N02BE01 for paracetamol)
+  // Identification codes
+  barcode           String?  // GTIN/EAN/UPC barcode
+  productCode       String?  // Internal product code / SKU
+  nhisCode          String?  // NHIS tariff code
+  // Manufacturer
+  manufacturer      String?
+  countryOfOrigin   String?
+  // Safety flags
+  prescriptionStatus String? @default("prescription_required") // otc | prescription_required | restricted
+  controlledStatus   String? // none | class_a | class_b | class_c | class_d
+  isHighAlert        Boolean @default(false) // ISMP high-alert medication
+  pregnancyCategory  String? // A | B | C | D | X | unknown
+  lactationSafety    String? // safe | use_with_caution | avoid | unknown
+  // Defaults for prescribing
+  defaultDose       String?
+  defaultFrequency  String?
+  defaultRoute      String?
+  defaultDuration   String?
+  // Formulary
+  formularyStatus   String? @default("formulary") // formulary | non_formulary | restricted | not_available
+  // Storage
+  storageConditions String?  // room_temp | refrigerate | freeze | cold_chain
+  // Status & lifecycle
+  status          String   @default("active") // active | inactive | discontinued | restricted | temporarily_unavailable
+  // Ownership
+  createdById     String?
+  createdBy       User?    @relation("medicationCreator", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?    @relation("medicationUpdater", fields: [updatedById], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   prescriptionItems PrescriptionItem[]
   administrations  MedicationAdministration[]
   inventoryItems    InventoryItem[] @relation("medicationInventoryItem")
+
+  @@index([organizationId, status])
+  @@index([organizationId, genericName])
+  @@index([organizationId, therapeuticClass])
+  @@index([organizationId, medicationCategory])
+  @@index([barcode])
 }
 
 model Prescription {
