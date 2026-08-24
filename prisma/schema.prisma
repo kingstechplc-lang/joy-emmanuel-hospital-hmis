@@ -66,6 +66,8 @@ model Organization {
   coldChainAlerts     ColdChainAlert[]
   medicationInteractions MedicationInteraction[]
   servicePackages    ServicePackage[]
+  ambulanceVehicles  AmbulanceVehicle[]
+  ambulanceTrips     AmbulanceTrip[]
 }
 
 model Facility {
@@ -125,6 +127,9 @@ model Facility {
   ancVisits             AncVisit[]
   laborAndDeliveries    LaborAndDelivery[]
   postnatalVisits       PostnatalVisit[]
+  // Ambulance back-relations
+  ambulanceVehicles     AmbulanceVehicle[]
+  ambulanceTrips        AmbulanceTrip[]
   documents             Document[]
   notifications         Notification[]
   tasks                 Task[]
@@ -321,6 +326,9 @@ model User {
   servicesUpdated     Service[] @relation("serviceUpdater")
   servicePriceChanges ServicePriceHistory[] @relation("servicePriceChanger")
   packagesCreated     ServicePackage[] @relation("packageCreator")
+  // Ambulance back-relations
+  ambulanceVehiclesCreated AmbulanceVehicle[] @relation("ambulanceCreator")
+  ambulanceTripsRequested  AmbulanceTrip[] @relation("ambulanceRequester")
   patientTransfers PatientTransfer[] @relation("ptRequestedBy")
   immunizations  Immunization[] @relation("immunizationAdmin")
   triageRecords  TriageRecord[] @relation("triageNurse")
@@ -514,9 +522,11 @@ model Patient {
   immunizations      Immunization[]
   aefiRecords        AEFI[]
   // Maternity back-relations
-  ancVisits          AncVisit[]
-  laborAndDeliveries LaborAndDelivery[] @relation("laborPatient")
-  postnatalVisits    PostnatalVisit[] @relation("postnatalPatient")
+  ancVisits             AncVisit[]
+  laborAndDeliveries    LaborAndDelivery[] @relation("laborPatient")
+  postnatalVisits       PostnatalVisit[] @relation("postnatalPatient")
+  // Ambulance back-relation
+  ambulanceTrips        AmbulanceTrip[]
   labOrders          LabOrder[]
   imagingOrders      ImagingOrder[]
   procedures         Procedure[]
@@ -2153,6 +2163,159 @@ model ColdChainAlert {
 
   @@index([facilityId, recordedAt])
   @@index([isExcursion])
+}
+
+// =====================================================================
+// AMBULANCE VEHICLE — Fleet management
+// =====================================================================
+model AmbulanceVehicle {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  vehicleNumber     String   // Internal fleet number (e.g. AMB-001)
+  registrationNumber String  // License plate
+  make              String?
+  model             String?
+  year              Int?
+  ambulanceType     String   @default("basic_life_support") // basic_life_support | advanced_life_support | emergency | patient_transport | maternity | other
+  capacity          Int      @default(2) // Seating/capacity (excluding driver)
+  // Status
+  status            String   @default("available") // available | dispatched | on_trip | returning | out_of_service | maintenance | unavailable
+  // Equipment (JSON array of equipment profiles)
+  equipmentProfile  String?  // JSON: ["oxygen", "stretcher", "monitor", "defibrillator", ...]
+  // Maintenance
+  lastServiceDate   DateTime?
+  nextServiceDate   DateTime?
+  currentOdometer   Int?
+  insuranceExpiry   DateTime?
+  roadworthinessExpiry DateTime?
+  // Metadata
+  baseLocation      String?
+  notes             String?
+  createdById       String?
+  createdBy         User?    @relation("ambulanceCreator", fields: [createdById], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  trips             AmbulanceTrip[]
+
+  @@unique([organizationId, vehicleNumber])
+  @@index([facilityId, status])
+  @@index([organizationId, status])
+}
+
+// =====================================================================
+// AMBULANCE TRIP — Request + dispatch + transport + completion
+// =====================================================================
+model AmbulanceTrip {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  facilityId        String
+  facility          Facility @relation(fields: [facilityId], references: [id])
+  tripNumber        String   // AMB-TRIP-YYYY-000001
+  // Patient link (optional — emergency unregistered patients may not have a record yet)
+  patientId         String?
+  patient           Patient? @relation(fields: [patientId], references: [id])
+  // Referral link (optional — for inter-facility transfers)
+  referralId        String?
+  // Service request link (optional — for support-services-originated transport)
+  serviceRequestId  String?
+  // Request details
+  requestType       String   @default("emergency") // emergency | inter_facility | hospital_to_home | home_to_hospital | referral_transport | non_emergency | maternity | discharge | other
+  priority          String   @default("urgent") // critical | high | urgent | routine | non_emergency
+  // Pickup
+  pickupLocation    String   // Address or facility name
+  pickupFacilityId  String?  // If pickup is at a facility
+  pickupContactName String?
+  pickupContactPhone String?
+  pickupNotes       String?
+  // Destination
+  destinationLocation String
+  destinationFacilityId String?
+  destinationDepartment String?
+  destinationContactName String?
+  destinationContactPhone String?
+  // Clinical
+  reasonForTransport String?
+  clinicalIndication String?
+  patientCondition  String?  // stable | critical | serious | stable_on_oxygen | other
+  mobilityRequirement String? // ambulatory | wheelchair | stretcher | bed
+  oxygenRequired    Boolean  @default(false)
+  accompanyingPerson String?
+  specialRequirements String?
+  // Assignment
+  vehicleId         String?
+  vehicle           AmbulanceVehicle? @relation(fields: [vehicleId], references: [id])
+  driverStaffId     String?  // FK to Staff/User
+  crewIds           String?  // JSON array of staff IDs
+  // Timeline timestamps
+  requestedAt       DateTime @default(now())
+  requestedDepartureAt DateTime?
+  dispatchedAt      DateTime?
+  departedAt        DateTime?
+  arrivedAtPickupAt DateTime?
+  patientOnBoardAt  DateTime?
+  departedPickupAt  DateTime?
+  arrivedAtDestinationAt DateTime?
+  handoverAt        DateTime?
+  returnedAt        DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  // Trip details
+  startMileage      Int?
+  endMileage        Int?
+  distance          Float?   // km
+  // Billing
+  serviceId         String?  // FK to Service for billing
+  invoiceId         String?  // Link to generated invoice
+  billingStatus     String   @default("unbilled") // unbilled | billed | partially_paid | paid | waived | claimed | refunded | cancelled
+  // Handover
+  handoverReceivedById String? // Staff who received the patient
+  handoverNotes     String?
+  // Status
+  status            String   @default("requested") // requested | dispatched | en_route_pickup | at_pickup | patient_on_board | en_route_destination | at_destination | handover | returning | completed | cancelled | no_show | failed_pickup
+  cancellationReason String?
+  // Metadata
+  requestedById     String?
+  requestedBy       User?    @relation("ambulanceRequester", fields: [requestedById], references: [id])
+  dispatchedById    String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  incidents         AmbulanceIncident[]
+
+  @@unique([organizationId, tripNumber])
+  @@index([facilityId, status])
+  @@index([patientId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([priority, status])
+}
+
+// =====================================================================
+// AMBULANCE INCIDENT — Trip incidents/issues
+// =====================================================================
+model AmbulanceIncident {
+  id                String   @id @default(cuid())
+  tripId            String
+  trip              AmbulanceTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  organizationId    String
+  incidentType      String   // delay | vehicle_issue | route_issue | patient_incident | transfer_issue | other
+  description       String
+  actionTaken       String?
+  resolution        String?
+  followUpRequired  Boolean  @default(false)
+  reportedById      String?
+  reportedAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tripId])
+  @@index([incidentType])
 }
 
 model MaternityRecord {

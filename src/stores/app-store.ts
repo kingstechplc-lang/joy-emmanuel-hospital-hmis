@@ -77,6 +77,7 @@ export type ViewKey =
   | "specialty_clinics_referrals"
   | "specialty_clinics_clinics"
   | "support_services"
+  | "ambulance"
   | "patient_relations"
   | "quality_assurance"
   | "risk_management"
@@ -226,6 +227,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   // Support Services
   { key: "support_services", label: "Support Services", icon: "Sparkles", permission: "support_services.view", category: "Support Services" },
+  { key: "ambulance", label: "Ambulance", icon: "Truck", permission: "ambulance.view", category: "Support Services" },
   { key: "mortuary", label: "Mortuary", icon: "Skull", permission: "mortuary.view", category: "Support Services" },
   { key: "home_care", label: "Home Care", icon: "Home", permission: "home_care.view", category: "Support Services" },
   { key: "community_health", label: "Community Health", icon: "Users", permission: "community_health.view", category: "Support Services" },

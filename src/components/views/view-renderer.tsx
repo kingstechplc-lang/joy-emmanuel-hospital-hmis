@@ -69,6 +69,7 @@ import { MortuaryView } from "@/components/views/extended/mortuary-view";
 import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import { ITSupportView } from "@/components/views/extended/it-support-view";
 import { SupportServicesView } from "@/components/views/extended/support-services-view";
+import { AmbulanceView } from "@/components/views/extended/ambulance-view";
 import { BloodBankView } from "@/components/views/extended/blood-bank-view";
 import { SpecialtyClinicsView } from "@/components/views/extended/specialty-clinics-view";
 import {
@@ -155,6 +156,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   specialty_clinics_referrals: SpecialtyClinicsView,
   specialty_clinics_clinics: SpecialtyClinicsView,
   support_services: SupportServicesView,
+  ambulance: AmbulanceView,
   patient_relations: PatientRelationsView,
   quality_assurance: QualityAssuranceView,
   risk_management: RiskManagementView,
@@ -242,6 +244,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   specialty_clinics_referrals: "specialty.view",
   specialty_clinics_clinics: "specialty.view",
   support_services: "support_services.view",
+  ambulance: "ambulance.view",
   patient_relations: "patient_relations.view",
   quality_assurance: "qa.view",
   risk_management: "risk.view",
