@@ -64,6 +64,7 @@ model Organization {
   vaccineScheduleDoses VaccineScheduleDose[]
   vaccineWastage      VaccineWastage[]
   coldChainAlerts     ColdChainAlert[]
+  medicationInteractions MedicationInteraction[]
 }
 
 model Facility {
@@ -1261,12 +1262,47 @@ model Medication {
   prescriptionItems PrescriptionItem[]
   administrations  MedicationAdministration[]
   inventoryItems    InventoryItem[] @relation("medicationInventoryItem")
+  interactionsA     MedicationInteraction[] @relation("interactionMedA")
+  interactionsB     MedicationInteraction[] @relation("interactionMedB")
 
   @@index([organizationId, status])
   @@index([organizationId, genericName])
   @@index([organizationId, therapeuticClass])
   @@index([organizationId, medicationCategory])
   @@index([barcode])
+  @@index([nhisCode])
+}
+
+// =====================================================================
+// MEDICATION INTERACTION — Drug-drug interaction rules
+// =====================================================================
+// Configurable interaction pairs. When a prescription is created, the
+// system checks the patient's active medications against this table.
+// Interactions are warnings only — they never block prescribing.
+model MedicationInteraction {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  // The two medications (or therapeutic classes) that interact
+  medicationAId     String?
+  medicationA       Medication? @relation("interactionMedA", fields: [medicationAId], references: [id])
+  medicationBId     String?
+  medicationB       Medication? @relation("interactionMedB", fields: [medicationBId], references: [id])
+  // Alternatively, match by therapeutic class (e.g. "NSAID" + "Warfarin")
+  therapeuticClassA String?  // e.g. "NSAID", "ACE inhibitor"
+  therapeuticClassB String?  // e.g. "Anticoagulant"
+  // Interaction details
+  severity          String   @default("moderate") // mild | moderate | severe | contraindicated
+  description       String   // What happens
+  clinicalAdvice    String?  // What to do (e.g. "Monitor INR closely", "Consider alternative")
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId, isActive])
+  @@index([medicationAId])
+  @@index([medicationBId])
+  @@index([therapeuticClassA, therapeuticClassB])
 }
 
 model Prescription {
@@ -1291,6 +1327,7 @@ model Prescription {
   // Safety tracking
   allergyWarnings   String?  // JSON array of allergy warnings shown
   duplicateWarnings String?  // JSON array of duplicate medication warnings
+  interactionWarnings String? // JSON array of drug-drug interaction warnings
   warningsAcknowledged Boolean @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

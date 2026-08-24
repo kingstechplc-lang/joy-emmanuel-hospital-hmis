@@ -136,6 +136,68 @@ export async function POST(req: Request) {
     }
   }
 
+  // --- Drug-drug interaction check ---
+  const interactionWarnings: string[] = [];
+  const newMedIds = items.filter((it: any) => it.medicationId).map((it: any) => it.medicationId);
+  const allMedIds = [...new Set([...newMedIds, ...activeRxItems.map((a) => a.medicationId)])];
+
+  if (allMedIds.length >= 2) {
+    // Load all medications with their therapeutic classes
+    const allMeds = await db.medication.findMany({
+      where: { id: { in: allMedIds } },
+      select: { id: true, genericName: true, therapeuticClass: true },
+    });
+    const medMap = new Map(allMeds.map((m) => [m.id, m]));
+    const allClasses = new Set(
+      [...allMeds.map((m) => m.therapeuticClass)].filter(Boolean) as string[]
+    );
+
+    // Load all active interaction rules for this org
+    const interactionRules = await db.medicationInteraction.findMany({
+      where: { organizationId: session.user.organizationId, isActive: true },
+    });
+
+    for (const rule of interactionRules) {
+      let matchA = false;
+      let matchB = false;
+      let medAName = "";
+      let medBName = "";
+
+      // Check medication A
+      if (rule.medicationAId) {
+        if (allMedIds.includes(rule.medicationAId)) {
+          matchA = true;
+          medAName = medMap.get(rule.medicationAId)?.genericName || "Unknown";
+        }
+      } else if (rule.therapeuticClassA && allClasses.has(rule.therapeuticClassA)) {
+        matchA = true;
+        medAName = rule.therapeuticClassA;
+      }
+
+      // Check medication B
+      if (rule.medicationBId) {
+        if (allMedIds.includes(rule.medicationBId)) {
+          matchB = true;
+          medBName = medMap.get(rule.medicationBId)?.genericName || "Unknown";
+        }
+      } else if (rule.therapeuticClassB && allClasses.has(rule.therapeuticClassB)) {
+        matchB = true;
+        medBName = rule.therapeuticClassB;
+      }
+
+      if (matchA && matchB) {
+        const severityIcon =
+          rule.severity === "contraindicated" ? "🚫 CONTRAINDICATED"
+          : rule.severity === "severe" ? "⚠️ SEVERE INTERACTION"
+          : rule.severity === "moderate" ? "⚡ MODERATE INTERACTION"
+          : "ℹ️ MILD INTERACTION";
+        interactionWarnings.push(
+          `${severityIcon}: ${medAName} + ${medBName} — ${rule.description}${rule.clinicalAdvice ? ` | Advice: ${rule.clinicalAdvice}` : ""}`
+        );
+      }
+    }
+  }
+
   const prescriptionNumber = await nextPrescriptionNumber(facilityId);
 
   // Transactional create
@@ -152,6 +214,7 @@ export async function POST(req: Request) {
         prescribedAt: new Date(),
         allergyWarnings: allergyWarnings.length > 0 ? JSON.stringify(allergyWarnings) : null,
         duplicateWarnings: duplicateWarnings.length > 0 ? JSON.stringify(duplicateWarnings) : null,
+        interactionWarnings: interactionWarnings.length > 0 ? JSON.stringify(interactionWarnings) : null,
         warningsAcknowledged: body.acknowledgeWarnings === true,
       },
     });
