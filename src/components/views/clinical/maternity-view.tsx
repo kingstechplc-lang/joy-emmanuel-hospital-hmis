@@ -932,11 +932,16 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
           clinicalAssessment: clinicalAssessment || undefined,
           nextVisitDate: nextVisitDate || undefined,
           notes: notes || undefined,
+          createAppointment: !!nextVisitDate,
         }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
-      toast.success("ANC visit recorded");
+      const extras: string[] = [];
+      if (data.appointmentId) extras.push("next appointment booked");
+      toast.success(
+        extras.length > 0 ? `ANC visit recorded — ${extras.join(" + ")}` : "ANC visit recorded"
+      );
       onSaved();
     } catch (e: any) {
       toast.error(e.message);
@@ -1015,6 +1020,9 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
           <div>
             <Label className="text-[10px]">Next Visit Date</Label>
             <Input type="date" value={nextVisitDate} onChange={(e) => setNextVisitDate(e.target.value)} className="h-8 text-xs" />
+            {nextVisitDate && (
+              <p className="text-[9px] text-pink-600 mt-0.5">✓ Auto-books an ANC appointment</p>
+            )}
           </div>
           <div>
             <Label className="text-[10px]">Notes</Label>

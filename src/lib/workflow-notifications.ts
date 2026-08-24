@@ -73,7 +73,14 @@ export type WorkflowEvent =
   | "vaccine_due_soon"
   | "vaccine_overdue"
   | "aefi_reported"
-  | "vaccine_stock_out";
+  | "vaccine_stock_out"
+  | "pregnancy_registered"
+  | "anc_visit_recorded"
+  | "edd_approaching"
+  | "high_risk_pregnancy"
+  | "delivery_recorded"
+  | "newborn_recorded"
+  | "postnatal_visit_recorded";
 
 // Permission code → recipient role mapping
 // When an event fires, we look up users with these permissions in the same facility
@@ -135,6 +142,13 @@ const RECIPIENT_PERMISSIONS: Record<WorkflowEvent, string[]> = {
   vaccine_overdue: ["immunization.view", "immunization.record"],
   aefi_reported: ["immunization.aefi", "immunization.view", "clinical.view"],
   vaccine_stock_out: ["immunization.manage", "inventory.view", "inventory.adjust"],
+  pregnancy_registered: ["maternity.view", "clinical.view"],
+  anc_visit_recorded: ["maternity.view", "clinical.view"],
+  edd_approaching: ["maternity.view", "maternity.anc.record"],
+  high_risk_pregnancy: ["maternity.view", "maternity.manage", "clinical.view"],
+  delivery_recorded: ["maternity.view", "clinical.view", "admission.view"],
+  newborn_recorded: ["maternity.view", "immunization.view", "clinical.view"],
+  postnatal_visit_recorded: ["maternity.view", "clinical.view"],
 };
 
 type NotifyParams = {
@@ -1291,5 +1305,168 @@ export async function notifyVaccineStockOut(opts: {
     referenceType: "inventory_item",
     referenceId: opts.inventoryItemId,
     priority: opts.currentStock <= 0 ? "critical" : "high",
+  });
+}
+
+// =====================================================================
+// MATERNITY NOTIFICATIONS
+// =====================================================================
+
+export async function notifyPregnancyRegistered(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  gravida?: number;
+  para?: number;
+  edd?: string;
+  riskLevel?: string;
+  maternityRecordId: string;
+  registeredById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "pregnancy_registered",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `🤰 New Pregnancy Registered`,
+    message: `${opts.patientName} — G${opts.gravida ?? "?"} P${opts.para ?? "?"}${opts.edd ? `, EDD ${new Date(opts.edd).toLocaleDateString()}` : ""}${opts.riskLevel ? `, ${opts.riskLevel} risk` : ""}.`,
+    referenceType: "maternity_record",
+    referenceId: opts.maternityRecordId,
+    excludeUserId: opts.registeredById,
+  });
+}
+
+export async function notifyAncVisitRecorded(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  gestationalAge?: number;
+  nextVisitDate?: string;
+  maternityRecordId: string;
+  ancVisitId: string;
+  recordedById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "anc_visit_recorded",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📋 ANC Visit Recorded: ${opts.patientName}`,
+    message: `ANC visit${opts.gestationalAge ? ` at ${opts.gestationalAge} weeks` : ""}${opts.nextVisitDate ? `. Next visit: ${new Date(opts.nextVisitDate).toLocaleDateString()}` : ""}.`,
+    referenceType: "anc_visit",
+    referenceId: opts.ancVisitId,
+    excludeUserId: opts.recordedById,
+  });
+}
+
+export async function notifyEddApproaching(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  edd: string;
+  daysUntilEdd: number;
+  maternityRecordId: string;
+}) {
+  return sendWorkflowNotification({
+    event: "edd_approaching",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📅 EDD Approaching: ${opts.patientName}`,
+    message: `EDD is ${new Date(opts.edd).toLocaleDateString()} — ${opts.daysUntilEdd} day(s) remaining.`,
+    referenceType: "maternity_record",
+    referenceId: opts.maternityRecordId,
+    priority: opts.daysUntilEdd <= 7 ? "high" : "normal",
+  });
+}
+
+export async function notifyHighRiskPregnancy(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  riskLevel: string;
+  riskFactors?: string;
+  maternityRecordId: string;
+  flaggedById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "high_risk_pregnancy",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `⚠️ High-Risk Pregnancy: ${opts.patientName}`,
+    message: `Risk level: ${opts.riskLevel}${opts.riskFactors ? `. Factors: ${opts.riskFactors.slice(0, 150)}` : ""}.`,
+    referenceType: "maternity_record",
+    referenceId: opts.maternityRecordId,
+    excludeUserId: opts.flaggedById,
+    priority: "high",
+  });
+}
+
+export async function notifyDeliveryRecorded(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  deliveryType?: string;
+  deliveryDate: string;
+  birthOutcome?: string;
+  newbornCount: number;
+  maternityRecordId: string;
+  laborAndDeliveryId: string;
+  recordedById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "delivery_recorded",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `👶 Delivery Recorded: ${opts.patientName}`,
+    message: `${opts.deliveryType?.replace(/_/g, " ") || "Delivery"} on ${new Date(opts.deliveryDate).toLocaleString()}${opts.birthOutcome ? `, ${opts.birthOutcome.replace(/_/g, " ")}` : ""}. ${opts.newbornCount} newborn(s) recorded.`,
+    referenceType: "labor_and_delivery",
+    referenceId: opts.laborAndDeliveryId,
+    excludeUserId: opts.recordedById,
+    priority: "high",
+  });
+}
+
+export async function notifyNewbornRecorded(opts: {
+  organizationId: string;
+  facilityId: string;
+  motherName: string;
+  babySex?: string;
+  birthWeight?: number;
+  apgar1?: number;
+  apgar5?: number;
+  newbornId: string;
+  maternityRecordId: string;
+  recordedById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "newborn_recorded",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `👶 Newborn Recorded: ${opts.motherName}'s baby`,
+    message: `${opts.babySex || "Unknown sex"}${opts.birthWeight ? `, ${opts.birthWeight}kg` : ""}${opts.apgar1 != null ? `, APGAR ${opts.apgar1}/${opts.apgar5 ?? "?"}` : ""}.`,
+    referenceType: "newborn_record",
+    referenceId: opts.newbornId,
+    excludeUserId: opts.recordedById,
+  });
+}
+
+export async function notifyPostnatalVisitRecorded(opts: {
+  organizationId: string;
+  facilityId: string;
+  patientName: string;
+  visitType: string;
+  maternalStatus?: string;
+  breastfeeding?: string;
+  postnatalVisitId: string;
+  maternityRecordId: string;
+  recordedById?: string;
+}) {
+  return sendWorkflowNotification({
+    event: "postnatal_visit_recorded",
+    organizationId: opts.organizationId,
+    facilityId: opts.facilityId,
+    title: `📋 Postnatal Visit: ${opts.patientName}`,
+    message: `${opts.visitType} visit${opts.maternalStatus ? `, maternal status: ${opts.maternalStatus}` : ""}${opts.breastfeeding ? `, breastfeeding: ${opts.breastfeeding}` : ""}.`,
+    referenceType: "postnatal_visit",
+    referenceId: opts.postnatalVisitId,
+    excludeUserId: opts.recordedById,
   });
 }

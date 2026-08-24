@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyDeliveryRecorded } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -145,6 +146,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     resourceId: labor.id,
     newValues: { maternityRecordId: id, deliveryDate, deliveryType, maternalOutcome },
   });
+
+  // 🔔 Fire delivery notification if delivery was recorded
+  if (deliveryDate) {
+    const patient = await db.patient.findUnique({
+      where: { id: maternity.patientId },
+      select: { firstName: true, lastName: true },
+    });
+    const newbornCount = await db.newbornRecord.count({
+      where: { deliveryRecordId: id },
+    });
+    await notifyDeliveryRecorded({
+      organizationId: session.user.organizationId,
+      facilityId: maternity.facilityId,
+      patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Unknown",
+      deliveryType,
+      deliveryDate,
+      birthOutcome: body.birthOutcome,
+      newbornCount,
+      maternityRecordId: id,
+      laborAndDeliveryId: labor.id,
+      recordedById: session.user.id,
+    });
+  }
 
   return NextResponse.json({ item: labor }, { status: 201 });
 }

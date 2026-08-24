@@ -5,8 +5,9 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, auditLog, hasPermission } from "@/lib/session";
+import { getSession, auditLog, hasPermission, nextAppointmentNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyAncVisitRecorded } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -61,35 +62,73 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     fundalHeight, fetalHeartRate, fetalMovement, presentation, edema,
     symptoms, clinicalAssessment, riskFlags, nextVisitDate,
     educationTopics, notes,
+    createAppointment = false,
   } = body;
 
-  const visit = await db.ancVisit.create({
-    data: {
-      maternityRecordId: id,
-      patientId: maternity.patientId,
-      facilityId: maternity.facilityId,
-      visitDate: visitDate ? new Date(visitDate) : new Date(),
-      gestationalAge: gestationalAge || null,
-      weight: weight || null,
-      bpSystolic: bpSystolic || null,
-      bpDiastolic: bpDiastolic || null,
-      pulse: pulse || null,
-      temperature: temperature || null,
-      respiratoryRate: respiratoryRate || null,
-      oxygenSaturation: oxygenSaturation || null,
-      fundalHeight: fundalHeight || null,
-      fetalHeartRate: fetalHeartRate || null,
-      fetalMovement: fetalMovement || null,
-      presentation: presentation || null,
-      edema: edema || null,
-      symptoms: symptoms || null,
-      clinicalAssessment: clinicalAssessment || null,
-      riskFlags: riskFlags ? JSON.stringify(riskFlags) : null,
-      nextVisitDate: nextVisitDate ? new Date(nextVisitDate) : null,
-      educationTopics: educationTopics ? JSON.stringify(educationTopics) : null,
-      notes: notes || null,
-      recordedById: session.user.id,
-    },
+  // Create ANC visit + optionally book next appointment in a transaction
+  const result = await db.$transaction(async (tx) => {
+    const visit = await tx.ancVisit.create({
+      data: {
+        maternityRecordId: id,
+        patientId: maternity.patientId,
+        facilityId: maternity.facilityId,
+        visitDate: visitDate ? new Date(visitDate) : new Date(),
+        gestationalAge: gestationalAge || null,
+        weight: weight || null,
+        bpSystolic: bpSystolic || null,
+        bpDiastolic: bpDiastolic || null,
+        pulse: pulse || null,
+        temperature: temperature || null,
+        respiratoryRate: respiratoryRate || null,
+        oxygenSaturation: oxygenSaturation || null,
+        fundalHeight: fundalHeight || null,
+        fetalHeartRate: fetalHeartRate || null,
+        fetalMovement: fetalMovement || null,
+        presentation: presentation || null,
+        edema: edema || null,
+        symptoms: symptoms || null,
+        clinicalAssessment: clinicalAssessment || null,
+        riskFlags: riskFlags ? JSON.stringify(riskFlags) : null,
+        nextVisitDate: nextVisitDate ? new Date(nextVisitDate) : null,
+        educationTopics: educationTopics ? JSON.stringify(educationTopics) : null,
+        notes: notes || null,
+        recordedById: session.user.id,
+      },
+    });
+
+    // Auto-book next ANC appointment if requested
+    let appointmentId: string | null = null;
+    if (createAppointment && nextVisitDate) {
+      const apptCount = await tx.appointment.count({ where: { facilityId: maternity.facilityId } });
+      const apptNumber = `APT-${new Date().getFullYear()}-${String(apptCount + 1).padStart(6, "0")}`;
+      const appt = await tx.appointment.create({
+        data: {
+          patientId: maternity.patientId,
+          facilityId: maternity.facilityId,
+          appointmentNumber: apptNumber,
+          appointmentType: "follow_up",
+          scheduledStart: new Date(nextVisitDate),
+          status: "scheduled",
+          reason: `ANC follow-up visit${gestationalAge ? ` (GA ${gestationalAge}w)` : ""}`,
+          notes: `Auto-booked from ANC visit ${visit.id}.`,
+          createdById: session.user.id,
+        },
+      });
+      appointmentId = appt.id;
+    }
+
+    return { visit, appointmentId };
+  }).catch((err: any) => ({ error: err.message }));
+
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+
+  const { visit, appointmentId } = result as { visit: any; appointmentId: string | null };
+
+  // Reload with relations
+  const fullVisit = await db.ancVisit.findUnique({
+    where: { id: visit.id },
     include: {
       recordedBy: { select: { id: true, firstName: true, lastName: true } },
     },
@@ -102,8 +141,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     action: "ANC_VISIT_CREATED",
     resourceType: "anc_visit",
     resourceId: visit.id,
-    newValues: { maternityRecordId: id, gestationalAge, weight, bpSystolic, bpDiastolic },
+    newValues: { maternityRecordId: id, gestationalAge, weight, bpSystolic, bpDiastolic, appointmentId },
   });
 
-  return NextResponse.json({ item: visit }, { status: 201 });
+  // 🔔 Fire workflow notification
+  const patient = await db.patient.findUnique({
+    where: { id: maternity.patientId },
+    select: { firstName: true, lastName: true },
+  });
+  await notifyAncVisitRecorded({
+    organizationId: session.user.organizationId,
+    facilityId: maternity.facilityId,
+    patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Unknown",
+    gestationalAge,
+    nextVisitDate,
+    maternityRecordId: id,
+    ancVisitId: visit.id,
+    recordedById: session.user.id,
+  });
+
+  return NextResponse.json({ item: fullVisit, appointmentId }, { status: 201 });
 }

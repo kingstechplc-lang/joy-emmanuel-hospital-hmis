@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyPostnatalVisitRecorded } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -104,6 +105,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     resourceType: "postnatal_visit",
     resourceId: visit.id,
     newValues: { maternityRecordId: id, visitType, maternalStatus, breastfeeding },
+  });
+
+  // 🔔 Fire workflow notification
+  const patient = await db.patient.findUnique({
+    where: { id: maternity.patientId },
+    select: { firstName: true, lastName: true },
+  });
+  await notifyPostnatalVisitRecorded({
+    organizationId: session.user.organizationId,
+    facilityId: maternity.facilityId,
+    patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Unknown",
+    visitType,
+    maternalStatus,
+    breastfeeding,
+    postnatalVisitId: visit.id,
+    maternityRecordId: id,
+    recordedById: session.user.id,
   });
 
   return NextResponse.json({ item: visit }, { status: 201 });

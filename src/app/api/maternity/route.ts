@@ -6,8 +6,9 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, auditLog, hasPermission } from "@/lib/session";
+import { getSession, auditLog, hasPermission, nextInvoiceNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyPregnancyRegistered, notifyHighRiskPregnancy } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -195,6 +196,40 @@ export async function POST(req: Request) {
     },
   });
 
+  // 🔔 Fire workflow notifications
+  const patientForNotify = await db.patient.findUnique({
+    where: { id: patientId },
+    select: { firstName: true, lastName: true },
+  });
+  const patientName = patientForNotify
+    ? `${patientForNotify.firstName} ${patientForNotify.lastName}`
+    : "Unknown";
+
+  await notifyPregnancyRegistered({
+    organizationId: session.user.organizationId,
+    facilityId,
+    patientName,
+    gravida,
+    para,
+    edd: computedEddFinal?.toISOString(),
+    riskLevel: riskLevel || "low",
+    maternityRecordId: record.id,
+    registeredById: session.user.id,
+  });
+
+  // If high-risk, fire a separate high-priority notification
+  if (riskLevel === "high") {
+    await notifyHighRiskPregnancy({
+      organizationId: session.user.organizationId,
+      facilityId,
+      patientName,
+      riskLevel: "high",
+      riskFactors: riskFactors ? JSON.stringify(riskFactors) : undefined,
+      maternityRecordId: record.id,
+      flaggedById: session.user.id,
+    });
+  }
+
   return NextResponse.json({ item: record }, { status: 201 });
 }
 
@@ -261,6 +296,23 @@ export async function PATCH(req: Request) {
     oldValues: { pregnancyStatus: existing.pregnancyStatus, riskLevel: existing.riskLevel, eddFinal: existing.eddFinal },
     newValues: data,
   });
+
+  // 🔔 If risk level was upgraded to high, fire high-risk notification
+  if (body.riskLevel === "high" && existing.riskLevel !== "high") {
+    const patient = await db.patient.findUnique({
+      where: { id: existing.patientId },
+      select: { firstName: true, lastName: true },
+    });
+    await notifyHighRiskPregnancy({
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      patientName: patient ? `${patient.firstName} ${patient.lastName}` : "Unknown",
+      riskLevel: "high",
+      riskFactors: body.riskFactors ? JSON.stringify(body.riskFactors) : undefined,
+      maternityRecordId: id,
+      flaggedById: session.user.id,
+    });
+  }
 
   return NextResponse.json({ item: updated });
 }

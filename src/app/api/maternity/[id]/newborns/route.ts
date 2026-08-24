@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { notifyNewbornRecorded } from "@/lib/workflow-notifications";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -94,6 +95,75 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     resourceId: newborn.id,
     newValues: { deliveryRecordId: id, sex, birthWeight, apgar1, apgar5 },
   });
+
+  // 🔔 Fire workflow notification
+  const mother = await db.patient.findUnique({
+    where: { id: maternity.patientId },
+    select: { firstName: true, lastName: true },
+  });
+  await notifyNewbornRecorded({
+    organizationId: session.user.organizationId,
+    facilityId: maternity.facilityId,
+    motherName: mother ? `${mother.firstName} ${mother.lastName}` : "Unknown",
+    babySex: sex,
+    birthWeight,
+    apgar1,
+    apgar5,
+    newbornId: newborn.id,
+    maternityRecordId: id,
+    recordedById: session.user.id,
+  });
+
+  // 📋 Auto-schedule birth-dose immunizations (BCG, OPV-0, HepB-0)
+  // These are scheduled (not administered) — clinical staff must verify
+  // and administer them. Uses the existing Immunization module.
+  try {
+    const birthDoseVaccines = await db.vaccineCatalog.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+        isActive: true,
+        scheduleDoses: {
+          some: { ageAtDueDays: 0, isActive: true }, // Birth-dose vaccines
+        },
+      },
+      select: { id: true, code: true, name: true, scheduleDoses: { where: { ageAtDueDays: 0 }, select: { doseNumber: true, doseLabel: true } } },
+    });
+
+    for (const vaccine of birthDoseVaccines) {
+      const dose = vaccine.scheduleDoses[0];
+      if (!dose) continue;
+      // Check if already scheduled/administered for this newborn
+      // (uses motherPatientId since newborn may not have its own Patient record yet)
+      const existing = await db.immunization.findFirst({
+        where: {
+          patientId: maternity.patientId, // Temporarily linked to mother; will be re-linked when newborn gets own Patient record
+          vaccineCatalogId: vaccine.id,
+          doseNumber: dose.doseNumber,
+          status: { in: ["scheduled", "completed"] },
+        },
+      });
+      if (existing) continue; // Don't duplicate
+
+      await db.immunization.create({
+        data: {
+          patientId: maternity.patientId, // Linked to mother until newborn gets own Patient record
+          vaccineCatalogId: vaccine.id,
+          vaccineName: vaccine.name,
+          dose: dose.doseLabel,
+          doseNumber: dose.doseNumber,
+          status: "scheduled", // Scheduled — NOT administered. Staff must verify and administer.
+          indication: "routine",
+          facilityId: maternity.facilityId,
+          administeredById: session.user.id,
+          notes: `Auto-scheduled at birth for newborn of ${mother?.firstName || ""} ${mother?.lastName || ""}. Newborn record: ${newborn.id}. Verify and administer.`,
+        },
+      });
+    }
+  } catch (e) {
+    // Immunization auto-scheduling is best-effort — don't fail the newborn
+    // creation if the vaccine catalog isn't set up yet.
+    console.error("Newborn immunization auto-scheduling failed:", e);
+  }
 
   return NextResponse.json({ item: newborn }, { status: 201 });
 }
