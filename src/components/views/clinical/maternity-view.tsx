@@ -910,6 +910,7 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
   const [clinicalAssessment, setClinicalAssessment] = useState("");
   const [nextVisitDate, setNextVisitDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [createInvoice, setCreateInvoice] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -933,12 +934,14 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
           nextVisitDate: nextVisitDate || undefined,
           notes: notes || undefined,
           createAppointment: !!nextVisitDate,
+          createInvoice,
         }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
       const extras: string[] = [];
       if (data.appointmentId) extras.push("next appointment booked");
+      if (data.invoiceId) extras.push("invoice item created");
       toast.success(
         extras.length > 0 ? `ANC visit recorded — ${extras.join(" + ")}` : "ANC visit recorded"
       );
@@ -1029,6 +1032,19 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="h-8 text-xs" placeholder="Additional notes" />
           </div>
         </div>
+        {/* Billing toggle */}
+        <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-50 border border-slate-200 rounded-md">
+          <input
+            type="checkbox"
+            checked={createInvoice}
+            onChange={(e) => setCreateInvoice(e.target.checked)}
+            className="w-4 h-4"
+          />
+          <div>
+            <div className="text-sm font-medium text-slate-700">Bill to invoice</div>
+            <div className="text-[10px] text-slate-500">Creates an invoice item for ANC visit (requires an ANC/antenatal Service configured in billing)</div>
+          </div>
+        </label>
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" onClick={submit} disabled={saving} className="bg-pink-600 hover:bg-pink-700">
@@ -1343,6 +1359,7 @@ function LaborForm({ recordId, existing, onClose, onSaved }: { recordId: string;
   const [estimatedBloodLoss, setEstimatedBloodLoss] = useState(existing?.estimatedBloodLoss ?? "");
   const [maternalOutcome, setMaternalOutcome] = useState(existing?.maternalOutcome || "");
   const [notes, setNotes] = useState(existing?.notes || "");
+  const [createInvoice, setCreateInvoice] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -1364,11 +1381,16 @@ function LaborForm({ recordId, existing, onClose, onSaved }: { recordId: string;
           estimatedBloodLoss: estimatedBloodLoss ? parseInt(estimatedBloodLoss) : undefined,
           maternalOutcome: maternalOutcome || undefined,
           notes: notes || undefined,
+          createInvoice,
         }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed");
-      toast.success("Labor & delivery recorded");
+      const extras: string[] = [];
+      if (data.invoiceId) extras.push("invoice item created");
+      toast.success(
+        extras.length > 0 ? `Labor & delivery recorded — ${extras.join(" + ")}` : "Labor & delivery recorded"
+      );
       onSaved();
     } catch (e: any) {
       toast.error(e.message);
@@ -1460,6 +1482,19 @@ function LaborForm({ recordId, existing, onClose, onSaved }: { recordId: string;
           <Label className="text-[10px]">Notes</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs" />
         </div>
+        {/* Billing toggle */}
+        <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-50 border border-slate-200 rounded-md">
+          <input
+            type="checkbox"
+            checked={createInvoice}
+            onChange={(e) => setCreateInvoice(e.target.checked)}
+            className="w-4 h-4"
+          />
+          <div>
+            <div className="text-sm font-medium text-slate-700">Bill delivery to invoice</div>
+            <div className="text-[10px] text-slate-500">Creates an invoice item for the delivery (requires a delivery/cesarean Service configured in billing)</div>
+          </div>
+        </label>
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" onClick={submit} disabled={saving} className="bg-pink-600 hover:bg-pink-700">

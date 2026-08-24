@@ -69,6 +69,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     maternalComplications, neonatalComplications, maternalOutcome,
     attendingClinicianId, attendingMidwifeId,
     partographData, notes,
+    createInvoice = false,
   } = body;
 
   // Build the data object
@@ -170,5 +171,90 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   }
 
-  return NextResponse.json({ item: labor }, { status: 201 });
+  // 💰 Create invoice item for delivery if requested
+  let invoiceId: string | null = null;
+  if (createInvoice && deliveryDate) {
+    // Look up a delivery Service — match by name containing 'delivery' or 'cesarean' or 'maternity'
+    const deliveryService = await db.service.findFirst({
+      where: {
+        organizationId: session.user.organizationId,
+        status: "active",
+        OR: [
+          { name: { contains: "delivery", mode: "insensitive" } },
+          { name: { contains: "cesarean", mode: "insensitive" } },
+          { name: { contains: "caesarean", mode: "insensitive" } },
+          ...(deliveryType === "cesarean"
+            ? [{ name: { contains: "cesarean", mode: "insensitive" } as const }]
+            : []),
+        ],
+      },
+    });
+
+    if (deliveryService) {
+      let invoice = await db.invoice.findFirst({
+        where: {
+          patientId: maternity.patientId,
+          facilityId: maternity.facilityId,
+          status: { in: ["draft", "issued", "partially_paid"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (!invoice) {
+        const invCount = await db.invoice.count({ where: { facilityId: maternity.facilityId } });
+        const invNumber = `INV-${new Date().getFullYear()}-${String(invCount + 1).padStart(6, "0")}`;
+        invoice = await db.invoice.create({
+          data: {
+            patientId: maternity.patientId,
+            facilityId: maternity.facilityId,
+            invoiceNumber: invNumber,
+            status: "draft",
+            currency: "GHS",
+            createdById: session.user.id,
+          },
+        });
+      }
+
+      const patientInsurance = await db.patientInsurance.findFirst({
+        where: { patientId: maternity.patientId, status: "active", verificationStatus: "verified" },
+        include: { insuranceProvider: { select: { code: true } } },
+      });
+      const isNhis = patientInsurance?.insuranceProvider?.code?.toUpperCase().includes("NHIS");
+      const unitPrice = isNhis && deliveryService.nhisPrice != null
+        ? deliveryService.nhisPrice
+        : deliveryService.defaultPrice;
+
+      await db.invoiceItem.create({
+        data: {
+          invoiceId: invoice.id,
+          serviceId: deliveryService.id,
+          description: `Delivery: ${deliveryType?.replace(/_/g, " ") || "vaginal"}${deliveryIndication ? ` (${deliveryIndication})` : ""}`,
+          quantity: 1,
+          unitPrice,
+          total: unitPrice,
+          referenceType: "labor_and_delivery",
+          referenceId: labor.id,
+        },
+      });
+
+      const allItems = await db.invoiceItem.findMany({
+        where: { invoiceId: invoice.id },
+        select: { total: true, discount: true, tax: true },
+      });
+      const subtotal = allItems.reduce((s, it) => s + it.total, 0);
+      const totalDiscount = allItems.reduce((s, it) => s + (it.discount || 0), 0);
+      const totalTax = allItems.reduce((s, it) => s + (it.tax || 0), 0);
+      const grandTotal = subtotal - totalDiscount + totalTax;
+      await db.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          subtotal, discount: totalDiscount, tax: totalTax,
+          total: grandTotal, balance: grandTotal - (invoice.amountPaid || 0),
+        },
+      });
+      invoiceId = invoice.id;
+    }
+  }
+
+  return NextResponse.json({ item: labor, invoiceId }, { status: 201 });
 }

@@ -63,6 +63,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     symptoms, clinicalAssessment, riskFlags, nextVisitDate,
     educationTopics, notes,
     createAppointment = false,
+    createInvoice = false,
   } = body;
 
   // Create ANC visit + optionally book next appointment in a transaction
@@ -117,14 +118,106 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       appointmentId = appt.id;
     }
 
-    return { visit, appointmentId };
+    // 3. Create invoice item for ANC visit if requested
+    let invoiceId: string | null = null;
+    if (createInvoice) {
+      // Look up a Service for ANC visits — match by name containing 'anc' or 'antenatal'
+      const ancService = await tx.service.findFirst({
+        where: {
+          organizationId: session.user.organizationId,
+          status: "active",
+          OR: [
+            { name: { contains: "ANC", mode: "insensitive" } },
+            { name: { contains: "antenatal", mode: "insensitive" } },
+            { name: { contains: "maternity", mode: "insensitive" } },
+          ],
+        },
+      });
+
+      if (ancService) {
+        // Find or create an open invoice for this patient at this facility
+        let invoice = await tx.invoice.findFirst({
+          where: {
+            patientId: maternity.patientId,
+            facilityId: maternity.facilityId,
+            status: { in: ["draft", "issued", "partially_paid"] },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        if (!invoice) {
+          const invCount = await tx.invoice.count({ where: { facilityId: maternity.facilityId } });
+          const invNumber = `INV-${new Date().getFullYear()}-${String(invCount + 1).padStart(6, "0")}`;
+          invoice = await tx.invoice.create({
+            data: {
+              patientId: maternity.patientId,
+              facilityId: maternity.facilityId,
+              invoiceNumber: invNumber,
+              status: "draft",
+              currency: "GHS",
+              createdById: session.user.id,
+            },
+          });
+        }
+
+        // Determine price — NHIS price if patient has active NHIS
+        const patientInsurance = await tx.patientInsurance.findFirst({
+          where: {
+            patientId: maternity.patientId,
+            status: "active",
+            verificationStatus: "verified",
+          },
+          include: { insuranceProvider: { select: { code: true } } },
+        });
+        const isNhis = patientInsurance?.insuranceProvider?.code?.toUpperCase().includes("NHIS");
+        const unitPrice = isNhis && ancService.nhisPrice != null
+          ? ancService.nhisPrice
+          : ancService.defaultPrice;
+
+        await tx.invoiceItem.create({
+          data: {
+            invoiceId: invoice.id,
+            serviceId: ancService.id,
+            description: `ANC visit${gestationalAge ? ` (GA ${gestationalAge}w)` : ""}`,
+            quantity: 1,
+            unitPrice,
+            total: unitPrice,
+            referenceType: "anc_visit",
+            referenceId: visit.id,
+          },
+        });
+
+        // Recalculate invoice totals
+        const allItems = await tx.invoiceItem.findMany({
+          where: { invoiceId: invoice.id },
+          select: { total: true, discount: true, tax: true },
+        });
+        const subtotal = allItems.reduce((s, it) => s + it.total, 0);
+        const totalDiscount = allItems.reduce((s, it) => s + (it.discount || 0), 0);
+        const totalTax = allItems.reduce((s, it) => s + (it.tax || 0), 0);
+        const grandTotal = subtotal - totalDiscount + totalTax;
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            subtotal,
+            discount: totalDiscount,
+            tax: totalTax,
+            total: grandTotal,
+            balance: grandTotal - (invoice.amountPaid || 0),
+          },
+        });
+        invoiceId = invoice.id;
+      }
+    }
+
+    return { visit, appointmentId, invoiceId };
   }).catch((err: any) => ({ error: err.message }));
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const { visit, appointmentId } = result as { visit: any; appointmentId: string | null };
+  const { visit, appointmentId, invoiceId } = result as { visit: any; appointmentId: string | null; invoiceId: string | null };
 
   // Reload with relations
   const fullVisit = await db.ancVisit.findUnique({
@@ -160,5 +253,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     recordedById: session.user.id,
   });
 
-  return NextResponse.json({ item: fullVisit, appointmentId }, { status: 201 });
+  return NextResponse.json({ item: fullVisit, appointmentId, invoiceId }, { status: 201 });
 }
