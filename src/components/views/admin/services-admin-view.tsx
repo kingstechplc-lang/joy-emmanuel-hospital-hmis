@@ -19,6 +19,7 @@ import {
   DollarSign, Plus, RefreshCw, Loader2, Activity, Search, X,
   TrendingUp, AlertTriangle, CheckCircle2, FileText, ChevronDown,
   ChevronRight, ShieldAlert, PackageX, BarChart3,
+  Upload, Download, Package, Zap, CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -80,6 +81,9 @@ export function ServicesAdminView() {
           <TabsTrigger value="catalog" className="gap-1.5">
             <DollarSign className="w-4 h-4" /> Catalog
           </TabsTrigger>
+          <TabsTrigger value="packages" className="gap-1.5">
+            <Package className="w-4 h-4" /> Packages
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
@@ -87,6 +91,9 @@ export function ServicesAdminView() {
         </TabsContent>
         <TabsContent value="catalog" className="space-y-4">
           <CatalogTab />
+        </TabsContent>
+        <TabsContent value="packages" className="space-y-4">
+          <PackagesTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -209,6 +216,8 @@ function CatalogTab() {
   const [showForm, setShowForm] = useState(false);
   const [editService, setEditService] = useState<any | null>(null);
   const [detailService, setDetailService] = useState<any | null>(null);
+  const [showImport, setShowImport] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
 
   const params = new URLSearchParams();
   if (search.trim()) params.set("q", search.trim());
@@ -267,6 +276,15 @@ function CatalogTab() {
             </Select>
             <Button variant="outline" size="sm" className="h-9" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => window.open("/api/services/export", "_blank")}>
+              <Download className="w-4 h-4" /> Export
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setShowImport(true)}>
+              <Upload className="w-4 h-4" /> Import
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setShowBulk(true)}>
+              <Zap className="w-4 h-4" /> Bulk Update
             </Button>
             <Button size="sm" className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditService(null); setShowForm(true); }}>
               <Plus className="w-4 h-4" /> Add Service
@@ -351,6 +369,20 @@ function CatalogTab() {
           serviceId={detailService.id}
           onClose={() => setDetailService(null)}
           onEdit={() => { setEditService(detailService); setDetailService(null); setShowForm(true); }}
+        />
+      )}
+
+      {showImport && (
+        <ImportDialog
+          onClose={() => setShowImport(false)}
+          onImported={() => { setShowImport(false); invalidate(); }}
+        />
+      )}
+
+      {showBulk && (
+        <BulkUpdateDialog
+          onClose={() => setShowBulk(false)}
+          onUpdated={() => { setShowBulk(false); invalidate(); }}
         />
       )}
     </>
@@ -693,6 +725,405 @@ function ServiceDetailDialog({ serviceId, onClose, onEdit }: { serviceId: string
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={onEdit} className="bg-emerald-600 hover:bg-emerald-700 gap-1.5">
             <FileText className="w-4 h-4" /> Edit
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// PACKAGES TAB — service bundles
+// =====================================================================
+function PackagesTab() {
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editPkg, setEditPkg] = useState<any | null>(null);
+
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: ["service-packages"],
+    queryFn: () => fetchJson("/api/services/packages?status=all"),
+  });
+
+  const items = data?.items || [];
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["service-packages"] });
+    qc.invalidateQueries({ queryKey: ["services-stats"] });
+  };
+
+  return (
+    <>
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-3 flex items-center gap-2">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-700">Service Packages</p>
+            <p className="text-xs text-slate-500">Bundle multiple services into a single priced package (e.g. Maternity Package, ANC Package).</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+          <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditPkg(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4" /> Add Package
+          </Button>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <LoadingState rows={3} />
+      ) : items.length === 0 ? (
+        <Card><CardContent className="p-6"><EmptyState title="No packages" description="Create a service package to bundle multiple services." icon={Package} /></CardContent></Card>
+      ) : (
+        <div className="space-y-2">
+          {items.map((pkg: any) => (
+            <Card key={pkg.id} className="cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all" onClick={() => setEditPkg(pkg)}>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-mono text-[10px]">{pkg.code}</Badge>
+                      <span className="font-medium text-slate-800">{pkg.name}</span>
+                      <StatusBadge status={pkg.status} />
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {pkg.components?.length || 0} component(s) · {formatCurrency(pkg.packagePrice)}
+                      {pkg.nhisPrice && ` · NHIS: ${formatCurrency(pkg.nhisPrice)}`}
+                    </div>
+                    {pkg.description && <div className="text-xs text-slate-400 mt-1 line-clamp-1">{pkg.description}</div>}
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {pkg.components?.slice(0, 3).map((c: any) => (
+                      <Badge key={c.id} variant="outline" className="text-[9px]">{c.service?.name}</Badge>
+                    ))}
+                    {pkg.components?.length > 3 && <Badge variant="outline" className="text-[9px]">+{pkg.components.length - 3}</Badge>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {showForm && (
+        <PackageForm
+          pkg={editPkg}
+          onClose={() => { setShowForm(false); setEditPkg(null); }}
+          onSaved={() => { setShowForm(false); setEditPkg(null); invalidate(); }}
+        />
+      )}
+    </>
+  );
+}
+
+// =====================================================================
+// PACKAGE FORM — create/edit
+// =====================================================================
+function PackageForm({ pkg, onClose, onSaved }: { pkg: any | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!pkg;
+  const [name, setName] = useState(pkg?.name || "");
+  const [code, setCode] = useState(pkg?.code || "");
+  const [description, setDescription] = useState(pkg?.description || "");
+  const [packagePrice, setPackagePrice] = useState(pkg?.packagePrice?.toString() || "0");
+  const [nhisPrice, setNhisPrice] = useState(pkg?.nhisPrice?.toString() || "");
+  const [components, setComponents] = useState<any[]>(pkg?.components?.map((c: any) => ({ serviceId: c.serviceId, name: c.service?.name, quantity: c.quantity, overridePrice: c.overridePrice })) || []);
+  const [saving, setSaving] = useState(false);
+
+  const { data: servicesData } = useQuery({
+    queryKey: ["services-for-packages"],
+    queryFn: () => fetchJson("/api/services?status=active&limit=500"),
+  });
+  const availableServices = servicesData?.items || [];
+
+  const addComponent = (serviceId: string) => {
+    const svc = availableServices.find((s: any) => s.id === serviceId);
+    if (!svc) return;
+    if (components.find((c) => c.serviceId === serviceId)) return;
+    setComponents([...components, { serviceId, name: svc.name, quantity: 1, overridePrice: null }]);
+  };
+
+  const removeComponent = (serviceId: string) => {
+    setComponents(components.filter((c) => c.serviceId !== serviceId));
+  };
+
+  const submit = async () => {
+    if (!name || !code) { toast.error("Name and code are required"); return; }
+    setSaving(true);
+    try {
+      const url = isEdit ? `/api/services/packages/${pkg.id}` : "/api/services/packages";
+      const method = isEdit ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, code, description,
+          packagePrice: parseFloat(packagePrice) || 0,
+          nhisPrice: nhisPrice ? parseFloat(nhisPrice) : null,
+          components: components.map((c) => ({ serviceId: c.serviceId, quantity: c.quantity, overridePrice: c.overridePrice })),
+        }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data.error || "Failed");
+      toast.success(isEdit ? "Package updated" : "Package created");
+      onSaved();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-emerald-600" /> {isEdit ? "Edit Package" : "Add Package"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><FieldLabel required>Package Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maternity Package" className="h-8 text-sm" /></div>
+            <div><FieldLabel required>Code</FieldLabel><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. MAT-PKG-001" className="h-8 text-sm font-mono" /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><FieldLabel required>Package Price (GH¢)</FieldLabel><Input type="number" step="0.01" value={packagePrice} onChange={(e) => setPackagePrice(e.target.value)} className="h-8 text-sm" /></div>
+            <div><Label>NHIS Price (GH¢)</Label><Input type="number" step="0.01" value={nhisPrice} onChange={(e) => setNhisPrice(e.target.value)} className="h-8 text-sm" /></div>
+          </div>
+          <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="text-sm" /></div>
+
+          {/* Component services */}
+          <div>
+            <Label className="text-xs font-semibold">Component Services</Label>
+            <Select onValueChange={addComponent}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="+ Add a service to this package" /></SelectTrigger>
+              <SelectContent>
+                {availableServices.filter((s: any) => !components.find((c) => c.serviceId === s.id)).map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name} ({s.code}) — {formatCurrency(s.defaultPrice)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {components.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {components.map((c) => (
+                  <div key={c.serviceId} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md text-xs">
+                    <span className="flex-1 font-medium text-slate-700">{c.name}</span>
+                    <Input type="number" min="1" value={c.quantity} onChange={(e) => setComponents(components.map((x) => x.serviceId === c.serviceId ? { ...x, quantity: parseInt(e.target.value) || 1 } : x))} className="h-7 w-16 text-xs" />
+                    <Input type="number" step="0.01" placeholder="override" value={c.overridePrice || ""} onChange={(e) => setComponents(components.map((x) => x.serviceId === c.serviceId ? { ...x, overridePrice: e.target.value ? parseFloat(e.target.value) : null } : x))} className="h-7 w-24 text-xs" />
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-rose-600" onClick={() => removeComponent(c.serviceId)}><X className="w-3 h-3" /></Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving…" : isEdit ? "Update Package" : "Create Package"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// IMPORT DIALOG
+// =====================================================================
+function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const [csvText, setCsvText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  const parseCSV = (text: string) => {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const services: any[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+      const svc: any = {};
+      headers.forEach((h, idx) => { if (values[idx]) svc[h] = values[idx]; });
+      if (svc.name && svc.code) services.push(svc);
+    }
+    return services;
+  };
+
+  const handleImport = async () => {
+    const svcs = parseCSV(csvText);
+    if (svcs.length === 0) { toast.error("No valid services found. Ensure headers include 'name' and 'code'."); return; }
+    setImporting(true);
+    try {
+      const res = await fetch("/api/services/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ services: svcs }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setResult(data);
+      toast.success(`Imported: ${data.created} created, ${data.updated} updated, ${data.skipped} skipped`);
+      if (data.created > 0 || data.updated > 0) onImported();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setImporting(false); }
+  };
+
+  const sample = `name,code,category,serviceType,defaultPrice,nhisPrice,nhisEligible,unitOfMeasure
+General Consultation,CONS-001,consultation,consultation,50,30,true,visit
+Full Blood Count,LAB-001,lab,investigation,25,15,true,test
+Ultrasound Scan,RAD-001,imaging,diagnostic,150,80,true,test`;
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Upload className="w-5 h-5 text-emerald-600" /> Import Services (CSV)</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <Button variant="outline" size="sm" onClick={() => setCsvText(sample)}>Load Sample</Button>
+          <Textarea value={csvText} onChange={(e) => setCsvText(e.target.value)} rows={10} className="text-xs font-mono" placeholder="name,code,category,serviceType,defaultPrice,nhisPrice,nhisEligible,unitOfMeasure" />
+          {result && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+              <div className="font-semibold">Import Results:</div>
+              <div className="text-emerald-600">✓ Created: {result.created}</div>
+              <div className="text-blue-600">↻ Updated: {result.updated}</div>
+              <div className="text-amber-600">↺ Skipped: {result.skipped}</div>
+              {result.errors?.length > 0 && <div className="text-rose-600">✗ Errors: {result.errors.length}</div>}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button onClick={handleImport} disabled={importing || !csvText.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            {importing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Upload className="w-4 h-4 mr-1" />}
+            {importing ? "Importing…" : "Import"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// BULK PRICE UPDATE DIALOG
+// =====================================================================
+function BulkUpdateDialog({ onClose, onUpdated }: { onClose: () => void; onUpdated: () => void }) {
+  const [action, setAction] = useState("percentage_increase");
+  const [value, setValue] = useState("10");
+  const [priceType, setPriceType] = useState("default");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  const { data: servicesData } = useQuery({
+    queryKey: ["services-for-bulk"],
+    queryFn: () => fetchJson("/api/services?status=active&limit=500"),
+  });
+  const allServices = servicesData?.items || [];
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleAll = () => {
+    if (selectedIds.size === allServices.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(allServices.map((s: any) => s.id)));
+  };
+
+  const handleUpdate = async () => {
+    if (selectedIds.size === 0) { toast.error("Select at least one service"); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/services/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceIds: [...selectedIds],
+          action,
+          value: parseFloat(value),
+          priceType,
+        }),
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setResult(data);
+      toast.success(`${data.updated} service(s) updated`);
+      onUpdated();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Bulk Price Update</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-[10px]">Action</Label>
+              <Select value={action} onValueChange={setAction}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage_increase">% Increase</SelectItem>
+                  <SelectItem value="percentage_decrease">% Decrease</SelectItem>
+                  <SelectItem value="fixed_set">Fixed Set Price</SelectItem>
+                  <SelectItem value="activate">Activate</SelectItem>
+                  <SelectItem value="deactivate">Deactivate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {!["activate", "deactivate"].includes(action) && (
+              <div>
+                <Label className="text-[10px]">Value</Label>
+                <Input type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} className="h-8 text-sm" />
+              </div>
+            )}
+            {!["activate", "deactivate"].includes(action) && (
+              <div>
+                <Label className="text-[10px]">Price Type</Label>
+                <Select value={priceType} onValueChange={setPriceType}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default Price</SelectItem>
+                    <SelectItem value="nhis">NHIS Price</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox checked={selectedIds.size === allServices.length && allServices.length > 0} onCheckedChange={toggleAll} />
+            <span className="text-xs font-medium text-slate-700">Select All ({allServices.length})</span>
+            <span className="text-xs text-slate-400">· {selectedIds.size} selected</span>
+          </div>
+
+          <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-md">
+            {allServices.map((s: any) => (
+              <label key={s.id} className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0">
+                <Checkbox
+                  checked={selectedIds.has(s.id)}
+                  onCheckedChange={() => {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(s.id)) next.delete(s.id);
+                      else next.add(s.id);
+                      return next;
+                    });
+                  }}
+                />
+                <span className="text-xs flex-1">{s.name} <span className="font-mono text-slate-400">({s.code})</span></span>
+                <span className="text-xs text-slate-600">{formatCurrency(s.defaultPrice)}</span>
+                {s.nhisPrice && <span className="text-xs text-purple-700">{formatCurrency(s.nhisPrice)}</span>}
+              </label>
+            ))}
+          </div>
+
+          {result && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+              <div className="font-semibold mb-1">Update Results:</div>
+              <div className="text-emerald-600">✓ Updated: {result.updated} service(s)</div>
+              {result.changes?.length > 0 && (
+                <div className="mt-2 max-h-32 overflow-y-auto">
+                  {result.changes.slice(0, 10).map((c: any) => (
+                    <div key={c.id} className="text-[10px] text-slate-600">{c.name}: {formatCurrency(c.oldPrice)} → {formatCurrency(c.newPrice)}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button onClick={handleUpdate} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Zap className="w-4 h-4 mr-1" />}
+            {loading ? "Updating…" : "Update Selected"}
           </Button>
         </DialogFooter>
       </DialogContent>

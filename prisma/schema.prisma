@@ -65,6 +65,7 @@ model Organization {
   vaccineWastage      VaccineWastage[]
   coldChainAlerts     ColdChainAlert[]
   medicationInteractions MedicationInteraction[]
+  servicePackages    ServicePackage[]
 }
 
 model Facility {
@@ -319,6 +320,7 @@ model User {
   servicesCreated     Service[] @relation("serviceCreator")
   servicesUpdated     Service[] @relation("serviceUpdater")
   servicePriceChanges ServicePriceHistory[] @relation("servicePriceChanger")
+  packagesCreated     ServicePackage[] @relation("packageCreator")
   patientTransfers PatientTransfer[] @relation("ptRequestedBy")
   immunizations  Immunization[] @relation("immunizationAdmin")
   triageRecords  TriageRecord[] @relation("triageNurse")
@@ -2440,6 +2442,7 @@ model Service {
   priceHistory    ServicePriceHistory[]
   invoiceItems     InvoiceItem[]
   vaccineCatalogs  VaccineCatalog[]
+  packageItems    ServicePackageItem[]
 
   @@unique([organizationId, code])
   @@index([departmentId])
@@ -2491,6 +2494,61 @@ model ServicePriceHistory {
   @@index([organizationId, effectiveDate])
 }
 
+// =====================================================================
+// SERVICE PACKAGE — Bundled services with package pricing
+// =====================================================================
+// A package groups multiple services together with a single package price.
+// When billed, the package creates invoice items for each component
+// service at zero cost (or the package price as a single line item),
+// preventing double-charging of components.
+model ServicePackage {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  code            String   // e.g. MAT-PKG-001, ANC-PKG-001
+  description     String?
+  // Pricing
+  packagePrice    Float    @default(0)
+  nhisPrice       Float?   // NHIS tariff for the package
+  // Validity
+  effectiveFrom   DateTime @default(now())
+  effectiveTo     DateTime?
+  isActive        Boolean  @default(true)
+  // Metadata
+  status          String   @default("active") // active | inactive | archived
+  createdById     String?
+  createdBy       User?    @relation("packageCreator", fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  components      ServicePackageItem[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
+  @@index([organizationId, status])
+}
+
+// =====================================================================
+// SERVICE PACKAGE ITEM — Component services within a package
+// =====================================================================
+model ServicePackageItem {
+  id              String   @id @default(cuid())
+  packageId       String
+  package         ServicePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service @relation(fields: [serviceId], references: [id])
+  quantity        Int      @default(1)
+  // Optional: override the component's price within this package
+  // (null = use package price; set = charge this amount for this component)
+  overridePrice   Float?
+  isMandatory     Boolean  @default(true) // If false, can be optionally included
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([packageId])
+  @@index([serviceId])
+}
 model Invoice {
   id                String   @id @default(cuid())
   patientId         String
