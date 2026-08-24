@@ -90,6 +90,7 @@ export async function POST(req: Request) {
     pregnancyCategory, lactationSafety,
     defaultDose, defaultFrequency, defaultRoute, defaultDuration,
     formularyStatus, storageConditions,
+    nhisTariffAmount, nhisPrescribingLevel, nhisUnitOfPricing,
     status,
   } = body;
 
@@ -151,6 +152,9 @@ export async function POST(req: Request) {
       barcode: barcode || null,
       productCode: productCode || null,
       nhisCode: nhisCode || null,
+      nhisTariffAmount: nhisTariffAmount || null,
+      nhisPrescribingLevel: nhisPrescribingLevel || null,
+      nhisUnitOfPricing: nhisUnitOfPricing || null,
       manufacturer: manufacturer || null,
       countryOfOrigin: countryOfOrigin || null,
       prescriptionStatus: prescriptionStatus || "prescription_required",

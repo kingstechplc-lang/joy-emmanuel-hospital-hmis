@@ -74,7 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     "genericName", "brandName", "strength", "strengthValue", "strengthUnit",
     "dosageForm", "route", "unit", "description",
     "medicationCategory", "therapeuticClass", "atcCode",
-    "barcode", "productCode", "nhisCode",
+    "barcode", "productCode", "nhisCode", "nhisTariffAmount", "nhisPrescribingLevel", "nhisUnitOfPricing",
     "manufacturer", "countryOfOrigin",
     "prescriptionStatus", "controlledStatus", "isHighAlert",
     "pregnancyCategory", "lactationSafety",

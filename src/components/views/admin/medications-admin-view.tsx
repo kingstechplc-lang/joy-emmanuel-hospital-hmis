@@ -961,7 +961,14 @@ function MedicationDetailDialog({ medId, onClose, onEdit }: { medId: string; onC
             {m.atcCode && <div><div className="text-[10px] text-slate-400 uppercase">ATC Code</div><div className="font-mono">{m.atcCode}</div></div>}
             {m.barcode && <div><div className="text-[10px] text-slate-400 uppercase">Barcode</div><div className="font-mono">{m.barcode}</div></div>}
             {m.productCode && <div><div className="text-[10px] text-slate-400 uppercase">Product Code</div><div className="font-mono">{m.productCode}</div></div>}
-            {m.nhisCode && <div><div className="text-[10px] text-slate-400 uppercase">NHIS Code</div><div className="font-mono">{m.nhisCode}</div></div>}
+            {m.nhisCode && (
+              <>
+                <div><div className="text-[10px] text-slate-400 uppercase">NHIS Code</div><div className="font-mono">{m.nhisCode}</div></div>
+                {m.nhisTariffAmount != null && <div><div className="text-[10px] text-slate-400 uppercase">NHIS Tariff</div><div className="font-medium text-emerald-700">GH¢ {m.nhisTariffAmount.toFixed(2)}</div></div>}
+                {m.nhisPrescribingLevel && <div><div className="text-[10px] text-slate-400 uppercase">NHIS Level</div><Badge variant="outline" className="text-[9px]">{m.nhisPrescribingLevel}</Badge></div>}
+                {m.nhisUnitOfPricing && <div><div className="text-[10px] text-slate-400 uppercase">NHIS Unit</div><div>{m.nhisUnitOfPricing}</div></div>}
+              </>
+            )}
             {m.manufacturer && <div><div className="text-[10px] text-slate-400 uppercase">Manufacturer</div><div>{m.manufacturer}</div></div>}
             {m.prescriptionStatus && <div><div className="text-[10px] text-slate-400 uppercase">Rx Status</div><div className="capitalize">{m.prescriptionStatus.replace(/_/g, " ")}</div></div>}
             {m.controlledStatus && m.controlledStatus !== "none" && <div><div className="text-[10px] text-slate-400 uppercase">Controlled</div><div className="capitalize text-orange-700 font-medium">{m.controlledStatus.replace(/_/g, " ")}</div></div>}

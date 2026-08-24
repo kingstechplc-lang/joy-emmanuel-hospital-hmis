@@ -1230,7 +1230,10 @@ model Medication {
   // Identification codes
   barcode           String?  // GTIN/EAN/UPC barcode
   productCode       String?  // Internal product code / SKU
-  nhisCode          String?  // NHIS tariff code
+  nhisCode          String?  // NHIS tariff code (e.g. ACETAZTA1)
+  nhisTariffAmount  Float?   // NHIS reimbursable price in GHS
+  nhisPrescribingLevel String? // NHIS prescribing level (A | B1 | B2 | C | D | M)
+  nhisUnitOfPricing String?  // NHIS unit of pricing (e.g. Tablet, Vial, Ampoule)
   // Manufacturer
   manufacturer      String?
   countryOfOrigin   String?
