@@ -142,6 +142,7 @@ export function NursingView() {
           <TabsTrigger value="escalations" className="gap-1.5"><AlertTriangle className="w-4 h-4" /> Escalations</TabsTrigger>
           <TabsTrigger value="tasks" className="gap-1.5"><CheckCircle2 className="w-4 h-4" /> Tasks</TabsTrigger>
           <TabsTrigger value="wounds" className="gap-1.5"><Bandage className="w-4 h-4" /> Wounds</TabsTrigger>
+          <TabsTrigger value="timeline" className="gap-1.5"><Activity className="w-4 h-4" /> Patient Timeline</TabsTrigger>
         </TabsList>
 
         {/* DASHBOARD TAB */}
@@ -273,6 +274,11 @@ export function NursingView() {
         {/* WOUNDS TAB */}
         <TabsContent value="wounds" className="space-y-3">
           <WoundsTab facilityId={activeFacilityId} patientId={patientFilter} canManage={can("nursing.wound_care")} onShowDialog={() => setShowWound(true)} onChanged={invalidate} />
+        </TabsContent>
+
+        {/* TIMELINE TAB */}
+        <TabsContent value="timeline" className="space-y-3">
+          <TimelineTab patientId={patientFilter} />
         </TabsContent>
       </Tabs>
 
@@ -763,12 +769,32 @@ function HandoversTab({ facilityId, patientId, canManage, onShowDialog, onChange
 function EscalationsTab({ facilityId, patientId, canEscalate, onShowDialog, onChanged }: any) {
   const { data, isLoading } = useQuery({ queryKey: ["nursing-escalations", patientId], queryFn: () => fetchJson(`/api/nursing/escalations?patientId=${patientId || ""}`) });
   const items = data?.items || [];
+
+  const escalateAction = async (id: string, action: string) => {
+    let body: any = { action };
+    if (action === "respond") {
+      const response = prompt("Enter response:");
+      if (!response) return;
+      body.response = response;
+    } else if (action === "resolve") {
+      const resolution = prompt("Enter resolution:");
+      if (!resolution) return;
+      body.resolution = resolution;
+    }
+    try {
+      const res = await fetch(`/api/nursing/escalations/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success(`Escalation ${action === "acknowledge" ? "acknowledged" : action === "respond" ? "responded to" : "resolved"}`);
+      onChanged();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   return (
     <div className="space-y-3">
       {canEscalate && <div className="flex justify-end"><Button onClick={onShowDialog} className="gap-2 bg-amber-600 hover:bg-amber-700"><AlertTriangle className="w-4 h-4" /> Escalate</Button></div>}
       {isLoading ? <LoadingState rows={3} /> : items.length === 0 ? <EmptyState title="No escalations" /> : items.map((e: any) => (
         <Card key={e.id}><CardContent className="p-3">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Badge className={`text-[10px] ${e.priority === "critical" ? "bg-rose-100 text-rose-700" : e.priority === "urgent" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700"}`}>{e.priority}</Badge>
             <Badge className={`text-[10px] ${e.status === "resolved" ? "bg-emerald-100 text-emerald-700" : e.status === "open" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{e.status}</Badge>
             <span className="text-xs text-slate-500">→ {e.escalatedTo}</span>
@@ -777,6 +803,14 @@ function EscalationsTab({ facilityId, patientId, canEscalate, onShowDialog, onCh
           {e.response && <div className="text-sm text-slate-600 mt-1"><strong>Response:</strong> {e.response}</div>}
           {e.resolution && <div className="text-sm text-emerald-700 mt-1"><strong>Resolution:</strong> {e.resolution}</div>}
           <div className="text-xs text-slate-500 mt-1">{formatDate(e.escalatedAt, true)}</div>
+          {/* Inline action buttons */}
+          {e.status !== "resolved" && (
+            <div className="flex gap-1 mt-2">
+              {e.status === "open" && <Button size="sm" variant="ghost" className="h-6 text-xs text-blue-600" onClick={() => escalateAction(e.id, "acknowledge")}>Acknowledge</Button>}
+              {e.status !== "open" && <Button size="sm" variant="ghost" className="h-6 text-xs text-amber-600" onClick={() => escalateAction(e.id, "respond")}>Respond</Button>}
+              <Button size="sm" variant="ghost" className="h-6 text-xs text-emerald-600" onClick={() => escalateAction(e.id, "resolve")}>Resolve</Button>
+            </div>
+          )}
         </CardContent></Card>
       ))}
     </div>
@@ -787,24 +821,62 @@ function TasksTab({ facilityId, patientId, canManage, onShowDialog, onChanged }:
   const { data, isLoading } = useQuery({ queryKey: ["nursing-tasks", patientId], queryFn: () => fetchJson(`/api/nursing/tasks?patientId=${patientId || ""}`) });
   const items = data?.items || [];
   const now = new Date();
+
+  const taskAction = async (id: string, action: string) => {
+    let body: any = { action };
+    if (action === "complete") {
+      const notes = prompt("Completion notes (optional):");
+      if (notes === null) return;
+      body.completionNotes = notes || undefined;
+    }
+    try {
+      const res = await fetch(`/api/nursing/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success(`Task ${action}d`);
+      onChanged();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   return (
     <div className="space-y-3">
       {canManage && <div className="flex justify-end"><Button onClick={onShowDialog} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> New Task</Button></div>}
       {isLoading ? <LoadingState rows={3} /> : items.length === 0 ? <EmptyState title="No tasks" /> : (
-        <div className="overflow-x-auto"><table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b"><tr><th className="text-left p-2">Task</th><th className="text-left p-2">Type</th><th className="text-left p-2">Due</th><th className="text-left p-2">Status</th></tr></thead>
-          <tbody>{items.map((t: any) => {
-            const overdue = t.status === "pending" && new Date(t.dueAt) < now;
-            return (
-              <tr key={t.id} className="border-b hover:bg-slate-50">
-                <td className="p-2">{t.title}</td>
-                <td className="p-2 capitalize">{t.taskType?.replace(/_/g, " ")}</td>
-                <td className={`p-2 text-xs ${overdue ? "text-rose-600 font-medium" : "text-slate-600"}`}>{formatDate(t.dueAt, true)}{overdue ? " ⚠" : ""}</td>
-                <td className="p-2"><Badge className={`text-[10px] ${t.status === "completed" ? "bg-emerald-100 text-emerald-700" : overdue ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{t.status}</Badge></td>
-              </tr>
-            );
-          })}</tbody>
-        </table></div>
+        <Card><CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b sticky top-0"><tr>
+                <th className="text-left p-2 font-semibold text-slate-700">Task</th>
+                <th className="text-left p-2 font-semibold text-slate-700">Type</th>
+                <th className="text-left p-2 font-semibold text-slate-700">Due</th>
+                <th className="text-left p-2 font-semibold text-slate-700">Status</th>
+                {canManage && <th className="text-right p-2 font-semibold text-slate-700">Actions</th>}
+              </tr></thead>
+              <tbody>
+                {items.map((t: any) => {
+                  const overdue = t.status === "pending" && new Date(t.dueAt) < now;
+                  return (
+                    <tr key={t.id} className="border-b hover:bg-slate-50">
+                      <td className="p-2"><div className="font-medium text-slate-900">{t.title}</div>{t.description && <div className="text-xs text-slate-500">{t.description}</div>}</td>
+                      <td className="p-2 capitalize text-xs">{t.taskType?.replace(/_/g, " ")}</td>
+                      <td className={`p-2 text-xs ${overdue ? "text-rose-600 font-medium" : "text-slate-600"}`}>{formatDate(t.dueAt, true)}{overdue ? " ⚠" : ""}{t.frequency && <div className="text-[10px] text-slate-400">{t.frequency}</div>}</td>
+                      <td className="p-2"><Badge className={`text-[10px] ${t.status === "completed" ? "bg-emerald-100 text-emerald-700" : overdue ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{t.status}</Badge></td>
+                      {canManage && (
+                        <td className="p-2 text-right">
+                          {t.status === "pending" || t.status === "due" ? (
+                            <div className="flex justify-end gap-1">
+                              <Button size="sm" variant="ghost" className="h-6 text-xs text-emerald-600" onClick={() => taskAction(t.id, "complete")}><CheckCircle2 className="w-3 h-3" /> Complete</Button>
+                              <Button size="sm" variant="ghost" className="h-6 text-xs text-rose-600" onClick={() => taskAction(t.id, "cancel")}>Cancel</Button>
+                            </div>
+                          ) : null}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent></Card>
       )}
     </div>
   );
@@ -827,6 +899,101 @@ function WoundsTab({ facilityId, patientId, canManage, onShowDialog, onChanged }
           <div className="text-xs text-slate-500 mt-1">{formatDate(w.assessedAt, true)}</div>
         </CardContent></Card>
       ))}
+    </div>
+  );
+}
+
+// ============================================================
+// Patient Timeline Tab — unified chronological nursing view
+// ============================================================
+function TimelineTab({ patientId }: { patientId: string }) {
+  const [searchPatient, setSearchPatient] = useState("");
+  const [resolvedPatientId, setResolvedPatientId] = useState(patientId || "");
+
+  const { data: patientData } = useQuery({
+    queryKey: ["patient-search-timeline", searchPatient],
+    queryFn: () => fetchJson(`/api/patients?q=${encodeURIComponent(searchPatient)}`),
+    enabled: searchPatient.length >= 2,
+  });
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["nursing-timeline", resolvedPatientId],
+    queryFn: () => fetchJson(`/api/nursing/timeline?patientId=${resolvedPatientId}`),
+    enabled: !!resolvedPatientId,
+  });
+
+  const timeline: any[] = data?.timeline || [];
+  const counts = data?.counts;
+
+  const iconMap: Record<string, string> = {
+    nursing_note: "📝", care_plan: "📋", handover: "🔄", escalation: "⚠️",
+    task: "✅", wound: "🩹", risk_assessment: "🛡️", intervention: "💉",
+    vitals: "📊", intake_output: "💧",
+  };
+  const colorMap: Record<string, string> = {
+    nursing_note: "border-l-emerald-400", care_plan: "border-l-blue-400", handover: "border-l-violet-400",
+    escalation: "border-l-rose-400", task: "border-l-amber-400", wound: "border-l-cyan-400",
+    risk_assessment: "border-l-orange-400", intervention: "border-l-teal-400",
+    vitals: "border-l-indigo-400", intake_output: "border-l-sky-400",
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Patient search */}
+      <Card><CardContent className="p-3">
+        <div className="flex items-center gap-2">
+          <Search className="w-4 h-4 text-slate-400" />
+          <Input placeholder="Search patient for timeline..." value={searchPatient} onChange={(e) => { setSearchPatient(e.target.value); setResolvedPatientId(""); }} className="flex-1" />
+        </div>
+        {patientData?.patients && patientData.patients.length > 0 && (
+          <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
+            {patientData.patients.map((p: any) => (
+              <button key={p.id} onClick={() => { setResolvedPatientId(p.id); setSearchPatient(`${p.firstName} ${p.lastName} (${p.patientNumber})`); }} className="w-full text-left p-2 hover:bg-emerald-50 text-sm border-b last:border-0">
+                <span className="font-medium">{p.firstName} {p.lastName}</span>
+                <span className="text-xs text-slate-500 ml-2">{p.patientNumber}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </CardContent></Card>
+
+      {/* Counts summary */}
+      {counts && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {Object.entries(counts).filter(([, v]: [string, any]) => v > 0).map(([k, v]: [string, any]) => (
+            <Badge key={k} variant="outline" className="capitalize">{k.replace(/_/g, " ")}: {v}</Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Timeline */}
+      {!resolvedPatientId ? (
+        <Card><CardContent className="p-6"><EmptyState title="Select a patient" description="Search for a patient to view their unified nursing timeline." /></CardContent></Card>
+      ) : isLoading ? (
+        <LoadingState rows={6} />
+      ) : isError ? (
+        <ErrorState message="Failed to load timeline" onRetry={() => refetch()} />
+      ) : timeline.length === 0 ? (
+        <Card><CardContent className="p-6"><EmptyState title="No nursing events" description="No nursing documentation found for this patient." /></CardContent></Card>
+      ) : (
+        <div className="space-y-2">
+          {timeline.map((entry: any, i: number) => (
+            <div key={i} className={`border-l-4 ${colorMap[entry.type] || "border-l-slate-300"} bg-white border border-slate-200 rounded-r-lg p-3 shadow-sm`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-slate-700 capitalize">{iconMap[entry.type]} {entry.type.replace(/_/g, " ")}</span>
+                    {entry.status && <Badge className={`text-[10px] ${entry.status === "signed" ? "bg-emerald-100 text-emerald-700" : entry.status === "active" ? "bg-emerald-100 text-emerald-700" : entry.status === "resolved" ? "bg-emerald-100 text-emerald-700" : entry.status === "completed" ? "bg-emerald-100 text-emerald-700" : entry.status === "open" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-700"}`}>{entry.status}</Badge>}
+                  </div>
+                  <div className="text-sm text-slate-900 mt-1">{entry.summary}</div>
+                  {entry.detail && <div className="text-xs text-slate-600 mt-0.5">{entry.detail}</div>}
+                </div>
+                <div className="text-[10px] text-slate-400 whitespace-nowrap">{formatDate(entry.date, true)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
