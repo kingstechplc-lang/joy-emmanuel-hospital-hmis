@@ -197,6 +197,33 @@ tbody tr:hover {
   background-color: #f8fafc;
 }
 
+/* =====================================================================
+   FULL-BLEED TABLE CARDS — when a Card contains a CardContent with p-0
+   AND that CardContent contains a table (the standard pattern for tables
+   that should fill the card edge-to-edge), collapse the Card's own
+   py-6 padding and gap-6 so the dark thead sits flush against the card's
+   rounded top edge. This makes the rounded corners clearly visible
+   against the dark header color.
+
+   Scoped to cards containing tables so non-table p-0 cards (lists,
+   dividers, empty states) keep their normal padding.
+   ===================================================================== */
+[data-slot="card"]:has([data-slot="card-content"].p-0 table) {
+  padding-top: 0;
+  padding-bottom: 0;
+  gap: 0;
+}
+
+/* The dark thead's top-left/top-right corners follow the card's
+   rounded-xl (0.75rem) shape. Combined with overflow-hidden on the
+   Card, this makes the corners crisp. */
+[data-slot="card"]:has([data-slot="card-content"].p-0 table) thead tr:first-child th:first-child {
+  border-top-left-radius: 0.75rem;
+}
+[data-slot="card"]:has([data-slot="card-content"].p-0 table) thead tr:first-child th:last-child {
+  border-top-right-radius: 0.75rem;
+}
+
 tbody td {
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
