@@ -59,6 +59,13 @@ export function BedsView() {
   const [tab, setTab] = useState("board");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBed, setSelectedBed] = useState<any | null>(null);
+  // Management dialogs
+  const [showWardDialog, setShowWardDialog] = useState(false);
+  const [editingWard, setEditingWard] = useState<any | null>(null);
+  const [showRoomDialog, setShowRoomDialog] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<any | null>(null);
+  const [showBedDialog, setShowBedDialog] = useState(false);
+  const [editingBed, setEditingBed] = useState<any | null>(null);
   // Smart search filters
   const [searchBedType, setSearchBedType] = useState("all");
   const [searchGender, setSearchGender] = useState("all");
@@ -112,6 +119,7 @@ export function BedsView() {
         <TabsList>
           <TabsTrigger value="dashboard" className="gap-1.5"><Activity className="w-4 h-4" /> Dashboard</TabsTrigger>
           <TabsTrigger value="board" className="gap-1.5"><BedDouble className="w-4 h-4" /> Bed Board</TabsTrigger>
+          <TabsTrigger value="manage" className="gap-1.5"><Plus className="w-4 h-4" /> Manage</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
@@ -261,7 +269,33 @@ export function BedsView() {
         />
       )}
         </TabsContent>
+
+        <TabsContent value="manage" className="space-y-4">
+          <ManageTab
+            facilityId={activeFacilityId}
+            canCreate={can("bed.create") || can("bed.manage")}
+            canEdit={can("bed.edit") || can("bed.manage")}
+            canRetire={can("bed.retire") || can("bed.manage")}
+            onShowWardDialog={() => { setEditingWard(null); setShowWardDialog(true); }}
+            onEditWard={(w) => { setEditingWard(w); setShowWardDialog(true); }}
+            onShowRoomDialog={() => { setEditingRoom(null); setShowRoomDialog(true); }}
+            onEditRoom={(r) => { setEditingRoom(r); setShowRoomDialog(true); }}
+            onShowBedDialog={() => { setEditingBed(null); setShowBedDialog(true); }}
+            onEditBed={(b) => { setEditingBed(b); setShowBedDialog(true); }}
+            onChanged={invalidate}
+          />
+        </TabsContent>
       </Tabs>
+
+      {showWardDialog && (
+        <WardDialog ward={editingWard} facilityId={activeFacilityId} onClose={() => setShowWardDialog(false)} onDone={() => { setShowWardDialog(false); invalidate(); }} />
+      )}
+      {showRoomDialog && (
+        <RoomDialog room={editingRoom} facilityId={activeFacilityId} onClose={() => setShowRoomDialog(false)} onDone={() => { setShowRoomDialog(false); invalidate(); }} />
+      )}
+      {showBedDialog && (
+        <BedMasterDialog bed={editingBed} facilityId={activeFacilityId} onClose={() => setShowBedDialog(false)} onDone={() => { setShowBedDialog(false); invalidate(); }} />
+      )}
     </div>
   );
 }
@@ -618,5 +652,244 @@ function BedDashboard({ facilityId }: { facilityId: string | null }) {
         </Card>
       )}
     </div>
+  );
+}
+
+// ============================================================
+// Manage Tab — ward/room/bed CRUD
+// ============================================================
+function ManageTab(props: any) {
+  const { facilityId, canCreate, canEdit, canRetire, onShowWardDialog, onEditWard, onShowRoomDialog, onEditRoom, onShowBedDialog, onChanged } = props;
+  const { data: wardsData, isLoading } = useQuery({
+    queryKey: ["wards-manage", facilityId],
+    queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`),
+    enabled: !!facilityId,
+  });
+  const wards = wardsData?.items || [];
+  const deleteWard = async (id: string) => {
+    if (!confirm("Deactivate this ward?")) return;
+    const res = await fetch(`/api/wards/${id}`, { method: "DELETE" });
+    if (res.ok) { toast.success("Ward deactivated"); onChanged(); } else { const e = await safeJson(res); toast.error(e.error || "Failed"); }
+  };
+  const deleteRoom = async (id: string) => {
+    if (!confirm("Deactivate this room?")) return;
+    const res = await fetch(`/api/rooms/${id}`, { method: "DELETE" });
+    if (res.ok) { toast.success("Room deactivated"); onChanged(); } else { const e = await safeJson(res); toast.error(e.error || "Failed"); }
+  };
+  return (
+    <div className="space-y-4">
+      <Card><CardContent className="p-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-sm font-semibold text-slate-700">Wards ({wards.length})</div>
+          {canCreate && <Button size="sm" onClick={onShowWardDialog} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> Add Ward</Button>}
+        </div>
+        {isLoading ? <LoadingState rows={3} /> : wards.length === 0 ? <EmptyState title="No wards" /> : (
+          <div className="overflow-x-auto"><table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b"><tr>
+              <th className="text-left p-2 font-semibold text-slate-700">Ward</th><th className="text-left p-2 font-semibold text-slate-700">Type</th>
+              <th className="text-center p-2 font-semibold text-slate-700">Rooms</th><th className="text-center p-2 font-semibold text-slate-700">Beds</th>
+              <th className="text-left p-2 font-semibold text-slate-700">Status</th><th className="text-right p-2 font-semibold text-slate-700">Actions</th>
+            </tr></thead><tbody>
+              {wards.map((w: any) => (
+                <tr key={w.id} className="border-b hover:bg-slate-50">
+                  <td className="p-2"><div className="font-medium">{w.name}</div><div className="text-xs text-slate-500 font-mono">{w.code}</div></td>
+                  <td className="p-2 capitalize">{w.wardType || "—"}</td>
+                  <td className="p-2 text-center">{w.rooms?.length || 0}</td>
+                  <td className="p-2 text-center">{w.bedStats?.total || 0}</td>
+                  <td className="p-2"><Badge className={`bg-${w.status === "active" ? "emerald" : "slate"}-100 text-${w.status === "active" ? "emerald" : "slate"}-700`}>{w.status}</Badge></td>
+                  <td className="p-2 text-right"><div className="flex justify-end gap-1">
+                    {canEdit && <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onEditWard(w)}><Wrench className="w-3.5 h-3.5" /></Button>}
+                    {canRetire && <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-rose-600" onClick={() => deleteWard(w.id)}><X className="w-3.5 h-3.5" /></Button>}
+                  </div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        )}
+      </CardContent></Card>
+
+      {wards.length > 0 && (
+        <Card><CardContent className="p-4">
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-sm font-semibold text-slate-700">Rooms</div>
+            {canCreate && <Button size="sm" onClick={onShowRoomDialog} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> Add Room</Button>}
+          </div>
+          <div className="space-y-2">
+            {wards.map((w: any) => (
+              <div key={w.id}>
+                <div className="text-xs font-semibold text-slate-600 mb-1">{w.name}</div>
+                {(!w.rooms || w.rooms.length === 0) ? <div className="text-xs text-slate-400 pl-3">No rooms</div> : (
+                  <div className="pl-3 space-y-1">
+                    {w.rooms.map((r: any) => (
+                      <div key={r.id} className="flex items-center justify-between text-sm border rounded p-2 bg-white">
+                        <div><span className="font-medium">Room {r.roomNumber}</span><Badge variant="outline" className="ml-2 text-xs">{r.roomType}</Badge></div>
+                        <div className="flex gap-1">
+                          {canEdit && <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onEditRoom(r)}><Wrench className="w-3 h-3" /></Button>}
+                          {canRetire && <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-rose-600" onClick={() => deleteRoom(r.id)}><X className="w-3 h-3" /></Button>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent></Card>
+      )}
+
+      {canCreate && (
+        <Card><CardContent className="p-4">
+          <div className="flex justify-between items-center">
+            <div className="text-sm font-semibold text-slate-700">Beds</div>
+            <Button size="sm" onClick={onShowBedDialog} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> Add Bed</Button>
+          </div>
+          <div className="text-xs text-slate-500 mt-2">Use the Bed Board tab to view all beds. Click any bed to edit or retire it.</div>
+        </CardContent></Card>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Ward Dialog — create/edit
+// ============================================================
+function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilityId: string | null; onClose: () => void; onDone: () => void }) {
+  const isEdit = !!ward;
+  const [form, setForm] = useState({ name: ward?.name || "", code: ward?.code || "", wardType: ward?.wardType || "general", genderPolicy: ward?.genderPolicy || "mixed", capacity: ward?.capacity || 0, status: ward?.status || "active" });
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    if (!form.name || !form.code) { toast.error("Name and code required"); return; }
+    setSaving(true);
+    try {
+      const url = isEdit ? `/api/wards/${ward.id}` : "/api/wards";
+      const res = await fetch(url, { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, facilityId, capacity: Number(form.capacity) }) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success(isEdit ? "Ward updated" : "Ward created"); onDone();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+  return (
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+      <DialogHeader><DialogTitle>{isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
+      <div className="space-y-3">
+        <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+        <div><Label>Ward Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Type</Label><Select value={form.wardType} onValueChange={(v) => setForm({ ...form, wardType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="general">General</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="maternity">Maternity</SelectItem><SelectItem value="icu">ICU</SelectItem><SelectItem value="emergency">Emergency</SelectItem><SelectItem value="paediatric">Paediatric</SelectItem><SelectItem value="surgical">Surgical</SelectItem></SelectContent></Select></div>
+          <div><Label>Gender</Label><Select value={form.genderPolicy} onValueChange={(v) => setForm({ ...form, genderPolicy: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mixed">Mixed</SelectItem><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Capacity</Label><Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} /></div>
+          <div><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
+        </div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
+    </DialogContent></Dialog>
+  );
+}
+
+// ============================================================
+// Room Dialog — create/edit
+// ============================================================
+function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilityId: string | null; onClose: () => void; onDone: () => void }) {
+  const isEdit = !!room;
+  const [form, setForm] = useState({ wardId: room?.wardId || "", roomNumber: room?.roomNumber || "", roomType: room?.roomType || "ward", capacity: room?.capacity || 1, status: room?.status || "active" });
+  const [saving, setSaving] = useState(false);
+  const { data: wardsData } = useQuery({ queryKey: ["wards-room", facilityId], queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`), enabled: !!facilityId });
+  const submit = async () => {
+    if (!form.wardId || !form.roomNumber) { toast.error("Ward and room number required"); return; }
+    setSaving(true);
+    try {
+      const url = isEdit ? `/api/rooms/${room.id}` : "/api/rooms";
+      const res = await fetch(url, { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, capacity: Number(form.capacity) }) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success(isEdit ? "Room updated" : "Room created"); onDone();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+  return (
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+      <DialogHeader><DialogTitle>{isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
+      <div className="space-y-3">
+        <div><Label>Ward</Label><Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v })} disabled={isEdit}><SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger><SelectContent>{(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label>Room Number</Label><Input value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} placeholder="e.g., 101" /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Type</Label><Select value={form.roomType} onValueChange={(v) => setForm({ ...form, roomType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ward">Ward</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="semi-private">Semi-private</SelectItem></SelectContent></Select></div>
+          <div><Label>Capacity</Label><Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} /></div>
+        </div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
+    </DialogContent></Dialog>
+  );
+}
+
+// ============================================================
+// Bed Master Dialog — create/edit bed
+// ============================================================
+function BedMasterDialog({ bed, facilityId, onClose, onDone }: { bed?: any; facilityId: string | null; onClose: () => void; onDone: () => void }) {
+  const isEdit = !!bed;
+  const [form, setForm] = useState({
+    wardId: bed?.wardId || "", roomId: bed?.roomId || "", bedNumber: bed?.bedNumber || "", bedCode: bed?.bedCode || "",
+    bedType: bed?.bedType || "regular", building: bed?.building || "", floor: bed?.floor || "",
+    genderRestriction: bed?.genderRestriction || "any", ageRestriction: bed?.ageRestriction || "any",
+    isolationCapable: bed?.isolationCapable || false, oxygen: bed?.oxygen || false, ventilator: bed?.ventilator || false,
+    cardiacMonitoring: bed?.cardiacMonitoring || false, accessibility: bed?.accessibility || false,
+    description: bed?.description || "", notes: bed?.notes || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const { data: wardsData } = useQuery({ queryKey: ["wards-bed", facilityId], queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`), enabled: !!facilityId });
+  const { data: roomsData } = useQuery({ queryKey: ["rooms-bed", form.wardId], queryFn: () => fetchJson(`/api/rooms?wardId=${form.wardId}`), enabled: !!form.wardId });
+  const submit = async () => {
+    if (!form.wardId || !form.bedNumber) { toast.error("Ward and bed number required"); return; }
+    setSaving(true);
+    try {
+      if (isEdit) {
+        const res = await fetch(`/api/beds/${bed.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "edit", ...form, roomId: form.roomId || null }) });
+        if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+        toast.success("Bed updated");
+      } else {
+        const res = await fetch("/api/beds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, facilityId, roomId: form.roomId || null }) });
+        if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+        toast.success("Bed created");
+      }
+      onDone();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>{isEdit ? "Edit Bed" : "Add Bed"}</DialogTitle></DialogHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Ward</Label><Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v, roomId: "" })} disabled={isEdit}><SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger><SelectContent>{(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Room (optional)</Label><Select value={form.roomId || undefined} onValueChange={(v) => setForm({ ...form, roomId: v })}><SelectTrigger><SelectValue placeholder="No room" /></SelectTrigger><SelectContent><SelectItem value="">No room</SelectItem>{(roomsData?.items || []).map((r: any) => <SelectItem key={r.id} value={r.id}>Room {r.roomNumber}</SelectItem>)}</SelectContent></Select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Bed Number</Label><Input value={form.bedNumber} onChange={(e) => setForm({ ...form, bedNumber: e.target.value })} placeholder="e.g., 101-A" /></div>
+            <div><Label>Bed Code</Label><Input value={form.bedCode} onChange={(e) => setForm({ ...form, bedCode: e.target.value })} placeholder="e.g., GH-JEH-MW-101-A" /></div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div><Label>Bed Type</Label><Select value={form.bedType} onValueChange={(v) => setForm({ ...form, bedType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="regular">General</SelectItem><SelectItem value="icu">ICU</SelectItem><SelectItem value="hdu">HDU</SelectItem><SelectItem value="maternity">Maternity</SelectItem><SelectItem value="pediatric">Pediatric</SelectItem><SelectItem value="neonatal">Neonatal</SelectItem><SelectItem value="isolation">Isolation</SelectItem><SelectItem value="emergency">Emergency</SelectItem><SelectItem value="private">Private</SelectItem></SelectContent></Select></div>
+            <div><Label>Building</Label><Input value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })} /></div>
+            <div><Label>Floor</Label><Input value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Gender Restriction</Label><Select value={form.genderRestriction} onValueChange={(v) => setForm({ ...form, genderRestriction: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="any">Any</SelectItem><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
+            <div><Label>Age Restriction</Label><Select value={form.ageRestriction} onValueChange={(v) => setForm({ ...form, ageRestriction: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="any">Any</SelectItem><SelectItem value="neonate">Neonate</SelectItem><SelectItem value="infant">Infant</SelectItem><SelectItem value="child">Child</SelectItem><SelectItem value="adult">Adult</SelectItem><SelectItem value="elderly">Elderly</SelectItem></SelectContent></Select></div>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.isolationCapable} onCheckedChange={(v) => setForm({ ...form, isolationCapable: !!v })} /> Isolation</label>
+            <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.oxygen} onCheckedChange={(v) => setForm({ ...form, oxygen: !!v })} /> Oxygen</label>
+            <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.ventilator} onCheckedChange={(v) => setForm({ ...form, ventilator: !!v })} /> Ventilator</label>
+            <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.cardiacMonitoring} onCheckedChange={(v) => setForm({ ...form, cardiacMonitoring: !!v })} /> Monitoring</label>
+            <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.accessibility} onCheckedChange={(v) => setForm({ ...form, accessibility: !!v })} /> Accessible</label>
+          </div>
+          <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2"><Plus className="w-4 h-4" /> {saving ? "Saving..." : isEdit ? "Save Changes" : "Create Bed"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
