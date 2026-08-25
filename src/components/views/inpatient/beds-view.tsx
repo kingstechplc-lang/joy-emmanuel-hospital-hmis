@@ -97,6 +97,15 @@ export function BedsView() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["beds"] });
     qc.invalidateQueries({ queryKey: ["wards"] });
+    qc.invalidateQueries({ queryKey: ["wards-manage"] });
+    qc.invalidateQueries({ queryKey: ["wards-room"] });
+    qc.invalidateQueries({ queryKey: ["wards-bed"] });
+    qc.invalidateQueries({ queryKey: ["wards-for-transfer"] });
+    qc.invalidateQueries({ queryKey: ["wards-for-assign"] });
+    qc.invalidateQueries({ queryKey: ["rooms-bed"] });
+    qc.invalidateQueries({ queryKey: ["rooms"] });
+    qc.invalidateQueries({ queryKey: ["beds-stats"] });
+    qc.invalidateQueries({ queryKey: ["admissions-census"] });
   };
 
   // Stats
@@ -762,7 +771,8 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
     setSaving(true);
     try {
       const url = isEdit ? `/api/wards/${ward.id}` : "/api/wards";
-      const res = await fetch(url, { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, facilityId, capacity: Number(form.capacity) }) });
+      const payload = isEdit ? { ...form, capacity: Number(form.capacity) } : { ...form, facilityId, capacity: Number(form.capacity) };
+      const res = await fetch(url, { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
       toast.success(isEdit ? "Ward updated" : "Ward created"); onDone();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
@@ -860,7 +870,7 @@ function BedMasterDialog({ bed, facilityId, onClose, onDone }: { bed?: any; faci
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Ward</Label><Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v, roomId: "" })} disabled={isEdit}><SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger><SelectContent>{(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
-            <div><Label>Room (optional)</Label><Select value={form.roomId || undefined} onValueChange={(v) => setForm({ ...form, roomId: v })}><SelectTrigger><SelectValue placeholder="No room" /></SelectTrigger><SelectContent><SelectItem value="">No room</SelectItem>{(roomsData?.items || []).map((r: any) => <SelectItem key={r.id} value={r.id}>Room {r.roomNumber}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Room (optional)</Label><Select value={form.roomId || "_none"} onValueChange={(v) => setForm({ ...form, roomId: v === "_none" ? "" : v })}><SelectTrigger><SelectValue placeholder="No room" /></SelectTrigger><SelectContent><SelectItem value="_none">No room</SelectItem>{(roomsData?.items || []).map((r: any) => <SelectItem key={r.id} value={r.id}>Room {r.roomNumber}</SelectItem>)}</SelectContent></Select></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Bed Number</Label><Input value={form.bedNumber} onChange={(e) => setForm({ ...form, bedNumber: e.target.value })} placeholder="e.g., 101-A" /></div>

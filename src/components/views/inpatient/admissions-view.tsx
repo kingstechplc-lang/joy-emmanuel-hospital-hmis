@@ -128,8 +128,12 @@ export function AdmissionsView() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admissions"] });
+    qc.invalidateQueries({ queryKey: ["admissions-census"] });
     qc.invalidateQueries({ queryKey: ["beds"] });
     qc.invalidateQueries({ queryKey: ["wards"] });
+    qc.invalidateQueries({ queryKey: ["wards-manage"] });
+    qc.invalidateQueries({ queryKey: ["wards-for-assign"] });
+    qc.invalidateQueries({ queryKey: ["beds-stats"] });
   };
 
   return (
