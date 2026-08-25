@@ -631,18 +631,209 @@ model InsuranceProvider {
   organization    Organization @relation(fields: [organizationId], references: [id])
   name            String
   code            String
+  // ---- Extended master fields ----
+  legalName       String?
+  shortName       String?
+  displayName     String?
+  providerType    String   @default("private") // nhis | private | corporate | managed_care | employer_sponsored | government | institutional | self_funded | other
+  organizationType String?
+  country         String?
+  region          String?
   phone           String?
   email           String?
+  website         String?
   address         String?
-  status          String   @default("active")
+  postalAddress   String?
+  contactPerson   String?
+  claimsContact   String?
+  financeContact  String?
+  // Status & dates
+  status          String   @default("active") // active | inactive | suspended | pending | expired | terminated | retired
+  effectiveDate   DateTime?
+  endDate         DateTime?
+  notes           String?
   settings        String?
+  // Versioning / ownership
+  createdById     String?
+  updatedById     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   patientInsurance PatientInsurance[]
   insuranceClaims  InsuranceClaim[]
+  plans            InsurancePlan[]
+  contacts         ProviderContact[]
+  facilityRelationships ProviderFacilityRelationship[]
 
   @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@index([organizationId, providerType])
+}
+
+// ---------------------------------------------------------------------
+// INSURANCE PLAN — a provider may have multiple plans
+// ---------------------------------------------------------------------
+
+model InsurancePlan {
+  id              String   @id @default(cuid())
+  organizationId  String
+  insuranceProviderId String
+  insuranceProvider InsuranceProvider @relation(fields: [insuranceProviderId], references: [id], onDelete: Cascade)
+  code            String
+  name            String
+  shortName       String?
+  description     String?
+  planType        String   @default("individual") // individual | family | corporate | employer | government | nhis | managed_care | other
+  // Coverage configuration
+  coveragePercentage Float?  // e.g., 80 means payer covers 80%
+  fixedCopayment  Float?   // fixed copayment amount
+  deductible      Float?   // deductible amount
+  annualLimit     Float?   // annual monetary limit
+  visitLimit      Int?     // number of visits per period
+  // Authorization / referral rules
+  authorizationRequired Boolean @default(false)
+  referralRequired     Boolean @default(false)
+  // Status & dates
+  status          String   @default("active") // active | inactive | suspended | expired | retired
+  effectiveDate   DateTime?
+  endDate         DateTime?
+  coverageRules   String?  // JSON: configurable coverage rules
+  notes           String?
+  // Ownership
+  createdById     String?
+  updatedById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  serviceCoverage  PlanServiceCoverage[]
+  benefits         PlanBenefit[]
+  authorizations   InsuranceAuthorization[]
+
+  @@unique([organizationId, code])
+  @@index([insuranceProviderId])
+  @@index([organizationId, status])
+}
+
+// ---------------------------------------------------------------------
+// PLAN SERVICE COVERAGE — links plan to Services & Pricing
+// (does NOT duplicate the service catalog — only stores coverage rules)
+// ---------------------------------------------------------------------
+
+model PlanServiceCoverage {
+  id              String   @id @default(cuid())
+  insurancePlanId String
+  insurancePlan   InsurancePlan @relation(fields: [insurancePlanId], references: [id], onDelete: Cascade)
+  serviceId       String?  // FK → Service (optional; null = rule applies to all services)
+  coverageType    String   @default("covered") // covered | partially_covered | not_covered | authorization_required | referral_required
+  coveragePercentage Float?  // override plan-level percentage for this service
+  fixedCopayment  Float?   // service-specific copayment
+  patientResponsibility Float? // percentage patient pays
+  quantityLimit   Int?     // max quantity per period
+  monetaryLimit   Float?   // max amount per period
+  notes           String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([insurancePlanId])
+  @@index([serviceId])
+}
+
+// ---------------------------------------------------------------------
+// PLAN BENEFIT — configurable benefit categories
+// ---------------------------------------------------------------------
+
+model PlanBenefit {
+  id              String   @id @default(cuid())
+  insurancePlanId String
+  insurancePlan   InsurancePlan @relation(fields: [insurancePlanId], references: [id], onDelete: Cascade)
+  benefitCategory String   // outpatient | inpatient | pharmacy | laboratory | imaging | procedures | maternity | dental | optical | emergency | other
+  covered         Boolean  @default(true)
+  coveragePercentage Float?
+  annualLimit     Float?
+  visitLimit      Int?
+  notes           String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([insurancePlanId])
+  @@index([benefitCategory])
+}
+
+// ---------------------------------------------------------------------
+// PROVIDER CONTACT — multiple contacts per provider
+// ---------------------------------------------------------------------
+
+model ProviderContact {
+  id              String   @id @default(cuid())
+  insuranceProviderId String
+  insuranceProvider InsuranceProvider @relation(fields: [insuranceProviderId], references: [id], onDelete: Cascade)
+  contactType     String   @default("general") // general | claims | finance | authorization | technical | management
+  name            String
+  position        String?
+  phone           String?
+  email           String?
+  notes           String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([insuranceProviderId])
+  @@index([contactType])
+}
+
+// ---------------------------------------------------------------------
+// PROVIDER-FACILITY RELATIONSHIP — multi-facility availability
+// ---------------------------------------------------------------------
+
+model ProviderFacilityRelationship {
+  id              String   @id @default(cuid())
+  insuranceProviderId String
+  insuranceProvider InsuranceProvider @relation(fields: [insuranceProviderId], references: [id], onDelete: Cascade)
+  facilityId      String
+  availability    String   @default("available") // available | unavailable | pending
+  acceptedPlans   String?  // JSON array of plan IDs accepted at this facility
+  contractReference String?
+  effectiveDate   DateTime?
+  endDate         DateTime?
+  notes           String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([insuranceProviderId, facilityId])
+  @@index([facilityId])
+}
+
+// ---------------------------------------------------------------------
+// INSURANCE AUTHORIZATION / PRE-AUTHORIZATION
+// ---------------------------------------------------------------------
+
+model InsuranceAuthorization {
+  id              String   @id @default(cuid())
+  organizationId  String
+  insuranceProviderId String
+  insurancePlanId String?
+  insurancePlan   InsurancePlan? @relation(fields: [insurancePlanId], references: [id], onDelete: SetNull)
+  patientId       String?
+  serviceId       String?  // FK → Service
+  authorizationNumber String?
+  authorizationDate DateTime?
+  expiryDate      DateTime?
+  approvedService String?
+  approvedQuantity Int?
+  approvedAmount  Float?
+  status          String   @default("pending") // pending | approved | rejected | expired | cancelled
+  notes           String?
+  authorizedById  String?
+  patientInsuranceId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([insuranceProviderId])
+  @@index([patientId])
+  @@index([status])
 }
 
 model PatientInsurance {
