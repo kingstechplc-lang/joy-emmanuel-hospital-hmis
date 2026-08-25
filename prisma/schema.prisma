@@ -1423,19 +1423,321 @@ model LaboratoryTest {
   organization    Organization @relation(fields: [organizationId], references: [id])
   name            String
   code            String
-  category        String? // haematology | chemistry | microbiology | serology | endocrinology
-  specimenType    String?
-  unit            String?
-  referenceRange   String?
-  price           Float    @default(0)
-  status          String   @default("active")
+  shortName       String?
+  displayName     String?
+  description     String?
+  category        String? // haematology | chemistry | microbiology | serology | endocrinology | parasitology | urinalysis | histopathology | cytology | blood_bank | molecular | toxicology | other
+  testType        String   @default("single") // single | panel | profile | culture | microscopy | quantitative | qualitative | semi_quantitative | molecular | pathology | other
+  resultType      String   @default("numeric") // numeric | text | qualitative | pos_neg | reactive_nonreactive | detected_not_detected | categorical | structured | organism | titer | other
+  specimenType    String?  // primary specimen (legacy field — kept for back-compat with lab-orders/results)
+  unit            String?  // primary unit (legacy field — kept for back-compat)
+  referenceRange   String? // primary reference range text (legacy field — kept for back-compat)
+  price           Float    @default(0) // legacy default price (kept for back-compat; authoritative pricing via serviceId)
+  status          String   @default("active") // active | inactive | retired | archived | temporarily_unavailable | referral_out
+  priority        String   @default("routine") // routine | urgent | stat
+  isPanel         Boolean  @default(false)
+  isReferralOut   Boolean  @default(false)
+  referralLab     String?
+  isBillable      Boolean  @default(true)
+  billableAs      String   @default("individual") // individual | package | component | parent_only
+  // Turnaround time
+  tatMinutes      Int?     // expected TAT (minutes) — preferred single unit
+  tatRoutineMin   Int?
+  tatUrgentMin    Int?
+  tatStatMin      Int?
+  // Service / billing integration
+  serviceId       String?  // FK → Service (central pricing)
+  nhisEligible    Boolean  @default(false)
+  nhisServiceCode String?
+  nhisTariffRef   String?
+  claimableStatus String   @default("not_configured") // not_configured | claimable | non_claimable | pending
+  // Versioning / ownership
+  version         Int      @default(1)
+  createdById     String?
+  updatedById     String?
+  retiredAt       DateTime?
+  retiredById     String?
+  retirementReason String?
+  // JSONB-style config (kept for back-compat; structured fields preferred)
   configuration    String? // JSONB in PG
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   labOrderItems   LabOrderItem[]
 
+  // ---- Lab Test Catalog relations ----
+  aliases             LabTestAlias[]
+  specimenConfigs     LabTestSpecimenConfig[]
+  components          LabTestComponent[]            @relation("LabTestComponentTest")
+  panelMemberships    LabTestPanelMember[]          @relation("LabTestPanelParent")
+  componentOfPanels   LabTestPanelMember[]          @relation("LabTestPanelComponent")
+  referenceRanges     LabTestReferenceRange[]
+  criticalValues      LabTestCriticalValue[]
+  resultOptions       LabTestResultOption[]
+  facilityAvailability LabTestFacilityAvailability[]
+  versions            LabTestVersion[]
+  catalogAudits       LabTestCatalogAudit[]
+
   @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+  @@index([organizationId, testType])
+  @@index([serviceId])
+}
+
+// ---------------------------------------------------------------------
+// LAB TEST CATALOG — Master configuration models
+// (Central master catalog for laboratory tests. Pricing is governed by
+//  Service / FacilityServicePrice; this catalog only stores a serviceId
+//  reference. Reference ranges are versioned so historical results retain
+//  their applicable configuration at time of result entry.)
+// ---------------------------------------------------------------------
+
+model LabTestAlias {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  alias           String
+  aliasType       String   @default("synonym") // abbreviation | synonym | common_name | search_alias
+  createdAt       DateTime @default(now())
+
+  @@unique([laboratoryTestId, alias])
+  @@index([alias])
+}
+
+model LabTestCategory {
+  id              String   @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String
+  description     String?
+  sortOrder       Int      @default(0)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, name])
+}
+
+model LabTestSpecimenType {
+  id              String   @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String
+  description     String?
+  sortOrder       Int      @default(0)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, name])
+}
+
+model LabTestUnit {
+  id              String   @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String
+  description     String?
+  sortOrder       Int      @default(0)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, name])
+}
+
+// Per-test specimen configuration (a test may have multiple acceptable specimens)
+model LabTestSpecimenConfig {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  specimenType    String   // e.g., Whole Blood | Serum | Plasma | Urine | Stool | Sputum | Swab | CSF | Tissue
+  isPrimary       Boolean  @default(false)
+  container       String?
+  minVolume       String?
+  collectionRequirements String?
+  processingRequirements String?
+  storageRequirements     String?
+  transportRequirements   String?
+  stabilityInfo   String?
+  fastingRequired Boolean  @default(false)
+  timingRequired  String?
+  specialPreparation String?
+  collectionNotes String?
+  sortOrder       Int      @default(0)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([laboratoryTestId])
+  @@index([specimenType])
+}
+
+// Component-level definition (also reusable as a standalone test by setting isStandalone=true)
+model LabTestComponent {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation("LabTestComponentTest", fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  componentName   String
+  componentCode   String?
+  resultType      String   @default("numeric") // numeric | text | qualitative | pos_neg | reactive_nonreactive | categorical | other
+  unit            String?
+  referenceRange  String?
+  criticalLow     Float?
+  criticalHigh    Float?
+  decimalPrecision Int?
+  displayOrder    Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([laboratoryTestId])
+}
+
+// Many-to-many: a panel test ↔ component test (the component is itself a LaboratoryTest)
+model LabTestPanelMember {
+  id              String   @id @default(cuid())
+  panelTestId     String
+  panelTest       LaboratoryTest @relation("LabTestPanelParent", fields: [panelTestId], references: [id], onDelete: Cascade)
+  componentTestId String
+  componentTest   LaboratoryTest @relation("LabTestPanelComponent", fields: [componentTestId], references: [id], onDelete: Cascade)
+  displayOrder    Int      @default(0)
+  isActive        Boolean  @default(true)
+  addedAt         DateTime @default(now())
+  removedAt       DateTime?
+
+  @@unique([panelTestId, componentTestId])
+  @@index([panelTestId])
+  @@index([componentTestId])
+}
+
+// Versioned reference ranges — historical results retain applicable range via effectiveFrom/effectiveTo
+model LabTestReferenceRange {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  label           String?  // e.g., "Adult male", "Neonate", "Pregnant 1st trimester"
+  sex             String?  // male | female | all | null=all
+  ageGroup        String?  // neonate | infant | child | adolescent | adult | older_adult | all
+  ageMinDays      Int?
+  ageMaxDays      Int?
+  pregnancyApplicable Boolean @default(false)
+  specimenType    String?
+  facilityId      String?  // null = org-level default
+  lowText         String?  // e.g., "13.5"
+  highText        String?  // e.g., "17.5"
+  rangeText       String?  // full display text e.g., "13.5 - 17.5 g/dL"
+  unit            String?
+  criticalLowText String?
+  criticalHighText String?
+  notes           String?
+  version         Int      @default(1)
+  effectiveFrom   DateTime @default(now())
+  effectiveTo     DateTime?
+  status          String   @default("active") // active | superseded | retired
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([laboratoryTestId])
+  @@index([laboratoryTestId, sex, ageGroup])
+  @@index([laboratoryTestId, effectiveFrom, effectiveTo])
+}
+
+// Critical value thresholds (separate from reference ranges; used for alert escalation)
+model LabTestCriticalValue {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  sex             String?  // male | female | all | null=all
+  ageGroup        String?  // neonate | infant | child | adolescent | adult | older_adult | all
+  ageMinDays      Int?
+  ageMaxDays      Int?
+  criticalLow     Float?
+  criticalHigh    Float?
+  alertType       String   @default("numeric") // numeric | qualitative | categorical
+  alertValue      String?  // for qualitative/categorical critical markers
+  notificationBehavior String? // e.g., notify_clinician | notify_lab_manager | escalate
+  notes           String?
+  status          String   @default("active")
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([laboratoryTestId])
+}
+
+// Qualitative / categorical result options for a test (e.g., Positive, Negative, Reactive, Detected)
+model LabTestResultOption {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  optionValue     String
+  optionLabel     String?
+  isCritical      Boolean  @default(false)
+  displayOrder    Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([laboratoryTestId])
+}
+
+// Facility-specific availability / overrides (multi-facility support without duplicating the test)
+model LabTestFacilityAvailability {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  facilityId      String
+  availability    String   @default("available") // available | temporarily_unavailable | unavailable | referral_out
+  performingDepartmentId String?
+  facilityTatMinutes Int?
+  facilityReferralLab String?
+  facilityNotes   String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([laboratoryTestId, facilityId])
+  @@index([facilityId])
+}
+
+// Version history snapshot — captures the test configuration as it was at a point in time
+model LabTestVersion {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  version         Int
+  snapshot        String   // JSON snapshot of test + components + ranges + critical values at version time
+  changeSummary   String?
+  changedById     String?
+  createdAt       DateTime @default(now())
+
+  @@unique([laboratoryTestId, version])
+  @@index([laboratoryTestId, version])
+}
+
+// Dedicated catalog audit log (complements the global AuditLog)
+model LabTestCatalogAudit {
+  id              String   @id @default(cuid())
+  laboratoryTestId String
+  laboratoryTest  LaboratoryTest @relation(fields: [laboratoryTestId], references: [id], onDelete: Cascade)
+  organizationId  String
+  facilityId      String?
+  action          String   // CREATED | UPDATED | ARCHIVED | REACTIVATED | RETIRED | SPECIMEN_CHANGED | RANGE_CHANGED | CRITICAL_CHANGED | PANEL_CHANGED | TAT_CHANGED | SERVICE_MAPPED | NHIS_MAPPED | BULK_IMPORT | BULK_UPDATE | DUPLICATE_MERGED
+  previousValue   String?
+  newValue        String?
+  reason          String?
+  userId          String?
+  userRole        String?
+  ipAddress       String?
+  createdAt       DateTime @default(now())
+
+  @@index([laboratoryTestId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 model LabOrder {
