@@ -2304,20 +2304,63 @@ model Admission {
   facilityId       String
   facility          Facility @relation(fields: [facilityId], references: [id])
   admissionNumber   String
-  admissionType     String? // emergency | elective | transfer | day_case
+  admissionType     String? // emergency | elective | urgent | planned | transfer_in | post_operative | maternity | newborn | observation | day_case | other
   admittedById      String?
   admittedBy        User?    @relation("admissionAdmittedBy", fields: [admittedById], references: [id])
   admissionReason   String?
   admissionDiagnosis String?
   admittedAt        DateTime @default(now())
   dischargedAt      DateTime?
-  status            String   @default("admitted") // admitted | discharged | transferred | cancelled
+  status            String   @default("admitted") // requested | pending_approval | approved | awaiting_bed | bed_assigned | admitted | transferred | discharge_planned | discharged | cancelled | declined | ama | deceased
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  // ---- Admission request workflow extensions ----
+  requestedById     String?  // clinician who requested the admission
+  requestedAt       DateTime?  // when the request was made
+  approvedById      String?  // who approved the admission
+  approvedAt        DateTime?
+  approvalDecision  String?  // approved | declined | pending
+  approvalNotes     String?
+  // Clinical context
+  provisionalDiagnosis String?
+  clinicalIndication String?
+  priority          String   @default("routine") // routine | urgent | stat
+  departmentId      String?  // ordering department
+  // Bed request
+  requestedWardId   String?  // preferred ward
+  requestedBedType  String?  // preferred bed type
+  specialRequirements String? // e.g., isolation, oxygen, cardiac monitoring
+  // Discharge planning
+  expectedDischargeDate DateTime?
+  dischargeReadiness String   @default("not_ready") // not_ready | pending_investigations | pending_medications | pending_consult | ready | cleared
+  dischargePlannedAt   DateTime?
+  dischargePlannedById String?
+  pendingItems      String?  // JSON array of pending discharge items
+  // Care team
+  attendingClinicianId String? // primary attending doctor
+  referringClinicianId String? // who referred the patient
+  // Cancellation / decline
+  cancelledAt       DateTime?
+  cancelledById     String?
+  cancellationReason String?
+  // Death documentation
+  deceasedAt        DateTime?
+  deceasedDocumentedById String?
+  deathSummary      String?
+  // Source (where the admission came from)
+  admissionSource   String?  // emergency | consultation | opd | specialty_clinic | maternity | referral | transfer_in | other
+  // Versioning / ownership
+  createdById       String?
+  updatedById       String?
+  notes             String?
 
   @@unique([facilityId, admissionNumber])
   @@index([patientId, status])
   @@index([facilityId, status])
+  @@index([facilityId, admissionType])
+  @@index([status, admittedAt])
+  @@index([requestedWardId])
 
   bedAssignments     BedAssignment[]
   transfers          PatientTransfer[]
@@ -2325,6 +2368,9 @@ model Admission {
   nursingNotes       NursingNote[]
   carePlans          CarePlan[]
   intakeOutputEntries IntakeOutputEntry[]
+  progressNotes      ProgressNote[]
+  careTeamMembers    CareTeamMember[]
+  bedReservations    BedReservation[]
 }
 
 model BedAssignment {
@@ -2393,14 +2439,131 @@ model DischargeRecord {
   procedures         String?
   medications        String?
   followUpPlan       String?
-  disposition        String? // home | transferred | referred | deceased | ama
+  disposition        String? // home | transferred | referred | deceased | ama | absconded | other
   dischargedById    String?
   dischargedBy      User?    @relation("dischargeUser", fields: [dischargedById], references: [id])
   dischargedAt      DateTime @default(now())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  // ---- Extended structured fields ----
+  attendingClinicianId String?  // separate from discharging user
+  admissionDate     DateTime?  // mirror of admission.admittedAt for report portability
+  primaryDiagnosisCode String? // ICD-10 code
+  primaryDiagnosisName String?
+  secondaryDiagnoses String?  // JSON array of {code, name}
+  investigationResults String? // JSON array of important lab/imaging results
+  dischargeConditions String? // patient condition at discharge
+  adviceOnDischarge  String?
+  sickLeaveDays      Int?
+  followUpAppointmentDate DateTime?
+  followUpClinic     String?
+  allergiesAtDischarge String? // JSON array
+  billedAmount       Float?
+  insuranceProviderId String?
+  dischargeType      String?  // routine | transfer_to_facility | transfer_to_ward | ama | absconded | deceased | other
+  // Clearances
+  clinicalCleared    Boolean  @default(false)
+  clinicalClearedById String?
+  clinicalClearedAt  DateTime?
+  nursingCleared     Boolean  @default(false)
+  nursingClearedById String?
+  nursingClearedAt   DateTime?
+  financialCleared   Boolean  @default(false)
+  financialClearedById String?
+  financialClearedAt DateTime?
+  pharmacyCleared    Boolean  @default(false)
+  pharmacyClearedById String?
+  pharmacyClearedAt  DateTime?
+  // Amendment / versioning
+  amendedFromId      String?
+  amendmentReason    String?
+  version            Int      @default(1)
+  isLatest           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([patientId])
+  @@index([admissionId])
+  @@index([dischargedAt])
+}
+
+// =====================================================================
+// BED RESERVATION — reserve a bed for an approved admission
+// =====================================================================
+
+model BedReservation {
+  id              String   @id @default(cuid())
+  admissionId     String?
+  admission       Admission? @relation(fields: [admissionId], references: [id], onDelete: SetNull)
+  patientId       String
+  facilityId      String
+  wardId          String
+  roomId          String?
+  bedId           String
+  reservedAt      DateTime @default(now())
+  expiresAt       DateTime?  // reservation expiry
+  reservedById    String?
+  status          String   @default("active") // active | expired | cancelled | converted
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bedId, status])
+  @@index([admissionId])
+  @@index([facilityId, status])
+}
+
+// =====================================================================
+// PROGRESS NOTE — doctor SOAP notes for inpatient encounters
+// =====================================================================
+
+model ProgressNote {
+  id              String   @id @default(cuid())
+  admissionId     String
+  admission       Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  patientId       String
+  encounterId     String?
+  facilityId      String
+  // SOAP fields
+  subjective      String?  // S — patient's complaint / history
+  objective       String?  // O — examination findings, vitals
+  assessment      String?  // A — diagnosis / clinical assessment
+  plan            String?  // P — treatment plan, orders
+  // Additional
+  diagnosisRef    String?  // ICD-10 code or diagnosis name
+  orders          String?  // JSON array of orders generated
+  followUp        String?
+  noteType        String   @default("doctor") // doctor | consultant | resident | handover
+  authoredById    String?
+  authoredAt      DateTime @default(now())
+  status          String   @default("final") // draft | final | amended
+  amendedFromId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([admissionId, authoredAt])
+  @@index([patientId])
+}
+
+// =====================================================================
+// CARE TEAM MEMBER — multi-disciplinary care team for an admission
+// =====================================================================
+
+model CareTeamMember {
+  id              String   @id @default(cuid())
+  admissionId     String
+  admission       Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  userId          String?  // FK → User (staff record)
+  staffName       String?  // denormalized for legacy / external staff
+  role            String   @default("attending") // attending | consultant | resident | nurse | pharmacist | physiotherapist | specialist | other
+  assignedAt      DateTime @default(now())
+  unassignedAt    DateTime?
+  assignedById    String?
+  status          String   @default("active") // active | inactive
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([admissionId, status])
+  @@index([userId])
 }
 
 model NursingNote {

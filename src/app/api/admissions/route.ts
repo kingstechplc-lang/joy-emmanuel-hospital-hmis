@@ -58,12 +58,17 @@ export async function GET(req: Request) {
 }
 
 // POST /api/admissions
-// body: { patientId, encounterId?, facilityId, wardId, bedId, admissionType, attendingClinicianId?,
-//         admissionReason, admissionDiagnosis, roomId?, autoCreateEncounter? }
+// body: { patientId, encounterId?, facilityId, wardId?, bedId?, admissionType, attendingClinicianId?,
+//         admissionReason, admissionDiagnosis, roomId?, autoCreateEncounter?,
+//         provisionalDiagnosis?, clinicalIndication?, priority?, departmentId?,
+//         requestedWardId?, requestedBedType?, specialRequirements?, admissionSource?,
+//         notes?, status? }
+// If bedId is provided → immediate admission (status="admitted")
+// If bedId is NOT provided → admission request (status="requested")
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.ADMISSION_CREATE)) {
+  if (!hasPermission(session, PERMISSIONS.ADMISSION_CREATE) && !hasPermission(session, PERMISSIONS.ADMISSION_REQUEST)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -77,22 +82,37 @@ export async function POST(req: Request) {
   const {
     patientId, encounterId, facilityId, wardId, bedId, roomId,
     admissionType, attendingClinicianId, admissionReason, admissionDiagnosis,
+    provisionalDiagnosis, clinicalIndication, priority, departmentId,
+    requestedWardId, requestedBedType, specialRequirements, admissionSource,
+    notes, status: explicitStatus,
   } = body;
 
-  if (!patientId || !facilityId || !wardId || !bedId) {
-    return NextResponse.json({ error: "patientId, facilityId, wardId, bedId are required" }, { status: 400 });
+  if (!patientId || !facilityId) {
+    return NextResponse.json({ error: "patientId and facilityId are required" }, { status: 400 });
+  }
+
+  // Determine if this is a request (no bed) or immediate admission (with bed)
+  const isRequest = !bedId;
+  const requestedStatus = explicitStatus || (isRequest ? "requested" : "admitted");
+
+  // For immediate admission, wardId and bedId are required
+  if (!isRequest && (!wardId || !bedId)) {
+    return NextResponse.json({ error: "wardId and bedId are required for immediate admission" }, { status: 400 });
   }
 
   try {
     const admissionNumber = await nextAdmissionNumber(facilityId);
 
-    // Run atomically: create admission + (optional encounter) + assign bed + mark bed occupied
+    // Run atomically: create admission + (optional encounter) + assign bed (if immediate) + mark bed occupied
     const result = await db.$transaction(async (tx) => {
-      // 1. Verify bed is currently available (prevent double-booking)
-      const bed = await tx.bed.findUnique({ where: { id: bedId } });
-      if (!bed) throw new Error("Bed not found");
-      if (bed.status !== "available") {
-        throw new Error(`Bed ${bed.bedNumber} is not available (current status: ${bed.status})`);
+      // 1. For immediate admission, verify bed is available
+      let bed: any = null;
+      if (!isRequest) {
+        bed = await tx.bed.findUnique({ where: { id: bedId } });
+        if (!bed) throw new Error("Bed not found");
+        if (bed.status !== "available") {
+          throw new Error(`Bed ${bed.bedNumber} is not available (current status: ${bed.status})`);
+        }
       }
 
       // 2. Resolve encounter — auto-create if none provided
@@ -105,16 +125,16 @@ export async function POST(req: Request) {
             facilityId,
             encounterNumber,
             encounterType: "inpatient",
-            status: "admitted",
-            priority: "routine",
+            status: isRequest ? "in_progress" : "admitted",
+            priority: priority || "routine",
             attendingStaffId: attendingClinicianId || null,
             startAt: new Date(),
             createdById: session.user.id,
           },
         });
         finalEncounterId = encounter.id;
-      } else {
-        // Transition existing encounter to "admitted"
+      } else if (!isRequest) {
+        // Transition existing encounter to "admitted" only for immediate admission
         await tx.encounter.update({
           where: { id: finalEncounterId },
           data: { status: "admitted" },
@@ -123,7 +143,7 @@ export async function POST(req: Request) {
         });
       }
 
-      // 3. Create admission
+      // 3. Create admission (request or immediate)
       const admission = await tx.admission.create({
         data: {
           patientId,
@@ -131,34 +151,49 @@ export async function POST(req: Request) {
           facilityId,
           admissionNumber,
           admissionType: admissionType || "elective",
-          admittedById: attendingClinicianId || session.user.id,
+          admittedById: isRequest ? null : (attendingClinicianId || session.user.id),
+          admittedAt: isRequest ? new Date() : new Date(), // requestedAt set below for requests
           admissionReason: admissionReason || null,
           admissionDiagnosis: admissionDiagnosis || null,
-          admittedAt: new Date(),
-          status: "admitted",
+          provisionalDiagnosis: provisionalDiagnosis || null,
+          clinicalIndication: clinicalIndication || null,
+          priority: priority || "routine",
+          departmentId: departmentId || null,
+          requestedWardId: requestedWardId || wardId || null,
+          requestedBedType: requestedBedType || null,
+          specialRequirements: specialRequirements || null,
+          admissionSource: admissionSource || null,
+          attendingClinicianId: attendingClinicianId || null,
+          requestedById: isRequest ? session.user.id : null,
+          requestedAt: isRequest ? new Date() : null,
+          notes: notes || null,
+          createdById: session.user.id,
+          updatedById: session.user.id,
+          status: requestedStatus,
         },
       });
 
-      // 4. Mark bed occupied
-      await tx.bed.update({
-        where: { id: bedId },
-        data: { status: "occupied" },
-      });
-
-      // 5. Create active BedAssignment
-      const assignment = await tx.bedAssignment.create({
-        data: {
-          admissionId: admission.id,
-          patientId,
-          facilityId,
-          wardId,
-          roomId: roomId || bed.roomId || null,
-          bedId,
-          assignedAt: new Date(),
-          assignedById: session.user.id,
-          status: "active",
-        },
-      });
+      // 4-5. For immediate admission only: mark bed occupied + create BedAssignment
+      let assignment: any = null;
+      if (!isRequest && bed) {
+        await tx.bed.update({
+          where: { id: bedId },
+          data: { status: "occupied" },
+        });
+        assignment = await tx.bedAssignment.create({
+          data: {
+            admissionId: admission.id,
+            patientId,
+            facilityId,
+            wardId,
+            roomId: roomId || bed.roomId || null,
+            bedId,
+            assignedAt: new Date(),
+            assignedById: session.user.id,
+            status: "active",
+          },
+        });
+      }
 
       return { admission, assignment, encounterId: finalEncounterId };
     });
