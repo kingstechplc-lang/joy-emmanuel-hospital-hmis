@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, AlertTriangle, History, TestTube } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, History, TestTube, CheckCircle2 } from "lucide-react";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
@@ -177,6 +177,27 @@ export function LabResultsView() {
                                   <div><span className="text-slate-500">Reference range:</span> <span className="font-medium">{r.referenceRange || "—"}</span></div>
                                   <div><span className="text-slate-500">Abnormal flag:</span> <span className="font-medium capitalize">{r.abnormalFlag?.replace("_", " ") || "—"}</span></div>
                                   <div><span className="text-slate-500">Critical:</span> <span className="font-medium">{r.criticalFlag ? "Yes" : "No"}</span></div>
+                                  {r.isCritical && (
+                                    <div className="bg-rose-50 border border-rose-200 rounded p-2 mt-2 text-xs">
+                                      <div className="font-semibold text-rose-800 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Critical Result</div>
+                                      {r.criticalAcknowledgedAt ? (
+                                        <div className="text-rose-700 mt-1">
+                                          Acknowledged by {r.criticalAcknowledgedById || "—"} on {formatDate(r.criticalAcknowledgedAt, true)}
+                                          {r.criticalAckMethod && <span className="ml-1">via {r.criticalAckMethod}</span>}
+                                        </div>
+                                      ) : (
+                                        <div className="mt-2">
+                                          <AcknowledgeButton resultId={r.id} onDone={() => refetch()} />
+                                        </div>
+                                      )}
+                                      {r.flagSource && r.flagSource !== "manual" && (
+                                        <div className="text-rose-600 mt-1">Flag source: {r.flagSource}</div>
+                                      )}
+                                      {r.flagRangeApplied && (
+                                        <div className="text-rose-600">Range applied: {r.flagRangeApplied}</div>
+                                      )}
+                                    </div>
+                                  )}
                                   {r.resultNotes && <div><span className="text-slate-500">Notes:</span> <span className="font-medium">{r.resultNotes}</span></div>}
                                 </div>
                                 <div className="space-y-1">
@@ -365,5 +386,47 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// =====================================================================
+// AcknowledgeButton — record clinician acknowledgement of a critical result
+// =====================================================================
+function AcknowledgeButton({ resultId, onDone }: { resultId: string; onDone: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [method, setMethod] = useState("electronic");
+  const [notes, setNotes] = useState("");
+
+  const ack = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/lab-results/${resultId}/acknowledge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method, notes }),
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "Failed"); }
+      toast.success("Critical result acknowledged");
+      setNotes("");
+      onDone();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Select value={method} onValueChange={setMethod}>
+        <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="phone">Phone</SelectItem>
+          <SelectItem value="in_person">In person</SelectItem>
+          <SelectItem value="electronic">Electronic</SelectItem>
+          <SelectItem value="other">Other</SelectItem>
+        </SelectContent>
+      </Select>
+      <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Acknowledgement notes (optional)" className="h-7 flex-1 text-xs" />
+      <Button size="sm" onClick={ack} disabled={saving} className="h-7 bg-rose-600 hover:bg-rose-700 text-xs gap-1">
+        <CheckCircle2 className="w-3 h-3" /> {saving ? "Ack..." : "Acknowledge"}
+      </Button>
+    </div>
   );
 }

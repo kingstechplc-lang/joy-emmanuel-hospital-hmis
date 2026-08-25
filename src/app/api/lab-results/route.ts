@@ -153,16 +153,53 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing lab.result permission" }, { status: 403 });
   }
 
-  const { labOrderItemId, resultValue, numericValue, unit, referenceRange, abnormalFlag, criticalFlag, resultNotes } = body;
+  const { labOrderItemId, resultValue, numericValue, unit, referenceRange, abnormalFlag, criticalFlag, resultNotes, specimenComment, clinicianComment, performingLab, performingStaffId, componentId, componentName, resultOptionId, enableAutoFlag = true } = body;
   if (!labOrderItemId) {
     return NextResponse.json({ error: "labOrderItemId is required" }, { status: 400 });
   }
 
   const item = await db.labOrderItem.findUnique({
     where: { id: labOrderItemId },
-    include: { labOrder: true, laboratoryTest: true },
+    include: {
+      labOrder: { include: { patient: { select: { id: true, sex: true, dateOfBirth: true } } } },
+      laboratoryTest: true,
+    },
   });
   if (!item) return NextResponse.json({ error: "Lab order item not found" }, { status: 404 });
+
+  // ---- Auto-flagging from catalog (reference ranges + critical values) ----
+  let computedFlag = abnormalFlag || "normal";
+  let computedCriticalFlag = !!criticalFlag;
+  let computedIsCritical = !!criticalFlag;
+  let flagSource = "manual";
+  let flagRangeApplied: string | null = null;
+
+  if (enableAutoFlag && numericValue != null && numericValue !== "" && item.laboratoryTest) {
+    const { autoFlagResult } = await import("@/lib/lab-result-flagging");
+    const auto = await autoFlagResult({
+      laboratoryTestId: item.laboratoryTestId,
+      numericValue: Number(numericValue),
+      patient: {
+        sex: item.labOrder?.patient?.sex || null,
+        dateOfBirth: item.labOrder?.patient?.dateOfBirth || null,
+      },
+      specimenType: item.laboratoryTest?.specimenType || null,
+      facilityId: item.labOrder?.facilityId || null,
+    });
+    // Only override if auto-flagging found a match (manual flag is fallback)
+    if (auto.flagSource !== "manual") {
+      computedFlag = auto.abnormalFlag;
+      computedCriticalFlag = auto.criticalFlag;
+      computedIsCritical = auto.isCritical;
+      flagSource = auto.flagSource;
+      flagRangeApplied = auto.flagRangeApplied;
+    } else if (abnormalFlag) {
+      // Manual flag provided by user
+      flagSource = "manual";
+    }
+  } else if (abnormalFlag) {
+    flagSource = "manual";
+  }
 
   const result = await db.labResult.create({
     data: {
@@ -171,9 +208,19 @@ export async function POST(req: Request) {
       numericValue: numericValue != null && numericValue !== "" ? Number(numericValue) : null,
       unit: unit || item.laboratoryTest?.unit || null,
       referenceRange: referenceRange || item.laboratoryTest?.referenceRange || null,
-      abnormalFlag: abnormalFlag || "normal",
-      criticalFlag: !!criticalFlag,
+      abnormalFlag: computedFlag,
+      criticalFlag: computedCriticalFlag,
+      isCritical: computedIsCritical,
+      flagSource,
+      flagRangeApplied,
       resultNotes: resultNotes || null,
+      specimenComment: specimenComment || null,
+      clinicianComment: clinicianComment || null,
+      performingLab: performingLab || null,
+      performingStaffId: performingStaffId || null,
+      componentId: componentId || null,
+      componentName: componentName || null,
+      resultOptionId: resultOptionId || null,
       enteredById: session.user.id,
       enteredAt: new Date(),
       status: "entered",

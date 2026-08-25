@@ -42,11 +42,13 @@ export async function GET(req: Request) {
       encounter: { select: { id: true, encounterNumber: true, encounterType: true } },
       facility: { select: { id: true, name: true, code: true } },
       orderingClinician: { select: { id: true, firstName: true, lastName: true } },
-      report: true,
+      reports: { where: { isLatest: true }, take: 1 },
     },
   });
 
-  return NextResponse.json({ items: orders, count: orders.length });
+  // Flatten latest report as `report` for back-compat with the view
+  const items = orders.map((o: any) => ({ ...o, report: o.reports?.[0] || null }));
+  return NextResponse.json({ items, count: items.length });
 }
 
 // POST /api/imaging
@@ -65,7 +67,8 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
-  const { patientId, encounterId, facilityId, procedureName, procedureCode, priority, indication, orderingClinicianId } = body;
+  const { patientId, encounterId, facilityId, procedureName, procedureCode, priority, indication, orderingClinicianId,
+    modality, bodySite, laterality, contrastRequired, contrastNotes, clinicalIndication, diagnosisRef, departmentId, requestedAt, serviceId, notes } = body;
 
   if (!patientId || !facilityId) {
     return NextResponse.json({ error: "patientId and facilityId are required" }, { status: 400 });
@@ -104,25 +107,40 @@ export async function POST(req: Request) {
       orderingClinicianId: orderingClinicianId || session.user.id,
       procedureName,
       procedureCode: procedureCode || null,
+      modality: modality || null,
+      bodySite: bodySite || null,
+      laterality: laterality || null,
+      contrastRequired: !!contrastRequired,
+      contrastNotes: contrastNotes || null,
+      clinicalIndication: clinicalIndication || indication || null,
+      diagnosisRef: diagnosisRef || null,
+      departmentId: departmentId || null,
+      requestedAt: requestedAt ? new Date(requestedAt) : null,
+      serviceId: serviceId || null,
+      notes: notes || null,
       priority: priority || "routine",
       status: "ordered",
       orderedAt: new Date(),
-      // Create a draft report capturing the indication in findings
-      report: indication
+      // Create a draft report capturing the indication
+      reports: (clinicalIndication || indication)
         ? {
-            create: {
+            create: [{
               patientId,
+              clinicalIndication: clinicalIndication || indication || null,
               findings: indication ? `Indication: ${indication}` : null,
               status: "draft",
-            },
+              isLatest: true,
+            }]
           }
         : undefined,
     },
     include: {
       patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
-      report: true,
+      reports: { where: { isLatest: true }, take: 1 },
     },
   });
+  // Flatten for back-compat
+  const item = { ...order, report: order.reports?.[0] || null };
 
   await auditLog({
     userId: session.user.id,
@@ -153,5 +171,5 @@ export async function POST(req: Request) {
     orderingClinicianId: session.user.id,
   });
 
-  return NextResponse.json({ item: order }, { status: 201 });
+  return NextResponse.json({ item }, { status: 201 });
 }

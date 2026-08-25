@@ -1,7 +1,8 @@
 // =====================================================================
 // API: /api/procedures/[id]
-//   GET   — single procedure
-//   PATCH — update findings/outcome/notes
+//   GET    — single procedure
+//   PATCH  — update fields OR transition status via action=transition
+//            action=transition: { to: <status>, ...optional fields }
 //   DELETE — soft delete (sets status=cancelled)
 // =====================================================================
 import { NextResponse } from "next/server";
@@ -49,30 +50,107 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } catch {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
-  const { procedureName, procedureCode, performedById, performedAt, indication, findings, outcome, notes, consentStatus } = body;
 
   const existing = await db.procedure.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Procedure not found" }, { status: 404 });
 
+  // ---- TRANSITION action — change status with optional fields ----
+  if (body.action === "transition") {
+    const { to, scheduledAt, procedureRoom, performedById, performedAt, findings, outcome, complications, specimensSent, consumablesUsed, followUpInstructions, consentStatus, consentNotes, notes, cancellationReason } = body;
+
+    const validTransitions: Record<string, string[]> = {
+      requested: ["scheduled", "confirmed", "patient_ready", "in_progress", "completed", "cancelled", "aborted"],
+      scheduled: ["confirmed", "patient_ready", "in_progress", "completed", "cancelled", "rescheduled", "no_show", "aborted"],
+      confirmed: ["patient_ready", "in_progress", "completed", "cancelled", "rescheduled", "no_show", "aborted"],
+      patient_ready: ["in_progress", "completed", "cancelled", "no_show", "aborted"],
+      in_progress: ["completed", "aborted"],
+      rescheduled: ["scheduled", "confirmed", "cancelled"],
+    };
+    const allowed = validTransitions[existing.status] || [];
+    if (!allowed.includes(to)) {
+      return NextResponse.json(
+        { error: `Invalid transition from "${existing.status}" to "${to}". Allowed: ${allowed.join(", ") || "none"}` },
+        { status: 400 },
+      );
+    }
+
+    const updateData: any = { status: to };
+    // Capture transition-specific fields
+    if (to === "scheduled") {
+      if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt);
+      if (procedureRoom) updateData.procedureRoom = procedureRoom;
+      updateData.scheduledById = session.user.id;
+    }
+    if (to === "in_progress" && performedById) {
+      updateData.performedById = performedById;
+    }
+    if (to === "completed") {
+      if (performedAt) updateData.performedAt = new Date(performedAt);
+      else if (!existing.performedAt) updateData.performedAt = new Date();
+      if (performedById) updateData.performedById = performedById;
+      if (findings !== undefined) updateData.findings = findings || null;
+      if (outcome !== undefined) updateData.outcome = outcome || null;
+      if (complications !== undefined) updateData.complications = complications || null;
+      if (specimensSent !== undefined) updateData.specimensSent = specimensSent || null;
+      if (consumablesUsed !== undefined) updateData.consumablesUsed = consumablesUsed || null;
+      if (followUpInstructions !== undefined) updateData.followUpInstructions = followUpInstructions || null;
+      if (consentStatus !== undefined) updateData.consentStatus = consentStatus;
+      if (consentNotes !== undefined) updateData.consentNotes = consentNotes || null;
+      if (notes !== undefined) updateData.notes = notes || null;
+    }
+    if (to === "cancelled") {
+      updateData.cancelledAt = new Date();
+      updateData.cancelledById = session.user.id;
+      if (cancellationReason) updateData.cancellationReason = cancellationReason;
+    }
+
+    const updated = await db.procedure.update({ where: { id }, data: updateData });
+
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId: existing.facilityId,
+      action: `PROCEDURE_${to.toUpperCase()}`,
+      resourceType: "procedure",
+      resourceId: id,
+      oldValues: { status: existing.status },
+      newValues: updateData,
+    });
+
+    return NextResponse.json({ item: updated });
+  }
+
+  // ---- Default: update fields ----
+  const {
+    procedureName, procedureCode, category, performedById, performedAt,
+    indication, diagnosisRef, preProcedureNotes,
+    findings, outcome, complications, specimensSent, consumablesUsed,
+    followUpInstructions, consentStatus, consentNotes, notes,
+    scheduledAt, procedureRoom, serviceId, status,
+  } = body;
+
   const data: any = {};
-  if (procedureName) data.procedureName = procedureName;
+  if (procedureName !== undefined) data.procedureName = procedureName;
   if (procedureCode !== undefined) data.procedureCode = procedureCode || null;
-  if (performedById) data.performedById = performedById;
-  if (performedAt) data.performedAt = new Date(performedAt);
+  if (category !== undefined) data.category = category || null;
+  if (performedById !== undefined) data.performedById = performedById || null;
+  if (performedAt !== undefined) data.performedAt = performedAt ? new Date(performedAt) : null;
   if (indication !== undefined) data.indication = indication || null;
+  if (diagnosisRef !== undefined) data.diagnosisRef = diagnosisRef || null;
+  if (preProcedureNotes !== undefined) data.preProcedureNotes = preProcedureNotes || null;
   if (findings !== undefined) data.findings = findings || null;
   if (outcome !== undefined) data.outcome = outcome || null;
-
-  // Preserve/update consent status prefix
-  if (notes !== undefined || consentStatus !== undefined) {
-    const oldNotes = existing.notes || "";
-    const consentMatch = oldNotes.match(/^CONSENT: (taken|not_taken)\n?/i);
-    const existingConsent = consentMatch ? consentMatch[1].toLowerCase() : null;
-    const newConsent = consentStatus === "taken" || consentStatus === "not_taken" ? consentStatus : existingConsent;
-    const consentLine = newConsent ? `CONSENT: ${newConsent}\n` : "";
-    const notesBody = notes !== undefined ? (notes || "") : oldNotes.replace(/^CONSENT: (taken|not_taken)\n?/i, "");
-    data.notes = (consentLine + notesBody).trim() || null;
-  }
+  if (complications !== undefined) data.complications = complications || null;
+  if (specimensSent !== undefined) data.specimensSent = specimensSent || null;
+  if (consumablesUsed !== undefined) data.consumablesUsed = consumablesUsed || null;
+  if (followUpInstructions !== undefined) data.followUpInstructions = followUpInstructions || null;
+  if (consentStatus !== undefined) data.consentStatus = consentStatus;
+  if (consentNotes !== undefined) data.consentNotes = consentNotes || null;
+  if (notes !== undefined) data.notes = notes || null;
+  if (scheduledAt !== undefined) data.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
+  if (procedureRoom !== undefined) data.procedureRoom = procedureRoom || null;
+  if (serviceId !== undefined) data.serviceId = serviceId || null;
+  if (status !== undefined) data.status = status;
 
   const updated = await db.procedure.update({ where: { id }, data });
 
@@ -107,7 +185,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!existing) return NextResponse.json({ error: "Procedure not found" }, { status: 404 });
 
   // Soft delete — set status to cancelled
-  const updated = await db.procedure.update({ where: { id }, data: { status: "cancelled" } });
+  const updated = await db.procedure.update({
+    where: { id },
+    data: {
+      status: "cancelled",
+      cancelledAt: new Date(),
+      cancelledById: session.user.id,
+      cancellationReason: "Soft-deleted via admin UI",
+    },
+  });
 
   await auditLog({
     userId: session.user.id,

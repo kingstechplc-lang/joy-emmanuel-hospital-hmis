@@ -3,11 +3,16 @@
 //   GET   — single imaging order with report
 //   PATCH — status transitions:
 //           schedule    → set scheduledAt, status=scheduled
-//           perform     → status=in_progress
-//           report     → create/update ImagingReport with findings & impression, status=completed
+//           arrive      → status=arrived + patientArrivedAt
+//           perform     → status=in_progress (capture DICOM fields)
+//           report      → create/update ImagingReport with findings & impression, status=reported
 //           verify     → status=verified + set verifiedById/verifiedAt on report
 //           release    → status=released
+//           amend      → create amendment version of report (preserves original)
+//           reschedule → status=rescheduled + new scheduledAt
+//           no_show   → status=no_show
 //           cancel     → status=cancelled
+//           update     → update order fields (bodySite, laterality, contrast, etc.)
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -34,12 +39,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       encounter: { select: { id: true, encounterNumber: true, encounterType: true } },
       facility: { select: { id: true, name: true, code: true } },
       orderingClinician: { select: { id: true, firstName: true, lastName: true } },
-      report: true,
+      reports: { orderBy: { version: "desc" } },
     },
   });
 
   if (!order) return NextResponse.json({ error: "Imaging order not found" }, { status: 404 });
-  return NextResponse.json({ item: order });
+  // Return the latest report as `report` for back-compat with the view
+  const latestReport = order.reports.find((r: any) => r.isLatest) || order.reports[0] || null;
+  return NextResponse.json({ item: { ...order, report: latestReport, reportHistory: order.reports } });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -62,11 +69,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const existing = await db.imagingOrder.findUnique({
     where: { id },
     include: {
-      report: true,
+      reports: { where: { isLatest: true }, take: 1 },
       patient: { select: { firstName: true, lastName: true } },
     },
   });
   if (!existing) return NextResponse.json({ error: "Imaging order not found" }, { status: 404 });
+  const existingReport = existing.reports[0] || null;
 
   // ---- SCHEDULE ----
   if (action === "schedule") {
@@ -76,7 +84,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : new Date();
     const updated = await db.imagingOrder.update({
       where: { id },
-      data: { status: "scheduled", scheduledAt },
+      data: {
+        status: "scheduled",
+        scheduledAt,
+        scheduledById: session.user.id,
+        imagingRoom: body.imagingRoom || existing.imagingRoom || null,
+      },
     });
 
     await auditLog({
@@ -92,14 +105,76 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ item: updated });
   }
 
-  // ---- PERFORM ----
-  if (action === "perform") {
+  // ---- ARRIVE (patient arrived at imaging) ----
+  if (action === "arrive") {
     if (!hasPermission(session, PERMISSIONS.IMAGING_PERFORM)) {
       return NextResponse.json({ error: "Missing imaging.perform permission" }, { status: 403 });
     }
     const updated = await db.imagingOrder.update({
       where: { id },
-      data: { status: "in_progress" },
+      data: { status: "arrived", patientArrivedAt: new Date() },
+    });
+    await auditLog({
+      userId: session.user.id, organizationId: session.user.organizationId, facilityId: existing.facilityId,
+      action: "IMAGING_PATIENT_ARRIVED", resourceType: "imaging_order", resourceId: id,
+      newValues: { status: "arrived" },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  // ---- RESCHEDULE ----
+  if (action === "reschedule") {
+    if (!hasPermission(session, PERMISSIONS.IMAGING_PERFORM)) {
+      return NextResponse.json({ error: "Missing imaging.perform permission" }, { status: 403 });
+    }
+    const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : new Date();
+    const updated = await db.imagingOrder.update({
+      where: { id },
+      data: { status: "rescheduled", scheduledAt, scheduledById: session.user.id },
+    });
+    await auditLog({
+      userId: session.user.id, organizationId: session.user.organizationId, facilityId: existing.facilityId,
+      action: "IMAGING_RESCHEDULED", resourceType: "imaging_order", resourceId: id,
+      oldValues: { status: existing.status, scheduledAt: existing.scheduledAt },
+      newValues: { status: "rescheduled", scheduledAt },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  // ---- NO SHOW ----
+  if (action === "no_show") {
+    if (!hasPermission(session, PERMISSIONS.IMAGING_PERFORM)) {
+      return NextResponse.json({ error: "Missing imaging.perform permission" }, { status: 403 });
+    }
+    const updated = await db.imagingOrder.update({
+      where: { id },
+      data: { status: "no_show" },
+    });
+    await auditLog({
+      userId: session.user.id, organizationId: session.user.organizationId, facilityId: existing.facilityId,
+      action: "IMAGING_NO_SHOW", resourceType: "imaging_order", resourceId: id,
+      newValues: { status: "no_show" },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  // ---- PERFORM (capture DICOM fields when study is performed) ----
+  if (action === "perform") {
+    if (!hasPermission(session, PERMISSIONS.IMAGING_PERFORM)) {
+      return NextResponse.json({ error: "Missing imaging.perform permission" }, { status: 403 });
+    }
+    const { accessionNumber, studyInstanceUid, seriesInstanceUid, contrastUsed, performedAt } = body;
+    const updated = await db.imagingOrder.update({
+      where: { id },
+      data: {
+        status: "in_progress",
+        performedAt: performedAt ? new Date(performedAt) : new Date(),
+        performedById: session.user.id,
+        accessionNumber: accessionNumber || existing.accessionNumber || null,
+        studyInstanceUid: studyInstanceUid || existing.studyInstanceUid || null,
+        seriesInstanceUid: seriesInstanceUid || existing.seriesInstanceUid || null,
+        contrastRequired: contrastUsed != null ? !!contrastUsed : existing.contrastRequired,
+      },
     });
 
     await auditLog({
@@ -110,37 +185,36 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       resourceType: "imaging_order",
       resourceId: id,
       oldValues: { status: existing.status },
-      newValues: { status: "in_progress" },
+      newValues: { status: "in_progress", accessionNumber, studyInstanceUid },
     });
     return NextResponse.json({ item: updated });
   }
 
-  // ---- REPORT ----
+  // ---- REPORT (create/update structured report, status=reported) ----
   if (action === "report") {
     if (!hasPermission(session, PERMISSIONS.IMAGING_REPORT)) {
       return NextResponse.json({ error: "Missing imaging.report permission" }, { status: 403 });
     }
-    const { findings, impression } = body;
-    if (!findings && !impression) {
-      return NextResponse.json({ error: "findings or impression is required" }, { status: 400 });
+    const { findings, impression, technique, recommendations, differentialDiagnosis, followUpRecommendation, clinicalIndication } = body;
+    if (!findings && !impression && !technique) {
+      return NextResponse.json({ error: "findings, impression, or technique is required" }, { status: 400 });
     }
 
-    // Preserve an existing "Indication:" prefix when present in findings
-    const previousFindings = existing.report?.findings || "";
-    const indicationMatch = previousFindings.match(/^Indication:[^\n]*\n?/i);
-    const indicationPrefix = indicationMatch ? indicationMatch[0] : "";
-    const finalFindings = (indicationPrefix ? indicationPrefix + (findings || "") : (findings || "")).trim();
-
     let report;
-    if (existing.report) {
+    if (existingReport) {
       report = await db.imagingReport.update({
-        where: { imagingOrderId: id },
+        where: { id: existingReport.id },
         data: {
-          findings: finalFindings || null,
-          impression: impression || null,
+          clinicalIndication: clinicalIndication || existingReport.clinicalIndication || null,
+          technique: technique || existingReport.technique || null,
+          findings: findings || existingReport.findings || null,
+          impression: impression || existingReport.impression || null,
+          recommendations: recommendations || existingReport.recommendations || null,
+          differentialDiagnosis: differentialDiagnosis || existingReport.differentialDiagnosis || null,
+          followUpRecommendation: followUpRecommendation || existingReport.followUpRecommendation || null,
           reportedById: session.user.id,
           reportedAt: new Date(),
-          status: "verified",
+          status: "preliminary",
         },
       });
     } else {
@@ -148,18 +222,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           imagingOrderId: id,
           patientId: existing.patientId,
-          findings: finalFindings || null,
+          clinicalIndication: clinicalIndication || null,
+          technique: technique || null,
+          findings: findings || null,
           impression: impression || null,
+          recommendations: recommendations || null,
+          differentialDiagnosis: differentialDiagnosis || null,
+          followUpRecommendation: followUpRecommendation || null,
           reportedById: session.user.id,
           reportedAt: new Date(),
-          status: "verified",
+          status: "preliminary",
         },
       });
     }
 
     const updated = await db.imagingOrder.update({
       where: { id },
-      data: { status: "completed" },
+      data: { status: "reported" },
     });
 
     await auditLog({
@@ -169,15 +248,60 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       action: "IMAGING_REPORTED",
       resourceType: "imaging_report",
       resourceId: report.id,
-      newValues: {
-        imagingOrderId: id,
-        findings: finalFindings,
-        impression,
-        status: "completed",
-      },
+      newValues: { imagingOrderId: id, findings, impression, technique, status: "preliminary" },
     });
 
     return NextResponse.json({ item: updated, report });
+  }
+
+  // ---- AMEND (create a new report version; preserve original) ----
+  if (action === "amend") {
+    if (!hasPermission(session, PERMISSIONS.IMAGING_VERIFY)) {
+      return NextResponse.json({ error: "Missing imaging.verify permission to amend reports" }, { status: 403 });
+    }
+    const { findings, impression, technique, recommendations, amendmentReason } = body;
+    if (!amendmentReason) {
+      return NextResponse.json({ error: "amendmentReason is required" }, { status: 400 });
+    }
+    if (!existingReport) {
+      return NextResponse.json({ error: "No existing report to amend" }, { status: 400 });
+    }
+    const oldReport = existingReport;
+    const newVersion = (oldReport.version || 1) + 1;
+    // Mark old report as amended (preserved in history)
+    await db.imagingReport.update({
+      where: { id: oldReport.id },
+      data: { status: "amended", amendmentReason, isLatest: false },
+    });
+    // Create the new amended version as the latest
+    const amended = await db.imagingReport.create({
+      data: {
+        imagingOrderId: id,
+        patientId: existing.patientId,
+        clinicalIndication: oldReport.clinicalIndication,
+        technique: technique || oldReport.technique,
+        findings: findings || oldReport.findings,
+        impression: impression || oldReport.impression,
+        recommendations: recommendations || oldReport.recommendations,
+        differentialDiagnosis: oldReport.differentialDiagnosis,
+        followUpRecommendation: oldReport.followUpRecommendation,
+        reportedById: session.user.id,
+        reportedAt: new Date(),
+        status: "final",
+        amendedFromId: oldReport.id,
+        amendmentReason,
+        amendmentApprovedById: session.user.id,
+        version: newVersion,
+        isLatest: true,
+      },
+    });
+    await auditLog({
+      userId: session.user.id, organizationId: session.user.organizationId, facilityId: existing.facilityId,
+      action: "IMAGING_REPORT_AMENDED", resourceType: "imaging_report", resourceId: amended.id,
+      oldValues: { originalId: oldReport.id, originalFindings: oldReport.findings, originalImpression: oldReport.impression },
+      newValues: { amendedId: amended.id, findings, impression, amendmentReason },
+    });
+    return NextResponse.json({ item: amended });
   }
 
   // ---- VERIFY ----
@@ -189,9 +313,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: { status: "verified" },
     });
-    if (existing.report) {
+    if (existingReport) {
       await db.imagingReport.update({
-        where: { imagingOrderId: id },
+        where: { id: existingReport.id },
         data: { status: "verified", verifiedById: session.user.id, verifiedAt: new Date() },
       });
     }
@@ -229,10 +353,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: { status: "released" },
     });
-    if (existing.report) {
+    if (existingReport) {
       await db.imagingReport.update({
-        where: { imagingOrderId: id },
-        data: { status: "released" },
+        where: { id: existingReport.id },
+        data: { status: "released", releasedAt: new Date(), releasedById: session.user.id },
       });
     }
 
@@ -254,9 +378,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!hasPermission(session, PERMISSIONS.IMAGING_ORDER)) {
       return NextResponse.json({ error: "Missing imaging.order permission" }, { status: 403 });
     }
+    const { cancellationReason } = body;
     const updated = await db.imagingOrder.update({
       where: { id },
-      data: { status: "cancelled" },
+      data: { status: "cancelled", cancelledAt: new Date(), cancelledById: session.user.id, cancellationReason: cancellationReason || null },
     });
 
     await auditLog({
@@ -267,7 +392,34 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       resourceType: "imaging_order",
       resourceId: id,
       oldValues: { status: existing.status },
-      newValues: { status: "cancelled" },
+      newValues: { status: "cancelled", cancellationReason },
+    });
+    return NextResponse.json({ item: updated });
+  }
+
+  // ---- UPDATE (edit order fields: bodySite, laterality, contrast, serviceId, notes, etc.) ----
+  if (action === "update") {
+    if (!hasPermission(session, PERMISSIONS.IMAGING_ORDER)) {
+      return NextResponse.json({ error: "Missing imaging.order permission" }, { status: 403 });
+    }
+    const { bodySite, laterality, contrastRequired, contrastNotes, modality, serviceId, departmentId, notes, priority, clinicalIndication, diagnosisRef } = body;
+    const updateData: any = {};
+    if (bodySite !== undefined) updateData.bodySite = bodySite || null;
+    if (laterality !== undefined) updateData.laterality = laterality || null;
+    if (contrastRequired !== undefined) updateData.contrastRequired = !!contrastRequired;
+    if (contrastNotes !== undefined) updateData.contrastNotes = contrastNotes || null;
+    if (modality !== undefined) updateData.modality = modality || null;
+    if (serviceId !== undefined) updateData.serviceId = serviceId || null;
+    if (departmentId !== undefined) updateData.departmentId = departmentId || null;
+    if (notes !== undefined) updateData.notes = notes || null;
+    if (priority !== undefined) updateData.priority = priority;
+    if (clinicalIndication !== undefined) updateData.clinicalIndication = clinicalIndication || null;
+    if (diagnosisRef !== undefined) updateData.diagnosisRef = diagnosisRef || null;
+    const updated = await db.imagingOrder.update({ where: { id }, data: updateData });
+    await auditLog({
+      userId: session.user.id, organizationId: session.user.organizationId, facilityId: existing.facilityId,
+      action: "IMAGING_ORDER_UPDATED", resourceType: "imaging_order", resourceId: id,
+      newValues: updateData,
     });
     return NextResponse.json({ item: updated });
   }

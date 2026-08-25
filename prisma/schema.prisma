@@ -1755,12 +1755,37 @@ model LabOrder {
   priority              String   @default("routine") // routine | urgent | stat
   orderedAt             DateTime @default(now())
   notes                 String?
+  // ---- Diagnostic workflow extensions ----
+  clinicalIndication    String?  // structured indication / reason for order
+  diagnosisRef          String?  // diagnosis code or free-text reference
+  departmentId          String?  // ordering department
+  // TAT timestamps (set as the order progresses)
+  collectedAt           DateTime?
+  receivedAt            DateTime?
+  resultedAt            DateTime?
+  verifiedAt            DateTime?
+  releasedAt            DateTime?
+  // Duplicate detection
+  duplicateOfId         String?  // points to a recent similar order for the same patient
+  isDuplicateOverride   Boolean  @default(false) // clinician acknowledged duplicate and proceeded
+  duplicateNote         String?
+  // Recollection support
+  recollectFromOrderId  String?  // if this order is a recollection of a previous cancelled/rejected order
+  // Cancellation / rejection metadata
+  cancelledAt           DateTime?
+  cancelledById         String?
+  cancellationReason    String?
+  // Billing integration
+  serviceInvoiceItemId  String?  // link to the generated invoice item (if any)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@unique([facilityId, orderNumber])
   @@index([patientId, status])
   @@index([facilityId, status, orderedAt])
+  @@index([facilityId, priority, orderedAt])
+  @@index([orderingClinicianId])
+  @@index([departmentId])
 
   items                 LabOrderItem[]
   samples               LabSample[]
@@ -1789,12 +1814,23 @@ model LabSample {
   collectedAt       DateTime?
   receivedById      String?
   receivedAt        DateTime?
-  status            String   @default("pending") // pending | collected | received | rejected | processing
+  status            String   @default("pending") // pending | collected | received | rejected | processing | recollected
   rejectionReason   String?
+  rejectionReasonCode String? // coded reason: insufficient | wrong_container | wrong_specimen | leakage | clotted | hemolysed | labeling | other
+  rejectionNotes    String?
+  rejectedById      String?
+  rejectedAt        DateTime?
+  // Recollection chain — link to the new sample that replaced this one
+  recollectFromId   String?  // if this sample is a recollection, points to the rejected sample it replaces
+  collectionLocation String?
+  container         String?
+  volume            String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@unique([labOrderId, sampleNumber])
+  @@index([status])
+  @@index([recollectFromId])
 }
 
 model LabResult {
@@ -1805,19 +1841,49 @@ model LabResult {
   numericValue      Float?
   unit              String?
   referenceRange     String?
-  abnormalFlag      String? // normal | low | high | critical_low | critical_high
+  abnormalFlag      String? // normal | low | high | critical_low | critical_high | abnormal | positive | negative | reactive | non_reactive | detected | not_detected
   criticalFlag      Boolean  @default(false)
-  resultNotes       String?
+  // Auto-flagging source — was this flag computed from catalog reference ranges / critical values?
+  flagSource        String   @default("manual") // manual | auto_ref_range | auto_critical_value | auto_result_option
+  flagRangeApplied  String?  // human-readable range used for auto-flagging (e.g., "13.5 - 17.5 g/dL")
+  // Component-level support (for panel results)
+  componentId       String?  // FK → LabTestComponent (if this result is for a specific component)
+  componentName     String?  // denormalized for legacy queries
+  // Result option support (for qualitative/categorical tests)
+  resultOptionId    String?  // FK → LabTestResultOption (if selected from configured options)
+  // Comments
+  resultNotes       String?  // technical lab comment
+  specimenComment   String?  // specimen-quality comment
+  clinicianComment  String?  // clinician interpretation (separate from lab comment)
+  // Performing lab / staff
+  performingLab     String?
+  performingStaffId String?
   enteredById       String?
   verifiedById      String?
   enteredAt         DateTime?
   verifiedAt        DateTime?
+  releasedAt        DateTime?
+  releasedById      String?
   status            String   @default("draft") // draft | entered | verified | released | amended | cancelled
   amendedFromId     String?
+  amendmentReason   String?
+  amendmentApprovedById String?
+  version           Int      @default(1)
+  // ---- Critical value acknowledgement workflow ----
+  isCritical        Boolean  @default(false) // true if result meets configured critical thresholds
+  criticalAcknowledgedById String?
+  criticalAcknowledgedAt   DateTime?
+  criticalAckMethod        String?  // phone | in_person | electronic | other
+  criticalAckNotes         String?
+  criticalEscalationLevel  Int      @default(0) // 0 = not escalated, 1+ = escalation tiers
+  notifiedUserIds   String?  // JSON array of user IDs who were notified
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@index([labOrderItemId])
+  @@index([status])
+  @@index([isCritical])
+  @@index([componentId])
 }
 
 // ---------------------------------------------------------------------
@@ -1836,33 +1902,85 @@ model ImagingOrder {
   orderingClinician     User?    @relation("imagingOrderClinician", fields: [orderingClinicianId], references: [id])
   procedureName         String
   procedureCode         String?
-  priority              String   @default("routine")
-  status                String   @default("ordered") // ordered | scheduled | in_progress | completed | verified | released | cancelled
-  orderedAt             DateTime @default(now())
+  // ---- Diagnostic imaging extensions ----
+  modality              String?  // x_ray | ultrasound | ct | mri | mammography | fluoroscopy | other
+  bodySite              String?  // e.g., Chest, Abdomen, Skull
+  laterality            String?  // left | right | bilateral | na
+  contrastRequired      Boolean  @default(false)
+  contrastNotes         String?
+  clinicalIndication    String?
+  diagnosisRef          String?
+  departmentId          String?
+  // Scheduling
+  requestedAt           DateTime?  // when the clinician wants it done
   scheduledAt           DateTime?
+  scheduledById         String?
+  imagingRoom           String?
+  appointmentId         String?  // link to existing Appointments system if booked
+  patientArrivedAt      DateTime?
+  // DICOM-ready fields (populated when study is performed)
+  accessionNumber       String?
+  studyInstanceUid      String?
+  seriesInstanceUid     String?
+  performedAt           DateTime?
+  performedById         String?
+  // Service / billing integration
+  serviceId             String?  // FK → Service (central pricing)
+  priority              String   @default("routine")
+  status                String   @default("ordered") // ordered | scheduled | arrived | in_progress | completed | reported | verified | released | cancelled | rescheduled | no_show
+  orderedAt             DateTime @default(now())
+  notes                 String?
+  // Cancellation
+  cancelledAt           DateTime?
+  cancelledById         String?
+  cancellationReason    String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@index([patientId, status])
   @@index([facilityId, status, orderedAt])
+  @@index([facilityId, modality, status])
+  @@index([accessionNumber])
+  @@index([serviceId])
 
-  report                ImagingReport?
+  reports               ImagingReport[]
 }
 
 model ImagingReport {
   id                String   @id @default(cuid())
-  imagingOrderId    String   @unique
+  imagingOrderId    String   // not unique — amendment chain preserves multiple versions
   imagingOrder      ImagingOrder @relation(fields: [imagingOrderId], references: [id])
   patientId         String
+  // Structured report fields
+  clinicalIndication String?
+  technique         String?
   findings          String?
   impression        String?
+  recommendations   String?
+  // Staff / timestamps
   reportedById      String?
   verifiedById      String?
   reportedAt        DateTime?
   verifiedAt        DateTime?
-  status            String   @default("draft") // draft | verified | released | amended
+  releasedAt        DateTime?
+  releasedById      String?
+  status            String   @default("draft") // draft | preliminary | final | verified | released | amended | cancelled
+  // Amendment chain
+  amendedFromId     String?
+  amendmentReason   String?
+  amendmentApprovedById String?
+  version           Int      @default(1)
+  // Differential / follow-up
+  differentialDiagnosis String?
+  followUpRecommendation String?
+  isLatest          Boolean  @default(true) // marks the current/latest version of the report
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([imagingOrderId, isLatest])
+  @@index([status])
+  @@index([reportedById])
+  @@index([amendedFromId])
 }
 
 model Procedure {
@@ -1873,20 +1991,113 @@ model Procedure {
   encounter         Encounter @relation(fields: [encounterId], references: [id])
   facilityId       String
   facility          Facility @relation(fields: [facilityId], references: [id])
+  // Catalog linkage (new)
+  procedureCatalogId String?  // FK → ProcedureCatalog (optional; legacy free-text still supported)
   procedureCode    String?
   procedureName     String
+  category          String?  // minor | major | diagnostic | therapeutic | bedside | outpatient | inpatient | specialty
+  // Request / scheduling / performance
+  requestedById     String?  // clinician who requested the procedure
+  requestedAt       DateTime?
+  scheduledAt       DateTime?
+  scheduledById     String?
+  procedureRoom     String?
+  appointmentId     String?  // link to existing Appointments system
   performedById     String?
   performedBy       User?    @relation("procedurePerformer", fields: [performedById], references: [id])
-  performedAt       DateTime @default(now())
+  performedAt       DateTime?
+  // Clinical documentation
   indication        String?
+  diagnosisRef      String?
+  preProcedureNotes String?
   findings          String?
   outcome           String?
+  complications     String?  // free-text or JSON list of complications
+  specimensSent     String?  // free-text or JSON list of specimens sent to lab
+  consumablesUsed   String?  // free-text or JSON list of consumables (links to inventory batches where configured)
+  followUpInstructions String?
+  consentStatus     String   @default("not_taken") // taken | not_taken | refused | not_applicable
+  consentNotes      String?
   notes             String?
-  status            String   @default("completed")
+  // Service / billing integration
+  serviceId         String?  // FK → Service (central pricing)
+  // Status state machine
+  status            String   @default("requested") // requested | scheduled | confirmed | patient_ready | in_progress | completed | cancelled | rescheduled | no_show | aborted
+  // Cancellation
+  cancelledAt       DateTime?
+  cancelledById     String?
+  cancellationReason String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@index([patientId])
+  @@index([facilityId, status])
+  @@index([procedureCatalogId])
+  @@index([serviceId])
+}
+
+// =====================================================================
+// PROCEDURE CATALOG — master configuration for procedures
+// (Mirrors the Lab Test Catalog pattern. Pricing flows through
+//  Service / FacilityServicePrice; this catalog only stores a serviceId
+//  reference.)
+// =====================================================================
+
+model ProcedureCatalog {
+  id              String   @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String
+  shortName       String?
+  description     String?
+  category        String   @default("minor") // minor | major | diagnostic | therapeutic | bedside | outpatient | inpatient | specialty | other
+  procedureType   String   @default("diagnostic") // diagnostic | therapeutic | surgical | other
+  departmentId    String?
+  // Required staff type (e.g., doctor, nurse, specialist)
+  requiredStaffType String?
+  estimatedDurationMinutes Int?
+  // Service / billing integration
+  serviceId       String?
+  isBillable      Boolean  @default(true)
+  billableAs      String   @default("individual") // individual | package
+  // NHIS (config slots only — no fabricated codes)
+  nhisEligible    Boolean  @default(false)
+  nhisServiceCode String?
+  nhisTariffRef   String?
+  claimableStatus String   @default("not_configured")
+  // Required consumables (JSON array of inventory item references or names)
+  requiredConsumables String?
+  // Status
+  status          String   @default("active") // active | inactive | retired | archived
+  // Facility availability (multi-facility without duplicating the catalog entry)
+  facilityAvailability ProcedureCatalogFacilityAvailability[]
+  // Versioning
+  version         Int      @default(1)
+  createdById     String?
+  updatedById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+  @@index([serviceId])
+}
+
+model ProcedureCatalogFacilityAvailability {
+  id              String   @id @default(cuid())
+  procedureCatalogId String
+  procedureCatalog ProcedureCatalog @relation(fields: [procedureCatalogId], references: [id], onDelete: Cascade)
+  facilityId      String
+  availability    String   @default("available") // available | temporarily_unavailable | unavailable | referral_out
+  performingDepartmentId String?
+  facilityNotes   String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([procedureCatalogId, facilityId])
+  @@index([facilityId])
 }
 
 // ---------------------------------------------------------------------

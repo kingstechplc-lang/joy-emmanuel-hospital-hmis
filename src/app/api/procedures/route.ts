@@ -1,7 +1,9 @@
 // =====================================================================
 // API: /api/procedures
-//   GET  — list procedures filtered by facility/patientId
-//   POST — create a procedure record (procedure.perform permission)
+//   GET  — list procedures filtered by facility/patientId/status/category
+//   POST — create a procedure request (procedure.perform permission)
+//          Now supports: catalog linkage, scheduling, full documentation,
+//          consent as a dedicated field, status state machine starting at "requested"
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -12,7 +14,7 @@ import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
-// GET /api/procedures?facilityId=...&patientId=...&limit=50
+// GET /api/procedures?facilityId=...&patientId=...&status=...&category=...&limit=50
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,15 +25,19 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || undefined;
   const patientId = url.searchParams.get("patientId");
+  const status = url.searchParams.get("status");
+  const category = url.searchParams.get("category");
   const limit = parseInt(url.searchParams.get("limit") || "50");
 
   const where: any = {};
   if (facilityId) where.facilityId = facilityId;
   if (patientId) where.patientId = patientId;
+  if (status) where.status = status;
+  if (category) where.category = category;
 
   const procedures = await db.procedure.findMany({
     where,
-    orderBy: { performedAt: "desc" },
+    orderBy: { createdAt: "desc" },
     take: limit,
     include: {
       patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true, dateOfBirth: true, sex: true, phone: true } },
@@ -45,9 +51,13 @@ export async function GET(req: Request) {
 }
 
 // POST /api/procedures
-// Body: { patientId, encounterId, facilityId, procedureName, procedureCode,
-//         performedById, performedAt, indication, findings, outcome, notes, consentStatus }
-// NOTE: consentStatus is persisted by prefixing notes with "CONSENT: taken|not_taken\n"
+// Body: { patientId, encounterId, facilityId, procedureCatalogId?, procedureName, procedureCode?,
+//         category?, requestedById?, requestedAt?, scheduledAt?, procedureRoom?,
+//         indication, diagnosisRef?, preProcedureNotes?,
+//         performedById?, performedAt?,
+//         findings?, outcome?, complications?, specimensSent?, consumablesUsed?,
+//         followUpInstructions?, consentStatus, consentNotes?, notes?, serviceId?,
+//         status? (default: "requested") }
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -64,17 +74,36 @@ export async function POST(req: Request) {
   }
   const {
     patientId, encounterId, facilityId,
-    procedureName, procedureCode,
+    procedureCatalogId, procedureName, procedureCode, category,
+    requestedById, requestedAt, scheduledAt, procedureRoom,
+    indication, diagnosisRef, preProcedureNotes,
     performedById, performedAt,
-    indication, findings, outcome, notes,
-    consentStatus,
+    findings, outcome, complications, specimensSent, consumablesUsed,
+    followUpInstructions, consentStatus, consentNotes, notes,
+    serviceId, priority,
   } = body;
 
   if (!patientId || !facilityId) {
     return NextResponse.json({ error: "patientId and facilityId are required" }, { status: 400 });
   }
-  if (!procedureName) {
-    return NextResponse.json({ error: "procedureName is required" }, { status: 400 });
+  if (!procedureName && !procedureCatalogId) {
+    return NextResponse.json({ error: "procedureName or procedureCatalogId is required" }, { status: 400 });
+  }
+
+  // If catalog ID provided, fetch the catalog entry to inherit fields
+  let catalog: any = null;
+  let finalName = procedureName;
+  let finalCode = procedureCode;
+  let finalCategory = category;
+  let finalServiceId = serviceId;
+  if (procedureCatalogId) {
+    catalog = await db.procedureCatalog.findUnique({ where: { id: procedureCatalogId } });
+    if (catalog) {
+      finalName = finalName || catalog.name;
+      finalCode = finalCode || catalog.code;
+      finalCategory = finalCategory || catalog.category;
+      finalServiceId = finalServiceId || catalog.serviceId;
+    }
   }
 
   // Resolve encounter
@@ -90,7 +119,7 @@ export async function POST(req: Request) {
         encounterNumber,
         encounterType: "procedure",
         status: "in_progress",
-        priority: "routine",
+        priority: priority || "routine",
         attendingStaffId: session.user.id,
         startAt: new Date(),
         createdById: session.user.id,
@@ -99,26 +128,39 @@ export async function POST(req: Request) {
     finalEncounterId = enc.id;
   }
 
-  // Prefix notes with consent status so it persists (Procedure schema has no consent_status field)
-  const consentLine = consentStatus === "taken" || consentStatus === "not_taken"
-    ? `CONSENT: ${consentStatus}\n`
-    : "";
-  const finalNotes = (consentLine + (notes || "")).trim() || null;
+  // Determine initial status: if performedAt is provided, status is "completed"; otherwise "requested"
+  const initialStatus = performedAt ? "completed" : (body.status || "requested");
 
   const procedure = await db.procedure.create({
     data: {
       patientId,
       encounterId: finalEncounterId,
       facilityId,
-      procedureCode: procedureCode || null,
-      procedureName,
-      performedById: performedById || session.user.id,
-      performedAt: performedAt ? new Date(performedAt) : new Date(),
+      procedureCatalogId: procedureCatalogId || null,
+      procedureCode: finalCode || null,
+      procedureName: finalName,
+      category: finalCategory || null,
+      requestedById: requestedById || session.user.id,
+      requestedAt: requestedAt ? new Date(requestedAt) : new Date(),
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+      scheduledById: scheduledAt ? session.user.id : null,
+      procedureRoom: procedureRoom || null,
+      performedById: performedById || null,
+      performedAt: performedAt ? new Date(performedAt) : null,
       indication: indication || null,
+      diagnosisRef: diagnosisRef || null,
+      preProcedureNotes: preProcedureNotes || null,
       findings: findings || null,
       outcome: outcome || null,
-      notes: finalNotes,
-      status: "completed",
+      complications: complications || null,
+      specimensSent: specimensSent || null,
+      consumablesUsed: consumablesUsed || null,
+      followUpInstructions: followUpInstructions || null,
+      consentStatus: consentStatus || "not_taken",
+      consentNotes: consentNotes || null,
+      notes: notes || null,
+      serviceId: finalServiceId || null,
+      status: initialStatus,
     },
     include: {
       patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
@@ -130,19 +172,21 @@ export async function POST(req: Request) {
     userId: session.user.id,
     organizationId: session.user.organizationId,
     facilityId,
-    action: "PROCEDURE_PERFORMED",
+    action: performedAt ? "PROCEDURE_PERFORMED" : "PROCEDURE_REQUESTED",
     resourceType: "procedure",
     resourceId: procedure.id,
     newValues: {
       patientId,
       encounterId: finalEncounterId,
-      procedureName,
-      procedureCode,
-      performedById: procedure.performedById,
-      performedAt: procedure.performedAt,
+      procedureCatalogId,
+      procedureName: procedure.procedureName,
+      procedureCode: procedure.procedureCode,
+      category: procedure.category,
       indication,
-      outcome,
-      consentStatus: consentStatus || null,
+      consentStatus: procedure.consentStatus,
+      status: procedure.status,
+      scheduledAt,
+      serviceId: procedure.serviceId,
     },
   });
 

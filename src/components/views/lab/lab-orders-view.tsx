@@ -258,7 +258,12 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
   const [priority, setPriority] = useState("routine");
   const [notes, setNotes] = useState("");
+  const [clinicalIndication, setClinicalIndication] = useState("");
+  const [diagnosisRef, setDiagnosisRef] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [duplicates, setDuplicates] = useState<any[] | null>(null);
+  const [isDuplicateOverride, setIsDuplicateOverride] = useState(false);
 
   const { data: patientsData } = useQuery({
     queryKey: ["patient-search", patientQuery],
@@ -282,12 +287,34 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
     if (!patientId) { toast.error("Please select a patient"); return; }
     if (selectedTestIds.length === 0) { toast.error("Please select at least one test"); return; }
     setSaving(true);
+    setDuplicates(null);
     try {
       const res = await fetch("/api/lab-orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patientId, encounterId: encounterId || undefined, facilityId: defaultFacilityId, testIds: selectedTestIds, priority, notes }),
+        body: JSON.stringify({
+          patientId,
+          encounterId: encounterId || undefined,
+          facilityId: defaultFacilityId,
+          testIds: selectedTestIds,
+          priority,
+          notes,
+          clinicalIndication: clinicalIndication || undefined,
+          diagnosisRef: diagnosisRef || undefined,
+          departmentId: departmentId || undefined,
+          isDuplicateOverride,
+        }),
       });
+      if (res.status === 409) {
+        const err = await safeJson(res);
+        if (err.code === "DUPLICATE_DETECTED" && err.duplicates) {
+          setDuplicates(err.duplicates);
+          setIsDuplicateOverride(false);
+          setSaving(false);
+          return;
+        }
+        throw new Error(err.error || "Duplicate detected");
+      }
       if (!res.ok) {
         const err = await safeJson(res);
         throw new Error(err.error || "Failed");
@@ -295,6 +322,8 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
       toast.success("Lab order created");
       setPatientQuery(""); setPatientId(""); setEncounterId("");
       setSelectedTestIds([]); setPriority("routine"); setNotes("");
+      setClinicalIndication(""); setDiagnosisRef(""); setDepartmentId("");
+      setDuplicates(null); setIsDuplicateOverride(false);
       onCreated();
     } catch (e: any) {
       toast.error(e.message);
@@ -305,12 +334,33 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2"><FlaskConical className="w-5 h-5 text-emerald-600" /> New Lab Order</DialogTitle>
           <DialogDescription>Select patient, choose tests from the catalog, and set priority.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          {duplicates && duplicates.length > 0 && (
+            <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
+              <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
+                <AlertTriangle className="w-4 h-4" /> Duplicate order detected
+              </div>
+              <div className="text-xs text-amber-800">The same test(s) were recently ordered for this patient:</div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {duplicates.map((d: any, i: number) => (
+                  <div key={i} className="text-xs text-amber-900 bg-white border rounded p-2">
+                    <div><strong>{d.orderNumber}</strong> · {formatDate(d.orderedAt, true)} · {d.status}</div>
+                    <div className="text-amber-700">Tests: {d.tests.map((t: any) => t.name).join(", ")}</div>
+                    {d.orderingClinician && <div className="text-amber-600">Ordered by: {d.orderingClinician}</div>}
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-xs text-amber-900">
+                <Checkbox checked={isDuplicateOverride} onCheckedChange={(v) => setIsDuplicateOverride(!!v)} />
+                Override warning and create this order anyway (confirm legitimate repeat testing)
+              </label>
+            </div>
+          )}
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -382,11 +432,25 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
           </div>
 
           <div>
+            <Label>Clinical Indication</Label>
+            <Textarea value={clinicalIndication} onChange={(e) => setClinicalIndication(e.target.value)} rows={2} placeholder="Reason for ordering the test(s) — e.g., Fever, rule out malaria" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              <div>
+                <Label>Diagnosis Reference</Label>
+                <Input value={diagnosisRef} onChange={(e) => setDiagnosisRef(e.target.value)} placeholder="ICD-10 code or diagnosis name" />
+              </div>
+              <div>
+                <Label>Department ID</Label>
+                <Input value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} placeholder="Ordering department cuid (optional)" />
+              </div>
+            </div>
+          </div>
+          <div>
             <Label>Notes</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Clinical notes / instructions for lab..." />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Additional notes / instructions for lab..." />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Creating..." : "Create Order"}
@@ -399,11 +463,38 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
 function ActionDialog({ order, onClose, onChanged }: { order: any; onClose: () => void; onChanged: () => void }) {
   const { status } = order;
+  const [showReject, setShowReject] = useState(false);
+  const [showRecollect, setShowRecollect] = useState(false);
+
+  // If a sample has been rejected, show recollect option
+  const hasRejectedSample = order.samples?.some((s: any) => s.status === "rejected");
+
+  if (showReject) return <RejectSampleDialog order={order} onClose={() => setShowReject(false)} onChanged={onChanged} />;
+  if (showRecollect) return <RecollectSampleDialog order={order} onClose={() => setShowRecollect(false)} onChanged={onChanged} />;
 
   if (status === "ordered") return <CollectSampleDialog order={order} onClose={onClose} onChanged={onChanged} />;
-  if (status === "collected") return <ReceiveSampleDialog order={order} onClose={onClose} onChanged={onChanged} />;
+  if (status === "collected") return (
+    <>
+      <ReceiveSampleDialog order={order} onClose={onClose} onChanged={onChanged} />
+      <Button variant="outline" size="sm" className="absolute bottom-4 left-4 text-rose-600" onClick={() => setShowReject(true)}>
+        Reject Sample
+      </Button>
+    </>
+  );
   if (status === "processing") return <EnterResultDialog order={order} onClose={onClose} onChanged={onChanged} />;
   if (status === "resulted") return <VerifyDialog order={order} onClose={onClose} onChanged={onChanged} />;
+  if (hasRejectedSample && (status === "received" || status === "processing")) {
+    return (
+      <div className="p-4 space-y-3">
+        <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded p-3">
+          A sample was rejected for this order. You can request a recollection.
+        </div>
+        <Button onClick={() => setShowRecollect(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+          <TestTube className="w-4 h-4" /> Recollect Sample
+        </Button>
+      </div>
+    );
+  }
   return null;
 }
 
@@ -411,6 +502,9 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
   const [sampleNumber, setSampleNumber] = useState(`S-${Date.now().toString().slice(-6)}`);
   const [specimenType, setSpecimenType] = useState(order.items?.[0]?.laboratoryTest?.specimenType || "");
   const [collectedById, setCollectedById] = useState("");
+  const [collectionLocation, setCollectionLocation] = useState("");
+  const [container, setContainer] = useState("");
+  const [volume, setVolume] = useState("");
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -420,7 +514,7 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
       const res = await fetch(`/api/lab-orders/${order.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "collect", sampleNumber, specimenType, collectedById }),
+        body: JSON.stringify({ action: "collect", sampleNumber, specimenType, collectedById, collectionLocation, container, volume }),
       });
       if (!res.ok) {
         const err = await safeJson(res);
@@ -452,6 +546,20 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
             <Input value={specimenType} onChange={(e) => setSpecimenType(e.target.value)} placeholder="e.g. Whole blood, Serum, Urine" />
           </div>
           <div>
+            <Label>Collection Location (optional)</Label>
+            <Input value={collectionLocation} onChange={(e) => setCollectionLocation(e.target.value)} placeholder="e.g., Ward 2, OPD Room 3" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Container (optional)</Label>
+              <Input value={container} onChange={(e) => setContainer(e.target.value)} placeholder="e.g., EDTA tube" />
+            </div>
+            <div>
+              <Label>Volume (optional)</Label>
+              <Input value={volume} onChange={(e) => setVolume(e.target.value)} placeholder="e.g., 3 mL" />
+            </div>
+          </div>
+          <div>
             <Label>Collected By (User ID, optional)</Label>
             <Input value={collectedById} onChange={(e) => setCollectedById(e.target.value)} placeholder="Defaults to current user" />
           </div>
@@ -463,6 +571,156 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Saving..." : "Collect Sample"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RejectSampleDialog({ order, onClose, onChanged }: { order: any; onClose: () => void; onChanged: () => void }) {
+  const [sampleId, setSampleId] = useState(order.samples?.[0]?.id || "");
+  const [rejectionReasonCode, setRejectionReasonCode] = useState("insufficient");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectionNotes, setRejectionNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!sampleId) { toast.error("Select a sample to reject"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/lab-orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject", sampleId, rejectionReasonCode, rejectionReason, rejectionNotes }),
+      });
+      if (!res.ok) { const err = await safeJson(res); throw new Error(err.error || "Failed"); }
+      toast.success("Sample rejected — recollection available");
+      onChanged();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-rose-700"><AlertTriangle className="w-5 h-5" /> Reject Sample</DialogTitle>
+          <DialogDescription>Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <FieldLabel required>Sample</FieldLabel>
+            <Select value={sampleId} onValueChange={setSampleId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(order.samples || []).map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.sampleNumber} ({s.specimenType || "—"}) — {s.status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <FieldLabel required>Rejection Reason</FieldLabel>
+            <Select value={rejectionReasonCode} onValueChange={setRejectionReasonCode}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="insufficient">Insufficient specimen</SelectItem>
+                <SelectItem value="wrong_container">Wrong container</SelectItem>
+                <SelectItem value="wrong_specimen">Wrong specimen type</SelectItem>
+                <SelectItem value="leakage">Leakage</SelectItem>
+                <SelectItem value="clotted">Clotted specimen</SelectItem>
+                <SelectItem value="hemolysed">Hemolysed specimen</SelectItem>
+                <SelectItem value="labeling">Labeling problem</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Additional reason details (optional)</Label>
+            <Input value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Free-text details" />
+          </div>
+          <div>
+            <Label>Notes (optional)</Label>
+            <Textarea value={rejectionNotes} onChange={(e) => setRejectionNotes(e.target.value)} rows={2} placeholder="Any additional notes for the recollection..." />
+          </div>
+          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+            The rejected sample will be preserved in history. You can request a recollection afterwards.
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="gap-2 bg-rose-600 hover:bg-rose-700">
+            {saving ? "Saving..." : "Reject Sample"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RecollectSampleDialog({ order, onClose, onChanged }: { order: any; onClose: () => void; onChanged: () => void }) {
+  const rejectedSamples = (order.samples || []).filter((s: any) => s.status === "rejected");
+  const [sampleId, setSampleId] = useState(rejectedSamples[0]?.id || "");
+  const [newSampleNumber, setNewSampleNumber] = useState(`S-${Date.now().toString().slice(-6)}`);
+  const [specimenType, setSpecimenType] = useState(rejectedSamples[0]?.specimenType || "");
+  const [collectionLocation, setCollectionLocation] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!sampleId) { toast.error("Select the rejected sample to recollect"); return; }
+    if (!newSampleNumber) { toast.error("New sample number required"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/lab-orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "recollect", sampleId, newSampleNumber, specimenType, collectionLocation }),
+      });
+      if (!res.ok) { const err = await safeJson(res); throw new Error(err.error || "Failed"); }
+      toast.success("Sample recollected — workflow restarted");
+      onChanged();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><TestTube className="w-5 h-5 text-emerald-600" /> Recollect Sample</DialogTitle>
+          <DialogDescription>Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <FieldLabel required>Rejected sample to replace</FieldLabel>
+            <Select value={sampleId} onValueChange={(v) => { setSampleId(v); const s = rejectedSamples.find((x: any) => x.id === v); if (s) setSpecimenType(s.specimenType || ""); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {rejectedSamples.map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.sampleNumber} — {s.rejectionReasonCode || "rejected"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <FieldLabel required>New Sample Number</FieldLabel>
+            <Input value={newSampleNumber} onChange={(e) => setNewSampleNumber(e.target.value)} />
+          </div>
+          <div>
+            <Label>Specimen Type</Label>
+            <Input value={specimenType} onChange={(e) => setSpecimenType(e.target.value)} placeholder="e.g., Whole Blood" />
+          </div>
+          <div>
+            <Label>Collection Location</Label>
+            <Input value={collectionLocation} onChange={(e) => setCollectionLocation(e.target.value)} placeholder="e.g., Ward 2" />
+          </div>
+          <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
+            The original rejected sample remains in history. A new sample will be created and linked to the original via a recollection chain.
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            {saving ? "Saving..." : "Recollect"}
           </Button>
         </DialogFooter>
       </DialogContent>

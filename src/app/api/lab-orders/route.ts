@@ -75,13 +75,47 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
-  const { patientId, encounterId, facilityId, testIds, priority, notes, orderingClinicianId } = body;
+  const { patientId, encounterId, facilityId, testIds, priority, notes, orderingClinicianId, clinicalIndication, diagnosisRef, departmentId, isDuplicateOverride, duplicateNote, duplicateOfId } = body;
 
   if (!patientId || !facilityId) {
     return NextResponse.json({ error: "patientId and facilityId are required" }, { status: 400 });
   }
   if (!testIds || !Array.isArray(testIds) || testIds.length === 0) {
     return NextResponse.json({ error: "At least one test must be selected" }, { status: 400 });
+  }
+
+  // ---- Duplicate detection ----
+  // Warn (not block) if the same test has been ordered for the same patient in the last 24h
+  if (!isDuplicateOverride) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h ago
+    const recentOrders = await db.labOrder.findMany({
+      where: {
+        patientId,
+        status: { notIn: ["cancelled"] },
+        orderedAt: { gte: since },
+        items: { some: { laboratoryTestId: { in: testIds } } },
+      },
+      include: {
+        items: { where: { laboratoryTestId: { in: testIds } }, include: { laboratoryTest: { select: { id: true, name: true, code: true } } } },
+        orderingClinician: { select: { id: true, firstName: true, lastName: true } },
+      },
+      take: 10,
+    });
+    if (recentOrders.length > 0) {
+      const duplicates = recentOrders.map((o) => ({
+        orderId: o.id,
+        orderNumber: o.orderNumber,
+        orderedAt: o.orderedAt,
+        status: o.status,
+        priority: o.priority,
+        orderingClinician: o.orderingClinician ? `${o.orderingClinician.firstName} ${o.orderingClinician.lastName}` : null,
+        tests: o.items.map((it) => ({ id: it.laboratoryTest.id, name: it.laboratoryTest.name, code: it.laboratoryTest.code })),
+      }));
+      return NextResponse.json(
+        { error: "Duplicate order detected", duplicates, code: "DUPLICATE_DETECTED" },
+        { status: 409 },
+      );
+    }
   }
 
   // Resolve encounter: explicit, or use selectedEncounter from store, or auto-create one
@@ -132,6 +166,12 @@ export async function POST(req: Request) {
       status: "ordered",
       priority: priority || "routine",
       notes: notes || null,
+      clinicalIndication: clinicalIndication || null,
+      diagnosisRef: diagnosisRef || null,
+      departmentId: departmentId || null,
+      isDuplicateOverride: !!isDuplicateOverride,
+      duplicateNote: duplicateNote || null,
+      duplicateOfId: duplicateOfId || null,
       orderedAt: new Date(),
       items: {
         create: tests.map((t) => ({
