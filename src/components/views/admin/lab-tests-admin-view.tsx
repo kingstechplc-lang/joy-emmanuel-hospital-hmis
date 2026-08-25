@@ -287,8 +287,8 @@ function CatalogTab({ canManage, canArchive }: { canManage: boolean; canArchive:
       </div>
 
       <Card>
-        <CardContent className="p-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="md:col-span-2 relative">
+        <CardContent className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="sm:col-span-2 lg:col-span-2 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
             <Input className="pl-8" placeholder="Search by name, code, alias, short name..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -298,21 +298,19 @@ function CatalogTab({ canManage, canArchive }: { canManage: boolean; canArchive:
               {CATEGORY_FILTERS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          <div className="flex gap-2">
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTERS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={testType} onValueChange={setTestType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {TEST_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTERS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={testType} onValueChange={setTestType}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {TEST_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
@@ -694,6 +692,14 @@ function MasterManager({ endpoint, label, canManage }: { endpoint: string; label
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>({ name: "", code: "", description: "", sortOrder: 0 });
 
+  // Dynamic placeholders based on master type
+  const examples: Record<string, { name: string; code: string; desc: string }> = {
+    Category: { name: "e.g., Haematology", code: "e.g., haem", desc: "e.g., Blood-related laboratory tests" },
+    "Specimen Type": { name: "e.g., Whole Blood", code: "e.g., whole_blood", desc: "e.g., Collected in EDTA or plain tube" },
+    Unit: { name: "e.g., mg/dL", code: "e.g., mg_dl", desc: "e.g., Milligrams per deciliter" },
+  };
+  const ex = examples[label] || { name: "e.g., Enter name", code: "e.g., enter_code", desc: "e.g., Optional description" };
+
   const add = async () => {
     if (!form.name || !form.code) { toast.error("name and code required"); return; }
     const res = await fetch(endpoint, {
@@ -719,10 +725,10 @@ function MasterManager({ endpoint, label, canManage }: { endpoint: string; label
         {adding && (
           <div className="border rounded p-3 space-y-2 bg-slate-50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div><FieldLabel required>Name</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Haematology" /></div>
-              <div><FieldLabel required>Code</FieldLabel><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="e.g., haem" /></div>
-              <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-              <div><Label>Sort Order</Label><Input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: e.target.value })} /></div>
+              <div><FieldLabel required>{label} Name</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={ex.name} /></div>
+              <div><FieldLabel required>{label} Code</FieldLabel><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder={ex.code} /></div>
+              <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={ex.desc} /></div>
+              <div><Label>Sort Order</Label><Input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: e.target.value })} placeholder="0" /></div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
