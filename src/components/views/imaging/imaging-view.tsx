@@ -236,6 +236,13 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
   const [procedureCode, setProcedureCode] = useState("");
   const [priority, setPriority] = useState("routine");
   const [indication, setIndication] = useState("");
+  const [modality, setModality] = useState("x_ray");
+  const [bodySite, setBodySite] = useState("");
+  const [laterality, setLaterality] = useState("na");
+  const [contrastRequired, setContrastRequired] = useState(false);
+  const [contrastNotes, setContrastNotes] = useState("");
+  const [diagnosisRef, setDiagnosisRef] = useState("");
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   const { data: patientsData } = useQuery({
@@ -261,6 +268,8 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
         body: JSON.stringify({
           patientId, encounterId: encounterId || undefined, facilityId: defaultFacilityId,
           procedureName: name, procedureCode, priority, indication,
+          modality, bodySite, laterality, contrastRequired, contrastNotes,
+          clinicalIndication: indication, diagnosisRef, notes,
         }),
       });
       if (!res.ok) {
@@ -281,12 +290,12 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2"><ScanLine className="w-5 h-5 text-emerald-600" /> New Imaging Order</DialogTitle>
           <DialogDescription>Schedule a radiology study for a patient.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -357,8 +366,63 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
             <Label>Indication</Label>
             <Textarea value={indication} onChange={(e) => setIndication(e.target.value)} rows={2} placeholder="Clinical reason for the study" />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <Label>Modality</Label>
+              <Select value={modality} onValueChange={setModality}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="x_ray">X-Ray</SelectItem>
+                  <SelectItem value="ultrasound">Ultrasound</SelectItem>
+                  <SelectItem value="ct">CT Scan</SelectItem>
+                  <SelectItem value="mri">MRI</SelectItem>
+                  <SelectItem value="mammography">Mammography</SelectItem>
+                  <SelectItem value="fluoroscopy">Fluoroscopy</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Body Site</Label>
+              <Input value={bodySite} onChange={(e) => setBodySite(e.target.value)} placeholder="e.g., Chest, Abdomen, Skull" />
+            </div>
+            <div>
+              <Label>Laterality</Label>
+              <Select value={laterality} onValueChange={setLaterality}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="na">N/A</SelectItem>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                  <SelectItem value="bilateral">Bilateral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Diagnosis Reference</Label>
+              <Input value={diagnosisRef} onChange={(e) => setDiagnosisRef(e.target.value)} placeholder="ICD-10 code or diagnosis name" />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={contrastRequired} onChange={(e) => setContrastRequired(e.target.checked)} className="rounded" />
+                Contrast Required
+              </label>
+            </div>
+          </div>
+          {contrastRequired && (
+            <div>
+              <Label>Contrast Notes</Label>
+              <Input value={contrastNotes} onChange={(e) => setContrastNotes(e.target.value)} placeholder="Contrast agent, dose, etc." />
+            </div>
+          )}
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Additional notes for radiology..." />
+          </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Creating..." : "Create Order"}
@@ -428,6 +492,9 @@ function ScheduleDialog({ order, onClose, onChanged }: { order: any; onClose: ()
 }
 
 function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () => void; onChanged: () => void }) {
+  const [accessionNumber, setAccessionNumber] = useState(order.accessionNumber || "");
+  const [studyInstanceUid, setStudyInstanceUid] = useState(order.studyInstanceUid || "");
+  const [contrastUsed, setContrastUsed] = useState(order.contrastRequired || false);
   const [saving, setSaving] = useState(false);
   const submit = async () => {
     setSaving(true);
@@ -435,7 +502,7 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
       const res = await fetch(`/api/imaging/${order.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "perform" }),
+        body: JSON.stringify({ action: "perform", accessionNumber, studyInstanceUid, contrastUsed }),
       });
       if (!res.ok) {
         const err = await safeJson(res);
@@ -456,6 +523,20 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
           <DialogTitle className="flex items-center gap-2"><Stethoscope className="w-5 h-5 text-emerald-600" /> Perform Imaging</DialogTitle>
           <DialogDescription>Confirm the imaging procedure has begun. {order.procedureName}</DialogDescription>
         </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Accession Number (optional)</Label>
+            <Input value={accessionNumber} onChange={(e) => setAccessionNumber(e.target.value)} placeholder="PACS/RIS accession number" />
+          </div>
+          <div>
+            <Label>Study Instance UID (optional, DICOM)</Label>
+            <Input value={studyInstanceUid} onChange={(e) => setStudyInstanceUid(e.target.value)} placeholder="DICOM Study Instance UID" className="font-mono text-xs" />
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={contrastUsed} onChange={(e) => setContrastUsed(e.target.checked)} className="rounded" />
+            Contrast used
+          </label>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">

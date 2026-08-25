@@ -166,16 +166,27 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
   const [patientQuery, setPatientQuery] = useState("");
   const [patientId, setPatientId] = useState("");
   const [encounterId, setEncounterId] = useState("");
+  const [procedureCatalogId, setProcedureCatalogId] = useState("");
   const [procedureName, setProcedureName] = useState("");
   const [procedureCode, setProcedureCode] = useState("");
+  const [category, setCategory] = useState("");
   const [performedById, setPerformedById] = useState("");
-  const [performedAt, setPerformedAt] = useState(new Date().toISOString().slice(0, 16));
+  const [performedAt, setPerformedAt] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [procedureRoom, setProcedureRoom] = useState("");
   const [indication, setIndication] = useState("");
+  const [diagnosisRef, setDiagnosisRef] = useState("");
   const [findings, setFindings] = useState("");
   const [outcome, setOutcome] = useState("");
+  const [complications, setComplications] = useState("");
+  const [specimensSent, setSpecimensSent] = useState("");
+  const [consumablesUsed, setConsumablesUsed] = useState("");
+  const [followUpInstructions, setFollowUpInstructions] = useState("");
   const [notes, setNotes] = useState("");
   const [consentStatus, setConsentStatus] = useState("taken");
+  const [consentNotes, setConsentNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
 
   const { data: patientsData } = useQuery({
     queryKey: ["patient-search", patientQuery],
@@ -187,10 +198,23 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
     queryFn: () => fetchJson(`/api/encounters?patientId=${patientId}&facilityId=${defaultFacilityId || ""}`),
     enabled: !!patientId,
   });
+  const { data: catalogData } = useQuery({
+    queryKey: ["procedure-catalog", catalogSearch],
+    queryFn: () => fetchJson(`/api/procedures-catalog?q=${encodeURIComponent(catalogSearch)}&status=active`),
+    enabled: catalogSearch.length >= 1,
+  });
+
+  const selectCatalog = (c: any) => {
+    setProcedureCatalogId(c.id);
+    setProcedureName(c.name);
+    setProcedureCode(c.code || "");
+    setCategory(c.category || "");
+    setCatalogSearch("");
+  };
 
   const submit = async () => {
     if (!patientId) { toast.error("Please select a patient"); return; }
-    if (!procedureName) { toast.error("Procedure name is required"); return; }
+    if (!procedureName && !procedureCatalogId) { toast.error("Procedure name or catalog selection is required"); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/procedures", {
@@ -198,10 +222,15 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientId, encounterId: encounterId || undefined, facilityId: defaultFacilityId,
-          procedureName, procedureCode,
-          performedById: performedById || undefined, performedAt,
-          indication, findings, outcome, notes,
-          consentStatus,
+          procedureCatalogId: procedureCatalogId || undefined,
+          procedureName, procedureCode, category,
+          performedById: performedById || undefined,
+          performedAt: performedAt || undefined,
+          scheduledAt: scheduledAt || undefined,
+          procedureRoom: procedureRoom || undefined,
+          indication, diagnosisRef, findings, outcome, complications,
+          specimensSent, consumablesUsed, followUpInstructions,
+          notes, consentStatus, consentNotes,
         }),
       });
       if (!res.ok) {
@@ -210,9 +239,11 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
       }
       toast.success("Procedure recorded");
       setPatientQuery(""); setPatientId(""); setEncounterId("");
-      setProcedureName(""); setProcedureCode(""); setPerformedById("");
-      setIndication(""); setFindings(""); setOutcome(""); setNotes("");
-      setConsentStatus("taken");
+      setProcedureCatalogId(""); setProcedureName(""); setProcedureCode(""); setCategory("");
+      setPerformedById(""); setPerformedAt(""); setScheduledAt(""); setProcedureRoom("");
+      setIndication(""); setDiagnosisRef(""); setFindings(""); setOutcome("");
+      setComplications(""); setSpecimensSent(""); setConsumablesUsed(""); setFollowUpInstructions("");
+      setNotes(""); setConsentStatus("taken"); setConsentNotes("");
       onCreated();
     } catch (e: any) {
       toast.error(e.message);
@@ -223,12 +254,12 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Scissors className="w-5 h-5 text-emerald-600" /> New Procedure Record</DialogTitle>
-          <DialogDescription>Record a procedure performed on a patient.</DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+          <DialogTitle className="flex items-center gap-2"><Scissors className="w-5 h-5 text-emerald-600" /> New Procedure</DialogTitle>
+          <DialogDescription>Request or record a procedure for a patient.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -274,13 +305,61 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
             </div>
           </div>
 
+          {/* Catalog search */}
+          <div>
+            <Label>Search Procedure Catalog (optional)</Label>
+            <Input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder="Search catalog by name or code..." />
+            {catalogData?.items && catalogData.items.length > 0 && (
+              <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
+                {catalogData.items.slice(0, 10).map((c: any) => (
+                  <button key={c.id} type="button" onClick={() => selectCatalog(c)} className="w-full text-left p-2 hover:bg-emerald-50 text-sm border-b last:border-0">
+                    <span className="font-medium">{c.name}</span>
+                    <span className="text-xs text-slate-500 ml-2 font-mono">{c.code}</span>
+                    {c.category && <span className="text-xs text-slate-500 ml-2">• {c.category}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+            {procedureCatalogId && (
+              <div className="text-xs text-emerald-700 mt-1">✓ Linked to catalog entry</div>
+            )}
+          </div>
+
+          <div>
+            <Label>Category</Label>
+            <Select value={category || undefined} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="minor">Minor</SelectItem>
+                <SelectItem value="major">Major</SelectItem>
+                <SelectItem value="diagnostic">Diagnostic</SelectItem>
+                <SelectItem value="therapeutic">Therapeutic</SelectItem>
+                <SelectItem value="bedside">Bedside</SelectItem>
+                <SelectItem value="outpatient">Outpatient</SelectItem>
+                <SelectItem value="inpatient">Inpatient</SelectItem>
+                <SelectItem value="specialty">Specialty</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Scheduled At (optional)</Label>
+              <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} placeholder="If scheduling for later" />
+            </div>
+            <div>
+              <Label>Procedure Room (optional)</Label>
+              <Input value={procedureRoom} onChange={(e) => setProcedureRoom(e.target.value)} placeholder="e.g., Theatre 1, Bedside" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Performer (User ID, optional)</Label>
               <Input value={performedById} onChange={(e) => setPerformedById(e.target.value)} placeholder="Defaults to current user" />
             </div>
             <div>
-              <Label>Performed At</Label>
+              <Label>Performed At (leave empty to create as request)</Label>
               <Input type="datetime-local" value={performedAt} onChange={(e) => setPerformedAt(e.target.value)} />
             </div>
           </div>
@@ -289,13 +368,39 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
             <Label>Indication</Label>
             <Textarea value={indication} onChange={(e) => setIndication(e.target.value)} rows={2} placeholder="Why the procedure was performed" />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Diagnosis Reference</Label>
+              <Input value={diagnosisRef} onChange={(e) => setDiagnosisRef(e.target.value)} placeholder="ICD-10 code or diagnosis name" />
+            </div>
+            <div>
+              <Label>Follow-Up Instructions (optional)</Label>
+              <Input value={followUpInstructions} onChange={(e) => setFollowUpInstructions(e.target.value)} placeholder="e.g., Review in 2 weeks" />
+            </div>
+          </div>
           <div>
             <Label>Findings</Label>
             <Textarea value={findings} onChange={(e) => setFindings(e.target.value)} rows={3} placeholder="Procedure findings" />
           </div>
-          <div>
-            <Label>Outcome</Label>
-            <Textarea value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={2} placeholder="Result / outcome" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Outcome</Label>
+              <Textarea value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={2} placeholder="Result / outcome" />
+            </div>
+            <div>
+              <Label>Complications (optional)</Label>
+              <Textarea value={complications} onChange={(e) => setComplications(e.target.value)} rows={2} placeholder="Any complications during procedure" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Specimens Sent (optional)</Label>
+              <Input value={specimensSent} onChange={(e) => setSpecimensSent(e.target.value)} placeholder="e.g., Tissue biopsy to lab" />
+            </div>
+            <div>
+              <Label>Consumables Used (optional)</Label>
+              <Input value={consumablesUsed} onChange={(e) => setConsumablesUsed(e.target.value)} placeholder="e.g., Suture pack, gloves" />
+            </div>
           </div>
 
           <div>
@@ -309,15 +414,29 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
                 <RadioGroupItem value="not_taken" id="consent-not" />
                 <span className="text-sm">Not Taken</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="refused" id="consent-refused" />
+                <span className="text-sm">Refused</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="not_applicable" id="consent-na" />
+                <span className="text-sm">N/A</span>
+              </label>
             </RadioGroup>
           </div>
+          {consentStatus === "taken" || consentStatus === "refused" ? (
+            <div>
+              <Label>Consent Notes (optional)</Label>
+              <Input value={consentNotes} onChange={(e) => setConsentNotes(e.target.value)} placeholder="e.g., Written consent on file" />
+            </div>
+          ) : null}
 
           <div>
             <Label>Notes</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Additional notes..." />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Saving..." : "Save Procedure"}
