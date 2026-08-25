@@ -7,12 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { BedDouble, RefreshCw, Sparkles, Wrench, Brush, LogOut, ArrowRightLeft, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BedDouble, RefreshCw, Sparkles, Wrench, Brush, LogOut, ArrowRightLeft, X, Activity, Search, Ban, Shield, History, Plus } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -27,6 +30,9 @@ const STATUS_COLORS: Record<string, string> = {
   cleaning: "bg-cyan-500 hover:bg-cyan-600 text-white",
   maintenance: "bg-orange-500 hover:bg-orange-600 text-white",
   out_of_service: "bg-slate-400 hover:bg-slate-500 text-white",
+  blocked: "bg-red-700 hover:bg-red-800 text-white",
+  isolation: "bg-violet-500 hover:bg-violet-600 text-white",
+  temporarily_unavailable: "bg-yellow-600 hover:bg-yellow-700 text-white",
 };
 
 const STATUS_FILTERS = [
@@ -36,7 +42,10 @@ const STATUS_FILTERS = [
   { value: "reserved", label: "Reserved" },
   { value: "cleaning", label: "Cleaning" },
   { value: "maintenance", label: "Maintenance" },
+  { value: "blocked", label: "Blocked" },
+  { value: "isolation", label: "Isolation" },
   { value: "out_of_service", label: "Out of Service" },
+  { value: "temporarily_unavailable", label: "Temporarily Unavailable" },
 ];
 
 export function BedsView() {
@@ -47,16 +56,33 @@ export function BedsView() {
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
+  const [tab, setTab] = useState("board");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBed, setSelectedBed] = useState<any | null>(null);
+  // Smart search filters
+  const [searchBedType, setSearchBedType] = useState("all");
+  const [searchGender, setSearchGender] = useState("all");
+  const [searchIsolation, setSearchIsolation] = useState(false);
+  const [searchOxygen, setSearchOxygen] = useState(false);
+  const [searchVentilator, setSearchVentilator] = useState(false);
+  const [searchMonitoring, setSearchMonitoring] = useState(false);
+  const [searchAccessibility, setSearchAccessibility] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
   if (statusFilter !== "all") params.set("status", statusFilter);
+  if (searchBedType !== "all") params.set("bedType", searchBedType);
+  if (searchGender !== "all") params.set("genderRestriction", searchGender);
+  if (searchIsolation) params.set("isolationCapable", "true");
+  if (searchOxygen) params.set("oxygen", "true");
+  if (searchVentilator) params.set("ventilator", "true");
+  if (searchMonitoring) params.set("cardiacMonitoring", "true");
+  if (searchAccessibility) params.set("accessibility", "true");
   const qs = params.toString() ? `?${params.toString()}` : "";
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["beds", activeFacilityId, statusFilter],
+    queryKey: ["beds", activeFacilityId, statusFilter, searchBedType, searchGender, searchIsolation, searchOxygen, searchVentilator, searchMonitoring, searchAccessibility],
     queryFn: () => fetchJson(`/api/beds${qs}`),
     enabled: !!activeFacilityId,
   });
@@ -75,18 +101,36 @@ export function BedsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Bed Management</h2>
-          <p className="text-sm text-slate-500">Visual ward bed board — click a bed to manage its status, assignment, or transfer the patient</p>
-        </div>
+      <PageHeader
+        title="Bed Management"
+        description="Complete bed management — real-time bed board, smart search, cleaning, maintenance, blocking, and occupancy analytics"
+        icon={BedDouble}
+        gradient="from-blue-500 to-cyan-600"
+      />
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="dashboard" className="gap-1.5"><Activity className="w-4 h-4" /> Dashboard</TabsTrigger>
+          <TabsTrigger value="board" className="gap-1.5"><BedDouble className="w-4 h-4" /> Bed Board</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-4">
+          <BedDashboard facilityId={activeFacilityId} />
+        </TabsContent>
+
+        <TabsContent value="board" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-500" /> Available ({stats.available || 0})</span>
           <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-rose-500" /> Occupied ({stats.occupied || 0})</span>
           <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500" /> Reserved ({stats.reserved || 0})</span>
           <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-cyan-500" /> Cleaning ({stats.cleaning || 0})</span>
           <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-500" /> Maintenance ({stats.maintenance || 0})</span>
+          <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-700" /> Blocked ({stats.blocked || 0})</span>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setShowSearch(!showSearch)} className="gap-1.5">
+          <Search className="w-3.5 h-3.5" /> Smart Search
+        </Button>
       </div>
 
       {!activeFacilityId && (
@@ -94,15 +138,62 @@ export function BedsView() {
       )}
 
       <Card>
-        <CardContent className="p-3">
+        <CardContent className="p-3 flex flex-wrap gap-3 items-center">
           <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
-            <SelectTrigger className="md:w-52"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_FILTERS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={() => setShowSearch(!showSearch)} className="gap-1.5">
+            <Search className="w-3.5 h-3.5" /> {showSearch ? "Hide Filters" : "Smart Search"}
+          </Button>
         </CardContent>
       </Card>
+
+      {showSearch && (
+        <Card>
+          <CardContent className="p-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <Label className="text-xs">Bed Type</Label>
+              <Select value={searchBedType} onValueChange={setSearchBedType}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="regular">General</SelectItem>
+                  <SelectItem value="icu">ICU</SelectItem>
+                  <SelectItem value="hdu">HDU</SelectItem>
+                  <SelectItem value="maternity">Maternity</SelectItem>
+                  <SelectItem value="pediatric">Pediatric</SelectItem>
+                  <SelectItem value="neonatal">Neonatal</SelectItem>
+                  <SelectItem value="isolation">Isolation</SelectItem>
+                  <SelectItem value="emergency">Emergency</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Gender Restriction</Label>
+              <Select value={searchGender} onValueChange={setSearchGender}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 flex flex-wrap items-end gap-4">
+              <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={searchIsolation} onCheckedChange={(v) => setSearchIsolation(!!v)} /> Isolation</label>
+              <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={searchOxygen} onCheckedChange={(v) => setSearchOxygen(!!v)} /> Oxygen</label>
+              <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={searchVentilator} onCheckedChange={(v) => setSearchVentilator(!!v)} /> Ventilator</label>
+              <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={searchMonitoring} onCheckedChange={(v) => setSearchMonitoring(!!v)} /> Monitoring</label>
+              <label className="flex items-center gap-1.5 text-xs"><Checkbox checked={searchAccessibility} onCheckedChange={(v) => setSearchAccessibility(!!v)} /> Accessible</label>
+              <Button variant="ghost" size="sm" onClick={() => { setSearchBedType("all"); setSearchGender("all"); setSearchIsolation(false); setSearchOxygen(false); setSearchVentilator(false); setSearchMonitoring(false); setSearchAccessibility(false); }} className="text-xs">Reset</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <LoadingState rows={6} />
@@ -169,6 +260,8 @@ export function BedsView() {
           canManage={can("bed.manage")}
         />
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -417,5 +510,113 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============================================================
+// Bed Dashboard — occupancy analytics
+// ============================================================
+function BedDashboard({ facilityId }: { facilityId: string | null }) {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["beds-stats", facilityId],
+    queryFn: () => fetchJson(`/api/beds/stats?facilityId=${facilityId || ""}`),
+    enabled: !!facilityId,
+  });
+  if (isLoading) return <LoadingState rows={4} />;
+  if (isError) return <ErrorState message="Failed to load bed stats" onRetry={() => refetch()} />;
+  if (!data) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <MiniStatCard label="Total Beds" value={data.total} icon={BedDouble} gradient="from-blue-500 to-blue-600" />
+        <MiniStatCard label="Operational" value={data.operational} icon={Activity} gradient="from-emerald-500 to-emerald-600" />
+        <MiniStatCard label="Occupied" value={data.occupied} icon={BedDouble} gradient="from-rose-500 to-rose-600" />
+        <MiniStatCard label="Available" value={data.available} icon={BedDouble} gradient="from-emerald-500 to-teal-600" />
+        <MiniStatCard label="Reserved" value={data.reserved} icon={BedDouble} gradient="from-amber-500 to-amber-600" />
+        <MiniStatCard label="Cleaning" value={data.cleaning} icon={Brush} gradient="from-cyan-500 to-cyan-600" />
+        <MiniStatCard label="Maintenance" value={data.maintenance} icon={Wrench} gradient="from-orange-500 to-orange-600" />
+        <MiniStatCard label="Blocked" value={data.blocked} icon={Ban} gradient="from-red-600 to-red-700" />
+        <MiniStatCard label="Out of Service" value={data.outOfService} icon={X} gradient="from-slate-400 to-slate-500" />
+        <MiniStatCard label="Occupancy Rate" value={`${data.occupancyRate}%`} icon={Activity} gradient="from-blue-500 to-indigo-600" />
+        <MiniStatCard label="Avg LOS (30d)" value={`${data.avgLOS}d`} icon={Activity} gradient="from-violet-500 to-violet-600" />
+        <MiniStatCard label="Bed Turnover" value={data.bedTurnover} icon={RefreshCw} gradient="from-emerald-500 to-emerald-600" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card><CardContent className="p-4">
+          <div className="text-sm font-semibold text-slate-700 mb-2">Special Capabilities</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span>Isolation Capable</span><Badge>{data.isolationCapable}</Badge></div>
+            <div className="flex justify-between"><span>Oxygen Equipped</span><Badge>{data.oxygenCapable}</Badge></div>
+            <div className="flex justify-between"><span>Ventilator Capable</span><Badge>{data.ventilatorCapable}</Badge></div>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <div className="text-sm font-semibold text-slate-700 mb-2">Workflows</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span>Active Reservations</span><Badge>{data.activeReservations}</Badge></div>
+            <div className="flex justify-between"><span>Pending Cleaning</span><Badge>{data.pendingCleaning}</Badge></div>
+            <div className="flex justify-between"><span>Active Maintenance</span><Badge>{data.activeMaintenance}</Badge></div>
+            <div className="flex justify-between"><span>Active Blocks</span><Badge>{data.activeBlocks}</Badge></div>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <div className="text-sm font-semibold text-slate-700 mb-2">By Bed Type</div>
+          <div className="space-y-1 text-sm">
+            {Object.entries(data.byType || {}).map(([type, count]: [string, any]) => (
+              <div key={type} className="flex justify-between"><span className="capitalize">{type}</span><Badge>{count}</Badge></div>
+            ))}
+          </div>
+        </CardContent></Card>
+      </div>
+
+      {data.wardStats && data.wardStats.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm font-semibold text-slate-700 mb-3">Ward Occupancy</div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b">
+                  <tr>
+                    <th className="text-left p-2 font-semibold text-slate-700">Ward</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Total</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Occupied</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Available</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Reserved</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Cleaning</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Maint.</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Blocked</th>
+                    <th className="text-center p-2 font-semibold text-slate-700">Occ. Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.wardStats.map((w: any) => (
+                    <tr key={w.id} className="border-b hover:bg-slate-50">
+                      <td className="p-2 font-medium text-slate-900">{w.name} <span className="text-xs text-slate-500 font-mono">{w.code}</span></td>
+                      <td className="p-2 text-center">{w.totalBeds}</td>
+                      <td className="p-2 text-center text-rose-700 font-medium">{w.occupied}</td>
+                      <td className="p-2 text-center text-emerald-700 font-medium">{w.available}</td>
+                      <td className="p-2 text-center text-amber-700">{w.reserved}</td>
+                      <td className="p-2 text-center text-cyan-700">{w.cleaning}</td>
+                      <td className="p-2 text-center text-orange-700">{w.maintenance}</td>
+                      <td className="p-2 text-center text-red-700">{w.blocked}</td>
+                      <td className="p-2 text-center">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-slate-100 rounded h-4 relative overflow-hidden min-w-[60px]">
+                            <div className={`h-full ${w.occupancyRate > 80 ? "bg-rose-500" : w.occupancyRate > 60 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, w.occupancyRate)}%` }} />
+                          </div>
+                          <span className="text-xs font-medium text-slate-700 w-8">{w.occupancyRate}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

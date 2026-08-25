@@ -253,15 +253,41 @@ model Bed {
   roomId     String?
   room       Room?    @relation(fields: [roomId], references: [id])
   bedNumber  String
-  bedType    String? // regular | icu | maternity | pediatric | emergency
-  status     String   @default("available") // available | occupied | reserved | cleaning | maintenance | out_of_service
+  bedCode    String?  // unique code, e.g., GH-JEH-MW-101-A
+  bedType    String? // regular | icu | hdu | maternity | pediatric | neonatal | isolation | emergency | psychiatric | surgical | orthopedic | private | semi_private | other
+  // ---- Extended master fields ----
+  building   String?  // building name/number
+  floor      String?  // floor identifier
+  genderRestriction String? // male | female | any
+  ageRestriction String? // neonate | infant | child | adolescent | adult | elderly | any
+  isolationCapable Boolean @default(false)
+  oxygen      Boolean @default(false)
+  ventilator  Boolean @default(false)
+  cardiacMonitoring Boolean @default(false)
+  icuMonitoring Boolean @default(false)
+  suction    Boolean @default(false)
+  accessibility Boolean @default(false) // wheelchair accessible
+  description String?
+  // Lifecycle
+  status     String   @default("available") // available | occupied | reserved | blocked | cleaning | maintenance | out_of_service | isolation | temporarily_unavailable
+  lifecycleStatus String @default("active") // active | inactive | retired
   notes      String?
+  createdById String?
+  updatedById String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   bedAssignments BedAssignment[]
+  bedReservations BedReservation[]
+  cleanings   BedCleaning[]
+  maintenances BedMaintenance[]
+  blocks      BedBlock[]
 
   @@unique([wardId, bedNumber])
+  @@index([facilityId, status])
+  @@index([facilityId, lifecycleStatus])
+  @@index([wardId, status])
+  @@index([bedType])
 }
 
 // ---------------------------------------------------------------------
@@ -2498,16 +2524,101 @@ model BedReservation {
   wardId          String
   roomId          String?
   bedId           String
+  bed             Bed     @relation(fields: [bedId], references: [id], onDelete: Cascade)
   reservedAt      DateTime @default(now())
+  expectedUseAt   DateTime?  // when the bed is expected to be used
   expiresAt       DateTime?  // reservation expiry
   reservedById    String?
-  status          String   @default("active") // active | expired | cancelled | converted
+  reason          String?  // why the bed is reserved
+  status          String   @default("active") // active | used | expired | cancelled
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([bedId, status])
   @@index([admissionId])
+  @@index([facilityId, status])
+  @@index([patientId])
+}
+
+// =====================================================================
+// BED CLEANING — cleaning workflow after discharge/transfer
+// =====================================================================
+
+model BedCleaning {
+  id              String   @id @default(cuid())
+  bedId           String
+  bed             Bed      @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  facilityId      String
+  // Cleaning state
+  status          String   @default("pending") // pending | in_progress | completed | skipped
+  initiatedAt     DateTime @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  // Staff
+  initiatedById   String?  // who flagged it for cleaning
+  cleanedById     String?  // who performed the cleaning
+  // Details
+  cleaningType    String?  // routine | deep | isolation | terminal
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bedId, status])
+  @@index([facilityId, status])
+}
+
+// =====================================================================
+// BED MAINTENANCE — maintenance workflow
+// =====================================================================
+
+model BedMaintenance {
+  id              String   @id @default(cuid())
+  bedId           String
+  bed             Bed      @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  facilityId      String
+  // Maintenance state
+  status          String   @default("reported") // reported | in_progress | resolved | unresolved
+  reason          String?  // what needs maintenance
+  reportedAt      DateTime @default(now())
+  reportedById    String?
+  startedAt       DateTime?
+  expectedCompletion DateTime?
+  completedAt     DateTime?
+  // Staff
+  technicianId    String?  // maintenance staff
+  technicianName  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bedId, status])
+  @@index([facilityId, status])
+}
+
+// =====================================================================
+// BED BLOCK — blocking a bed for various reasons
+// =====================================================================
+
+model BedBlock {
+  id              String   @id @default(cuid())
+  bedId           String
+  bed             Bed      @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  facilityId      String
+  // Block state
+  status          String   @default("active") // active | removed | expired
+  reason          String?  // infection_control | maintenance | renovation | staffing_shortage | isolation_requirement | ward_closure | other
+  reasonDetails   String?
+  blockedAt       DateTime @default(now())
+  expectedEnd     DateTime?
+  actualEnd       DateTime?
+  blockedById     String?
+  approvedById    String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bedId, status])
   @@index([facilityId, status])
 }
 
