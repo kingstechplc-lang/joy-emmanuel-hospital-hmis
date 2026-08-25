@@ -93,7 +93,7 @@ export async function POST(req: Request) {
   const recordType = body.recordType || "note";
 
   if (recordType === "note") {
-    const { patientId, encounterId, admissionId, noteType, content } = body;
+    const { patientId, encounterId, admissionId, noteType, content, shift, subjective, objective, assessment, plan, focusData, focusAction, focusResponse, eventAt, wardId, bedId, facilityId, isEscalation } = body;
     if (!patientId || !encounterId || !content) {
       return NextResponse.json({ error: "patientId, encounterId, content are required" }, { status: 400 });
     }
@@ -106,6 +106,20 @@ export async function POST(req: Request) {
         nurseId: session.user.id,
         noteType: noteType || "observation",
         content,
+        shift: shift || null,
+        subjective: subjective || null,
+        objective: objective || null,
+        assessment: assessment || null,
+        plan: plan || null,
+        focusData: focusData || null,
+        focusAction: focusAction || null,
+        focusResponse: focusResponse || null,
+        status: "draft",
+        eventAt: eventAt ? new Date(eventAt) : null,
+        isEscalation: !!isEscalation,
+        wardId: wardId || null,
+        bedId: bedId || null,
+        facilityId: facilityId || null,
       },
       include: {
         patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
@@ -128,7 +142,7 @@ export async function POST(req: Request) {
   }
 
   if (recordType === "care_plan") {
-    const { patientId, encounterId, admissionId, problem, goal, interventions, evaluation } = body;
+    const { patientId, encounterId, admissionId, problem, goal, interventions, evaluation, priority, expectedOutcome, reviewDate, nursingDiagnosis, relatedFactors, facilityId } = body;
     if (!patientId || !encounterId || !problem) {
       return NextResponse.json({ error: "patientId, encounterId, problem are required" }, { status: 400 });
     }
@@ -143,6 +157,13 @@ export async function POST(req: Request) {
         interventions: interventions || null,
         evaluation: evaluation || null,
         createdById: session.user.id,
+        status: "active",
+        priority: priority || null,
+        expectedOutcome: expectedOutcome || null,
+        reviewDate: reviewDate ? new Date(reviewDate) : null,
+        nursingDiagnosis: nursingDiagnosis || null,
+        relatedFactors: relatedFactors || null,
+        facilityId: facilityId || null,
       },
       include: {
         patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },

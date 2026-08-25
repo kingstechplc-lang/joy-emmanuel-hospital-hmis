@@ -2687,13 +2687,41 @@ model NursingNote {
   admission     Admission? @relation(fields: [admissionId], references: [id])
   nurseId       String?
   nurse         User?    @relation("nursingNoteAuthor", fields: [nurseId], references: [id])
-  noteType      String? // assessment | intervention | handover | observation | wound
+  noteType      String? // assessment | intervention | handover | observation | wound | shift_note | progress | soap | focus_dar | narrative | post_procedure | post_op | emergency | maternity | pediatric | discharge | transfer | incident | initial_assessment
   content       String
+  // ---- Extended fields ----
+  shift         String?  // morning | afternoon | night | other
+  // SOAP fields (optional — used when noteType is soap/progress/initial_assessment)
+  subjective    String?  // S — patient's complaint / history
+  objective     String?  // O — examination findings, vitals
+  assessment    String?  // A — nursing assessment
+  plan          String?  // P — nursing plan
+  // Focus/DAR fields (optional — used when noteType is focus_dar)
+  focusData     String?  // D — Data
+  focusAction   String?  // A — Action
+  focusResponse String?  // R — Response
+  // Status lifecycle
+  status        String   @default("draft") // draft | submitted | signed | amended
+  signedById    String?
+  signedAt      DateTime?
+  // Amendment chain
+  amendedFromId String?
+  // Event vs documentation timestamps
+  eventAt       DateTime? // when care occurred (defaults to createdAt if not set)
+  // Escalation flag
+  isEscalation  Boolean  @default(false)
+  // Ward/bed context
+  wardId        String?
+  bedId         String?
+  facilityId    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([patientId, createdAt])
   @@index([admissionId])
+  @@index([status])
+  @@index([shift])
+  @@index([noteType])
 }
 
 model CarePlan {
@@ -2710,10 +2738,241 @@ model CarePlan {
   evaluation    String?
   createdById   String?
   createdBy     User?    @relation("carePlanAuthor", fields: [createdById], references: [id])
+  // ---- Extended fields ----
+  status        String   @default("active") // active | completed | modified | discontinued
+  priority      String?  // low | medium | high | urgent
+  expectedOutcome String?
+  reviewDate    DateTime?
+  responsibleNurseId String?
+  facilityId    String?
+  // Link to nursing diagnosis
+  nursingDiagnosis String?
+  relatedFactors   String?
+  patientResponse  String?
+  outcome          String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  interventions_rows NursingIntervention[]
+
   @@index([patientId])
+  @@index([admissionId])
+  @@index([status])
+}
+
+// =====================================================================
+// NURSING HANDOVER — per-patient clinical handover
+// =====================================================================
+
+model NursingHandover {
+  id              String   @id @default(cuid())
+  patientId       String
+  admissionId     String?
+  encounterId     String?
+  facilityId      String?
+  wardId          String?
+  // Handover details
+  shiftType       String   @default("morning") // morning | afternoon | night
+  handoverDate    DateTime @default(now())
+  // SBAR-style structure
+  currentCondition String?
+  background       String?
+  assessment       String?
+  recommendation  String?
+  // Additional handover info
+  medicationsDue  String?
+  pendingTasks    String?
+  safetyConcerns  String?
+  allergies       String?
+  recentVitals    String?
+  pendingInvestigations String?
+  // Staff
+  fromNurseId     String?
+  toNurseId       String?
+  // Status
+  status          String   @default("active") // active | acknowledged | archived
+  acknowledgedAt  DateTime?
+  acknowledgedById String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId, handoverDate])
+  @@index([shiftType])
+  @@index([status])
+}
+
+// =====================================================================
+// NURSING ESCALATION — nurse-to-clinician escalation
+// =====================================================================
+
+model NursingEscalation {
+  id              String   @id @default(cuid())
+  patientId       String
+  admissionId     String?
+  encounterId     String?
+  facilityId      String?
+  // Escalation details
+  concern         String   // what the nurse is concerned about
+  priority        String   @default("routine") // routine | urgent | critical
+  escalatedTo     String?  // doctor | specialist | nurse_in_charge | emergency_team | other
+  escalatedToId   String?  // specific user ID if known
+  escalatedById   String?
+  escalatedAt     DateTime @default(now())
+  // Response
+  response        String?
+  responseById    String?
+  respondedAt     DateTime?
+  resolution      String?
+  resolvedAt      DateTime?
+  resolvedById    String?
+  status          String   @default("open") // open | acknowledged | in_progress | resolved
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([status])
+  @@index([priority])
+}
+
+// =====================================================================
+// NURSING TASK — nursing-specific tasks (vitals, meds, wound care, etc.)
+// =====================================================================
+
+model NursingTask {
+  id              String   @id @default(cuid())
+  patientId       String
+  admissionId     String?
+  encounterId     String?
+  facilityId      String?
+  wardId          String?
+  // Task details
+  taskType        String   // vitals | medication | wound_care | repositioning | intake_output | patient_education | monitoring | specimen_collection | procedure_preparation | discharge_preparation | other
+  title           String
+  description     String?
+  // Scheduling
+  dueAt           DateTime
+  frequency       String?  // once | every_4h | every_8h | every_12h | daily | weekly | prn | other
+  // Assignment
+  assignedToId    String?  // nurse user ID
+  // Completion
+  status          String   @default("pending") // pending | due | in_progress | completed | missed | cancelled
+  completedAt     DateTime?
+  completedById   String?
+  completionNotes String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId, status])
+  @@index([dueAt])
+  @@index([assignedToId])
+}
+
+// =====================================================================
+// WOUND ASSESSMENT — wound/skin documentation
+// =====================================================================
+
+model WoundAssessment {
+  id              String   @id @default(cuid())
+  patientId       String
+  admissionId     String?
+  encounterId     String?
+  facilityId      String?
+  // Wound details
+  woundLocation   String?  // body location
+  woundType       String?  // surgical | pressure | diabetic | venous | arterial | burn | traumatic | other
+  // Dimensions
+  length          Float?   // cm
+  width           Float?   // cm
+  depth           Float?   // cm
+  // Appearance
+  stage           String?  // stage_1 | stage_2 | stage_3 | stage_4 | unstageable | deep_tissue | partial | full
+  appearance      String?  // healthy | granulating | sloughy | necrotic | infected | mixed
+  exudateType     String?  // none | serous | sanguineous | serosanguineous | purulent
+  exudateAmount   String?  // none | scant | small | moderate | large
+  surroundingSkin String?  // intact | macerated | erythema | induration | other
+  odor            String?  // none | mild | moderate | strong
+  painScore       Int?     // 0-10
+  // Treatment
+  dressingType    String?
+  treatmentGiven  String?
+  nextDressingChange DateTime?
+  // Staff
+  assessedById    String?
+  assessedAt      DateTime @default(now())
+  patientResponse String?
+  notes           String?
+  // Photo reference (if image storage is available)
+  photoUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId, assessedAt])
+  @@index([admissionId])
+}
+
+// =====================================================================
+// RISK ASSESSMENT — fall risk, pressure injury risk
+// =====================================================================
+
+model RiskAssessment {
+  id              String   @id @default(cuid())
+  patientId       String
+  admissionId     String?
+  encounterId     String?
+  facilityId      String?
+  // Assessment type
+  assessmentType  String   // fall_risk | pressure_injury | other
+  // Risk level
+  riskLevel       String?  // low | moderate | high | severe
+  riskScore       Int?
+  // Details
+  riskFactors     String?  // JSON array of identified risk factors
+  preventionPlan  String?
+  interventions   String?  // JSON array of prevention interventions
+  // Assessment metadata
+  assessedById    String?
+  assessedAt      DateTime @default(now())
+  reviewDate      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId, assessmentType])
+  @@index([admissionId])
+}
+
+// =====================================================================
+// NURSING INTERVENTION — structured intervention records
+// =====================================================================
+
+model NursingIntervention {
+  id              String   @id @default(cuid())
+  carePlanId      String?
+  carePlan        CarePlan? @relation(fields: [carePlanId], references: [id], onDelete: SetNull)
+  patientId       String
+  admissionId     String?
+  encounterId     String?
+  facilityId      String?
+  // Intervention details
+  interventionType String? // positioning | hygiene | wound_care | mobility | nutrition | education | monitoring | comfort | oxygen | intake_output | safety | medication_admin | other
+  description     String
+  frequency       String?  // once | hourly | every_2h | every_4h | daily | prn | other
+  // Execution
+  status          String   @default("pending") // pending | in_progress | completed | discontinued
+  executedById    String?
+  executedAt      DateTime?
+  // Patient response
+  patientResponse String?  // improvement | no_change | deterioration | adverse | escalation
+  responseNotes   String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([carePlanId])
+  @@index([status])
 }
 
 // ---------------------------------------------------------------------
