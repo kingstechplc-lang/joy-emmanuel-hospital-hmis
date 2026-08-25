@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Beaker, Search, Plus, Edit, Trash2, Activity, AlertTriangle, CheckCircle2,
-  Upload, BarChart3, Layers, Microscope, Settings2, FileClock, Eye,
+  Upload, BarChart3, Layers, Microscope, Settings2, FileClock, Eye, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -584,10 +584,33 @@ function BulkUpdateDialog({ testIds, onClose, onDone }: { testIds: string[]; onC
 // QUALITY CHECK TAB
 // =====================================================================
 function QualityTab() {
-  const { data, isLoading, isError, refetch } = useQuery({
+  const [rerunning, setRerunning] = useState(false);
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["lab-tests-quality"],
     queryFn: () => fetchJson(`/api/lab-tests/quality-check`),
+    // always allow refetch, even if data is fresh
+    staleTime: 0,
+    refetchOnMount: true,
   });
+
+  const handleRerun = async () => {
+    setRerunning(true);
+    toast.info("Re-running quality check…");
+    try {
+      const result = await refetch({ cancelRefetch: true });
+      if (result.data) {
+        const s = result.data.summary;
+        toast.success(`Quality check complete: ${s.errors} errors, ${s.warnings} warnings, ${s.info} info`);
+      } else if (result.error) {
+        toast.error("Quality check failed");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Re-run failed");
+    } finally {
+      setRerunning(false);
+    }
+  };
+
   if (isLoading) return <LoadingState rows={4} />;
   if (isError) return <ErrorState message="Failed to run quality check" onRetry={() => refetch()} />;
   if (!data) return null;
@@ -602,7 +625,16 @@ function QualityTab() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-slate-700">Quality Warnings ({data.warnings.length})</div>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>Re-run</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRerun}
+              disabled={rerunning || isFetching}
+              className="gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${(rerunning || isFetching) ? "animate-spin" : ""}`} />
+              {rerunning || isFetching ? "Running…" : "Re-run"}
+            </Button>
           </div>
           {data.warnings.length === 0 ? (
             <EmptyState title="No issues found" description="All tests are properly configured." icon={CheckCircle2} />

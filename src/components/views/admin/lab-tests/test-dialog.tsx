@@ -20,6 +20,7 @@ import {
 } from "./shared";
 import { safeJson } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { MasterCombobox } from "./master-combobox";
 
 export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => void }) {
   const qc = useQueryClient();
@@ -117,14 +118,14 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle>{isEdit ? "Edit Lab Test" : "Add Lab Test"}</DialogTitle>
           <DialogDescription>
             {isEdit ? "Update test details. Use the test details dialog for full configuration (specimen, ranges, critical values, panel)." : "Add a new laboratory test to the central catalog. You can configure specimen, reference ranges, critical values, and panels after creation."}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
             <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
@@ -202,12 +203,28 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <Label>Specimen Type</Label>
-              <Input value={form.specimenType} onChange={(e) => setForm({ ...form, specimenType: e.target.value })} placeholder="e.g., Whole Blood" />
+              <MasterCombobox
+                label="Specimen Type"
+                endpoint="/api/lab-tests/specimen-types?status=active"
+                value={form.specimenType}
+                onChange={(v) => setForm({ ...form, specimenType: v })}
+                placeholder="Select or type specimen…"
+                searchPlaceholder="Search specimens…"
+                fieldLabel="specimen"
+                helperText="Pulls from Specimen Types master; type to add a custom value."
+              />
             </div>
             <div>
-              <Label>Unit</Label>
-              <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="e.g., mg/dL" />
+              <MasterCombobox
+                label="Unit"
+                endpoint="/api/lab-tests/units?status=active"
+                value={form.unit}
+                onChange={(v) => setForm({ ...form, unit: v })}
+                placeholder="Select or type unit…"
+                searchPlaceholder="Search units…"
+                fieldLabel="unit"
+                helperText="Pulls from Units master; type to add a custom value."
+              />
             </div>
             <div>
               <Label>Reference Range (legacy text)</Label>
@@ -302,7 +319,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}

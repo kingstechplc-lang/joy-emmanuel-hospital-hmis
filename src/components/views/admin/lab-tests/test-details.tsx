@@ -28,6 +28,7 @@ import {
 } from "./shared";
 import { formatDate, safeJson } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { MasterCombobox } from "./master-combobox";
 
 export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -47,14 +48,14 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
 
   if (isLoading) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="p-8 text-center text-slate-500">Loading test details…</div>
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <div className="flex-1 flex items-center justify-center text-slate-500">Loading test details…</div>
       </DialogContent>
     </Dialog>
   );
   if (isError || !t) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-5xl flex flex-col p-0 gap-0 overflow-hidden">
         <div className="p-8 text-center text-rose-600">Failed to load test details.</div>
         <div className="flex justify-center pb-4"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
       </DialogContent>
@@ -63,9 +64,9 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+          <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
             <FlaskConical className="w-5 h-5 text-emerald-600" />
             <span>{t.name}</span>
             <Badge variant="outline" className="ml-2 font-mono">{t.code}</Badge>
@@ -73,50 +74,52 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
             {t.isReferralOut && <Badge className="bg-blue-100 text-blue-700">Referral</Badge>}
             <Badge className={`bg-${statusColor(t.status)}-100 text-${statusColor(t.status)}-700`}>{labelOf(TEST_STATUSES_LOCAL, t.status)}</Badge>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-words">
             {t.shortName && <span className="mr-2">Short: {t.shortName}</span>}
             {t.displayName && <span className="mr-2">· Display: {t.displayName}</span>}
             {t.description && <span>· {t.description}</span>}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="flex flex-wrap h-auto">
-            <TabsTrigger value="overview" className="gap-1.5"><Activity className="w-4 h-4" /> Overview</TabsTrigger>
-            <TabsTrigger value="specimen" className="gap-1.5"><Microscope className="w-4 h-4" /> Specimen</TabsTrigger>
-            <TabsTrigger value="components" className="gap-1.5"><Layers className="w-4 h-4" /> Components</TabsTrigger>
-            <TabsTrigger value="ranges" className="gap-1.5"><Beaker className="w-4 h-4" /> Ref Ranges</TabsTrigger>
-            <TabsTrigger value="critical" className="gap-1.5"><AlertTriangle className="w-4 h-4" /> Critical</TabsTrigger>
-            <TabsTrigger value="options" className="gap-1.5"><ListChecks className="w-4 h-4" /> Result Options</TabsTrigger>
-            <TabsTrigger value="facility" className="gap-1.5"><Building2 className="w-4 h-4" /> Facility</TabsTrigger>
-            <TabsTrigger value="audit" className="gap-1.5"><FileClock className="w-4 h-4" /> Audit</TabsTrigger>
-          </TabsList>
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="flex flex-wrap h-auto w-full mb-3">
+              <TabsTrigger value="overview" className="gap-1.5"><Activity className="w-4 h-4" /> Overview</TabsTrigger>
+              <TabsTrigger value="specimen" className="gap-1.5"><Microscope className="w-4 h-4" /> Specimen</TabsTrigger>
+              <TabsTrigger value="components" className="gap-1.5"><Layers className="w-4 h-4" /> Components</TabsTrigger>
+              <TabsTrigger value="ranges" className="gap-1.5"><Beaker className="w-4 h-4" /> Ref Ranges</TabsTrigger>
+              <TabsTrigger value="critical" className="gap-1.5"><AlertTriangle className="w-4 h-4" /> Critical</TabsTrigger>
+              <TabsTrigger value="options" className="gap-1.5"><ListChecks className="w-4 h-4" /> Result Options</TabsTrigger>
+              <TabsTrigger value="facility" className="gap-1.5"><Building2 className="w-4 h-4" /> Facility</TabsTrigger>
+              <TabsTrigger value="audit" className="gap-1.5"><FileClock className="w-4 h-4" /> Audit</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-3 mt-3">
-            <OverviewTab test={t} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="specimen" className="space-y-3 mt-3">
-            <SpecimenTab testId={t.id} items={t.specimenConfigs || []} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="components" className="space-y-3 mt-3">
-            <ComponentsTab testId={t.id} items={t.components || []} panelMembers={t.panelMemberships || []} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="ranges" className="space-y-3 mt-3">
-            <ReferenceRangesTab testId={t.id} items={t.referenceRanges || []} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="critical" className="space-y-3 mt-3">
-            <CriticalValuesTab testId={t.id} items={t.criticalValues || []} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="options" className="space-y-3 mt-3">
-            <ResultOptionsTab testId={t.id} items={t.resultOptions || []} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="facility" className="space-y-3 mt-3">
-            <FacilityAvailabilityTab testId={t.id} items={t.facilityAvailability || []} onChanged={invalidateAll} />
-          </TabsContent>
-          <TabsContent value="audit" className="space-y-3 mt-3">
-            <AuditTab items={t.catalogAudits || []} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="overview" className="space-y-3 mt-3">
+              <OverviewTab test={t} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="specimen" className="space-y-3 mt-3">
+              <SpecimenTab testId={t.id} items={t.specimenConfigs || []} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="components" className="space-y-3 mt-3">
+              <ComponentsTab testId={t.id} items={t.components || []} panelMembers={t.panelMemberships || []} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="ranges" className="space-y-3 mt-3">
+              <ReferenceRangesTab testId={t.id} items={t.referenceRanges || []} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="critical" className="space-y-3 mt-3">
+              <CriticalValuesTab testId={t.id} items={t.criticalValues || []} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="options" className="space-y-3 mt-3">
+              <ResultOptionsTab testId={t.id} items={t.resultOptions || []} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="facility" className="space-y-3 mt-3">
+              <FacilityAvailabilityTab testId={t.id} items={t.facilityAvailability || []} onChanged={invalidateAll} />
+            </TabsContent>
+            <TabsContent value="audit" className="space-y-3 mt-3">
+              <AuditTab items={t.catalogAudits || []} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -252,8 +255,15 @@ function OverviewTab({ test, onChanged }: { test: any; onChanged: () => void }) 
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <Label>Unit</Label>
-              <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="e.g., mg/dL" />
+              <MasterCombobox
+                label="Unit"
+                endpoint="/api/lab-tests/units?status=active"
+                value={form.unit}
+                onChange={(v) => setForm({ ...form, unit: v })}
+                placeholder="Select or type unit…"
+                searchPlaceholder="Search units…"
+                fieldLabel="unit"
+              />
             </div>
             <div>
               <Label>Reference Range (legacy text)</Label>
@@ -422,8 +432,16 @@ function SpecimenTab({ testId, items, onChanged }: { testId: string; items: any[
           <div className="border rounded p-3 space-y-3 bg-slate-50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <FieldLabel required>Specimen Type</FieldLabel>
-                <Input value={form.specimenType} onChange={(e) => setForm({ ...form, specimenType: e.target.value })} placeholder="e.g., Whole Blood" />
+                <MasterCombobox
+                  label="Specimen Type"
+                  required
+                  endpoint="/api/lab-tests/specimen-types?status=active"
+                  value={form.specimenType}
+                  onChange={(v) => setForm({ ...form, specimenType: v })}
+                  placeholder="Select or type specimen…"
+                  searchPlaceholder="Search specimens…"
+                  fieldLabel="specimen"
+                />
               </div>
               <div>
                 <Label>Container</Label>
@@ -624,7 +642,7 @@ function ComponentsTab({ testId, items, panelMembers, onChanged }: { testId: str
                     <SelectContent>{RESULT_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Unit</Label><Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
+                <div><Label>Unit</Label><MasterCombobox endpoint="/api/lab-tests/units?status=active" value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} placeholder="Select or type…" fieldLabel="unit" /></div>
                 <div><Label>Reference Range</Label><Input value={form.referenceRange} onChange={(e) => setForm({ ...form, referenceRange: e.target.value })} /></div>
                 <div><Label>Decimal Precision</Label><Input type="number" value={form.decimalPrecision} onChange={(e) => setForm({ ...form, decimalPrecision: e.target.value })} /></div>
                 <div><Label>Critical Low</Label><Input type="number" value={form.criticalLow} onChange={(e) => setForm({ ...form, criticalLow: e.target.value })} /></div>
@@ -747,11 +765,11 @@ function ReferenceRangesTab({ testId, items, onChanged }: { testId: string; item
               </div>
               <div><Label>Age Min (days)</Label><Input type="number" value={form.ageMinDays} onChange={(e) => setForm({ ...form, ageMinDays: e.target.value })} /></div>
               <div><Label>Age Max (days)</Label><Input type="number" value={form.ageMaxDays} onChange={(e) => setForm({ ...form, ageMaxDays: e.target.value })} /></div>
-              <div><Label>Specimen Type</Label><Input value={form.specimenType} onChange={(e) => setForm({ ...form, specimenType: e.target.value })} /></div>
+              <div><Label>Specimen Type</Label><MasterCombobox endpoint="/api/lab-tests/specimen-types?status=active" value={form.specimenType} onChange={(v) => setForm({ ...form, specimenType: v })} placeholder="Select or type…" fieldLabel="specimen" /></div>
               <div><Label>Low</Label><Input value={form.lowText} onChange={(e) => setForm({ ...form, lowText: e.target.value })} placeholder="13.5" /></div>
               <div><Label>High</Label><Input value={form.highText} onChange={(e) => setForm({ ...form, highText: e.target.value })} placeholder="17.5" /></div>
               <div><Label>Range Text</Label><Input value={form.rangeText} onChange={(e) => setForm({ ...form, rangeText: e.target.value })} placeholder="13.5 - 17.5 g/dL" /></div>
-              <div><Label>Unit</Label><Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
+              <div><Label>Unit</Label><MasterCombobox endpoint="/api/lab-tests/units?status=active" value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} placeholder="Select or type…" fieldLabel="unit" /></div>
               <div><Label>Critical Low</Label><Input value={form.criticalLowText} onChange={(e) => setForm({ ...form, criticalLowText: e.target.value })} /></div>
               <div><Label>Critical High</Label><Input value={form.criticalHighText} onChange={(e) => setForm({ ...form, criticalHighText: e.target.value })} /></div>
             </div>
