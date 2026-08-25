@@ -86,11 +86,23 @@ export async function GET(req: Request) {
     },
   });
 
+  // Also fetch all active wards (so wards with no beds still appear on the board)
+  const allWards = await db.ward.findMany({
+    where: { ...(facilityId ? { facilityId } : {}), status: "active" },
+    select: { id: true, name: true, code: true, wardType: true, capacity: true },
+    orderBy: { name: "asc" },
+  });
+
   // Group beds by ward for the frontend
   const wardMap = new Map<string, any>();
+  // Initialize with ALL wards (even those with 0 beds)
+  for (const w of allWards) {
+    wardMap.set(w.id, { ward: w, beds: [] });
+  }
   for (const b of beds) {
     const wId = b.wardId;
     if (!wardMap.has(wId)) {
+      // Bed belongs to a ward not in our allWards list (possibly inactive ward) — still show it
       wardMap.set(wId, {
         ward: b.ward,
         beds: [],

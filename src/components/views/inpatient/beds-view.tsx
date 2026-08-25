@@ -219,7 +219,7 @@ export function BedsView() {
       ) : !data?.wards || data.wards.length === 0 ? (
         <Card>
           <CardContent className="p-6">
-            <EmptyState title="No beds" description="Configure wards and beds via the facility management settings." />
+            <EmptyState title="No beds found" description="Add wards, rooms, and beds using the Manage tab, or adjust your filters." />
           </CardContent>
         </Card>
       ) : (
@@ -692,11 +692,15 @@ function ManageTab(props: any) {
           <div className="text-sm font-semibold text-slate-700">Wards ({wards.length})</div>
           {canCreate && <Button size="sm" onClick={onShowWardDialog} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> Add Ward</Button>}
         </div>
+        <div className="text-xs text-slate-400 mb-2">Capacity = expected/planned bed count. Actual = number of beds currently created in this ward.</div>
         {isLoading ? <LoadingState rows={3} /> : wards.length === 0 ? <EmptyState title="No wards" /> : (
           <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead className="bg-slate-50 border-b"><tr>
               <th className="text-left p-2 font-semibold text-slate-700">Ward</th><th className="text-left p-2 font-semibold text-slate-700">Type</th>
-              <th className="text-center p-2 font-semibold text-slate-700">Rooms</th><th className="text-center p-2 font-semibold text-slate-700">Beds</th>
+              <th className="text-center p-2 font-semibold text-slate-700">Rooms</th>
+              <th className="text-center p-2 font-semibold text-slate-700">Capacity</th>
+              <th className="text-center p-2 font-semibold text-slate-700">Actual Beds</th>
+              <th className="text-center p-2 font-semibold text-slate-700">Occupied</th>
               <th className="text-left p-2 font-semibold text-slate-700">Status</th><th className="text-right p-2 font-semibold text-slate-700">Actions</th>
             </tr></thead><tbody>
               {wards.map((w: any) => (
@@ -704,7 +708,9 @@ function ManageTab(props: any) {
                   <td className="p-2"><div className="font-medium">{w.name}</div><div className="text-xs text-slate-500 font-mono">{w.code}</div></td>
                   <td className="p-2 capitalize">{w.wardType || "—"}</td>
                   <td className="p-2 text-center">{w.rooms?.length || 0}</td>
-                  <td className="p-2 text-center">{w.bedStats?.total || 0}</td>
+                  <td className="p-2 text-center text-slate-500">{w.capacity || 0}</td>
+                  <td className="p-2 text-center font-medium text-slate-900">{w.bedStats?.total || 0}</td>
+                  <td className="p-2 text-center text-rose-700 font-medium">{w.bedStats?.occupied || 0}</td>
                   <td className="p-2"><Badge className={`bg-${w.status === "active" ? "emerald" : "slate"}-100 text-${w.status === "active" ? "emerald" : "slate"}-700`}>{w.status}</Badge></td>
                   <td className="p-2 text-right"><div className="flex justify-end gap-1">
                     {canEdit && <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onEditWard(w)}><Wrench className="w-3.5 h-3.5" /></Button>}
@@ -788,7 +794,11 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
           <div><Label>Gender</Label><Select value={form.genderPolicy} onValueChange={(v) => setForm({ ...form, genderPolicy: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mixed">Mixed</SelectItem><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Capacity</Label><Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} /></div>
+          <div>
+            <Label>Capacity (expected beds)</Label>
+            <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
+            <div className="text-[10px] text-slate-400 mt-0.5">Target/expected bed count for planning. Actual beds are managed separately.</div>
+          </div>
           <div><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
         </div>
       </div>
@@ -805,13 +815,20 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
   const [form, setForm] = useState({ wardId: room?.wardId || "", roomNumber: room?.roomNumber || "", roomType: room?.roomType || "ward", capacity: room?.capacity || 1, status: room?.status || "active" });
   const [saving, setSaving] = useState(false);
   const { data: wardsData } = useQuery({ queryKey: ["wards-room", facilityId], queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`), enabled: !!facilityId });
+  const wards = wardsData?.items || [];
+  const selectedWardName = wards.find((w: any) => w.id === form.wardId)?.name || "Unknown ward";
   const submit = async () => {
     if (!form.wardId || !form.roomNumber) { toast.error("Ward and room number required"); return; }
     setSaving(true);
     try {
-      const url = isEdit ? `/api/rooms/${room.id}` : "/api/rooms";
-      const res = await fetch(url, { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, capacity: Number(form.capacity) }) });
-      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      if (isEdit) {
+        // On edit, don't send wardId (ward can't be changed after creation)
+        const res = await fetch(`/api/rooms/${room.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomNumber: form.roomNumber, roomType: form.roomType, capacity: Number(form.capacity), status: form.status }) });
+        if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      } else {
+        const res = await fetch("/api/rooms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, capacity: Number(form.capacity) }) });
+        if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      }
       toast.success(isEdit ? "Room updated" : "Room created"); onDone();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
@@ -819,11 +836,26 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
       <DialogHeader><DialogTitle>{isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
       <div className="space-y-3">
-        <div><Label>Ward</Label><Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v })} disabled={isEdit}><SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger><SelectContent>{(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+        <div>
+          <Label>Ward</Label>
+          {isEdit ? (
+            <Input value={selectedWardName} disabled className="bg-slate-50 text-slate-500" />
+          ) : (
+            <Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v })}>
+              <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
+              <SelectContent>{wards.map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+            </Select>
+          )}
+          {isEdit && <div className="text-xs text-slate-400 mt-0.5">Ward cannot be changed after room creation</div>}
+        </div>
         <div><Label>Room Number</Label><Input value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} placeholder="e.g., 101" /></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Type</Label><Select value={form.roomType} onValueChange={(v) => setForm({ ...form, roomType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ward">Ward</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="semi-private">Semi-private</SelectItem></SelectContent></Select></div>
-          <div><Label>Capacity</Label><Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} /></div>
+          <div><Label>Room Type</Label><Select value={form.roomType} onValueChange={(v) => setForm({ ...form, roomType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ward">Ward</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="semi-private">Semi-private</SelectItem></SelectContent></Select></div>
+          <div>
+            <Label>Capacity (beds)</Label>
+            <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
+            <div className="text-[10px] text-slate-400 mt-0.5">Expected max beds in this room</div>
+          </div>
         </div>
       </div>
       <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
