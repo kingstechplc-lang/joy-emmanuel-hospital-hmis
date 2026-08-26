@@ -739,7 +739,7 @@ function ManageTab(props: any) {
                       <div key={r.id} className="flex items-center justify-between text-sm border rounded p-2 bg-white">
                         <div><span className="font-medium">Room {r.roomNumber}</span><Badge variant="outline" className="ml-2 text-xs">{r.roomType}</Badge></div>
                         <div className="flex gap-1">
-                          {canEdit && <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onEditRoom(r)}><Wrench className="w-3 h-3" /></Button>}
+                          {canEdit && <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => onEditRoom({ ...r, wardName: w.name })}><Wrench className="w-3 h-3" /></Button>}
                           {canRetire && <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-rose-600" onClick={() => deleteRoom(r.id)}><X className="w-3 h-3" /></Button>}
                         </div>
                       </div>
@@ -816,7 +816,8 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
   const [saving, setSaving] = useState(false);
   const { data: wardsData } = useQuery({ queryKey: ["wards-room", facilityId], queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`), enabled: !!facilityId });
   const wards = wardsData?.items || [];
-  const selectedWardName = wards.find((w: any) => w.id === form.wardId)?.name || "Unknown ward";
+  // Use wardName passed from the parent (reliable) or look it up from wards list (fallback)
+  const selectedWardName = room?.wardName || wards.find((w: any) => w.id === form.wardId)?.name || "—";
   const submit = async () => {
     if (!form.wardId || !form.roomNumber) { toast.error("Ward and room number required"); return; }
     setSaving(true);
