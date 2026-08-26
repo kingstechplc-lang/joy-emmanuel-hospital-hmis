@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ClipboardCheck, Plus, RefreshCcw, Eye, Stethoscope, Calendar, AlertCircle, Users, Activity, CheckCircle2, Play, StopCircle, FileText, ListChecks, PenLine } from "lucide-react";
+import { ClipboardCheck, Plus, RefreshCcw, Eye, Stethoscope, Calendar, AlertCircle, Users, Activity, CheckCircle2, Play, StopCircle, FileText, ListChecks, PenLine, Droplets } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, formatDate, formatRelative, calculateAge, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
@@ -386,6 +386,8 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
                       </div>
                       {rp.overnightEvents && <div className="text-xs text-slate-600 mt-1">Overnight: {rp.overnightEvents}</div>}
                       {rp.clinicalAlerts && <div className="text-xs text-rose-600 mt-1">⚠ {rp.clinicalAlerts}</div>}
+                      {/* Read-only I&O clinical summary — referenced from existing I&O records, never duplicated */}
+                      <WardRoundIOSummary patientId={rp.patientId} admissionId={rp.admissionId} />
                     </div>
                   ))}
                 </div>
@@ -551,5 +553,101 @@ function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
         ))}
       </div>
     </DialogContent></Dialog>
+  );
+}
+
+// =====================================================================
+// WARD ROUND — I&O CLINICAL SUMMARY (read-only, references existing records)
+//   Displays current intake/output, 24h balance, urine, drains, NG losses,
+//   trend, and missing entries — pulled from /api/intake-output.
+//   Never duplicates data; opens the full I&O view for editing.
+// =====================================================================
+function WardRoundIOSummary({ patientId, admissionId }: { patientId: string; admissionId?: string | null }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["wr-io-summary", patientId, admissionId],
+    queryFn: () => fetchJson(`/api/intake-output?patientId=${patientId}&admissionId=${admissionId || ""}&view=summary`),
+    enabled: !!patientId,
+  });
+  if (isLoading) return <div className="mt-2 text-[10px] text-slate-400">Loading I&O summary…</div>;
+  if (!data?.summary) return null;
+  const s = data.summary;
+  const today = s.today || {};
+  const rolling = s.rolling24h || {};
+  const monitoring = s.monitoringPeriod;
+
+  const fmtMl = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocaleString(undefined, { maximumFractionDigits: 1 })} ml`);
+  const fmtSigned = (n: number | null | undefined) => {
+    if (n == null) return "—";
+    return `${n > 0 ? "+" : ""}${n.toLocaleString(undefined, { maximumFractionDigits: 1 })} ml`;
+  };
+
+  return (
+    <div className="mt-2 border-t pt-2">
+      <div className="text-[10px] uppercase tracking-wide text-slate-500 mb-1 flex items-center gap-1">
+        <Droplets className="w-3 h-3 text-teal-600" /> Fluid Balance Summary
+        {monitoring ? (
+          <span className="ml-1 text-cyan-700">· monitoring active ({monitoring.monitoringLevel})</span>
+        ) : (
+          <span className="ml-1 text-slate-400">· no active monitoring</span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5 text-[11px]">
+        <div className="bg-emerald-50 rounded px-1.5 py-1">
+          <div className="text-[9px] text-slate-500">Today intake</div>
+          <div className="font-bold text-emerald-700">{fmtMl(today.intake)}</div>
+        </div>
+        <div className="bg-amber-50 rounded px-1.5 py-1">
+          <div className="text-[9px] text-slate-500">Today output</div>
+          <div className="font-bold text-amber-700">{fmtMl(today.output)}</div>
+        </div>
+        <div className="bg-teal-50 rounded px-1.5 py-1">
+          <div className="text-[9px] text-slate-500">Today net</div>
+          <div className={`font-bold ${(today.net || 0) >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(today.net)}</div>
+        </div>
+        <div className="bg-blue-50 rounded px-1.5 py-1">
+          <div className="text-[9px] text-slate-500">24h net</div>
+          <div className={`font-bold ${(rolling.net || 0) >= 0 ? "text-blue-700" : "text-rose-700"}`}>{fmtSigned(rolling.net)}</div>
+        </div>
+        <div className="bg-violet-50 rounded px-1.5 py-1">
+          <div className="text-[9px] text-slate-500">24h urine</div>
+          <div className="font-bold text-violet-700">{fmtMl(rolling.urine)}</div>
+          {rolling.urinePerHour ? <div className="text-[9px] text-slate-500">{rolling.urinePerHour.toFixed(0)} ml/h</div> : null}
+        </div>
+        <div className={`rounded px-1.5 py-1 ${(s.missingCount || 0) > 0 ? "bg-rose-50" : "bg-slate-50"}`}>
+          <div className="text-[9px] text-slate-500">Missing slots</div>
+          <div className={`font-bold ${(s.missingCount || 0) > 0 ? "text-rose-700" : "text-emerald-700"}`}>{s.missingCount || 0}</div>
+        </div>
+      </div>
+      {/* Output breakdown for clinical context */}
+      {(rolling.drains > 0 || rolling.ng > 0 || rolling.vomit > 0) && (
+        <div className="mt-1 text-[10px] text-slate-600">
+          {rolling.drains > 0 && <span className="mr-2">Drains: <span className="font-medium text-amber-700">{fmtMl(rolling.drains)}</span></span>}
+          {rolling.ng > 0 && <span className="mr-2">NG: <span className="font-medium text-rose-700">{fmtMl(rolling.ng)}</span></span>}
+          {rolling.vomit > 0 && <span className="mr-2">Vomit: <span className="font-medium text-rose-700">{fmtMl(rolling.vomit)}</span></span>}
+        </div>
+      )}
+      {/* Weight-based urine output (only if weight exists) */}
+      {rolling.urinePerKgPerHour != null && s.weightKg && (
+        <div className="mt-1 text-[10px] text-slate-600">
+          Urine/kg/h: <span className="font-medium text-violet-700">{rolling.urinePerKgPerHour.toFixed(2)} ml/kg/h</span>
+          <span className="ml-1 text-slate-400">(weight {s.weightKg} kg)</span>
+        </div>
+      )}
+      {/* Documented targets */}
+      {(monitoring?.dailyTargetMl || monitoring?.dailyLimitMl) && (
+        <div className="mt-1 text-[10px]">
+          {monitoring?.dailyTargetMl && <span className="mr-2 text-emerald-700">Target: {fmtMl(monitoring.dailyTargetMl)}</span>}
+          {monitoring?.dailyLimitMl && <span className="text-rose-700">Restriction: {fmtMl(monitoring.dailyLimitMl)}</span>}
+        </div>
+      )}
+      {s.lastEntry && (
+        <div className="mt-1 text-[10px] text-slate-500">
+          Last entry: {s.lastEntry.entryType} {fmtMl(s.lastEntry.amount)} ({s.lastEntry.category || s.lastEntry.source}) · {formatRelative(s.lastEntry.eventAt)}
+        </div>
+      )}
+      <div className="mt-1 text-[10px] text-slate-400">
+        ⚠ This is a referenced summary — open Intake & Output module to record new entries. Missing entries are NOT treated as 0 mL.
+      </div>
+    </div>
   );
 }
