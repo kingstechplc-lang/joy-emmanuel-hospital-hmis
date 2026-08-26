@@ -790,7 +790,42 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
         <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div><Label>Ward Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Type</Label><Select value={form.wardType} onValueChange={(v) => setForm({ ...form, wardType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="general">General</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="maternity">Maternity</SelectItem><SelectItem value="icu">ICU</SelectItem><SelectItem value="emergency">Emergency</SelectItem><SelectItem value="paediatric">Paediatric</SelectItem><SelectItem value="surgical">Surgical</SelectItem></SelectContent></Select></div>
+          <div><Label>Type</Label><Select value={form.wardType} onValueChange={(v) => setForm({ ...form, wardType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="general">General</SelectItem>
+            <SelectItem value="general_male">General (Male)</SelectItem>
+            <SelectItem value="general_female">General (Female)</SelectItem>
+            <SelectItem value="private">Private</SelectItem>
+            <SelectItem value="semi_private">Semi-Private</SelectItem>
+            <SelectItem value="maternity">Maternity</SelectItem>
+            <SelectItem value="labour">Labour & Delivery</SelectItem>
+            <SelectItem value="postnatal">Postnatal</SelectItem>
+            <SelectItem value="nursery">Nursery / Neonatal</SelectItem>
+            <SelectItem value="nicu">NICU (Neonatal ICU)</SelectItem>
+            <SelectItem value="picu">PICU (Paediatric ICU)</SelectItem>
+            <SelectItem value="icu">ICU (Intensive Care)</SelectItem>
+            <SelectItem value="hdu">HDU (High Dependency)</SelectItem>
+            <SelectItem value="ccu">CCU (Critical Care)</SelectItem>
+            <SelectItem value="emergency">Emergency</SelectItem>
+            <SelectItem value="casualty">Casualty / Acute</SelectItem>
+            <SelectItem value="paediatric">Paediatric</SelectItem>
+            <SelectItem value="surgical">Surgical</SelectItem>
+            <SelectItem value="ortho">Orthopaedic</SelectItem>
+            <SelectItem value="medical">Medical</SelectItem>
+            <SelectItem value="cardiac">Cardiac</SelectItem>
+            <SelectItem value="neurology">Neurology</SelectItem>
+            <SelectItem value="oncology">Oncology</SelectItem>
+            <SelectItem value="renal">Renal / Dialysis</SelectItem>
+            <SelectItem value="infectious">Infectious Diseases</SelectItem>
+            <SelectItem value="isolation">Isolation</SelectItem>
+            <SelectItem value="psychiatric">Psychiatric</SelectItem>
+            <SelectItem value="rehabilitation">Rehabilitation</SelectItem>
+            <SelectItem value="geriatric">Geriatric</SelectItem>
+            <SelectItem value="burns">Burns Unit</SelectItem>
+            <SelectItem value="transplant">Transplant Unit</SelectItem>
+            <SelectItem value="day_care">Day Care</SelectItem>
+            <SelectItem value="observation">Observation</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent></Select></div>
           <div><Label>Gender</Label><Select value={form.genderPolicy} onValueChange={(v) => setForm({ ...form, genderPolicy: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mixed">Mixed</SelectItem><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -819,11 +854,12 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
   // Use wardName passed from the parent (reliable) or look it up from wards list (fallback)
   const selectedWardName = room?.wardName || wards.find((w: any) => w.id === form.wardId)?.name || "—";
   const submit = async () => {
-    if (!form.wardId || !form.roomNumber) { toast.error("Ward and room number required"); return; }
+    if (!isEdit && !form.wardId) { toast.error("Please select a ward"); return; }
+    if (!form.roomNumber) { toast.error("Room number is required"); return; }
     setSaving(true);
     try {
       if (isEdit) {
-        // On edit, don't send wardId (ward can't be changed after creation)
+        // On edit, only send editable fields (wardId is locked)
         const res = await fetch(`/api/rooms/${room.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomNumber: form.roomNumber, roomType: form.roomType, capacity: Number(form.capacity), status: form.status }) });
         if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
       } else {
