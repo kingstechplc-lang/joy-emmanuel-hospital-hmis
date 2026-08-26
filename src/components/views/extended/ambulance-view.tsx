@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, StatusBadge,
   formatDate, calculateAge, safeJson, PageHeader, MiniStatCard,
+  ClearableSearch,
 } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -210,11 +211,7 @@ function RequestsTab({ facilityId }: { facilityId: string }) {
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by trip #, patient, location…" className="pl-8 h-9 text-sm" />
-              {search && <button type="button" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"><X className="w-3.5 h-3.5" /></button>}
-            </div>
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by trip #, patient, location…" className="flex-1" inputClassName="h-9 text-sm" />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-9 w-[150px] text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -359,7 +356,7 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
           {/* Patient search (optional for emergencies) */}
           <div>
             <Label>Patient (optional — leave blank for unregistered emergency)</Label>
-            <Input placeholder="Search patient…" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="h-8 text-sm" />
+            <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient…" className="" inputClassName="h-8 text-sm" />
             {patientsData?.patients?.length > 0 && (
               <div className="mt-1 max-h-24 overflow-y-auto border rounded bg-white">
                 {patientsData.patients.map((p: any) => (

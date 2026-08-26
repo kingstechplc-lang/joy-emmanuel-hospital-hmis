@@ -127,7 +127,7 @@ export async function POST(req: Request) {
     eventType: item.eventType,
     title: item.title,
     location: item.location,
-    startDate: item.startDate,
+    startDate: item.startDate ? item.startDate.toISOString() : "",
     eventId: item.id,
     teamLeadId: item.teamLeadId || undefined,
   });

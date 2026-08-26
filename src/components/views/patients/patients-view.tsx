@@ -4,9 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, User, Users } from "lucide-react";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
+import { Plus, User, Users } from "lucide-react";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, calculateAge, safeJson, PageHeader, ClearableSearch, usePagination, Pagination} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -38,6 +37,7 @@ export function PatientsView() {
   });
 
   const patients: any[] = data?.patients || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(patients, 15);
 
   const openPatient = (id: string) => {
     selectPatient(id);
@@ -60,15 +60,11 @@ export function PatientsView() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Search by patient number, name, phone, or Ghana Card..."
-              value={query}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <ClearableSearch
+            placeholder="Search by patient number, name, phone, or Ghana Card..."
+            value={query}
+            onChange={handleSearch}
+          />
         </CardContent>
       </Card>
 
@@ -107,7 +103,7 @@ export function PatientsView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {patients.map((p) => (
+                  {pagedItems.map((p) => (
                     <tr
                       key={p.id}
                       onClick={() => openPatient(p.id)}
@@ -146,6 +142,7 @@ export function PatientsView() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </CardContent>
         </Card>
       )}

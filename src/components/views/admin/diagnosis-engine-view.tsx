@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
+  EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard, ClearableSearch } from "@/components/ui-helpers"
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 

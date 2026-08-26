@@ -26,7 +26,7 @@ import {
   CLAIMABLE_STATUSES, SEX_OPTIONS, AGE_GROUPS,
   labelOf, statusColor, formatCurrency, tatLabel, fetchJson,
 } from "./shared";
-import { formatDate, safeJson } from "@/components/ui-helpers";
+import { formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 import { MasterCombobox } from "./master-combobox";
 
@@ -611,7 +611,7 @@ function ComponentsTab({ testId, items, panelMembers, onChanged }: { testId: str
             </div>
           )}
           <div className="flex gap-2">
-            <Input value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search catalog to link as panel member..." className="flex-1" />
+            <ClearableSearch value={memberSearch} onChange={setMemberSearch} placeholder="Search catalog to link as panel member..." className="flex-1" inputClassName="" />
             <Button variant="outline" size="sm" onClick={searchTests} disabled={searching}>Search</Button>
           </div>
           {memberResults.length > 0 && (

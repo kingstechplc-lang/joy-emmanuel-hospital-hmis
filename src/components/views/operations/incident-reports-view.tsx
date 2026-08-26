@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertTriangle, Plus, Search, RefreshCcw, AlertCircle, Eye, MapPin, Users, Activity } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -99,6 +99,7 @@ export function IncidentReportsView() {
     i.location?.toLowerCase().includes(search.toLowerCase()) ||
     i.peopleInvolved?.toLowerCase().includes(search.toLowerCase())
   );
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   // Stats
   const stats = (data?.items || []).reduce(
@@ -242,7 +243,7 @@ export function IncidentReportsView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((i: any) => (
+                  {pagedItems.map((i: any) => (
                     <tr
                       key={i.id}
                       className="border-b hover:bg-slate-50 cursor-pointer"

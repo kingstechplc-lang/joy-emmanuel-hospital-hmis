@@ -19,8 +19,7 @@ import {
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, StatusBadge, MiniStatCard, PageHeader,
-  formatDate, formatRelative, calculateAge, safeJson,
-} from "@/components/ui-helpers";
+  formatDate, formatRelative, calculateAge, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 import { FieldLabel } from "@/components/ui/required-label";
@@ -442,7 +441,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
         <div className="space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
-            <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
+            <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient..." className="" inputClassName="" />
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
                 {patientsData.patients.map((p: any) => (

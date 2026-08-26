@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     caseNumber: item.caseNumber,
     patientName: item.patientName,
     procedureName: item.procedureName,
-    scheduledStart: item.scheduledStart,
+    scheduledStart: item.scheduledStart ? item.scheduledStart.toISOString() : "",
     surgeonName: item.surgeonName || undefined,
     theatreCaseId: item.id,
   });

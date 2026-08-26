@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { UserCircle, Search, Plus, Edit, Ban, CheckCircle2, KeyRound, Lock, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -47,6 +47,7 @@ export function UsersAdminView() {
   });
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["users-admin"] });
 
@@ -124,7 +125,7 @@ export function UsersAdminView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((u: any) => {
+                  {pagedItems.map((u: any) => {
                     const isLocked = u.lockedUntil && new Date(u.lockedUntil) > new Date();
                     return (
                       <tr key={u.id} className="border-b hover:bg-slate-50">

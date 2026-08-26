@@ -63,7 +63,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       },
       imagingOrders: {
         orderBy: { orderedAt: "desc" },
-        include: { report: true, encounter: { include: { facility: true } } },
+        include: { reports: true, encounter: { include: { facility: true } } },
         take: 20,
       },
       procedures: { orderBy: { performedAt: "desc" }, take: 20 },

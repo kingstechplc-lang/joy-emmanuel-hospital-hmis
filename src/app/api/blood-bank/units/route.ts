@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
-import { notifyBloodUnitIssued } from "@/lib/workflow-notifications";
+import { notifyBloodUnitIssued, sendWorkflowNotification } from "@/lib/workflow-notifications";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 

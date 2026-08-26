@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BadgeCheck, Search, Plus, Edit, Trash2, KeyRound, Shield, Save } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -44,6 +44,7 @@ export function RolesAdminView() {
   const items = (data?.items || []).filter((r: any) =>
     !search || r.name?.toLowerCase().includes(search.toLowerCase()) || r.code?.toLowerCase().includes(search.toLowerCase())
   );
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["roles-admin"] });
 
@@ -110,7 +111,7 @@ export function RolesAdminView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((r: any) => (
+                  {pagedItems.map((r: any) => (
                     <tr key={r.id} className="border-b hover:bg-slate-50">
                       <td className="p-3">
                         <div className="flex items-center gap-2">

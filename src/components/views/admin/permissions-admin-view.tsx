@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Key, Search, Lock } from "lucide-react";
-import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -24,9 +24,10 @@ export function PermissionsAdminView() {
   const items = (data?.items || []).filter((p: any) =>
     !search || p.code?.toLowerCase().includes(search.toLowerCase()) || p.name?.toLowerCase().includes(search.toLowerCase()) || p.module?.toLowerCase().includes(search.toLowerCase())
   );
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 15);
 
-  // Group by module
-  const grouped: Record<string, any[]> = items.reduce((acc: Record<string, any[]>, p: any) => {
+  // Group by module (paginated)
+  const grouped: Record<string, any[]> = pagedItems.reduce((acc: Record<string, any[]>, p: any) => {
     const mod = p.module || "general";
     if (!acc[mod]) acc[mod] = [];
     acc[mod].push(p);
@@ -98,6 +99,7 @@ export function PermissionsAdminView() {
           ))}
         </div>
       )}
+      <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

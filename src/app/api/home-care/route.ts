@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     visitNumber: item.visitNumber,
     patientName: item.patientName,
     visitType: item.visitType,
-    scheduledAt: item.scheduledAt,
+    scheduledAt: item.scheduledAt ? item.scheduledAt.toISOString() : "",
     visitId: item.id,
     caregiverId: item.caregiverId || undefined,
   });

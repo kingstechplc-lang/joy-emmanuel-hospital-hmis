@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, BedDouble, LogOut, Search, XCircle, Stethoscope, Eye, Activity, CheckCircle2, Bed, FileText, UserCheck, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -764,7 +764,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Search by name, number, phone, Ghana Card..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
+            <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search by name, number, phone, Ghana Card..." className="" inputClassName="" />
             </div>
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">

@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Receipt, Eye, CreditCard, Ban, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 
@@ -91,6 +91,7 @@ export function InvoicesView() {
   };
 
   const items: any[] = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   return (
     <div className="space-y-4">
@@ -154,7 +155,7 @@ export function InvoicesView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((inv: any) => (
+                  {pagedItems.map((inv: any) => (
                     <tr key={inv.id} className="border-b hover:bg-emerald-50/40">
                       <td className="p-3 font-mono text-xs text-slate-700">{inv.invoiceNumber}</td>
                       <td className="p-3">
@@ -346,7 +347,7 @@ function NewInvoiceDialog({ open, onClose, onCreated, facilityId }: { open: bool
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
+            <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient..." className="" inputClassName="" />
             </div>
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">

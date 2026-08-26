@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Building2, Search, Plus, Edit, Network, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -55,6 +55,7 @@ export function FacilitiesAdminView() {
   const items = (data?.facilities || []).filter((f: any) =>
     !search || f.name?.toLowerCase().includes(search.toLowerCase()) || f.code?.toLowerCase().includes(search.toLowerCase()) || f.city?.toLowerCase().includes(search.toLowerCase())
   );
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["facilities-admin"] });
 
@@ -110,7 +111,7 @@ export function FacilitiesAdminView() {
         <Card><CardContent className="p-6"><EmptyState title="No facilities found" description="Add your first facility to begin." /></CardContent></Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {items.map((f: any) => (
+          {pagedItems.map((f: any) => (
             <Card key={f.id}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
@@ -192,6 +193,7 @@ export function FacilitiesAdminView() {
           ))}
         </div>
       )}
+      <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
 
       {showNew && <FacilityDialog onClose={() => setShowNew(false)} />}
       {editing && <FacilityDialog facility={editing} onClose={() => setEditing(null)} />}

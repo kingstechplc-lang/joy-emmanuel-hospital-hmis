@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Package, Search, Plus, History, AlertTriangle, Boxes, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, usePagination, Pagination} from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -121,6 +121,7 @@ export function InventoryView() {
   };
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   return (
     <div className="space-y-4">
@@ -193,7 +194,7 @@ export function InventoryView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((it: any) => (
+                  {pagedItems.map((it: any) => (
                     <tr key={it.id} className={`border-b hover:bg-emerald-50/40 ${it.stockStatus === "out_of_stock" ? "bg-rose-50/40" : it.stockStatus === "low_stock" ? "bg-amber-50/40" : ""}`}>
                       <td className="p-3">
                         <div className="font-medium text-slate-900">{it.name}</div>
@@ -234,6 +235,7 @@ export function InventoryView() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </CardContent>
         </Card>
       )}

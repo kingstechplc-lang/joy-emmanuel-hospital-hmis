@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Scissors, Search, Save, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -264,7 +264,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Search patient..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} className="pl-9" />
+            <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient..." className="" inputClassName="" />
             </div>
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
@@ -308,7 +308,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
           {/* Catalog search */}
           <div>
             <Label>Search Procedure Catalog (optional)</Label>
-            <Input value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder="Search catalog by name or code..." />
+            <ClearableSearch value={catalogSearch} onChange={setCatalogSearch} placeholder="Search catalog by name or code..." className="" inputClassName="" />
             {catalogData?.items && catalogData.items.length > 0 && (
               <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
                 {catalogData.items.slice(0, 10).map((c: any) => (

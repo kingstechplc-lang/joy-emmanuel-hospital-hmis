@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { FolderOpen, Search, Plus, FileText, ExternalLink, Eye, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -67,6 +67,7 @@ export function DocumentsView() {
   });
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["documents"] });
 
@@ -145,7 +146,7 @@ export function DocumentsView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((d: any) => (
+                  {pagedItems.map((d: any) => (
                     <tr
                       key={d.id}
                       className="border-b hover:bg-slate-50 cursor-pointer"
@@ -317,7 +318,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Patient (optional)</Label>
-            <Input value={patientSearch} onChange={(e) => searchPatients(e.target.value)} placeholder="Search patient by name or number..." />
+            <ClearableSearch value={patientSearch} onChange={(v) => searchPatients(v)} placeholder="Search patient by name or number..." className="" inputClassName="" />
             {searchedPatients.length > 0 && (
               <div className="border rounded mt-1 max-h-40 overflow-y-auto">
                 {searchedPatients.slice(0, 8).map((p: any) => (

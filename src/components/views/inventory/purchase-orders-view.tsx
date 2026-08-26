@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, ShoppingCart, PackageCheck, Send, CheckCircle2, X, Truck, Eye } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -291,7 +291,7 @@ function NewPODialog({ open, onClose, onCreated, defaultFacilityId }: {
 
           <div className="sticky top-0 z-20 bg-white pb-2 border-b border-slate-100">
             <Label className="text-xs">Add inventory item</Label>
-            <Input value={invQuery} onChange={(e) => setInvQuery(e.target.value)} placeholder="Search inventory items by name or SKU" disabled={!facilityId} />
+            <ClearableSearch value={invQuery} onChange={setInvQuery} placeholder="Search inventory items by name or SKU" className="" inputClassName="" disabled={!facilityId} />
             {inventory.length > 0 && (
               <div className="mt-1 border rounded max-h-40 overflow-y-auto">
                 {inventory.slice(0, 10).map((inv) => (

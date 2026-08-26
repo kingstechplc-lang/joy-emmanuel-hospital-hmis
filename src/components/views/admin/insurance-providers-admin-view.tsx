@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, PageHeader, MiniStatCard,
-  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
+  formatDate, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   PROVIDER_TYPES, PROVIDER_STATUSES, statusColor, labelOf, fetchJson,
@@ -132,6 +132,7 @@ function ProvidersTab(props: any) {
     queryFn: () => fetchJson(`/api/insurance-providers${qs}`),
   });
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const qc = useQueryClient();
   const invalidate = () => {
@@ -204,7 +205,7 @@ function ProvidersTab(props: any) {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((p: any) => (
+                  {pagedItems.map((p: any) => (
                     <tr key={p.id} className="border-b hover:bg-slate-50">
                       <td className="p-3">
                         <div className="flex items-center gap-2">

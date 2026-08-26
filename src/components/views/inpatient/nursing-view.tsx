@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, NotebookPen, ClipboardList, Search, Activity, AlertTriangle, Bandage, ArrowRightLeft, ShieldAlert, CheckCircle2, FileText, PenLine } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
+import { EmptyState, LoadingState, ErrorState, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -370,7 +370,7 @@ function PatientPicker({ patientId, setPatientId, setEncounterId, setAdmissionId
         <FieldLabel required>Patient</FieldLabel>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search patient..." value={query} onChange={(e) => { setQuery(e.target.value); setPatientId(""); }} className="pl-9" />
+            <ClearableSearch value={query} onChange={(v) => { setQuery(v); setPatientId(""); }} placeholder="Search patient..." className="" inputClassName="" />
         </div>
         {data?.patients && data.patients.length > 0 && (
           <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">
@@ -943,7 +943,7 @@ function TimelineTab({ patientId }: { patientId: string }) {
       <Card><CardContent className="p-3">
         <div className="flex items-center gap-2">
           <Search className="w-4 h-4 text-slate-400" />
-          <Input placeholder="Search patient for timeline..." value={searchPatient} onChange={(e) => { setSearchPatient(e.target.value); setResolvedPatientId(""); }} className="flex-1" />
+            <ClearableSearch value={searchPatient} onChange={(v) => { setSearchPatient(v); setResolvedPatientId(""); }} placeholder="Search patient for timeline..." className="flex-1" inputClassName="" />
         </div>
         {patientData?.patients && patientData.patients.length > 0 && (
           <div className="mt-1 max-h-32 overflow-y-auto border rounded bg-white">

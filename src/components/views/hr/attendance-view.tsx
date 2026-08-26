@@ -46,7 +46,7 @@ import {EmptyState,
   LoadingState,
   ErrorState,
   StatusBadge,
-  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
+  formatDate, safeJson, ClearableSearch, usePagination, Pagination} from "@/components/ui-helpers"
 import { PageHeader } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -544,6 +544,7 @@ function HistoryTab() {
 
   const items = data?.items || [];
   const staffList = staffQ.data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   if (!activeFacilityId) {
     return (
@@ -632,7 +633,7 @@ function HistoryTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((a: any) => (
+                  {pagedItems.map((a: any) => (
                     <tr key={a.id} className="border-b hover:bg-slate-50">
                       <td className="p-3">
                         <div className="font-medium text-slate-900">
@@ -674,6 +675,7 @@ function HistoryTab() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </CardContent>
         </Card>
       )}

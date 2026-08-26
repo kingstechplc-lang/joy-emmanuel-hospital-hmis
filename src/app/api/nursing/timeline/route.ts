@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     db.woundAssessment.findMany({ where: { patientId }, orderBy: { assessedAt: "desc" }, take: 50, select: { id: true, woundLocation: true, woundType: true, stage: true, appearance: true, assessedAt: true, assessedById: true } }),
     db.riskAssessment.findMany({ where: { patientId }, orderBy: { assessedAt: "desc" }, take: 50, select: { id: true, assessmentType: true, riskLevel: true, riskScore: true, assessedAt: true } }),
     db.nursingIntervention.findMany({ where: { patientId }, orderBy: { createdAt: "desc" }, take: 50, select: { id: true, description: true, interventionType: true, status: true, patientResponse: true, createdAt: true } }),
-    db.vitalSign.findMany({ where: { patientId }, orderBy: { recordedAt: "desc" }, take: 50, select: { id: true, temperature: true, pulse: true, respiratoryRate: true, systolicBP: true, diastolicBP: true, oxygenSaturation: true, painScore: true, recordedAt: true } }),
+    db.vitalSign.findMany({ where: { patientId }, orderBy: { recordedAt: "desc" }, take: 50, select: { id: true, temperature: true, pulse: true, respiratoryRate: true, systolicBp: true, diastolicBp: true, oxygenSaturation: true, painScore: true, recordedAt: true } }),
     db.intakeOutputEntry.findMany({ where: { patientId }, orderBy: { recordedAt: "desc" }, take: 50, select: { id: true, entryType: true, fluidType: true, amount: true, recordedAt: true } }),
   ]);
 
@@ -79,7 +79,7 @@ export async function GET(req: Request) {
   }
   for (const v of vitals) {
     timeline.push({ type: "vitals", date: v.recordedAt, record: v,
-      summary: "Vital Signs", detail: `T:${v.temperature || "—"} P:${v.pulse || "—"} BP:${v.systolicBP || "—"}/${v.diastolicBP || "—"} SpO₂:${v.oxygenSaturation || "—"} Pain:${v.painScore ?? "—"}`, status: null, icon: "vitals" });
+      summary: "Vital Signs", detail: `T:${v.temperature || "—"} P:${v.pulse || "—"} BP:${v.systolicBp || "—"}/${v.diastolicBp || "—"} SpO₂:${v.oxygenSaturation || "—"} Pain:${v.painScore ?? "—"}`, status: null, icon: "vitals" });
   }
   for (const io of intakeOutput) {
     timeline.push({ type: "intake_output", date: io.recordedAt, record: io,

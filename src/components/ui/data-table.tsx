@@ -167,7 +167,7 @@ export function DataTable({
                   variant={p === safePage ? "default" : "outline"}
                   size="sm"
                   className={`h-8 w-8 p-0 ${p === safePage ? "bg-gradient-to-r from-rose-500 to-red-600 text-white border-0" : ""}`}
-                  onClick={() => setCurrentPage(p)}
+                  onClick={() => setCurrentPage(p as number)}
                 >
                   {p}
                 </Button>

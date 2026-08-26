@@ -16,7 +16,7 @@ import {
   CalendarPlus, Eye, AlertCircle, RefreshCw, X, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
+import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -623,7 +623,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
         <div className="space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
-            <Input placeholder="Search patient by name, MRN, phone..." value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
+            <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient by name, MRN, phone..." className="" inputClassName="" />
             {patientsData?.patients && patientsData.patients.length > 0 && (
               <div className="mt-1 max-h-40 overflow-y-auto border rounded bg-white">
                 {patientsData.patients.map((p: any) => (

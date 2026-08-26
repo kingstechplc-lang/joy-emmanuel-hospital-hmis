@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import {EmptyState,
   LoadingState,
   ErrorState,
-  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
+  formatDate, safeJson, ClearableSearch, usePagination, Pagination} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -87,6 +87,7 @@ export function CertificationsView() {
   });
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
   const staffList = staffQ.data?.items || [];
 
   // Stats
@@ -221,7 +222,7 @@ export function CertificationsView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((c: any) => {
+                  {pagedItems.map((c: any) => {
                     const rowClass = c.isExpired
                       ? "bg-rose-50/40 hover:bg-rose-50"
                       : c.isExpiringSoon
@@ -284,6 +285,7 @@ export function CertificationsView() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </CardContent>
         </Card>
       )}

@@ -17,7 +17,7 @@ import {
   Archive, RotateCcw, MapPin, Phone, Clock, User, FileText, Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -80,6 +80,7 @@ export function DepartmentsAdminView() {
   const items = (data?.items || []).filter((d: any) =>
     !search || d.name?.toLowerCase().includes(search.toLowerCase()) || d.code?.toLowerCase().includes(search.toLowerCase())
   );
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["departments-admin"] });
@@ -181,7 +182,7 @@ export function DepartmentsAdminView() {
         <Card>
           <CardContent className="p-0">
             <div className="divide-y">
-              {items.map((d: any) => (
+              {pagedItems.map((d: any) => (
                 <DepartmentRow
                   key={d.id}
                   dept={d}
@@ -193,6 +194,7 @@ export function DepartmentsAdminView() {
                 />
               ))}
             </div>
+            <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </CardContent>
         </Card>
       )}

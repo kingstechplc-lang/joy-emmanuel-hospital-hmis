@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CheckSquare, Search, Plus, Play, Check, X, RefreshCcw, User } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -71,6 +71,7 @@ export function TasksView() {
   const items = (data?.items || []).filter((t: any) =>
     !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase())
   );
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks"] });
 
@@ -164,7 +165,7 @@ export function TasksView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((t: any) => {
+                  {pagedItems.map((t: any) => {
                     const isAssignedToMe = t.assignedToId === user?.id;
                     const overdue = t.dueAt && new Date(t.dueAt) < new Date() && t.status !== "completed";
                     return (

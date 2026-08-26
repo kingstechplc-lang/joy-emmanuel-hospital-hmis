@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Cpu, Wrench, History, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -69,6 +69,7 @@ export function EquipmentView() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["equipment"] });
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   return (
     <div className="space-y-4">
@@ -132,7 +133,7 @@ export function EquipmentView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((e: any) => (
+                  {pagedItems.map((e: any) => (
                     <tr key={e.id} className="border-b hover:bg-emerald-50/40">
                       <td className="p-3 font-mono text-xs text-slate-700">{e.assetNumber}</td>
                       <td className="p-3">

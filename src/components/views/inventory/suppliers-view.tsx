@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Truck, Plus, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, usePagination, Pagination} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -40,6 +40,7 @@ export function SuppliersView() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["suppliers"] });
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   return (
     <div className="space-y-4">
@@ -97,7 +98,7 @@ export function SuppliersView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((s: any) => (
+                  {pagedItems.map((s: any) => (
                     <tr key={s.id} className="border-b hover:bg-emerald-50/40">
                       <td className="p-3">
                         <div className="flex items-center gap-2">
@@ -128,6 +129,7 @@ export function SuppliersView() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </CardContent>
         </Card>
       )}

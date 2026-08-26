@@ -1,9 +1,10 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, SearchX, Search, X } from "lucide-react";
-import { ReactNode } from "react";
+import { AlertCircle, SearchX, Search, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ReactNode, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 // =====================================================================
 // SAFE FETCH HELPERS — handle empty/error responses gracefully
@@ -409,6 +410,7 @@ export function ClearableSearch({
   className = "",
   inputClassName = "",
   autoFocus = false,
+  disabled = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -417,6 +419,7 @@ export function ClearableSearch({
   className?: string;
   inputClassName?: string;
   autoFocus?: boolean;
+  disabled?: boolean;
 }) {
   const handleClear = () => {
     onChange("");
@@ -430,9 +433,10 @@ export function ClearableSearch({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        disabled={disabled}
         className={`pl-9 ${value ? "pr-9" : ""} ${inputClassName}`}
       />
-      {value && (
+      {value && !disabled && (
         <button
           type="button"
           onClick={handleClear}
@@ -441,6 +445,145 @@ export function ClearableSearch({
         >
           <X className="w-3.5 h-3.5" />
         </button>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// PAGINATION — standalone pagination control for tables that render
+// their own <table> markup (i.e., NOT using DataTable).
+//
+// Usage:
+//   const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
+//   // ... render pagedItems in your table ...
+//   <Pagination page={page} pageSize={pageSize} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} onPageSizeChange={setPageSize} />
+// =====================================================================
+
+export function usePagination<T>(items: T[], initialPageSize = 10) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const pagedItems = items.slice(startIndex, endIndex);
+
+  // Reset to page 1 if items shrink (e.g., due to filtering)
+  // Use useEffect-style check inline to avoid hook order issues
+  if (page > totalPages && totalPages > 0) {
+    setPage(1);
+  }
+
+  return {
+    page: safePage,
+    pageSize,
+    totalPages,
+    totalItems,
+    startIndex: startIndex + 1, // 1-indexed for display
+    endIndex,
+    pagedItems,
+    setPage,
+    setPageSize: ( newSize: number) => {
+      setPageSize(newSize);
+      setPage(1);
+    },
+  };
+}
+
+function getPageNumbers(current: number, total: number): (number | string)[] {
+  const pages: (number | string)[] = [];
+  const maxVisible = 5;
+  if (total <= maxVisible) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+    return pages;
+  }
+  pages.push(1);
+  if (current > 3) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
+export function Pagination({
+  page,
+  pageSize,
+  totalPages,
+  totalItems,
+  onPageChange,
+  onPageSizeChange,
+  showPageSizeSelector = true,
+}: {
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
+  showPageSizeSelector?: boolean;
+}) {
+  if (totalItems === 0) return null;
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-t bg-slate-50">
+      <div className="flex items-center gap-3 text-xs text-slate-600">
+        <span>
+          Showing <span className="font-semibold text-slate-800">{startIndex + 1}</span>–<span className="font-semibold text-slate-800">{endIndex}</span> of{" "}
+          <span className="font-semibold text-slate-800">{totalItems}</span>
+        </span>
+        {showPageSizeSelector && onPageSizeChange && (
+          <span className="flex items-center gap-1">
+            <span className="text-slate-500">| Rows per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="border border-slate-200 rounded px-1.5 py-0.5 text-xs bg-white"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </span>
+        )}
+      </div>
+      {totalPages > 1 && (
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => onPageChange(1)} disabled={page === 1} aria-label="First page">
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => onPageChange(page - 1)} disabled={page === 1} aria-label="Previous page">
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </Button>
+          {getPageNumbers(page, totalPages).map((p, i) =>
+            p === "..." ? (
+              <span key={i} className="px-1.5 text-slate-400 text-xs">…</span>
+            ) : (
+              <Button
+                key={i}
+                variant={p === page ? "default" : "outline"}
+                size="sm"
+                className={`h-7 w-7 p-0 text-xs ${p === page ? "bg-slate-800 text-white border-0" : ""}`}
+                onClick={() => onPageChange(p as number)}
+              >
+                {p}
+              </Button>
+            )
+          )}
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => onPageChange(page + 1)} disabled={page === totalPages} aria-label="Next page">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => onPageChange(totalPages)} disabled={page === totalPages} aria-label="Last page">
+            <ChevronsRight className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       )}
     </div>
   );

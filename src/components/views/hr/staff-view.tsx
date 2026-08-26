@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UserCog, Search, Plus, Building2, Phone, Mail, Ban, CheckCircle2, Edit, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -81,6 +81,7 @@ export function StaffView() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["staff"] });
 
   const items = data?.items || [];
+  const { page, pageSize, totalPages, totalItems, pagedItems, setPage, setPageSize } = usePagination(items, 10);
 
   const disableMutation = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: "disable" | "enable" }) => {
@@ -175,7 +176,7 @@ export function StaffView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((s: any) => {
+                  {pagedItems.map((s: any) => {
                     const initials = `${s.firstName?.[0] || ""}${s.lastName?.[0] || ""}`.toUpperCase();
                     const isActive = s.employmentStatus === "active";
                     return (
