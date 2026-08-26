@@ -582,6 +582,10 @@ model Patient {
   tasks              Task[]
   queueEntries       QueueEntry[]
   intakeOutputEntries IntakeOutputEntry[]
+  // Ward Round back-relations
+  wardRoundPatients  WardRoundPatient[]
+  wardRoundNotes     WardRoundNote[]
+  wardRoundActions   WardRoundAction[]
 }
 
 model PatientIdentifier {
@@ -4837,7 +4841,7 @@ model WardRound {
   consultantId    String?
   consultant      User?    @relation("wardRoundConsultant", fields: [consultantId], references: [id])
   roundDate       DateTime @default(now())
-  patientsSeen    String?  // JSON array of patient IDs
+  patientsSeen    String?  // JSON array of patient IDs (legacy — kept for back-compat)
   notes           String?
   planChanges     String?
   createdById     String?
@@ -4845,7 +4849,189 @@ model WardRound {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  // ---- Extended fields ----
+  roundType       String   @default("daily") // daily | consultant | specialist | mdt | post_op | emergency | maternity | pediatric | icu | weekend | night | discharge_planning | transfer_review | follow_up | other
+  status          String   @default("scheduled") // scheduled | in_progress | completed | cancelled | rescheduled
+  priority        String   @default("routine") // routine | urgent | stat
+  leadClinicianId String?  // lead clinician (may differ from consultantId)
+  // Scheduling
+  startTime       DateTime?
+  endTime         DateTime?
+  expectedEndTime DateTime?
+  // Completion
+  completedAt     DateTime?
+  completedById   String?
+  // Cancellation
+  cancelledAt     DateTime?
+  cancelledById   String?
+  cancellationReason String?
+  // Round summary (generated on completion)
+  summary         String?  // JSON: { patientsReviewed, patientsNotReviewed, significantConcerns, actionItems, etc. }
+  // Participants string (legacy — for quick display)
+  participantsSummary String?
+
+  // Relations
+  roundPatients   WardRoundPatient[]
+  roundNotes      WardRoundNote[]
+  roundActions    WardRoundAction[]
+  roundParticipants WardRoundParticipant[]
+
   @@index([facilityId, roundDate])
+  @@index([facilityId, status])
+  @@index([wardId, roundDate])
+  @@index([status, roundDate])
+}
+
+// =====================================================================
+// WARD ROUND PATIENT — per-patient review record
+// =====================================================================
+
+model WardRoundPatient {
+  id              String   @id @default(cuid())
+  wardRoundId     String
+  wardRound       WardRound @relation(fields: [wardRoundId], references: [id], onDelete: Cascade)
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  admissionId     String?
+  encounterId     String?
+  facilityId      String
+  wardId          String?
+  bedId           String?
+  // Review status
+  reviewStatus    String   @default("pending") // pending | reviewed | not_available | discharged | transferred | other
+  reviewPriority  String   @default("routine") // critical | high | routine | follow_up
+  notReviewedReason String?
+  // Clinical snapshot at time of round
+  primaryDiagnosis String?
+  allergies       String?
+  latestVitals    String?  // JSON snapshot
+  currentMedications String?
+  pendingLabs     String?
+  pendingImaging  String?
+  pendingProcedures String?
+  dischargeStatus String?
+  clinicalAlerts  String?
+  // Progress
+  progressStatus  String?  // improving | stable | deteriorating | new_concern | resolved | awaiting_investigation | awaiting_procedure | awaiting_specialist | other
+  // Overnight events
+  overnightEvents String?
+  // Timestamps
+  reviewedAt      DateTime?
+  reviewedById    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([wardRoundId])
+  @@index([patientId])
+  @@index([reviewStatus])
+}
+
+// =====================================================================
+// WARD ROUND NOTE — SOAP clinical documentation per patient per round
+// =====================================================================
+
+model WardRoundNote {
+  id              String   @id @default(cuid())
+  wardRoundId     String
+  wardRound       WardRound @relation(fields: [wardRoundId], references: [id], onDelete: Cascade)
+  wardRoundPatientId String?
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  admissionId     String?
+  encounterId     String?
+  facilityId      String
+  // SOAP fields
+  subjective      String?  // S — patient's complaint, overnight events
+  objective       String?  // O — examination findings, vitals
+  assessment      String?  // A — clinical assessment, progress
+  plan            String?  // P — treatment plan, decisions
+  // Additional clinical fields
+  overnightEvents String?
+  examinationFindings String?
+  clinicalConcerns String?
+  responseToTreatment String?
+  // Free-text content (for non-SOAP formats)
+  content         String?
+  // Progress status
+  progressStatus  String?  // improving | stable | deteriorating | new_concern | resolved | other
+  // Status lifecycle
+  status          String   @default("draft") // draft | submitted | signed | amended
+  signedById      String?
+  signedAt        DateTime?
+  amendedFromId   String?
+  amendmentReason String?
+  // Author
+  authoredById    String?
+  authoredAt      DateTime @default(now())
+  // Event vs documentation timestamp
+  eventAt         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([wardRoundId])
+  @@index([patientId])
+  @@index([status])
+}
+
+// =====================================================================
+// WARD ROUND ACTION — structured action items from rounds
+// =====================================================================
+
+model WardRoundAction {
+  id              String   @id @default(cuid())
+  wardRoundId     String
+  wardRound       WardRound @relation(fields: [wardRoundId], references: [id], onDelete: Cascade)
+  wardRoundPatientId String?
+  patientId       String?
+  patient         Patient? @relation(fields: [patientId], references: [id])
+  facilityId      String
+  // Action details
+  actionType      String   // order_lab | review_lab | order_imaging | review_imaging | adjust_medication | request_consult | perform_procedure | nursing_intervention | patient_education | discharge_preparation | referral | transfer | follow_up | other
+  title           String
+  description     String?
+  // Assignment
+  assignedToId    String?  // responsible person (User ID)
+  assignedToName  String?  // denormalized for display
+  assignedToRole  String?  // doctor | nurse | pharmacist | physiotherapist | etc.
+  // Scheduling
+  dueDate         DateTime?
+  priority        String   @default("routine") // routine | urgent | stat
+  // Status
+  status          String   @default("pending") // pending | in_progress | completed | cancelled | overdue
+  completedAt     DateTime?
+  completedById   String?
+  completionNotes String?
+  // Created by
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([wardRoundId])
+  @@index([patientId])
+  @@index([status])
+  @@index([assignedToId])
+}
+
+// =====================================================================
+// WARD ROUND PARTICIPANT — multidisciplinary team members
+// =====================================================================
+
+model WardRoundParticipant {
+  id              String   @id @default(cuid())
+  wardRoundId     String
+  wardRound       WardRound @relation(fields: [wardRoundId], references: [id], onDelete: Cascade)
+  userId          String?  // FK → User (if internal staff)
+  staffName       String?  // denormalized for external participants
+  role            String   @default("doctor") // consultant | medical_officer | physician_assistant | specialist | nurse | pharmacist | lab_staff | radiology_staff | physiotherapist | dietitian | social_worker | student | other
+  attendanceStatus String  @default("invited") // invited | attended | absent | late
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([wardRoundId])
+  @@index([userId])
 }
 
 model IntakeOutputEntry {
