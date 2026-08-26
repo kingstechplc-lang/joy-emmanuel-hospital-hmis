@@ -10,23 +10,81 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ClipboardCheck, Plus, RefreshCcw, Eye, Stethoscope, Calendar, AlertCircle, Users } from "lucide-react";
+import { ClipboardCheck, Plus, RefreshCcw, Eye, Stethoscope, Calendar, AlertCircle, Users, Activity, CheckCircle2, Play, StopCircle, FileText, ListChecks, PenLine } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge, safeJson} from "@/components/ui-helpers";
-
+import { EmptyState, LoadingState, ErrorState, formatDate, formatRelative, calculateAge, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
-  if (!res.ok) {
-    const e = await safeJson(res).catch(() => ({}));
-    throw new Error(e.error || `Failed: ${res.status}`);
-  }
+  if (!res.ok) { const e = await safeJson(res).catch(() => ({})); throw new Error(e.error || `Failed: ${res.status}`); }
   return safeJson(res);
 }
+
+const ROUND_TYPES = [
+  { value: "daily", label: "Daily Ward Round" },
+  { value: "consultant", label: "Consultant Round" },
+  { value: "specialist", label: "Specialist Round" },
+  { value: "mdt", label: "Multidisciplinary Round" },
+  { value: "post_op", label: "Post-Operative Round" },
+  { value: "emergency", label: "Emergency Round" },
+  { value: "maternity", label: "Maternity Round" },
+  { value: "pediatric", label: "Pediatric Round" },
+  { value: "icu", label: "ICU/HDU Round" },
+  { value: "weekend", label: "Weekend Round" },
+  { value: "night", label: "Night Round" },
+  { value: "discharge_planning", label: "Discharge Planning Round" },
+  { value: "transfer_review", label: "Transfer Review" },
+  { value: "follow_up", label: "Follow-Up Round" },
+  { value: "other", label: "Other" },
+];
+
+const PRIORITIES = [
+  { value: "routine", label: "Routine" },
+  { value: "urgent", label: "Urgent" },
+  { value: "stat", label: "STAT" },
+];
+
+const ACTION_TYPES = [
+  { value: "order_lab", label: "Order Lab" },
+  { value: "review_lab", label: "Review Lab" },
+  { value: "order_imaging", label: "Order Imaging" },
+  { value: "review_imaging", label: "Review Imaging" },
+  { value: "adjust_medication", label: "Adjust Medication" },
+  { value: "request_consult", label: "Request Consult" },
+  { value: "perform_procedure", label: "Perform Procedure" },
+  { value: "nursing_intervention", label: "Nursing Intervention" },
+  { value: "patient_education", label: "Patient Education" },
+  { value: "discharge_preparation", label: "Discharge Preparation" },
+  { value: "referral", label: "Referral" },
+  { value: "transfer", label: "Transfer" },
+  { value: "follow_up", label: "Follow-Up" },
+  { value: "other", label: "Other" },
+];
+
+const PROGRESS_STATUSES = [
+  { value: "improving", label: "Improving" },
+  { value: "stable", label: "Stable" },
+  { value: "deteriorating", label: "Deteriorating" },
+  { value: "new_concern", label: "New Concern" },
+  { value: "resolved", label: "Resolved" },
+  { value: "awaiting_investigation", label: "Awaiting Investigation" },
+  { value: "awaiting_procedure", label: "Awaiting Procedure" },
+  { value: "awaiting_specialist", label: "Awaiting Specialist" },
+  { value: "other", label: "Other" },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  scheduled: "bg-blue-100 text-blue-700",
+  in_progress: "bg-amber-100 text-amber-700",
+  completed: "bg-emerald-100 text-emerald-700",
+  cancelled: "bg-rose-100 text-rose-700",
+  rescheduled: "bg-violet-100 text-violet-700",
+};
 
 export function WardRoundsView() {
   const { data: session } = useSession();
@@ -36,462 +94,462 @@ export function WardRoundsView() {
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
-
+  const [tab, setTab] = useState("dashboard");
   const [wardFilter, setWardFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
   const [showNew, setShowNew] = useState(false);
-  const [viewing, setViewing] = useState<any | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
 
-  // Load wards for filter dropdown
-  const { data: wardsData } = useQuery({
-    queryKey: ["ward-rounds-wards", activeFacilityId],
-    queryFn: () => fetchJson(`/api/wards?facilityId=${activeFacilityId || ""}`),
-    enabled: !!activeFacilityId,
-  });
-  const wards = wardsData?.items || [];
-
-  const params = new URLSearchParams();
-  if (activeFacilityId) params.set("facilityId", activeFacilityId);
-  if (wardFilter !== "all") params.set("wardId", wardFilter);
-  if (dateFilter) params.set("date", dateFilter);
-  const qs = params.toString() ? `?${params.toString()}` : "";
-
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["ward-rounds", activeFacilityId, wardFilter, dateFilter],
-    queryFn: () => fetchJson(`/api/ward-rounds${qs}`),
-    enabled: !!activeFacilityId,
-  });
-
-  const items = data?.items || [];
-
-  // Group by date
-  const grouped = items.reduce((acc: Record<string, any[]>, r: any) => {
-    const d = new Date(r.roundDate);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(r);
-    return acc;
-  }, {});
-  const dateKeys = Object.keys(grouped).sort((a, b) => (a < b ? 1 : -1));
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["ward-rounds"] });
+    qc.invalidateQueries({ queryKey: ["ward-rounds-stats"] });
+    qc.invalidateQueries({ queryKey: ["ward-round-detail"] });
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <ClipboardCheck className="w-6 h-6 text-emerald-600" />
-            Ward Round Notes
-          </h2>
-          <p className="text-sm text-slate-500">
-            Daily ward round documentation with attending consultant and patient list
-          </p>
-        </div>
-        {can("admission.view") && (
-          <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4" /> New Ward Round
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Ward Rounds"
+        description="Comprehensive inpatient clinical review — schedule rounds, review patients, document SOAP notes, track action items"
+        icon={ClipboardCheck}
+        gradient="from-indigo-500 to-blue-600"
+      />
 
-      {!activeFacilityId && (
-        <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view ward rounds.</CardContent></Card>
-      )}
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="dashboard" className="gap-1.5"><Activity className="w-4 h-4" /> Dashboard</TabsTrigger>
+          <TabsTrigger value="rounds" className="gap-1.5"><ClipboardCheck className="w-4 h-4" /> Rounds</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardContent className="p-3 flex flex-col md:flex-row gap-3">
-          <Select value={wardFilter || undefined} onValueChange={setWardFilter}>
-            <SelectTrigger className="md:w-56"><SelectValue placeholder="All Wards" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Wards</SelectItem>
-              {wards.map((w: any) => (
-                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex-1 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <Input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="md:w-48"
-            />
-            {dateFilter && (
-              <Button size="sm" variant="ghost" onClick={() => setDateFilter("")} className="text-xs">Clear</Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {isLoading ? (
-        <LoadingState rows={6} />
-      ) : isError ? (
-        <ErrorState message="Failed to load ward rounds" onRetry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <Card><CardContent className="p-6">
-          <EmptyState
-            title="No ward round records"
-            description="Document daily ward rounds with attending consultant, patients seen, and plan changes."
-            icon={AlertCircle}
-            action={can("admission.view") && (
-              <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="w-4 h-4" /> New Ward Round
-              </Button>
-            )}
-          />
-        </CardContent></Card>
-      ) : (
-        <div className="space-y-4">
-          {dateKeys.map((dateKey) => (
-            <div key={dateKey}>
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-2">
-                <Calendar className="w-3 h-3" /> {formatDate(dateKey)} <span className="text-slate-400">({grouped[dateKey].length} round{grouped[dateKey].length > 1 ? "s" : ""})</span>
+        <TabsContent value="dashboard" className="space-y-4">
+          <WardRoundDashboard facilityId={activeFacilityId} />
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm font-semibold text-slate-700 mb-3">Quick Actions</div>
+              <div className="flex flex-wrap gap-2">
+                {can("ward_round.create") && <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> Schedule Round</Button>}
               </div>
-              <div className="space-y-2">
-                {grouped[dateKey].map((r: any) => (
-                  <Card key={r.id} className="hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setViewing(r)}>
-                    <CardContent className="p-4">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            {r.ward && <Badge variant="outline" className="text-emerald-700 border-emerald-200">{r.ward.name}</Badge>}
-                            <Badge variant="outline" className="text-teal-700 border-teal-200">
-                              <Users className="w-3 h-3 mr-1" />{r.patientsSeenIds?.length || 0} patient(s)
-                            </Badge>
-                            <span className="text-xs text-slate-500">{formatDate(r.roundDate, true)}</span>
-                          </div>
-                          {r.notes && <p className="text-sm text-slate-700 line-clamp-2">{r.notes}</p>}
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Stethoscope className="w-3 h-3" /> Consultant: {r.consultant ? `${r.consultant.firstName} ${r.consultant.lastName}` : "—"}
-                            </span>
-                            {r.planChanges && (
-                              <span className="flex items-center gap-1 text-amber-700">
-                                <AlertCircle className="w-3 h-3" /> Plan changes
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setViewing(r); }} className="h-8 w-8 p-0">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {showNew && <NewWardRoundDialog onClose={() => setShowNew(false)} />}
-      {viewing && <WardRoundDetail round={viewing} onClose={() => setViewing(null)} />}
+        <TabsContent value="rounds" className="space-y-3">
+          <Card>
+            <CardContent className="p-3 flex flex-wrap gap-3 items-center">
+              <Select value={wardFilter} onValueChange={setWardFilter}>
+                <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Wards</SelectItem>
+                  <WardOptions facilityId={activeFacilityId} />
+                </SelectContent>
+              </Select>
+              <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="md:w-40" />
+              {dateFilter && <Button size="sm" variant="ghost" onClick={() => setDateFilter("")}>Clear</Button>}
+              {can("ward_round.create") && <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 ml-auto"><Plus className="w-4 h-4" /> New Round</Button>}
+            </CardContent>
+          </Card>
+
+          <RoundsList facilityId={activeFacilityId} wardFilter={wardFilter} dateFilter={dateFilter} onView={(id) => setViewingId(id)} />
+        </TabsContent>
+      </Tabs>
+
+      {showNew && <NewWardRoundDialog onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); invalidate(); }} />}
+      {viewingId && <WardRoundDetailDialog roundId={viewingId} onClose={() => setViewingId(null)} onChanged={invalidate} canManage={can("ward_round.document")} canSign={can("ward_round.sign")} canComplete={can("ward_round.complete")} canAction={can("ward_round.action.manage")} />}
     </div>
   );
 }
 
-function NewWardRoundDialog({ onClose }: { onClose: () => void }) {
-  const activeFacilityId = useAppStore((s) => s.activeFacilityId);
-  const qc = useQueryClient();
+// Ward options helper
+function WardOptions({ facilityId }: { facilityId: string | null }) {
+  const { data } = useQuery({ queryKey: ["wr-wards", facilityId], queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`), enabled: !!facilityId });
+  return <>{(data?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</>;
+}
 
+// Dashboard
+function WardRoundDashboard({ facilityId }: { facilityId: string | null }) {
+  const { data, isLoading } = useQuery({ queryKey: ["ward-rounds-stats", facilityId], queryFn: () => fetchJson(`/api/ward-rounds/stats?facilityId=${facilityId || ""}`) });
+  if (isLoading) return <LoadingState rows={4} />;
+  if (!data) return null;
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <MiniStatCard label="Today's Rounds" value={data.todayRounds} icon={ClipboardCheck} gradient="from-indigo-500 to-blue-600" />
+      <MiniStatCard label="Scheduled" value={data.scheduledRounds} icon={Calendar} gradient="from-blue-500 to-blue-600" />
+      <MiniStatCard label="Active" value={data.activeRounds} icon={Play} gradient="from-amber-500 to-amber-600" />
+      <MiniStatCard label="Completed Today" value={data.completedToday} icon={CheckCircle2} gradient="from-emerald-500 to-emerald-600" />
+      <MiniStatCard label="Patients Reviewed" value={data.reviewedToday} icon={Users} gradient="from-teal-500 to-cyan-600" />
+      <MiniStatCard label="Pending Actions" value={data.pendingActions} icon={ListChecks} gradient="from-amber-500 to-orange-600" />
+      <MiniStatCard label="Actions Done" value={data.completedActionsToday} icon={CheckCircle2} gradient="from-emerald-500 to-emerald-600" />
+      <MiniStatCard label="Overdue Actions" value={data.overdueActions} icon={AlertCircle} gradient="from-rose-500 to-rose-600" />
+      <MiniStatCard label="Total Rounds" value={data.totalRounds} icon={ClipboardCheck} gradient="from-slate-500 to-slate-600" />
+      <MiniStatCard label="Total Patients" value={data.totalPatients} icon={Users} gradient="from-violet-500 to-violet-600" />
+      <MiniStatCard label="Cancelled Today" value={data.cancelledToday} icon={AlertCircle} gradient="from-rose-500 to-rose-600" />
+    </div>
+  );
+}
+
+// Rounds List
+function RoundsList({ facilityId, wardFilter, dateFilter, onView }: any) {
+  const params = new URLSearchParams();
+  if (facilityId) params.set("facilityId", facilityId);
+  if (wardFilter !== "all") params.set("wardId", wardFilter);
+  if (dateFilter) params.set("date", dateFilter);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["ward-rounds", facilityId, wardFilter, dateFilter], queryFn: () => fetchJson(`/api/ward-rounds${qs}`) });
+  const items = data?.items || [];
+
+  if (isLoading) return <LoadingState rows={6} />;
+  if (isError) return <ErrorState message="Failed to load ward rounds" onRetry={() => refetch()} />;
+  if (items.length === 0) return <Card><CardContent className="p-6"><EmptyState title="No ward rounds" description="Schedule a new ward round to get started." /></CardContent></Card>;
+
+  return (
+    <div className="space-y-2">
+      {items.map((r: any) => (
+        <Card key={r.id} className="hover:shadow-sm transition-shadow cursor-pointer" onClick={() => onView(r.id)}>
+          <CardContent className="p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  {r.ward && <Badge variant="outline" className="text-emerald-700 border-emerald-200">{r.ward.name}</Badge>}
+                  <Badge variant="outline" className="text-xs capitalize">{r.roundType?.replace(/_/g, " ") || "daily"}</Badge>
+                  <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-700"}`}>{r.status?.replace(/_/g, " ") || "scheduled"}</Badge>
+                  <Badge variant="outline" className="text-xs">{r.priority || "routine"}</Badge>
+                  <span className="text-xs text-slate-500">{formatDate(r.roundDate, true)}</span>
+                </div>
+                {r.notes && <p className="text-sm text-slate-700 line-clamp-1">{r.notes}</p>}
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                  <span className="flex items-center gap-1"><Stethoscope className="w-3 h-3" /> {r.consultant ? `${r.consultant.firstName} ${r.consultant.lastName}` : "—"}</span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {r.patientsSeenIds?.length || 0} patient(s)</span>
+                </div>
+              </div>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0"><Eye className="w-4 h-4" /></Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// New Ward Round Dialog (enhanced with roundType, priority, status)
+function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const [form, setForm] = useState({
-    facilityId: activeFacilityId || "",
-    wardId: "",
-    consultantId: "",
-    roundDate: "",
-    notes: "",
-    planChanges: "",
+    facilityId: activeFacilityId || "", wardId: "", consultantId: "",
+    roundDate: "", notes: "", planChanges: "",
+    roundType: "daily", priority: "routine",
   });
   const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-
-  // Wards for facility
-  const { data: wardsData } = useQuery({
-    queryKey: ["ward-round-form-wards", form.facilityId],
-    queryFn: () => fetchJson(`/api/wards?facilityId=${form.facilityId}`),
-    enabled: !!form.facilityId,
-  });
+  const { data: wardsData } = useQuery({ queryKey: ["wr-form-wards", form.facilityId], queryFn: () => fetchJson(`/api/wards?facilityId=${form.facilityId}`), enabled: !!form.facilityId });
+  const { data: usersData } = useQuery({ queryKey: ["wr-users"], queryFn: () => fetchJson("/api/users/assignable") });
+  const { data: admissionsData } = useQuery({ queryKey: ["wr-admissions", form.facilityId], queryFn: () => fetchJson(`/api/admissions?facilityId=${form.facilityId}&status=admitted&limit=200`), enabled: !!form.facilityId });
   const wards = wardsData?.items || [];
-
-  // Assignable users (for consultant select)
-  const { data: usersData } = useQuery({
-    queryKey: ["users-assignable-wardround"],
-    queryFn: () => fetchJson("/api/users/assignable"),
-  });
   const users = usersData?.items || [];
-
-  // Admitted patients for the selected facility (or ward if chosen)
-  const { data: admissionsData, isLoading: loadingAdmissions } = useQuery({
-    queryKey: ["ward-round-admissions", form.facilityId],
-    queryFn: () => fetchJson(`/api/admissions?facilityId=${form.facilityId}&status=admitted&limit=200`),
-    enabled: !!form.facilityId,
-  });
   const admissions = (admissionsData?.items || []).filter((a: any) => !form.wardId || a.bedAssignments?.some((ba: any) => ba.wardId === form.wardId));
-
-  const togglePatient = (id: string) => {
-    if (selectedPatientIds.includes(id)) {
-      setSelectedPatientIds(selectedPatientIds.filter((p) => p !== id));
-    } else {
-      setSelectedPatientIds([...selectedPatientIds, id]);
-    }
-  };
-
-  const filteredAdmissions = admissions.filter((a: any) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      a.patient?.firstName?.toLowerCase().includes(q) ||
-      a.patient?.lastName?.toLowerCase().includes(q) ||
-      a.patient?.patientNumber?.toLowerCase().includes(q) ||
-      a.admissionNumber?.toLowerCase().includes(q)
-    );
-  });
+  const filteredAdmissions = admissions.filter((a: any) => !search || a.patient?.firstName?.toLowerCase().includes(search.toLowerCase()) || a.patient?.lastName?.toLowerCase().includes(search.toLowerCase()) || a.patient?.patientNumber?.toLowerCase().includes(search.toLowerCase()));
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/ward-rounds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          facilityId: form.facilityId,
-          wardId: form.wardId || undefined,
-          consultantId: form.consultantId || undefined,
-          roundDate: form.roundDate ? new Date(form.roundDate).toISOString() : undefined,
-          patientsSeen: selectedPatientIds,
-          notes: form.notes || undefined,
-          planChanges: form.planChanges || undefined,
-        }),
-      });
-      if (!res.ok) {
-        const e = await safeJson(res).catch(() => ({}));
-        throw new Error(e.error || "Failed");
-      }
+      const res = await fetch("/api/ward-rounds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, facilityId: form.facilityId, wardId: form.wardId || undefined, consultantId: form.consultantId || undefined, roundDate: form.roundDate ? new Date(form.roundDate).toISOString() : undefined, patientsSeen: selectedPatientIds, notes: form.notes || undefined, planChanges: form.planChanges || undefined }) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
       return safeJson(res);
     },
-    onSuccess: () => {
-      toast.success("Ward round recorded");
-      qc.invalidateQueries({ queryKey: ["ward-rounds"] });
-      onClose();
-    },
+    onSuccess: () => { toast.success("Ward round scheduled"); onCreated(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ClipboardCheck className="w-5 h-5 text-emerald-600" /> New Ward Round
-          </DialogTitle>
-          <DialogDescription>
-            Document today&apos;s ward round with attending consultant and patients seen.
-          </DialogDescription>
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+          <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="w-5 h-5 text-emerald-600" /> Schedule Ward Round</DialogTitle>
+          <DialogDescription>Schedule a round with type, priority, consultant, and patient list.</DialogDescription>
         </DialogHeader>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5">
-            <FieldLabel required>Facility</FieldLabel>
-            <Input value={form.facilityId} disabled placeholder="Active facility" />
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div><Label>Ward</Label><Select value={form.wardId || "_none"} onValueChange={(v) => setForm({ ...form, wardId: v === "_none" ? "" : v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="_none">— All wards —</SelectItem>{wards.map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Round Type</Label><Select value={form.roundType} onValueChange={(v) => setForm({ ...form, roundType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROUND_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Priority</Label><Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Ward</Label>
-            <Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v === "_none" ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All wards / General round" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_none">— All wards / General round —</SelectItem>
-                {wards.map((w: any) => (
-                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Consultant</Label><SearchableSelect options={users.map((u: any) => ({ value: u.id, label: u.name || `${u.firstName} ${u.lastName}`, description: `@${u.username}`, secondary: u.professionalRole || u.roles?.[0] || null, initials: u.initials }))} value={form.consultantId} onValueChange={(v) => setForm({ ...form, consultantId: v })} placeholder="Select consultant" searchPlaceholder="Search..." emptyText="No staff found" /></div>
+            <div><Label>Round Date / Time</Label><Input type="datetime-local" value={form.roundDate} onChange={(e) => setForm({ ...form, roundDate: e.target.value })} /></div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Attending Consultant</Label>
-            <SearchableSelect
-              options={users.map((u: any) => ({
-                value: u.id,
-                label: u.name || `${u.firstName} ${u.lastName}`,
-                description: `@${u.username}`,
-                secondary: u.professionalRole || u.roles?.[0] || null,
-                initials: u.initials,
-              }))}
-              value={form.consultantId}
-              onValueChange={(v) => setForm({ ...form, consultantId: v })}
-              placeholder="Select consultant"
-              searchPlaceholder="Search by name or role..."
-              emptyText="No staff found"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Round Date / Time</Label>
-            <Input
-              type="datetime-local"
-              value={form.roundDate}
-              onChange={(e) => setForm({ ...form, roundDate: e.target.value })}
-            />
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Patients Seen</FieldLabel>
-            <div className="border rounded-md">
-              <div className="p-2 border-b bg-slate-50">
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search admitted patients by name, number, or admission..."
-                  className="h-9"
-                />
-                <div className="text-xs text-slate-500 mt-1">
-                  {selectedPatientIds.length} patient(s) selected • {filteredAdmissions.length} admitted patient(s) available
-                </div>
-              </div>
-              <div className="max-h-60 overflow-y-auto">
-                {loadingAdmissions ? (
-                  <div className="p-4 text-center text-sm text-slate-500">Loading admitted patients...</div>
-                ) : filteredAdmissions.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-slate-500">No admitted patients found.</div>
-                ) : (
-                  filteredAdmissions.map((a: any) => {
-                    const checked = selectedPatientIds.includes(a.id);
-                    const bed = a.bedAssignments?.[0];
-                    return (
-                      <label
-                        key={a.id}
-                        className="flex items-center gap-3 p-2 hover:bg-emerald-50 cursor-pointer border-b last:border-0"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={() => togglePatient(a.id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-slate-900">
-                            {a.patient?.firstName} {a.patient?.lastName}
-                            <span className="ml-2 text-xs text-slate-500">{a.patient?.patientNumber}</span>
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            {a.admissionNumber} • {a.patient?.sex || "—"}, {calculateAge(a.patient?.dateOfBirth)}y
-                            {bed && ` • ${bed.ward?.name} / Bed ${bed.bed?.bedNumber}`}
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
+          <div>
+            <FieldLabel required>Patients</FieldLabel>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search admitted patients..." className="mb-2" />
+            <div className="border rounded max-h-48 overflow-y-auto">
+              {filteredAdmissions.length === 0 ? <div className="p-3 text-center text-sm text-slate-500">No admitted patients</div> : filteredAdmissions.map((a: any) => (
+                <label key={a.id} className="flex items-center gap-2 p-2 hover:bg-emerald-50 cursor-pointer border-b last:border-0">
+                  <Checkbox checked={selectedPatientIds.includes(a.id)} onCheckedChange={() => setSelectedPatientIds((p) => p.includes(a.id) ? p.filter((x) => x !== a.id) : [...p, a.id])} />
+                  <div className="flex-1 text-sm"><span className="font-medium">{a.patient?.firstName} {a.patient?.lastName}</span> <span className="text-xs text-slate-500 ml-1">{a.patient?.patientNumber} · {a.admissionNumber}</span></div>
+                </label>
+              ))}
             </div>
+            <div className="text-xs text-slate-500 mt-1">{selectedPatientIds.length} selected</div>
           </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <Label>Round Notes</Label>
-            <Textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={4}
-              placeholder="General observations from the round, patient-by-patient updates..."
-            />
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <Label>Plan Changes</Label>
-            <Textarea
-              value={form.planChanges}
-              onChange={(e) => setForm({ ...form, planChanges: e.target.value })}
-              rows={3}
-              placeholder="Treatment plan changes, medication adjustments, new orders..."
-            />
-          </div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
+          <div><Label>Plan Changes</Label><Textarea value={form.planChanges} onChange={(e) => setForm({ ...form, planChanges: e.target.value })} rows={2} /></div>
         </div>
-
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || selectedPatientIds.length === 0}
-            className="bg-emerald-600 hover:bg-emerald-700 gap-2"
-          >
-            {mutation.isPending ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
-            Save Ward Round
-          </Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || selectedPatientIds.length === 0} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{mutation.isPending ? "Saving..." : "Schedule Round"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function WardRoundDetail({ round, onClose }: { round: any; onClose: () => void }) {
+// Ward Round Detail Dialog (enhanced with tabs: Overview, Patients, Notes, Actions)
+function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign, canComplete, canAction }: any) {
+  const { data, isLoading, refetch } = useQuery({ queryKey: ["ward-round-detail", roundId], queryFn: () => fetchJson(`/api/ward-rounds/${roundId}`) });
+  const r = data?.item;
+  const [detailTab, setDetailTab] = useState("overview");
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [showAddPatient, setShowAddPatient] = useState(false);
+
+  if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-4xl"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
+  if (!r) return <Dialog open onOpenChange={onClose}><DialogContent><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+
+  const lifecycleAction = async (action: string) => {
+    try {
+      const res = await fetch(`/api/ward-rounds/${roundId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success(`Round ${action === "start" ? "started" : action === "complete" ? "completed" : "cancelled"}`);
+      onChanged(); refetch();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ClipboardCheck className="w-5 h-5 text-emerald-600" />
-            Ward Round Details
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+          <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
+            <ClipboardCheck className="w-5 h-5 text-indigo-600" />
+            <span>{r.ward?.name || "General Round"}</span>
+            <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-700"}`}>{r.status?.replace(/_/g, " ")}</Badge>
+            <Badge variant="outline" className="capitalize">{r.roundType?.replace(/_/g, " ")}</Badge>
+            <Badge variant="outline">{r.priority}</Badge>
           </DialogTitle>
-          <DialogDescription>
-            {round.facility?.name} • {formatDate(round.roundDate, true)} ({formatRelative(round.roundDate)})
-          </DialogDescription>
+          <DialogDescription>{formatDate(r.roundDate, true)} • Consultant: {r.consultant ? `${r.consultant.firstName} ${r.consultant.lastName}` : "—"}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {round.ward && <Badge variant="outline" className="text-emerald-700 border-emerald-200">{round.ward.name}</Badge>}
-            <Badge variant="outline" className="text-teal-700 border-teal-200">
-              <Users className="w-3 h-3 mr-1" />{round.patients?.length || 0} patient(s)
-            </Badge>
-            <StatusBadge status={round.status || "completed"} />
+        {/* Lifecycle buttons */}
+        {r.status === "scheduled" && canManage && (
+          <div className="px-6 py-2 border-b flex gap-2">
+            <Button size="sm" onClick={() => lifecycleAction("start")} className="gap-1.5 bg-amber-600 hover:bg-amber-700"><Play className="w-3.5 h-3.5" /> Start Round</Button>
+            <Button size="sm" variant="outline" onClick={() => lifecycleAction("cancel")} className="text-rose-600">Cancel</Button>
           </div>
-
-          {round.notes && <DetailBlock label="Round Notes" value={round.notes} />}
-          {round.planChanges && <DetailBlock label="Plan Changes" value={round.planChanges} />}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <DetailRow label="Consultant" value={round.consultant ? `${round.consultant.firstName} ${round.consultant.lastName} (@${round.consultant.username})` : "—"} />
-            <DetailRow label="Recorded By" value={round.createdBy ? `${round.createdBy.firstName} ${round.createdBy.lastName} (@${round.createdBy.username})` : "—"} />
+        )}
+        {r.status === "in_progress" && canComplete && (
+          <div className="px-6 py-2 border-b flex gap-2">
+            <Button size="sm" onClick={() => lifecycleAction("complete")} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><StopCircle className="w-3.5 h-3.5" /> Complete Round</Button>
+            <Button size="sm" variant="outline" onClick={() => lifecycleAction("cancel")} className="text-rose-600">Cancel</Button>
           </div>
+        )}
 
-          {round.patients && round.patients.length > 0 && (
-            <div>
-              <Label className="text-xs text-slate-500 uppercase tracking-wide">Patients Seen</Label>
-              <div className="border rounded-md mt-1 divide-y">
-                {round.patients.map((p: any) => (
-                  <div key={p.id} className="p-2 text-sm">
-                    <div className="font-medium text-slate-900">
-                      {p.firstName} {p.lastName}
-                      <span className="ml-2 text-xs text-slate-500">{p.patientNumber}</span>
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          <Tabs value={detailTab} onValueChange={setDetailTab}>
+            <TabsList className="flex flex-wrap h-auto w-full mb-3">
+              <TabsTrigger value="overview" className="gap-1.5"><Activity className="w-4 h-4" /> Overview</TabsTrigger>
+              <TabsTrigger value="patients" className="gap-1.5"><Users className="w-4 h-4" /> Patients ({r.roundPatients?.length || 0})</TabsTrigger>
+              <TabsTrigger value="notes" className="gap-1.5"><FileText className="w-4 h-4" /> Notes ({r.roundNotes?.length || 0})</TabsTrigger>
+              <TabsTrigger value="actions" className="gap-1.5"><ListChecks className="w-4 h-4" /> Actions ({r.roundActions?.length || 0})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-3">
+              {r.notes && <div className="bg-slate-50 rounded p-3"><div className="text-xs text-slate-500 font-medium uppercase mb-1">Round Notes</div><div className="text-sm whitespace-pre-wrap">{r.notes}</div></div>}
+              {r.planChanges && <div className="bg-amber-50 rounded p-3 border border-amber-100"><div className="text-xs text-amber-700 font-medium uppercase mb-1">Plan Changes</div><div className="text-sm whitespace-pre-wrap">{r.planChanges}</div></div>}
+              <div className="text-xs text-slate-500">Created by {r.createdBy?.firstName} {r.createdBy?.lastName} • {formatDate(r.createdAt, true)}{r.completedAt && ` • Completed ${formatDate(r.completedAt, true)}`}</div>
+            </TabsContent>
+
+            <TabsContent value="patients" className="space-y-3">
+              {canManage && r.status === "in_progress" && <Button size="sm" onClick={() => setShowAddPatient(true)} className="gap-1.5"><Plus className="w-4 h-4" /> Add Patient</Button>}
+              {(r.roundPatients || []).length === 0 ? <EmptyState title="No patients in this round" /> : (
+                <div className="space-y-2">
+                  {(r.roundPatients || []).map((rp: any) => (
+                    <div key={rp.id} className="border rounded p-3 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-slate-900">{rp.patient?.firstName} {rp.patient?.lastName}</span>
+                          <span className="ml-2 text-xs text-slate-500">{rp.patient?.patientNumber}</span>
+                          <Badge className={`ml-2 text-[10px] ${rp.reviewStatus === "reviewed" ? "bg-emerald-100 text-emerald-700" : rp.reviewStatus === "not_available" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{rp.reviewStatus?.replace(/_/g, " ")}</Badge>
+                          {rp.progressStatus && <Badge variant="outline" className="ml-1 text-[10px] capitalize">{rp.progressStatus?.replace(/_/g, " ")}</Badge>}
+                        </div>
+                        {canManage && r.status === "in_progress" && rp.reviewStatus === "pending" && (
+                          <Button size="sm" variant="ghost" className="h-6 text-xs text-emerald-600" onClick={async () => {
+                            const res = await fetch(`/api/ward-rounds/${roundId}/patients`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wardRoundPatientId: rp.id, action: "review" }) });
+                            if (res.ok) { toast.success("Patient marked reviewed"); onChanged(); refetch(); } else toast.error("Failed");
+                          }}>Mark Reviewed</Button>
+                        )}
+                      </div>
+                      {rp.overnightEvents && <div className="text-xs text-slate-600 mt-1">Overnight: {rp.overnightEvents}</div>}
+                      {rp.clinicalAlerts && <div className="text-xs text-rose-600 mt-1">⚠ {rp.clinicalAlerts}</div>}
                     </div>
-                    <div className="text-xs text-slate-500">
-                      {p.sex || "—"}, {calculateAge(p.dateOfBirth)}y
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="notes" className="space-y-3">
+              {canManage && r.status === "in_progress" && <Button size="sm" onClick={() => setShowNoteDialog(true)} className="gap-1.5"><Plus className="w-4 h-4" /> Add SOAP Note</Button>}
+              {(r.roundNotes || []).length === 0 ? <EmptyState title="No round notes" /> : (
+                <div className="space-y-2">
+                  {(r.roundNotes || []).map((n: any) => (
+                    <div key={n.id} className="border rounded p-3 bg-white">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-[10px]">{n.patient?.firstName} {n.patient?.lastName}</Badge>
+                        <Badge className={`text-[10px] ${n.status === "signed" ? "bg-emerald-100 text-emerald-700" : n.status === "amended" ? "bg-violet-100 text-violet-700" : "bg-amber-100 text-amber-700"}`}>{n.status}</Badge>
+                        {n.progressStatus && <Badge variant="outline" className="text-[10px] capitalize">{n.progressStatus?.replace(/_/g, " ")}</Badge>}
+                      </div>
+                      {n.subjective && <div className="text-xs text-slate-600"><strong>S:</strong> {n.subjective}</div>}
+                      {n.objective && <div className="text-xs text-slate-600"><strong>O:</strong> {n.objective}</div>}
+                      {n.assessment && <div className="text-xs text-slate-600"><strong>A:</strong> {n.assessment}</div>}
+                      {n.plan && <div className="text-xs text-slate-600"><strong>P:</strong> {n.plan}</div>}
+                      {n.content && <div className="text-sm text-slate-700 mt-1">{n.content}</div>}
+                      <div className="text-xs text-slate-500 mt-1">{formatDate(n.authoredAt, true)}{n.signedAt && ` • Signed ${formatDate(n.signedAt, true)}`}</div>
+                      {n.status === "draft" && canSign && (
+                        <Button size="sm" variant="ghost" className="h-6 text-xs text-emerald-600 mt-1" onClick={async () => {
+                          const res = await fetch(`/api/ward-rounds/${roundId}/notes`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sign", noteId: n.id }) });
+                          if (res.ok) { toast.success("Note signed"); onChanged(); refetch(); } else toast.error("Failed");
+                        }}><PenLine className="w-3 h-3" /> Sign</Button>
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="actions" className="space-y-3">
+              {canAction && r.status === "in_progress" && <Button size="sm" onClick={() => setShowActionDialog(true)} className="gap-1.5"><Plus className="w-4 h-4" /> Add Action</Button>}
+              {(r.roundActions || []).length === 0 ? <EmptyState title="No action items" /> : (
+                <div className="space-y-2">
+                  {(r.roundActions || []).map((a: any) => (
+                    <div key={a.id} className="border rounded p-3 bg-white flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] capitalize">{a.actionType?.replace(/_/g, " ")}</Badge>
+                          <Badge className={`text-[10px] ${a.status === "completed" ? "bg-emerald-100 text-emerald-700" : a.status === "cancelled" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{a.status}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{a.priority}</Badge>
+                        </div>
+                        <div className="text-sm font-medium mt-1">{a.title}</div>
+                        {a.patient && <div className="text-xs text-slate-500">{a.patient.firstName} {a.patient.lastName}</div>}
+                        {a.assignedToName && <div className="text-xs text-slate-500">→ {a.assignedToName} ({a.assignedToRole || "—"})</div>}
+                        {a.dueDate && <div className="text-xs text-slate-500">Due: {formatDate(a.dueDate)}</div>}
+                      </div>
+                      {canAction && a.status === "pending" && (
+                        <Button size="sm" variant="ghost" className="h-6 text-xs text-emerald-600" onClick={async () => {
+                          const res = await fetch(`/api/ward-rounds/${roundId}/actions`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ actionId: a.id, action: "complete" }) });
+                          if (res.ok) { toast.success("Action completed"); onChanged(); refetch(); } else toast.error("Failed");
+                        }}>Complete</Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-        </DialogFooter>
       </DialogContent>
+
+      {showNoteDialog && <NoteDialog roundId={roundId} onClose={() => setShowNoteDialog(false)} onCreated={() => { setShowNoteDialog(false); onChanged(); refetch(); }} />}
+      {showActionDialog && <ActionDialog roundId={roundId} patients={r.roundPatients || []} onClose={() => setShowActionDialog(false)} onCreated={() => { setShowActionDialog(false); onChanged(); refetch(); }} />}
+      {showAddPatient && <AddPatientDialog roundId={roundId} facilityId={r.facilityId} onClose={() => setShowAddPatient(false)} onCreated={() => { setShowAddPatient(false); onChanged(); refetch(); }} />}
     </Dialog>
   );
 }
 
-function DetailBlock({ label, value }: { label: string; value: string }) {
+// SOAP Note Dialog
+function NoteDialog({ roundId, onClose, onCreated }: any) {
+  const [form, setForm] = useState({ patientId: "", subjective: "", objective: "", assessment: "", plan: "", content: "", progressStatus: "" });
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    if (!form.patientId) { toast.error("Select a patient"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/ward-rounds/${roundId}/notes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success("Note created (draft)"); onCreated();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
   return (
-    <div className="bg-slate-50 rounded-md p-3 border border-slate-100">
-      <div className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{label}</div>
-      <div className="text-sm text-slate-900 whitespace-pre-wrap">{value}</div>
-    </div>
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>SOAP Round Note</DialogTitle></DialogHeader>
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div><FieldLabel required>Patient</FieldLabel><Input value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })} placeholder="Patient ID" /></div>
+        <div><Label>S — Subjective</Label><Textarea value={form.subjective} onChange={(e) => setForm({ ...form, subjective: e.target.value })} rows={2} placeholder="Patient complaints, overnight events..." /></div>
+        <div><Label>O — Objective</Label><Textarea value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} rows={2} placeholder="Examination findings, vitals..." /></div>
+        <div><Label>A — Assessment</Label><Textarea value={form.assessment} onChange={(e) => setForm({ ...form, assessment: e.target.value })} rows={2} placeholder="Clinical assessment, progress..." /></div>
+        <div><Label>P — Plan</Label><Textarea value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} rows={2} placeholder="Treatment plan, decisions..." /></div>
+        <div><Label>Progress Status</Label><Select value={form.progressStatus || "_none"} onValueChange={(v) => setForm({ ...form, progressStatus: v === "_none" ? "" : v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="_none">— None —</SelectItem>{PROGRESS_STATUSES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label>Additional Notes</Label><Textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} /></div>
+      </div>
+      <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Save as Draft"}</Button></DialogFooter>
+    </DialogContent></Dialog>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: any }) {
+// Action Item Dialog
+function ActionDialog({ roundId, patients, onClose, onCreated }: any) {
+  const [form, setForm] = useState({ patientId: "", actionType: "order_lab", title: "", description: "", assignedToName: "", assignedToRole: "", dueDate: "", priority: "routine" });
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    if (!form.title) { toast.error("Title is required"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/ward-rounds/${roundId}/actions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, patientId: form.patientId || undefined, dueDate: form.dueDate || undefined }) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success("Action item created"); onCreated();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
   return (
-    <div>
-      <Label className="text-xs text-slate-500">{label}</Label>
-      <div className="text-sm text-slate-900 mt-0.5">{value}</div>
-    </div>
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+      <DialogHeader><DialogTitle>Add Action Item</DialogTitle></DialogHeader>
+      <div className="space-y-3">
+        <div><Label>Action Type</Label><Select value={form.actionType} onValueChange={(v) => setForm({ ...form, actionType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ACTION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+        <div><FieldLabel required>Title</FieldLabel><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Review CT scan result" /></div>
+        <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Assigned To</Label><Input value={form.assignedToName} onChange={(e) => setForm({ ...form, assignedToName: e.target.value })} placeholder="Name" /></div>
+          <div><Label>Role</Label><Input value={form.assignedToRole} onChange={(e) => setForm({ ...form, assignedToRole: e.target.value })} placeholder="e.g., Doctor" /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Due Date</Label><Input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></div>
+          <div><Label>Priority</Label><Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
+        </div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Create Action"}</Button></DialogFooter>
+    </DialogContent></Dialog>
+  );
+}
+
+// Add Patient Dialog
+function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
+  const [search, setSearch] = useState("");
+  const { data: admissionsData } = useQuery({ queryKey: ["wr-add-patient", facilityId], queryFn: () => fetchJson(`/api/admissions?facilityId=${facilityId}&status=admitted&limit=200`), enabled: !!facilityId });
+  const admissions = (admissionsData?.items || []).filter((a: any) => !search || a.patient?.firstName?.toLowerCase().includes(search.toLowerCase()) || a.patient?.lastName?.toLowerCase().includes(search.toLowerCase()));
+  const [saving, setSaving] = useState(false);
+  const add = async (patientId: string, admissionId: string) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/ward-rounds/${roundId}/patients`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patientId, admissionId: admissionId || undefined }) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success("Patient added to round"); onCreated();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+  return (
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+      <DialogHeader><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
+      <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search admitted patients..." className="mb-2" />
+      <div className="max-h-60 overflow-y-auto border rounded">
+        {admissions.length === 0 ? <div className="p-3 text-center text-sm text-slate-500">No patients found</div> : admissions.map((a: any) => (
+          <button key={a.id} onClick={() => add(a.patientId, a.id)} disabled={saving} className="w-full text-left p-2 hover:bg-emerald-50 text-sm border-b last:border-0">
+            <span className="font-medium">{a.patient?.firstName} {a.patient?.lastName}</span>
+            <span className="ml-2 text-xs text-slate-500">{a.patient?.patientNumber} · {a.admissionNumber}</span>
+          </button>
+        ))}
+      </div>
+    </DialogContent></Dialog>
   );
 }
