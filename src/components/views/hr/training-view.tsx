@@ -43,7 +43,7 @@ import {EmptyState,
   LoadingState,
   ErrorState,
   StatusBadge,
-  formatDate, safeJson} from "@/components/ui-helpers";
+  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -144,12 +144,7 @@ function AllTrainingTab() {
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input
-              className="pl-8"
-              placeholder="Search training name, provider, certificate #"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search training name, provider, certificate #" className="pl-0" />
           </div>
           <Select value={staffFilter || undefined} onValueChange={setStaffFilter}>
             <SelectTrigger className="md:w-56">

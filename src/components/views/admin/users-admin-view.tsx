@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { UserCircle, Search, Plus, Edit, Ban, CheckCircle2, KeyRound, Lock, X } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -88,7 +88,7 @@ export function UsersAdminView() {
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by name, username, email" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by name, username, email" className="pl-0" />
           </div>
           <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>

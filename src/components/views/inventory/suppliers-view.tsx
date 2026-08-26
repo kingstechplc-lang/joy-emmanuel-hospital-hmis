@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Truck, Plus, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -60,7 +60,7 @@ export function SuppliersView() {
         <CardContent className="p-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by name, code, contact, phone, email" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by name, code, contact, phone, email" className="pl-0" />
           </div>
         </CardContent>
       </Card>

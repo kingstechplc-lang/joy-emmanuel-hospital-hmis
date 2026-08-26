@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Key, Search, Lock } from "lucide-react";
-import {EmptyState, LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch} from "@/components/ui-helpers"
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -47,7 +47,7 @@ export function PermissionsAdminView() {
         <CardContent className="p-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by code, name, or module" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by code, name, or module" className="pl-0" />
           </div>
         </CardContent>
       </Card>

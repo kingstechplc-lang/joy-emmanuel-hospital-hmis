@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import {EmptyState,
   LoadingState,
   ErrorState,
-  formatDate, safeJson} from "@/components/ui-helpers";
+  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -150,12 +150,7 @@ export function CertificationsView() {
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input
-              className="pl-8"
-              placeholder="Search certification name, issuing body, certificate #"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search certification name, issuing body, certificate #" className="pl-0" />
           </div>
           <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
             <SelectTrigger className="md:w-56">

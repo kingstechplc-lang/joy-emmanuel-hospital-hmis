@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Cpu, Wrench, History, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatCurrency, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -89,7 +89,7 @@ export function EquipmentView() {
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by name, asset #, manufacturer, model, serial" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by name, asset #, manufacturer, model, serial" className="pl-0" />
           </div>
           <Select value={category || undefined} onValueChange={setCategory}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>

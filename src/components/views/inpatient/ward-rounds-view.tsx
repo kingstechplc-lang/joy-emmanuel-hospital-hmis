@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ClipboardCheck, Plus, RefreshCcw, Eye, Stethoscope, Calendar, AlertCircle, Users, Activity, CheckCircle2, Play, StopCircle, FileText, ListChecks, PenLine, Droplets } from "lucide-react";
 import { toast } from "sonner";
-import { EmptyState, LoadingState, ErrorState, formatDate, formatRelative, calculateAge, safeJson, PageHeader, MiniStatCard } from "@/components/ui-helpers";
+import { EmptyState, LoadingState, ErrorState, formatDate, formatRelative, calculateAge, safeJson, PageHeader, MiniStatCard, ClearableSearch } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
@@ -277,7 +277,7 @@ function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCre
           </div>
           <div>
             <FieldLabel required>Patients</FieldLabel>
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search admitted patients..." className="mb-2" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search admitted patients..." className="mb-2" />
             <div className="border rounded max-h-48 overflow-y-auto">
               {filteredAdmissions.length === 0 ? <div className="p-3 text-center text-sm text-slate-500">No admitted patients</div> : filteredAdmissions.map((a: any) => (
                 <label key={a.id} className="flex items-center gap-2 p-2 hover:bg-emerald-50 cursor-pointer border-b last:border-0">
@@ -543,7 +543,7 @@ function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
       <DialogHeader><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
-      <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search admitted patients..." className="mb-2" />
+      <ClearableSearch value={search} onChange={setSearch} placeholder="Search admitted patients..." className="mb-2" />
       <div className="max-h-60 overflow-y-auto border rounded">
         {admissions.length === 0 ? <div className="p-3 text-center text-sm text-slate-500">No patients found</div> : admissions.map((a: any) => (
           <button key={a.id} onClick={() => add(a.patientId, a.id)} disabled={saving} className="w-full text-left p-2 hover:bg-emerald-50 text-sm border-b last:border-0">

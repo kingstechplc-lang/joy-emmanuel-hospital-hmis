@@ -13,14 +13,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Droplets, Plus, RefreshCcw, Search, AlertCircle, TrendingDown, TrendingUp, Activity,
+  Droplets, Plus, RefreshCcw, AlertCircle, TrendingDown, TrendingUp, Activity,
   ClipboardList, Clock, Beaker, Stethoscope, ListChecks, BellRing, FileBarChart, Play, StopCircle,
-  Settings2, ChevronRight, Scale,
+  Settings2, ChevronRight, Scale, Download, Printer, Copy, Calculator, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, formatDate, formatRelative, calculateAge, safeJson,
-  PageHeader, MiniStatCard,
+  PageHeader, MiniStatCard, ClearableSearch,
 } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import {
@@ -229,7 +229,9 @@ export function IntakeOutputView() {
           <TabsTrigger value="dashboard" className="gap-1.5"><Activity className="w-4 h-4" /> Dashboard</TabsTrigger>
           <TabsTrigger value="balance" className="gap-1.5"><Droplets className="w-4 h-4" /> Patient Balance</TabsTrigger>
           <TabsTrigger value="ward" className="gap-1.5"><ClipboardList className="w-4 h-4" /> Ward View</TabsTrigger>
+          <TabsTrigger value="handover" className="gap-1.5"><FileText className="w-4 h-4" /> Handover</TabsTrigger>
           <TabsTrigger value="alerts" className="gap-1.5"><BellRing className="w-4 h-4" /> Alerts</TabsTrigger>
+          <TabsTrigger value="config" className="gap-1.5"><Settings2 className="w-4 h-4" /> Config</TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5"><FileBarChart className="w-4 h-4" /> Reports</TabsTrigger>
         </TabsList>
 
@@ -265,21 +267,17 @@ export function IntakeOutputView() {
             <CardContent className="p-4 space-y-3">
               <div>
                 <FieldLabel required>Select Admitted Patient</FieldLabel>
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    placeholder="Search admitted patient by name or number..."
-                    value={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.patientNumber})` : patientSearch}
-                    onChange={(e) => {
-                      setPatientSearch(e.target.value);
-                      if (selectedPatientId) {
-                        setSelectedPatientId("");
-                        setSelectedPatient(null);
-                      }
-                    }}
-                    className="pl-9"
-                  />
-                </div>
+                <ClearableSearch
+                  placeholder="Search admitted patient by name or number..."
+                  value={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.patientNumber})` : patientSearch}
+                  onChange={(v) => {
+                    setPatientSearch(v);
+                    if (selectedPatientId && v !== `${selectedPatient?.firstName} ${selectedPatient?.lastName} (${selectedPatient?.patientNumber})`) {
+                      setSelectedPatientId("");
+                      setSelectedPatient(null);
+                    }
+                  }}
+                />
                 {patientSearch.length >= 2 && !selectedPatientId && (
                   <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
                     {loadingAdmissions ? (
@@ -375,10 +373,24 @@ export function IntakeOutputView() {
         </TabsContent>
 
         {/* ============================================================ */}
+        {/* HANDOVER */}
+        {/* ============================================================ */}
+        <TabsContent value="handover" className="space-y-4">
+          <HandoverPanel facilityId={activeFacilityId} />
+        </TabsContent>
+
+        {/* ============================================================ */}
         {/* ALERTS */}
         {/* ============================================================ */}
         <TabsContent value="alerts" className="space-y-4">
           <AlertsPanel facilityId={activeFacilityId} canAck={can("clinical.edit") || can("clinical.sign")} />
+        </TabsContent>
+
+        {/* ============================================================ */}
+        {/* CONFIG */}
+        {/* ============================================================ */}
+        <TabsContent value="config" className="space-y-4">
+          <AlertConfigPanel facilityId={activeFacilityId} />
         </TabsContent>
 
         {/* ============================================================ */}
@@ -1002,8 +1014,19 @@ function EntriesTable({ entries, patientId, canAmend, canSign, onInvalidate }: a
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search source / notes..." className="w-48 h-8 text-xs" />
-          <div className="ml-auto text-xs text-slate-500">{filtered.length} of {entries.length} entries</div>
+          <ClearableSearch value={search} onChange={setSearch} placeholder="Search source / notes..." className="w-56" inputClassName="h-8 text-xs" />
+          <div className="ml-auto flex items-center gap-2">
+            <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => window.print()}>
+              <Printer className="w-3.5 h-3.5" /> Print
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => {
+              const url = `/api/intake-output/export?patientId=${patientId}&format=csv`;
+              window.open(url, "_blank");
+            }}>
+              <Download className="w-3.5 h-3.5" /> CSV
+            </Button>
+            <div className="text-xs text-slate-500">{filtered.length} of {entries.length} entries</div>
+          </div>
         </div>
 
         {filtered.length === 0 ? (
@@ -1191,6 +1214,44 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
     status: "recorded",
   });
   const [saving, setSaving] = useState(false);
+  const [showIvCalc, setShowIvCalc] = useState(false);
+
+  // Fetch last entry of same type for "Copy Last" quick action
+  const { data: lastEntryData } = useQuery({
+    queryKey: ["io-last-entry", patient.id, entryType],
+    queryFn: () => fetchJson(`/api/intake-output?patientId=${patient.id}&view=list&limit=1`),
+    enabled: !!patient.id,
+  });
+  const lastEntry = (lastEntryData?.items || []).find((e: any) => e.entryType === entryType);
+
+  const copyLast = () => {
+    if (!lastEntry) return;
+    setForm({
+      ...form,
+      category: lastEntry.category || form.category,
+      source: lastEntry.source || "",
+      route: lastEntry.route || form.route,
+      collectionMethod: lastEntry.collectionMethod || form.collectionMethod,
+      drainLabel: lastEntry.drainLabel || "",
+      catheterStatus: lastEntry.catheterStatus || form.catheterStatus,
+      measurementType: lastEntry.measurementType || form.measurementType,
+      amount: String(lastEntry.amount),
+      unit: lastEntry.unit || "ml",
+      notes: lastEntry.notes || "",
+    });
+    toast.success("Copied from last entry — review and save");
+  };
+
+  // IV rate calculator: total volume ÷ hours = ml/h
+  const [ivTotalVolume, setIvTotalVolume] = useState("");
+  const [ivHours, setIvHours] = useState("");
+  const ivRate = ivTotalVolume && ivHours ? (Number(ivTotalVolume) / Number(ivHours)).toFixed(1) : null;
+  const applyIvRate = () => {
+    if (!ivRate) return;
+    setForm({ ...form, amount: String(Math.round(Number(ivRate))), source: form.source || `IV fluid ${ivTotalVolume}ml over ${ivHours}h`, category: "iv", route: "iv" });
+    setShowIvCalc(false);
+    toast.success(`Applied rate: ${ivRate} ml/h`);
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -1246,7 +1307,43 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
           <DialogDescription>
             Patient: {patient.firstName} {patient.lastName} ({patient.patientNumber})
           </DialogDescription>
+          {/* Quick actions */}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {lastEntry && (
+              <Button size="sm" variant="outline" onClick={copyLast} className="h-7 text-xs gap-1.5 bg-white">
+                <Copy className="w-3 h-3" /> Copy last {entryType} entry ({lastEntry.amount} {lastEntry.unit})
+              </Button>
+            )}
+            {isIntake && (
+              <Button size="sm" variant="outline" onClick={() => setShowIvCalc(!showIvCalc)} className="h-7 text-xs gap-1.5 bg-white">
+                <Calculator className="w-3 h-3" /> IV Rate Calculator
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
+        {/* IV Rate Calculator (collapsible) */}
+        {isIntake && showIvCalc && (
+          <div className="px-6 py-3 border-b bg-blue-50">
+            <div className="text-xs font-medium text-blue-900 mb-2 flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5" /> IV Flow Rate Calculator</div>
+            <div className="grid grid-cols-4 gap-2 items-end">
+              <div>
+                <Label className="text-[10px]">Total volume (ml)</Label>
+                <Input type="number" min="0" value={ivTotalVolume} onChange={(e) => setIvTotalVolume(e.target.value)} placeholder="e.g., 1000" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px]">Over (hours)</Label>
+                <Input type="number" min="0" step="0.5" value={ivHours} onChange={(e) => setIvHours(e.target.value)} placeholder="e.g., 8" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px]">Rate</Label>
+                <div className="h-8 flex items-center font-bold text-blue-700 text-sm">{ivRate ? `${ivRate} ml/h` : "—"}</div>
+              </div>
+              <Button size="sm" onClick={applyIvRate} disabled={!ivRate} className="h-8 bg-blue-600 hover:bg-blue-700">Apply</Button>
+            </div>
+            <div className="text-[10px] text-blue-700 mt-1">This is a documentation helper only — it calculates the hourly rate to record per hour. The system does NOT prescribe infusion rates.</div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -1912,10 +2009,31 @@ function ReportsPanel({ facilityId, patient }: any) {
             <div className="text-xs text-slate-500">
               {patient?.id ? `Patient: ${patient.firstName} ${patient.lastName}` : "No patient selected — only facility-wide reports available."}
             </div>
-            <Button onClick={generate} disabled={loading} className="gap-2 bg-teal-600 hover:bg-teal-700">
-              {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <FileBarChart className="w-4 h-4" />}
-              Generate Report
-            </Button>
+            <div className="flex gap-2">
+              {result && (
+                <Button variant="outline" onClick={() => window.print()} className="gap-2">
+                  <Printer className="w-4 h-4" /> Print Report
+                </Button>
+              )}
+              {result && patient?.id && (
+                <Button variant="outline" onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set("patientId", patient.id);
+                  if (patient.admissionId) params.set("admissionId", patient.admissionId);
+                  if (reportType === "daily" || reportType === "shift") params.set("date", date);
+                  if (reportType === "rolling24h" || reportType === "patient" || reportType === "urine" || reportType === "drain" || reportType === "audit" || reportType === "trend") {
+                    params.set("from", from); params.set("to", to);
+                  }
+                  window.open(`/api/intake-output/export?patientId=${patient.id}&format=csv`, "_blank");
+                }} className="gap-2">
+                  <Download className="w-4 h-4" /> CSV Export
+                </Button>
+              )}
+              <Button onClick={generate} disabled={loading} className="gap-2 bg-teal-600 hover:bg-teal-700">
+                {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <FileBarChart className="w-4 h-4" />}
+                Generate Report
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1928,5 +2046,416 @@ function ReportsPanel({ facilityId, patient }: any) {
         </Card>
       )}
     </div>
+  );
+}
+
+// =====================================================================
+// HANDOVER PANEL — nursing shift handover summary
+// =====================================================================
+function HandoverPanel({ facilityId }: { facilityId: string | null }) {
+  const [wardFilter, setWardFilter] = useState("all");
+  const { data: wardsData } = useQuery({
+    queryKey: ["io-wards", facilityId],
+    queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`),
+    enabled: !!facilityId,
+  });
+
+  const params = new URLSearchParams();
+  if (facilityId) params.set("facilityId", facilityId);
+  if (wardFilter !== "all") params.set("wardId", wardFilter);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["io-handover", facilityId, wardFilter],
+    queryFn: () => fetchJson(`/api/intake-output/handover${qs}`),
+    enabled: !!facilityId,
+  });
+
+  if (!facilityId) return <Card><CardContent className="p-6"><EmptyState title="Select a facility" icon={AlertCircle} /></CardContent></Card>;
+  if (isLoading) return <LoadingState rows={6} />;
+  if (isError) return <ErrorState message="Failed to load handover summary" onRetry={() => refetch()} />;
+
+  const items = data?.items || [];
+  const summary = data?.summary || {};
+
+  const handlePrint = () => window.print();
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <CardContent className="p-3 flex flex-wrap items-center gap-3">
+          <div>
+            <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200 capitalize">{data?.shiftName} shift</Badge>
+            <span className="ml-2 text-xs text-slate-500">
+              {data?.shiftStart && new Date(data.shiftStart).toLocaleString(undefined, { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
+              {" → "}
+              {data?.shiftEnd && new Date(data.shiftEnd).toLocaleString(undefined, { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}
+            </span>
+          </div>
+          <Select value={wardFilter} onValueChange={setWardFilter}>
+            <SelectTrigger className="w-48 h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All wards</SelectItem>
+              {(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" onClick={handlePrint} className="ml-auto gap-1.5 h-8"><Printer className="w-3.5 h-3.5" /> Print Handover</Button>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <MiniStatCard label="Patients" value={summary.totalPatients || 0} icon={Stethoscope} gradient="from-violet-500 to-violet-600" />
+        <MiniStatCard label="Monitored" value={summary.monitored || 0} icon={Play} gradient="from-cyan-500 to-cyan-600" />
+        <MiniStatCard label="With alerts" value={summary.withAlerts || 0} icon={BellRing} gradient="from-amber-500 to-orange-600" />
+        <MiniStatCard label="Missing entries" value={summary.withMissingEntries || 0} icon={AlertCircle} gradient="from-rose-500 to-rose-600" />
+        <MiniStatCard label="Shift net" value={fmtSignedMl((summary.shiftTotalIntake || 0) - (summary.shiftTotalOutput || 0))} icon={Activity} gradient="from-teal-500 to-cyan-600" />
+      </div>
+
+      {items.length === 0 ? (
+        <Card><CardContent className="p-6"><EmptyState title="No admitted patients" icon={Stethoscope} /></CardContent></Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-slate-50">
+                  <tr>
+                    <th className="text-left p-3 font-semibold text-slate-700">Patient / Bed</th>
+                    <th className="text-center p-3 font-semibold text-slate-700">Monitor</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">Shift Intake</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">Shift Output</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">Shift Net</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">24h Urine</th>
+                    <th className="text-right p-3 font-semibold text-slate-700">24h Net</th>
+                    <th className="text-left p-3 font-semibold text-slate-700">Alerts / Missing</th>
+                    <th className="text-left p-3 font-semibold text-slate-700">Last Entry</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((it: any) => (
+                    <tr key={it.patientId} className="border-b hover:bg-slate-50">
+                      <td className="p-3">
+                        <div className="font-medium text-slate-900">{it.patient?.firstName} {it.patient?.lastName}</div>
+                        <div className="text-[10px] text-slate-500">
+                          {it.patient?.patientNumber} • {it.ward?.name} / Bed {it.bed?.bedNumber}
+                          {it.admission?.admissionReason && <span className="ml-1">• {it.admission.admissionReason}</span>}
+                        </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        {it.monitoring.active ? (
+                          <Badge className="bg-cyan-100 text-cyan-700 text-[10px] capitalize">{it.monitoring.level}</Badge>
+                        ) : <span className="text-slate-400 text-xs">—</span>}
+                        {it.monitoring.dailyLimitMl && <div className="text-[9px] text-rose-700 mt-0.5">Restriction: {fmtMl(it.monitoring.dailyLimitMl)}</div>}
+                      </td>
+                      <td className="p-3 text-right text-emerald-700 font-medium">{fmtMl(it.shift.intake)}</td>
+                      <td className="p-3 text-right text-amber-700 font-medium">{fmtMl(it.shift.output)}</td>
+                      <td className={`p-3 text-right font-medium ${it.shift.net >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSignedMl(it.shift.net)}</td>
+                      <td className="p-3 text-right text-violet-700 font-medium">
+                        {fmtMl(it.rolling24h.urine)}
+                        <div className="text-[9px] text-slate-500">{it.rolling24h.urinePerHour ? `${it.rolling24h.urinePerHour.toFixed(0)} ml/h` : ""}</div>
+                      </td>
+                      <td className={`p-3 text-right font-medium ${it.rolling24h.net >= 0 ? "text-blue-700" : "text-rose-700"}`}>{fmtSignedMl(it.rolling24h.net)}</td>
+                      <td className="p-3">
+                        {it.alerts.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {it.alerts.slice(0, 2).map((a: any) => (
+                              <Badge key={a.id} className={`text-[9px] ${ALERT_SEVERITY_COLOR[a.severity] || ""}`}>{a.severity}</Badge>
+                            ))}
+                            {it.alerts.length > 2 && <span className="text-[9px] text-slate-500">+{it.alerts.length - 2}</span>}
+                          </div>
+                        )}
+                        {it.missingSlots > 0 && (
+                          <Badge variant="outline" className="text-rose-700 border-rose-200 bg-rose-50 text-[9px] mt-1">⚠ {it.missingSlots} missing</Badge>
+                        )}
+                      </td>
+                      <td className="p-3 text-xs text-slate-500">
+                        {it.lastEntry ? (
+                          <>
+                            <Badge className={`text-[9px] mr-1 ${ENTRY_TYPE_COLOR[it.lastEntry.entryType] || ""}`}>{it.lastEntry.entryType}</Badge>
+                            {fmtMl(it.lastEntry.amount)} {formatRelative(it.lastEntry.eventAt)}
+                          </>
+                        ) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// ALERT CONFIG PANEL — manage alert thresholds
+// =====================================================================
+function AlertConfigPanel({ facilityId }: { facilityId: string | null }) {
+  const qc = useQueryClient();
+  const [showNew, setShowNew] = useState(false);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["io-alert-configs", facilityId],
+    queryFn: () => fetchJson(`/api/intake-output/alert-configs?facilityId=${facilityId || ""}`),
+    enabled: !!facilityId,
+  });
+
+  const toggleActive = async (cfg: any) => {
+    try {
+      const res = await fetch("/api/intake-output/alert-configs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ configId: cfg.id, active: !cfg.active }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(`Config ${!cfg.active ? "activated" : "deactivated"}`);
+      qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] });
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const deleteConfig = async (cfg: any) => {
+    if (!confirm(`Deactivate alert config "${cfg.name}"?`)) return;
+    try {
+      const res = await fetch(`/api/intake-output/alert-configs?configId=${cfg.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      toast.success("Config deactivated");
+      qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] });
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  if (!facilityId) return <Card><CardContent className="p-6"><EmptyState title="Select a facility" icon={AlertCircle} /></CardContent></Card>;
+  if (isLoading) return <LoadingState rows={4} />;
+  if (isError) return <ErrorState message="Failed to load alert configs" onRetry={() => refetch()} />;
+
+  const items = data?.items || [];
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <CardContent className="p-3 flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-slate-700">Alert Configurations</div>
+            <div className="text-xs text-slate-500">Define thresholds that automatically raise alerts when documented values cross them. Configurable per facility / ward / patient group.</div>
+          </div>
+          <Button onClick={() => setShowNew(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4" /> New Config</Button>
+        </CardContent>
+      </Card>
+
+      {items.length === 0 ? (
+        <Card><CardContent className="p-6">
+          <EmptyState
+            title="No alert configs yet"
+            description="Create your first alert config to start receiving automatic notifications when documented values cross thresholds (e.g., low urine output, missing entries, negative balance)."
+            icon={BellRing}
+          />
+        </CardContent></Card>
+      ) : (
+        <div className="space-y-2">
+          {items.map((cfg: any) => (
+            <Card key={cfg.id} className={!cfg.active ? "opacity-60" : ""}>
+              <CardContent className="p-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-slate-900">{cfg.name}</span>
+                    <Badge className={`text-[10px] ${ALERT_SEVERITY_COLOR[cfg.severity] || ""}`}>{cfg.severity}</Badge>
+                    <Badge variant="outline" className="text-[10px] capitalize">{cfg.code?.replace(/_/g, " ")}</Badge>
+                    {cfg.ward && <Badge variant="outline" className="text-[10px]">{cfg.ward.name}</Badge>}
+                    <Badge variant="outline" className="text-[10px]">{cfg.patientGroup || "all"}</Badge>
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    When <span className="font-mono">{cfg.metric.replace(/_/g, " ")}</span>
+                    {" "}<span className="font-mono">{cfg.operator}</span>
+                    {" "}<span className="font-mono font-bold">{cfg.threshold}</span>
+                    {" "}over <span className="font-mono">{cfg.windowMinutes} min</span> window
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditTarget(cfg)}>Edit</Button>
+                  <Button size="sm" variant="ghost" className={`h-7 text-xs ${cfg.active ? "text-amber-600" : "text-emerald-600"}`} onClick={() => toggleActive(cfg)}>
+                    {cfg.active ? "Deactivate" : "Activate"}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs text-rose-600" onClick={() => deleteConfig(cfg)}>Delete</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Card>
+        <CardContent className="p-4 bg-blue-50 border-blue-200">
+          <div className="text-xs text-blue-900">
+            <strong>How alerts work:</strong> The system automatically evaluates all active configs after each I&O entry is recorded.
+            When a threshold is crossed, an alert is raised in the Alerts tab and audit-logged. When the value returns to normal range,
+            the alert is auto-resolved. The system NEVER diagnoses — alerts simply state "Configured threshold reached" with the actual value.
+          </div>
+        </CardContent>
+      </Card>
+
+      {showNew && <AlertConfigDialog facilityId={facilityId} onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] }); }} />}
+      {editTarget && <AlertConfigDialog facilityId={facilityId} existing={editTarget} onClose={() => setEditTarget(null)} onSaved={() => { setEditTarget(null); qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] }); }} />}
+    </div>
+  );
+}
+
+function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
+  const isEdit = !!existing;
+  const [form, setForm] = useState<any>(existing || {
+    name: "",
+    code: "low_urine",
+    metric: "urine_output_per_hour",
+    operator: "lt",
+    threshold: 30,
+    windowMinutes: 1440,
+    patientGroup: "all",
+    wardId: "",
+    severity: "warning",
+    active: true,
+  });
+
+  const { data: wardsData } = useQuery({
+    queryKey: ["io-cfg-wards", facilityId],
+    queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId}`),
+    enabled: !!facilityId,
+  });
+
+  const submit = async () => {
+    if (!form.name || form.threshold == null) { toast.error("Name and threshold are required"); return; }
+    try {
+      const url = "/api/intake-output/alert-configs";
+      const method = isEdit ? "PATCH" : "POST";
+      const body = isEdit
+        ? { configId: existing.id, name: form.name, threshold: Number(form.threshold), operator: form.operator, severity: form.severity, active: form.active, windowMinutes: Number(form.windowMinutes), patientGroup: form.patientGroup, wardId: form.wardId || null }
+        : { facilityId, name: form.name, code: form.code, metric: form.metric, operator: form.operator, threshold: Number(form.threshold), windowMinutes: Number(form.windowMinutes), patientGroup: form.patientGroup, wardId: form.wardId || null, severity: form.severity, active: form.active };
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) { const e = await safeJson(res); throw new Error(e.error || "Failed"); }
+      toast.success(isEdit ? "Config updated" : "Config created");
+      onSaved();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+          <DialogTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-cyan-600" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div>
+            <FieldLabel required>Config Name</FieldLabel>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Low urine output — adult" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel required>Alert Code</FieldLabel>
+              <Select value={form.code} onValueChange={(v) => setForm({ ...form, code: v })} disabled={isEdit}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low_urine">Low urine output</SelectItem>
+                  <SelectItem value="high_output">High output</SelectItem>
+                  <SelectItem value="negative_balance">Negative balance</SelectItem>
+                  <SelectItem value="positive_balance">Positive balance</SelectItem>
+                  <SelectItem value="missing_entry">Missing entries</SelectItem>
+                  <SelectItem value="documented_change">Documented change</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <FieldLabel required>Metric</FieldLabel>
+              <Select value={form.metric} onValueChange={(v) => setForm({ ...form, metric: v })} disabled={isEdit}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="urine_output_per_hour">Urine output (ml/h)</SelectItem>
+                  <SelectItem value="urine_output_per_kg_per_hour">Urine output (ml/kg/h)</SelectItem>
+                  <SelectItem value="urine_output_24h">Urine output 24h (ml)</SelectItem>
+                  <SelectItem value="net_balance_24h">Net balance 24h (ml)</SelectItem>
+                  <SelectItem value="total_intake_24h">Total intake 24h (ml)</SelectItem>
+                  <SelectItem value="total_output_24h">Total output 24h (ml)</SelectItem>
+                  <SelectItem value="drain_output_24h">Drain output 24h (ml)</SelectItem>
+                  <SelectItem value="missing_entries">Missing documentation slots</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <FieldLabel required>Operator</FieldLabel>
+              <Select value={form.operator} onValueChange={(v) => setForm({ ...form, operator: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lt">&lt; less than</SelectItem>
+                  <SelectItem value="gt">&gt; greater than</SelectItem>
+                  <SelectItem value="lte">≤ less or equal</SelectItem>
+                  <SelectItem value="gte">≥ greater or equal</SelectItem>
+                  <SelectItem value="eq">= equals</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <FieldLabel required>Threshold</FieldLabel>
+              <Input type="number" step="any" value={form.threshold} onChange={(e) => setForm({ ...form, threshold: e.target.value })} />
+            </div>
+            <div>
+              <FieldLabel required>Window (min)</FieldLabel>
+              <Select value={String(form.windowMinutes)} onValueChange={(v) => setForm({ ...form, windowMinutes: Number(v) })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="240">4 hours</SelectItem>
+                  <SelectItem value="480">8 hours</SelectItem>
+                  <SelectItem value="720">12 hours</SelectItem>
+                  <SelectItem value="1440">24 hours</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Patient Group</Label>
+              <Select value={form.patientGroup} onValueChange={(v) => setForm({ ...form, patientGroup: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All patients</SelectItem>
+                  <SelectItem value="icu">ICU only</SelectItem>
+                  <SelectItem value="pediatric">Pediatric</SelectItem>
+                  <SelectItem value="maternity">Maternity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Ward (optional)</Label>
+              <Select value={form.wardId || "_none"} onValueChange={(v) => setForm({ ...form, wardId: v === "_none" ? "" : v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">All wards</SelectItem>
+                  {(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <FieldLabel required>Severity</FieldLabel>
+            <Select value={form.severity} onValueChange={(v) => setForm({ ...form, severity: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info">Info</SelectItem>
+                <SelectItem value="warning">Warning</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
+            <strong>Preview:</strong> Alert fires when <span className="font-mono">{form.metric.replace(/_/g, " ")}</span> <span className="font-mono">{form.operator}</span> <span className="font-mono font-bold">{form.threshold}</span> over the last <span className="font-mono">{form.windowMinutes} min</span>.
+            <br /><span className="text-[10px]">⚠ The system never diagnoses — alerts only state "Configured threshold reached" with the actual documented value.</span>
+          </div>
+        </div>
+        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} className="bg-cyan-600 hover:bg-cyan-700">{isEdit ? "Update Config" : "Create Config"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

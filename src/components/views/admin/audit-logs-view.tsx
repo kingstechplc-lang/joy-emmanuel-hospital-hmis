@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollText, Search, Download, ChevronLeft, ChevronRight, FileJson } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -190,10 +190,7 @@ export function AuditLogsView() {
         <CardContent className="p-3 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1.5 md:col-span-1">
             <Label className="text-xs">Free-text Search</Label>
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-              <Input className="pl-8" placeholder="Action, resource ID, reason..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} />
-            </div>
+            <ClearableSearch value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Action, resource ID, reason..." />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Action</Label>

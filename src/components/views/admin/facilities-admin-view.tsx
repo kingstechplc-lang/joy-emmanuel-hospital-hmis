@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Building2, Search, Plus, Edit, Network, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -97,7 +97,7 @@ export function FacilitiesAdminView() {
         <CardContent className="p-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by name, code, or city" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by name, code, or city" className="pl-0" />
           </div>
         </CardContent>
       </Card>

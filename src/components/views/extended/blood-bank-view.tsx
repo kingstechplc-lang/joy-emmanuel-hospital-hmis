@@ -18,8 +18,7 @@ import {
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
-  safeJson, PageHeader, MiniStatCard,
-} from "@/components/ui-helpers";
+  safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
@@ -210,7 +209,7 @@ function DonorsTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search donors..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search donors..." className="pl-0" />
           </div>
           <Select value={bgFilter} onValueChange={setBgFilter}><SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Blood Groups</SelectItem>{BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}</SelectContent></Select>
           <Select value={eligibilityFilter} onValueChange={setEligibilityFilter}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Eligibility</SelectItem><SelectItem value="eligible">Eligible</SelectItem><SelectItem value="deferred">Deferred</SelectItem><SelectItem value="banned">Banned</SelectItem></SelectContent></Select>
@@ -378,7 +377,7 @@ function InventoryTab({ canManage }: { canManage: boolean }) {
 
       <Card className="shadow-sm border-slate-200">
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
-          <div className="relative flex-1 min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /><Input placeholder="Search by unit number..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" /></div>
+          <div className="relative flex-1 min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /><ClearableSearch value={search} onChange={setSearch} placeholder="Search by unit number..." className="pl-0" /></div>
           <Select value={bgFilter} onValueChange={setBgFilter}><SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Groups</SelectItem>{BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}</SelectContent></Select>
           <Select value={compFilter} onValueChange={setCompFilter}><SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Components</SelectItem>{COMPONENT_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="available">Available</SelectItem><SelectItem value="reserved">Reserved</SelectItem><SelectItem value="issued">Issued</SelectItem><SelectItem value="transfused">Transfused</SelectItem><SelectItem value="expired">Expired</SelectItem><SelectItem value="discarded">Discarded</SelectItem></SelectContent></Select>
@@ -482,7 +481,7 @@ function TransfusionsTab({ canManage }: { canManage: boolean }) {
 
       <Card className="shadow-sm border-slate-200">
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
-          <div className="relative flex-1 min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /><Input placeholder="Search by patient or transfusion #" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" /></div>
+          <div className="relative flex-1 min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /><ClearableSearch value={search} onChange={setSearch} placeholder="Search by patient or transfusion #" className="pl-0" /></div>
           <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="in_progress">In Progress</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="aborted">Aborted</SelectItem></SelectContent></Select>
           <Button size="sm" variant="outline" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Refreshed", error: "Failed" }); }} disabled={isFetching}><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
         </CardContent>
@@ -555,7 +554,7 @@ function CrossmatchTab({ canManage }: { canManage: boolean }) {
 
       <Card className="shadow-sm border-slate-200">
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
-          <div className="relative flex-1 min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /><Input placeholder="Search by patient or unit..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" /></div>
+          <div className="relative flex-1 min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /><ClearableSearch value={search} onChange={setSearch} placeholder="Search by patient or unit..." className="pl-0" /></div>
           <Select value={resultFilter} onValueChange={setResultFilter}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Results</SelectItem><SelectItem value="compatible">Compatible</SelectItem><SelectItem value="incompatible">Incompatible</SelectItem><SelectItem value="pending">Pending</SelectItem></SelectContent></Select>
           <Button size="sm" variant="outline" onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Refreshed", error: "Failed" }); }} disabled={isFetching}><RefreshCcw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
           {canManage && <Button size="sm" onClick={() => setShowForm(true)} className="bg-gradient-to-r from-rose-500 to-red-600 text-white"><Plus className="w-4 h-4 mr-1" /> New Crossmatch</Button>}

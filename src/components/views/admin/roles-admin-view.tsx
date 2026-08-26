@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BadgeCheck, Search, Plus, Edit, Trash2, KeyRound, Shield, Save } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -83,7 +83,7 @@ export function RolesAdminView() {
         <CardContent className="p-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search roles by name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search roles by name or code" className="pl-0" />
           </div>
         </CardContent>
       </Card>

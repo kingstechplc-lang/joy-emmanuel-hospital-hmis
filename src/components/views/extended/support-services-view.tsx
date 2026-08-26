@@ -18,8 +18,7 @@ import {
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
-  safeJson, PageHeader, MiniStatCard,
-} from "@/components/ui-helpers";
+  safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
@@ -227,7 +226,7 @@ function RequestsTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search by title, location, patient..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by title, location, patient..." className="pl-0" />
           </div>
           <Select value={serviceType} onValueChange={setServiceType}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Service" /></SelectTrigger>
@@ -497,7 +496,7 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search maintenance..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search maintenance..." className="pl-0" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
@@ -642,7 +641,7 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search inspections..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search inspections..." className="pl-0" />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>

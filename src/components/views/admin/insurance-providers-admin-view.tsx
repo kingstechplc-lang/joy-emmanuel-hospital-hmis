@@ -18,8 +18,7 @@ import {
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, PageHeader, MiniStatCard,
-  formatDate, safeJson,
-} from "@/components/ui-helpers";
+  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   PROVIDER_TYPES, PROVIDER_STATUSES, statusColor, labelOf, fetchJson,
@@ -168,7 +167,7 @@ function ProvidersTab(props: any) {
         <CardContent className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="sm:col-span-2 lg:col-span-2 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by name, code, legal name, email, phone..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by name, code, legal name, email, phone..." className="pl-0" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger><SelectValue /></SelectTrigger>

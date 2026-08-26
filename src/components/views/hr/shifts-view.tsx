@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarClock, Search, Plus, Check, X, Clock, Ban } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { PageHeader } from "@/components/ui-helpers";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -133,7 +133,7 @@ function ShiftsTab() {
         <div className="flex flex-col md:flex-row gap-2 flex-1">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search by staff name or number" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by staff name or number" className="pl-0" />
           </div>
           <Select value={shiftType || undefined} onValueChange={setShiftType}>
             <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>

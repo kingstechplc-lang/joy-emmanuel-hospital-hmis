@@ -1,8 +1,9 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, SearchX } from "lucide-react";
+import { AlertCircle, SearchX, Search, X } from "lucide-react";
 import { ReactNode } from "react";
+import { Input } from "@/components/ui/input";
 
 // =====================================================================
 // SAFE FETCH HELPERS — handle empty/error responses gracefully
@@ -382,4 +383,65 @@ export function calculateAge(dob: string | Date | null | undefined) {
   const diff = Date.now() - d.getTime();
   const ageDate = new Date(diff);
   return Math.abs(ageDate.getUTCFullYear() - 1970);
+}
+
+// =====================================================================
+// CLEARABLE SEARCH INPUT — reusable search bar with a clear (X) button.
+// Drop-in replacement for:
+//   <div className="relative">
+//     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+//     <Input value={search} onChange={...} className="pl-9" />
+//   </div>
+//
+// Usage:
+//   <ClearableSearch value={search} onChange={setSearch} placeholder="Search..." />
+//
+// Optional props:
+//   - onClear: extra callback when X is clicked (e.g., reset page to 0)
+//   - className: wrapper styling
+//   - inputClassName: input styling
+// =====================================================================
+export function ClearableSearch({
+  value,
+  onChange,
+  onClear,
+  placeholder = "Search...",
+  className = "",
+  inputClassName = "",
+  autoFocus = false,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onClear?: () => void;
+  placeholder?: string;
+  className?: string;
+  inputClassName?: string;
+  autoFocus?: boolean;
+}) {
+  const handleClear = () => {
+    onChange("");
+    if (onClear) onClear();
+  };
+  return (
+    <div className={`relative ${className}`}>
+      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        className={`pl-9 ${value ? "pr-9" : ""} ${inputClassName}`}
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label="Clear search"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full p-0.5 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
 }

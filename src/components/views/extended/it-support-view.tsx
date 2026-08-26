@@ -18,8 +18,7 @@ import {
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative,
-  safeJson, PageHeader, MiniStatCard,
-} from "@/components/ui-helpers";
+  safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -187,7 +186,7 @@ function TicketTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search by subject, description..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by subject, description..." className="pl-0" />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
@@ -531,7 +530,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search knowledge base..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search knowledge base..." className="pl-0" />
           </div>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
@@ -663,7 +662,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search by tag, serial, model..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by tag, serial, model..." className="pl-0" />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>

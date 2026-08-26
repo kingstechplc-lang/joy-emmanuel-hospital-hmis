@@ -17,7 +17,7 @@ import {
   Archive, RotateCcw, MapPin, Phone, Clock, User, FileText, Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency, safeJson} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -137,7 +137,7 @@ export function DepartmentsAdminView() {
         <CardContent className="p-3 flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input className="pl-8" placeholder="Search departments by name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search departments by name or code" className="pl-0" />
           </div>
           <Select value={categoryFilter || undefined} onValueChange={(v) => setCategoryFilter(v || "all")}>
             <SelectTrigger className="md:w-64">

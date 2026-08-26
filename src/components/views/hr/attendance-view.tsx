@@ -46,7 +46,7 @@ import {EmptyState,
   LoadingState,
   ErrorState,
   StatusBadge,
-  formatDate, safeJson} from "@/components/ui-helpers";
+  formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { PageHeader } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -263,12 +263,7 @@ function TodayTab() {
         <CardContent className="p-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-2 top-2.5 text-slate-400" />
-            <Input
-              className="pl-8"
-              placeholder="Search staff by name, number, or role"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search staff by name, number, or role" className="pl-0" />
           </div>
         </CardContent>
       </Card>

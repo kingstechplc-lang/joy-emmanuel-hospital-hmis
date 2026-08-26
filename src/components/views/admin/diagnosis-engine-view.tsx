@@ -16,8 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard,
-} from "@/components/ui-helpers";
+  EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -161,7 +160,7 @@ function CatalogTab({ canManage, canImport }: { canManage: boolean; canImport: b
         <CardContent className="p-3 flex flex-wrap gap-2 items-center bg-gradient-to-r from-slate-50/50 to-transparent">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
-            <Input placeholder="Search by name, code, or synonym..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+            <ClearableSearch value={search} onChange={setSearch} placeholder="Search by name, code, or synonym..." className="pl-0" />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>

@@ -630,6 +630,123 @@ export async function POST(req: Request) {
     },
   });
 
+  // ---- Auto-evaluate alerts after each entry (fire-and-forget, errors swallowed) ----
+  // This ensures alerts are raised promptly without requiring a manual button click.
+  try {
+    const configs = await db.intakeOutputAlertConfig.count({
+      where: { facilityId, active: true },
+    });
+    if (configs > 0) {
+      // Inline evaluation (small cost — typically <5 configs per facility)
+      const now = new Date();
+      const window24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const recentEntries = await db.intakeOutputEntry.findMany({
+        where: { patientId, status: { not: "cancelled" }, eventAt: { gte: window24h } },
+        orderBy: { eventAt: "desc" },
+      });
+      const urineOutput24h = recentEntries
+        .filter((e) => e.entryType === "output" && (e.category === "urine" || e.fluidType === "urine"))
+        .reduce((s, e) => s + e.amount, 0);
+      const urinePerHour = urineOutput24h / 24;
+      const totalIntake24h = recentEntries.filter((e) => e.entryType === "intake").reduce((s, e) => s + e.amount, 0);
+      const totalOutput24h = recentEntries.filter((e) => e.entryType === "output").reduce((s, e) => s + e.amount, 0);
+      const netBalance24h = totalIntake24h - totalOutput24h;
+      const drainOutput24h = recentEntries
+        .filter((e) => e.entryType === "output" && (e.category === "drains" || e.fluidType === "drainage"))
+        .reduce((s, e) => s + e.amount, 0);
+
+      // Missing entries
+      let missingCount = 0;
+      const mp = await db.intakeOutputMonitoringPeriod.findFirst({
+        where: { patientId, status: "active" },
+        orderBy: { startedAt: "desc" },
+      });
+      if (mp) {
+        const intervalMin = mp.intervalMinutes || 60;
+        const slotCount = Math.floor((24 * 60) / intervalMin);
+        for (let i = 0; i < slotCount; i++) {
+          const slotStart = new Date(window24h.getTime() + i * intervalMin * 60 * 1000);
+          const slotEnd = new Date(slotStart.getTime() + intervalMin * 60 * 1000);
+          if (slotStart > now) break;
+          const hasEntry = recentEntries.some((e) => { const t = new Date(e.eventAt); return t >= slotStart && t < slotEnd; });
+          if (!hasEntry) missingCount++;
+        }
+      }
+
+      const latestVitals = await db.vitalSign.findFirst({
+        where: { patientId, weight: { not: null } },
+        orderBy: { recordedAt: "desc" },
+        select: { weight: true },
+      });
+      const weightKg = latestVitals?.weight || null;
+      const urinePerKgPerHour = weightKg ? urinePerHour / weightKg : null;
+
+      const metrics: Record<string, number> = {
+        urine_output_per_hour: urinePerHour,
+        urine_output_per_kg_per_hour: urinePerKgPerHour ?? -1,
+        urine_output_24h: urineOutput24h,
+        net_balance_24h: netBalance24h,
+        total_intake_24h: totalIntake24h,
+        total_output_24h: totalOutput24h,
+        drain_output_24h: drainOutput24h,
+        missing_entries: missingCount,
+      };
+
+      const metricLabels: Record<string, string> = {
+        urine_output_per_hour: "Urine output (ml/h)",
+        urine_output_per_kg_per_hour: "Urine output (ml/kg/h)",
+        urine_output_24h: "Urine output 24h (ml)",
+        net_balance_24h: "Net fluid balance 24h (ml)",
+        total_intake_24h: "Total intake 24h (ml)",
+        total_output_24h: "Total output 24h (ml)",
+        drain_output_24h: "Drain output 24h (ml)",
+        missing_entries: "Missing documentation slots",
+      };
+
+      const allConfigs = await db.intakeOutputAlertConfig.findMany({
+        where: { facilityId, active: true },
+      });
+      for (const cfg of allConfigs) {
+        const val = metrics[cfg.metric];
+        if (val == null || val === -1) continue;
+        let triggered = false;
+        switch (cfg.operator) {
+          case "lt": triggered = val < cfg.threshold; break;
+          case "gt": triggered = val > cfg.threshold; break;
+          case "lte": triggered = val <= cfg.threshold; break;
+          case "gte": triggered = val >= cfg.threshold; break;
+          case "eq": triggered = val === cfg.threshold; break;
+        }
+        const existing = await db.intakeOutputAlert.findFirst({
+          where: { patientId, configId: cfg.id, status: "active" },
+        });
+        if (triggered && !existing) {
+          await db.intakeOutputAlert.create({
+            data: {
+              organizationId: session.user.organizationId,
+              facilityId,
+              patientId,
+              admissionId: admissionId || null,
+              configId: cfg.id,
+              code: cfg.code,
+              severity: cfg.severity,
+              title: cfg.name,
+              message: `Configured threshold reached: ${metricLabels[cfg.metric] || cfg.metric} ${cfg.operator} ${cfg.threshold} (actual: ${val.toFixed(val < 10 ? 2 : 0)}).`,
+              metric: cfg.metric,
+              thresholdValue: cfg.threshold,
+              actualValue: val,
+            },
+          });
+        } else if (!triggered && existing) {
+          await db.intakeOutputAlert.update({ where: { id: existing.id }, data: { status: "resolved" } });
+        }
+      }
+    }
+  } catch (e) {
+    // Don't fail the entry creation if alert evaluation fails
+    console.error("Alert evaluation failed:", e);
+  }
+
   return NextResponse.json({ item: entry }, { status: 201 });
 }
 
