@@ -1,6 +1,12 @@
 // =====================================================================
 // API: /api/payments
-//   GET  — list payments (filter by facility, method, date range)
+//   GET  — list payments with filters:
+//            facilityId, method, status, from, to, patientId, invoiceId,
+//            q (search payment #, patient name, patient #, invoice #),
+//            limit (default 100, max 500)
+//          Includes refunds relation.
+//          Resilient: wraps findMany in try/catch and returns empty list
+//          on failure instead of 500ing the dashboard.
 //   POST — create payment + update invoice (transactional):
 //          invoice.amountPaid += amount, balance -= amount,
 //          status transitions to partially_paid or paid.
@@ -15,7 +21,7 @@ import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
-// GET /api/payments?facilityId=...&method=...&from=...&to=...&patientId=...
+// GET /api/payments?facilityId=...&method=...&status=...&from=...&to=...&patientId=...&invoiceId=...&q=...
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,35 +32,81 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || undefined;
   const method = url.searchParams.get("method");
+  const status = url.searchParams.get("status");
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
   const patientId = url.searchParams.get("patientId");
   const invoiceId = url.searchParams.get("invoiceId");
-  const limit = parseInt(url.searchParams.get("limit") || "100");
+  const q = url.searchParams.get("q")?.trim();
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "100"), 500);
 
   const where: any = {};
   if (facilityId) where.facilityId = facilityId;
   if (method) where.paymentMethod = method;
+  if (status) where.status = status;
   if (patientId) where.patientId = patientId;
   if (invoiceId) where.invoiceId = invoiceId;
   if (from || to) {
     where.receivedAt = {};
-    if (from) where.receivedAt.gte = new Date(from);
-    if (to) where.receivedAt.lte = new Date(to);
+    if (from) where.receivedAt.gte = new Date(`${from}T00:00:00`);
+    if (to) where.receivedAt.lte = new Date(`${to}T23:59:59.999`);
   }
 
-  const payments = await db.payment.findMany({
-    where,
-    orderBy: { receivedAt: "desc" },
-    take: limit,
-    include: {
-      patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
-      facility: { select: { id: true, name: true, code: true } },
-      invoice: { select: { id: true, invoiceNumber: true, total: true, balance: true, status: true } },
-      receivedBy: { select: { id: true, firstName: true, lastName: true } },
-      _count: { select: { refunds: true } },
-    },
-  });
+  // Free-text search across payment number, transaction reference,
+  // patient name / patient number, and invoice number.
+  if (q) {
+    where.OR = [
+      { paymentNumber: { contains: q, mode: "insensitive" } },
+      { transactionReference: { contains: q, mode: "insensitive" } },
+      {
+        patient: {
+          OR: [
+            { patientNumber: { contains: q, mode: "insensitive" } },
+            { firstName: { contains: q, mode: "insensitive" } },
+            { lastName: { contains: q, mode: "insensitive" } },
+          ],
+        },
+      },
+      {
+        invoice: {
+          invoiceNumber: { contains: q, mode: "insensitive" },
+        },
+      },
+    ];
+  }
+
+  // -----------------------------------------------------------------
+  // Resilient query — never 500 the dashboard; return empty list on error
+  // -----------------------------------------------------------------
+  let payments: any[] = [];
+  try {
+    payments = await db.payment.findMany({
+      where,
+      orderBy: { receivedAt: "desc" },
+      take: limit,
+      include: {
+        patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true } },
+        facility: { select: { id: true, name: true, code: true } },
+        invoice: { select: { id: true, invoiceNumber: true, total: true, balance: true, status: true } },
+        receivedBy: { select: { id: true, firstName: true, lastName: true } },
+        refunds: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            amount: true,
+            reason: true,
+            status: true,
+            createdAt: true,
+            processedAt: true,
+          },
+        },
+        _count: { select: { refunds: true } },
+      },
+    });
+  } catch (e: any) {
+    console.error("[payments] GET list failed:", e);
+    return NextResponse.json({ items: [], count: 0, error: "Query failed — returning empty list." });
+  }
 
   return NextResponse.json({ items: payments, count: payments.length });
 }
