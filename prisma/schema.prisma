@@ -394,6 +394,11 @@ model User {
   refunds                    Refund[]                   @relation("refundProcessedBy")
   refundsRequested           Refund[]                   @relation("refundRequestedBy")
   refundsApproved            Refund[]                   @relation("refundApprovedBy")
+  refundsReviewed            Refund[]                   @relation("refundReviewedBy")
+  refundsRejected            Refund[]                   @relation("refundRejectedBy")
+  refundsCancelled           Refund[]                   @relation("refundCancelledBy")
+  refundsReversed            Refund[]                   @relation("refundReversedBy")
+  refundsVerified            Refund[]                   @relation("refundVerifiedBy")
   creditNotesIssued          CreditNote[]               @relation("creditNoteIssuer")
   invoiceAdjustmentsApproved InvoiceAdjustment[]        @relation("adjustmentApprover")
   purchaseOrders             PurchaseOrder[]            @relation("poRequestedBy")
@@ -4402,28 +4407,67 @@ model Payment {
 }
 
 model Refund {
-  id            String    @id @default(cuid())
-  paymentId     String
-  payment       Payment   @relation(fields: [paymentId], references: [id])
-  invoiceId     String
-  invoice       Invoice   @relation(fields: [invoiceId], references: [id])
-  amount        Float
-  reason        String?
-  refundMethod  String? // cash | mobile_money | card | bank | other
-  status        String    @default("pending") // pending | approved | processed | rejected
-  requestedById String?
-  requestedBy   User?     @relation("refundRequestedBy", fields: [requestedById], references: [id])
-  approvedById  String?
-  approvedBy    User?     @relation("refundApprovedBy", fields: [approvedById], references: [id])
-  processedById String?
-  processedBy   User?     @relation("refundProcessedBy", fields: [processedById], references: [id])
-  processedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  refundNumber      String?   @unique // REF-2026-000001
+  paymentId         String
+  payment           Payment   @relation(fields: [paymentId], references: [id])
+  invoiceId         String
+  invoice           Invoice   @relation(fields: [invoiceId], references: [id])
+  patientId         String?
+  facilityId        String?
+  // Refund details
+  amount            Float
+  approvedAmount    Float?
+  processedAmount   Float?
+  reason            String?
+  refundType        String    @default("full") // full | partial | overpayment | deposit | credit_balance | duplicate_payment | service_cancellation | payment_error | other
+  refundSource      String? // patient_payment | insurance_payment | nhis_payment | corporate_payment | patient_deposit | credit_balance
+  refundMethod      String? // cash | mobile_money | card | bank | original_method | patient_credit | other
+  externalReference String?
+  notes             String?
+  // Status lifecycle
+  status            String    @default("pending") // pending | reviewed | approved | rejected | processing | completed | cancelled | reversed | failed
+  // Workflow timestamps
+  reviewedAt        DateTime?
+  reviewedById      String?
+  approvedAt        DateTime?
+  approvedById      String?
+  rejectedAt        DateTime?
+  rejectedById      String?
+  rejectionReason   String?
+  processedAt       DateTime?
+  processedById     String?
+  cancelledAt       DateTime?
+  cancelledById     String?
+  cancelReason      String?
+  reversedAt        DateTime?
+  reversedById      String?
+  reversalReason    String?
+  failedAt          DateTime?
+  failureReason     String?
+  retryCount        Int       @default(0)
+  // Verification
+  verifiedAt        DateTime?
+  verifiedById      String?
+  // Users
+  requestedById     String?
+  requestedBy       User?     @relation("refundRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy        User?     @relation("refundReviewedBy", fields: [reviewedById], references: [id])
+  approvedBy        User?     @relation("refundApprovedBy", fields: [approvedById], references: [id])
+  rejectedBy        User?     @relation("refundRejectedBy", fields: [rejectedById], references: [id])
+  processedBy       User?     @relation("refundProcessedBy", fields: [processedById], references: [id])
+  cancelledBy       User?     @relation("refundCancelledBy", fields: [cancelledById], references: [id])
+  reversedBy        User?     @relation("refundReversedBy", fields: [reversedById], references: [id])
+  verifiedBy        User?     @relation("refundVerifiedBy", fields: [verifiedById], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([paymentId, status])
   @@index([invoiceId, status])
   @@index([status, createdAt])
+  @@index([facilityId, status])
+  @@index([refundType, status])
+  @@index([refundMethod, status])
 }
 
 // ---------------------------------------------------------------------
