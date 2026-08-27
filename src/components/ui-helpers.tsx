@@ -1,8 +1,9 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, SearchX, Search, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { AlertCircle, SearchX, Search, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, HelpCircle } from "lucide-react";
 import { ReactNode, useState, useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -586,5 +587,38 @@ export function Pagination({
         </div>
       )}
     </div>
+  );
+}
+
+// =====================================================================
+// MODULE HELP — reusable help/tutorial dialog for any module.
+// =====================================================================
+export function ModuleHelp({ title, sections, buttonLabel = "Help" }: { title: string; sections: { title: string; content: string }[]; buttonLabel?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button size="sm" variant="ghost" onClick={() => setOpen(true)} className="gap-1.5 h-8 text-xs text-slate-500 hover:text-slate-700">
+        <HelpCircle className="w-4 h-4" /> {buttonLabel}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b bg-blue-50">
+            <DialogTitle className="flex items-center gap-2"><HelpCircle className="w-5 h-5 text-blue-600" /> {title} — Help &amp; Guide</DialogTitle>
+            <DialogDescription>Understand the terms, concepts, and how to use this module effectively.</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            {sections.map((s, i) => (
+              <div key={i} className="border-l-4 border-blue-200 pl-3">
+                <div className="text-sm font-semibold text-slate-900 mb-1">{s.title}</div>
+                <div className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{s.content}</div>
+              </div>
+            ))}
+          </div>
+          <div className="px-6 py-3 shrink-0 border-t bg-slate-50 flex justify-end">
+            <Button variant="outline" onClick={() => setOpen(false)} className="h-8 text-xs">Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

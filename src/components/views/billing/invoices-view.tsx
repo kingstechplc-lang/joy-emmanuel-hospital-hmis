@@ -19,12 +19,13 @@ import {
   Calendar, DollarSign, Filter, FilePlus, Check,
   ScrollText, BarChart3, AlertTriangle, FileSpreadsheet,
   ClipboardCheck, Hourglass, Send, Stamp, FileMinus, PenLine,
+  RefreshCcw, HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   EmptyState, LoadingState, ErrorState, StatusBadge,
   formatDate, safeJson, PageHeader, MiniStatCard,
-  ClearableSearch, usePagination, Pagination,
+  ClearableSearch, usePagination, Pagination, ModuleHelp,
 } from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
@@ -139,6 +140,128 @@ const PAYER_TYPE_FILTERS = [
 ];
 
 // ============================================================
+// HELP SECTIONS — tutorial content for the Invoices module
+// ============================================================
+const INVOICE_HELP_SECTIONS = [
+  {
+    title: "Invoice Lifecycle",
+    content: `Invoices follow a structured lifecycle:
+1. DRAFT — Created but not yet reviewed. Can be edited freely.
+2. PENDING REVIEW — Submitted for review by a finance user.
+3. APPROVED — Reviewed and approved for issuance.
+4. ISSUED — Officially issued to the patient/payer. Invoice number is generated. Financial fields are now locked.
+5. PARTIALLY PAID — Some payments have been recorded but balance remains.
+6. PAID — Full payment received. Balance is zero.
+7. OVERDUE — Past due date with outstanding balance.
+
+Exception statuses:
+• VOIDED — Cancelled after issuance (requires reason; blocked if payments exist).
+• CANCELLED — Cancelled before issuance.
+• REFUNDED — Full refund processed.
+• WRITTEN OFF — Outstanding balance written off (requires reason + amount).`,
+  },
+  {
+    title: "Payer Types & Responsibility",
+    content: `Each invoice has a payer type that determines who is responsible for payment:
+
+• SELF-PAY — Patient pays the full amount.
+• NHIS — National Health Insurance Scheme covers eligible services. Patient pays any co-pay or non-covered services.
+• PRIVATE INSURANCE — Insurance provider covers a portion. Patient pays co-pay/deductible.
+• CORPORATE — Employer/organization covers the bill. Patient may have no responsibility.
+• GOVERNMENT — Government-sponsored coverage.
+
+The "Payer Responsibility" fields let you split the total between payer and patient. For example:
+• Total: GHS 1,000
+• Insurance responsibility: GHS 700
+• Patient responsibility: GHS 300`,
+  },
+  {
+    title: "Invoice Types",
+    content: `Invoice types help categorize billing:
+• PATIENT — General patient invoice
+• OUTPATIENT — OPD/clinic visit
+• INPATIENT — Admission-related (linked to admission)
+• EMERGENCY — Emergency department
+• PHARMACY — Medication/dispensing
+• LABORATORY — Lab tests
+• IMAGING — X-ray, ultrasound, CT, MRI
+• PROCEDURE — Medical procedures
+• THEATRE — Surgical procedures
+• MATERNITY — Maternity/delivery
+• AMBULANCE — Transport services
+• CORPORATE — Corporate billing
+• INSURANCE — Insurance billing
+• NHIS — NHIS billing`,
+  },
+  {
+    title: "Line Items & Services",
+    content: `Each invoice contains line items that represent billable services:
+
+• Select a service from the dropdown — the price auto-fills from Services & Pricing.
+• You can also enter a custom description and price for manual charges.
+• Quantity, discount, and tax can be adjusted per line item.
+• The system auto-calculates line totals, subtotal, and grand total.
+• Services linked to lab orders, imaging, procedures, etc. retain their source reference for financial traceability.
+
+To add items after issuance, use "Add Item" (only available on issued invoices with no payments).`,
+  },
+  {
+    title: "Payments",
+    content: `Payments are recorded against issued invoices:
+• Multiple payment methods supported: Cash, Mobile Money, Card, Bank Transfer, Insurance, Other.
+• Partial payments are supported — the invoice status auto-updates to "Partially Paid".
+• Full payment (balance reaches zero) auto-marks the invoice as "Paid".
+• Overpayments are tracked — the excess can be refunded or applied to another invoice.
+• Each payment generates a unique payment number (PAY-YYYY-NNNNNN).
+• Payments are immutable once created — corrections require the Refund workflow.`,
+  },
+  {
+    title: "Credit Notes & Adjustments",
+    content: `After an invoice is issued, you cannot directly edit its financial values. Instead:
+
+CREDIT NOTES — Used for:
+• Overbilling corrections
+• Returned services
+• Approved discounts after issuance
+• Billing errors
+
+A credit note reduces the invoice balance without modifying the original invoice. It gets its own number (CN-YYYY-NNNNNN).
+
+ADJUSTMENTS — Used for:
+• Debit notes (additional charges after issuance)
+• Write-offs (removing outstanding balance)
+• Corrections
+
+Both credit notes and adjustments preserve the original invoice and create an audit trail.`,
+  },
+  {
+    title: "Reports & Export",
+    content: `The Reports tab provides financial insights:
+• DAILY — All invoices for a specific date
+• MONTHLY — Summary with by-type and by-status breakdowns
+• REVENUE BY TYPE — Revenue grouped by invoice type
+• OUTSTANDING — All invoices with outstanding balances
+• OVERDUE — Invoices past their due date with outstanding balance
+• AGING — Accounts receivable aging (Current, 1-30, 31-60, 61-90, 90+ days)
+• AUDIT LOG — All invoice-related audit events
+
+CSV Export is available for all invoice data — useful for accounting reconciliation and external reporting.`,
+  },
+  {
+    title: "Permissions",
+    content: `Different roles have different permissions:
+• VIEW — All clinical/admin staff can view invoices
+• CREATE — Finance users, cashiers, records officers can create invoices
+• PAYMENT — Cashiers and finance users can record payments
+• DISCOUNT — Only organization admins and accountants can apply discounts
+• REFUND — Only organization admins and accountants can process refunds
+• CANCEL — Facility admins and above can cancel invoices
+
+Dangerous actions (void, write-off, credit note) require confirmation and are fully audit-logged.`,
+  },
+];
+
+// ============================================================
 // Main view — Tabs: Dashboard | Work Queue | Reports
 // Dialogs: View Invoice | New Invoice
 // ============================================================
@@ -175,13 +298,16 @@ export function InvoicesView() {
         icon={Receipt}
         gradient="from-rose-500 to-red-600"
         actions={
-          <Button
-            onClick={() => setShowNew(true)}
-            disabled={!canCreate}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Plus className="w-4 h-4" /> New Invoice
-          </Button>
+          <div className="flex items-center gap-2">
+            <ModuleHelp title="Invoices" sections={INVOICE_HELP_SECTIONS} />
+            <Button
+              onClick={() => setShowNew(true)}
+              disabled={!canCreate}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Plus className="w-4 h-4" /> New Invoice
+            </Button>
+          </div>
         }
       />
 
@@ -1259,9 +1385,10 @@ function ViewInvoiceDialog({
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [actionDialog, setActionDialog] = useState<{ kind: string } | null>(null);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["invoice-detail", invoiceId],
     queryFn: () => fetchJson(`/api/invoices/${invoiceId}`),
+    enabled: !!invoiceId,
   });
 
   const inv = data?.item;
@@ -1377,8 +1504,8 @@ function ViewInvoiceDialog({
                       <CreditCard className="w-3.5 h-3.5" /> Record Payment
                     </Button>
                   )}
-                <Button size="sm" variant="outline" onClick={() => refetch()} disabled={lifecycleMutation.isPending} className="gap-1.5 h-7 text-xs ml-auto">
-                  <Hourglass className="w-3.5 h-3.5" /> Refresh
+                <Button size="sm" variant="outline" onClick={() => { refetch(); toast.success("Invoice refreshed"); }} disabled={isFetching} className="gap-1.5 h-7 text-xs ml-auto">
+                  <RefreshCcw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
                 </Button>
               </div>
 
