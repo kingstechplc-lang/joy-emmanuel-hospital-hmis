@@ -149,6 +149,8 @@ model Facility {
   dischargeRecords              DischargeRecord[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
+  supplierEvaluations           SupplierEvaluation[]
+  supplierComplaints            SupplierComplaint[]
 
   @@unique([organizationId, code])
 }
@@ -435,6 +437,14 @@ model User {
   intakeOutputVerified       IntakeOutputEntry[]        @relation("intakeOutputVerifier")
   intakeOutputAmended        IntakeOutputEntry[]        @relation("intakeOutputAmender")
   intakeOutputAlertsAck      IntakeOutputAlert[]        @relation("intakeOutputAlertAck")
+  // Supplier back-relations
+  suppliersApproved          Supplier[]                 @relation("supplierApprovedBy")
+  suppliersVerified          Supplier[]                 @relation("supplierVerifiedBy")
+  suppliersSuspended         Supplier[]                 @relation("supplierSuspendedBy")
+  suppliersCreated           Supplier[]                 @relation("supplierCreatedBy")
+  supplierDocsVerified       SupplierDocument[]         @relation("supplierDocVerifiedBy")
+  supplierEvaluations        SupplierEvaluation[]       @relation("supplierEvaluatedBy")
+  supplierComplaintsResolved SupplierComplaint[]        @relation("supplierComplaintResolvedBy")
 }
 
 model Staff {
@@ -4768,6 +4778,7 @@ model InventoryItem {
   stockTransferItems    StockTransferItem[]
   inventoryTransactions InventoryTransaction[]
   stockAdjustments      StockAdjustment[]
+  supplierProducts      SupplierProduct[]
 
   @@unique([organizationId, sku])
   @@index([itemType, status])
@@ -4857,23 +4868,184 @@ model InventoryTransaction {
 }
 
 model Supplier {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  name           String
-  code           String
-  contactPerson  String?
-  phone          String?
-  email          String?
-  address        String?
-  status         String       @default("active")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                 String       @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  name               String
+  code               String
+  contactPerson      String?
+  phone              String?
+  email              String?
+  address            String?
+  status             String       @default("active")
+  // --- New: classification ---
+  supplierType       String? // manufacturer | distributor | wholesaler | retailer | importer | local_supplier | service_provider | equipment_vendor | contractor | other
+  category           String? // pharmaceutical | medical_supplies | laboratory | reagents | medical_equipment | surgical | ppe | cleaning | office_supplies | it | maintenance | furniture | ambulance | mortuary | imaging | blood_bank | catering | security | facility_services | other
+  // --- New: business identity ---
+  legalBusinessName  String?
+  tradingName        String?
+  vendorId           String?
+  registrationNumber String?
+  taxIdNumber        String?
+  vatStatus          String? // registered | not_registered | exempt
+  // --- New: contact details ---
+  website            String?
+  alternatePhone     String?
+  postalAddress      String?
+  city               String?
+  region             String?
+  country            String?
+  digitalAddress     String? // Ghana Post GPS
+  // --- New: payment & banking ---
+  paymentTerms       String? // cash | immediate | 7_days | 15_days | 30_days | 45_days | 60_days | 90_days | custom
+  creditLimit        Float        @default(0)
+  bankName           String?
+  bankAccountName    String?
+  bankAccountNumber  String?
+  bankBranch         String?
+  swiftCode          String?
+  // --- New: compliance & preferences ---
+  isPreferred        Boolean      @default(false)
+  complianceStatus   String? // compliant | partially_compliant | non_compliant | under_review
+  // --- New: lifecycle / approval workflow ---
+  approvedById       String?
+  approvedBy         User?        @relation("supplierApprovedBy", fields: [approvedById], references: [id])
+  approvedAt         DateTime?
+  verifiedById       String?
+  verifiedBy         User?        @relation("supplierVerifiedBy", fields: [verifiedById], references: [id])
+  verifiedAt         DateTime?
+  suspendedAt        DateTime?
+  suspendedById      String?
+  suspendedBy        User?        @relation("supplierSuspendedBy", fields: [suspendedById], references: [id])
+  suspensionReason   String?
+  // --- New: performance metrics ---
+  performanceRating  Float? // 0-100
+  totalSpend         Float        @default(0)
+  totalOrders        Int          @default(0)
+  // --- New: ownership ---
+  createdById        String?
+  createdBy          User?        @relation("supplierCreatedBy", fields: [createdById], references: [id])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
-  purchaseOrders PurchaseOrder[]
-  batches        InventoryBatch[]
+  purchaseOrders   PurchaseOrder[]
+  batches          InventoryBatch[]
+  contacts         SupplierContact[]
+  documents        SupplierDocument[]
+  supplierProducts SupplierProduct[]
+  evaluations      SupplierEvaluation[]
+  complaints       SupplierComplaint[]
 
   @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+  @@index([organizationId, supplierType])
+  @@index([organizationId, isPreferred])
+  @@index([organizationId, complianceStatus])
+}
+
+model SupplierContact {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name       String
+  position   String?
+  phone      String?
+  email      String?
+  department String?
+  isPrimary  Boolean  @default(false)
+  status     String   @default("active") // active | inactive
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([supplierId, isPrimary])
+  @@index([supplierId, status])
+}
+
+model SupplierDocument {
+  id                 String    @id @default(cuid())
+  supplierId         String
+  supplier           Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  documentType       String // business_registration | tax_clearance | vat_certificate | iso_certificate | license | insurance | contract | other
+  documentName       String
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  verifiedById       String?
+  verifiedBy         User?     @relation("supplierDocVerifiedBy", fields: [verifiedById], references: [id])
+  verifiedAt         DateTime?
+  verificationStatus String    @default("pending") // pending | verified | rejected | expired
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([supplierId, verificationStatus])
+  @@index([supplierId, expiryDate])
+}
+
+model SupplierProduct {
+  id                   String        @id @default(cuid())
+  supplierId           String
+  supplier             Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  inventoryItemId      String
+  inventoryItem        InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  supplierItemCode     String?
+  supplierSku          String?
+  purchasePrice        Float         @default(0)
+  minimumOrderQuantity Int           @default(1)
+  leadTimeDays         Int           @default(0)
+  isPreferred          Boolean       @default(false)
+  lastPurchasePrice    Float         @default(0)
+  lastPurchaseDate     DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@unique([supplierId, inventoryItemId])
+  @@index([supplierId, isPreferred])
+  @@index([inventoryItemId])
+}
+
+model SupplierEvaluation {
+  id               String    @id @default(cuid())
+  supplierId       String
+  supplier         Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  evaluationPeriod String // e.g. "2026-Q1", "2026"
+  criteria         String // quality | delivery | pricing | responsiveness | overall
+  score            Float // 0-100
+  comments         String?
+  evaluatedById    String?
+  evaluatedBy      User?     @relation("supplierEvaluatedBy", fields: [evaluatedById], references: [id])
+  evaluatedAt      DateTime  @default(now())
+  facilityId       String?
+  facility         Facility? @relation(fields: [facilityId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([supplierId, evaluationPeriod])
+  @@index([supplierId, criteria])
+}
+
+model SupplierComplaint {
+  id              String         @id @default(cuid())
+  supplierId      String
+  supplier        Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  complaintType   String // quality | delivery | pricing | communication | documentation | other
+  subject         String
+  description     String?
+  severity        String         @default("medium") // low | medium | high | critical
+  status          String         @default("open") // open | investigating | resolved | closed | escalated
+  resolvedAt      DateTime?
+  resolvedById    String?
+  resolvedBy      User?          @relation("supplierComplaintResolvedBy", fields: [resolvedById], references: [id])
+  resolutionNotes String?
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  facilityId      String?
+  facility        Facility?      @relation(fields: [facilityId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([supplierId, status])
+  @@index([supplierId, severity])
 }
 
 model PurchaseOrder {
@@ -4896,8 +5068,9 @@ model PurchaseOrder {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  items         PurchaseOrderItem[]
-  goodsReceived GoodsReceived[]
+  items              PurchaseOrderItem[]
+  goodsReceived      GoodsReceived[]
+  supplierComplaints SupplierComplaint[]
 
   @@unique([facilityId, purchaseOrderNumber])
 }
