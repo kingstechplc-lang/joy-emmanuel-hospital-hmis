@@ -148,6 +148,7 @@ model Facility {
   intakeOutputAlertConfigs      IntakeOutputAlertConfig[]
   dischargeRecords              DischargeRecord[]
   creditNotes                   CreditNote[]
+  stockAdjustments              StockAdjustment[]
 
   @@unique([organizationId, code])
 }
@@ -402,8 +403,15 @@ model User {
   creditNotesIssued          CreditNote[]               @relation("creditNoteIssuer")
   invoiceAdjustmentsApproved InvoiceAdjustment[]        @relation("adjustmentApprover")
   purchaseOrders             PurchaseOrder[]            @relation("poRequestedBy")
+  purchaseOrdersApproved     PurchaseOrder[]            @relation("poApprovedBy")
   inventoryTransactions      InventoryTransaction[]
   stockTransfers             StockTransfer[]            @relation("stRequestedBy")
+  stockTransfersApproved     StockTransfer[]            @relation("stApprovedBy")
+  stockTransfersReceived     StockTransfer[]            @relation("stReceivedBy")
+  goodsReceived              GoodsReceived[]            @relation("goodsReceivedBy")
+  inventoryItemsCreated      InventoryItem[]            @relation("inventoryItemCreator")
+  stockAdjustmentsRequested  StockAdjustment[]          @relation("adjustmentRequestedBy")
+  stockAdjustmentsApproved   StockAdjustment[]          @relation("adjustmentApprovedBy")
   documents                  Document[]                 @relation("docUploader")
   consents                   Consent[]                  @relation("consentRecorder")
   tasks                      Task[]                     @relation("taskAssignee")
@@ -4720,46 +4728,76 @@ model EligibilityVerification {
 // ---------------------------------------------------------------------
 
 model InventoryItem {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  name           String
-  sku            String
-  itemType       String // medication | consumable | equipment | supply | other
-  category       String?
-  unit           String?
-  description    String?
-  reorderLevel   Int          @default(0)
-  status         String       @default("active")
-  medicationId   String?
-  medication     Medication?  @relation("medicationInventoryItem", fields: [medicationId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  name                String
+  sku                 String
+  barcode             String?
+  itemType            String // medication | consumable | equipment | supply | other
+  category            String?
+  subcategory         String?
+  unit                String?
+  packSize            String?
+  description         String?
+  reorderLevel        Int          @default(0)
+  minimumStock        Int          @default(0)
+  maximumStock        Int          @default(0)
+  reorderQuantity     Int          @default(0)
+  safetyStock         Int          @default(0)
+  manufacturer        String?
+  brand               String?
+  countryOfOrigin     String?
+  storageConditions   String?
+  isControlled        Boolean      @default(false)
+  isConsumable        Boolean      @default(true)
+  isRefrigerated      Boolean      @default(false)
+  isHazardous         Boolean      @default(false)
+  isSterile           Boolean      @default(false)
+  preferredSupplierId String?
+  status              String       @default("active") // active | inactive | discontinued | blocked | recalled
+  medicationId        String?
+  medication          Medication?  @relation("medicationInventoryItem", fields: [medicationId], references: [id])
+  createdById         String?
+  createdBy           User?        @relation("inventoryItemCreator", fields: [createdById], references: [id])
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   facilityInventory     FacilityInventory[]
   purchaseOrderItems    PurchaseOrderItem[]
   stockTransferItems    StockTransferItem[]
   inventoryTransactions InventoryTransaction[]
+  stockAdjustments      StockAdjustment[]
 
   @@unique([organizationId, sku])
+  @@index([itemType, status])
+  @@index([category])
 }
 
 model FacilityInventory {
-  id              String        @id @default(cuid())
-  facilityId      String
-  facility        Facility      @relation(fields: [facilityId], references: [id])
-  inventoryItemId String
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  currentQuantity Int           @default(0)
-  minimumQuantity Int           @default(0)
-  maximumQuantity Int           @default(0)
-  storageLocation String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                  String        @id @default(cuid())
+  facilityId          String
+  facility            Facility      @relation(fields: [facilityId], references: [id])
+  inventoryItemId     String
+  inventoryItem       InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  currentQuantity     Int           @default(0)
+  reservedQuantity    Int           @default(0)
+  quarantinedQuantity Int           @default(0)
+  damagedQuantity     Int           @default(0)
+  minimumQuantity     Int           @default(0)
+  maximumQuantity     Int           @default(0)
+  storageLocation     String?
+  storeName           String?
+  binLocation         String?
+  lastCostPrice       Float         @default(0)
+  averageCost         Float         @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   batches InventoryBatch[]
 
   @@unique([facilityId, inventoryItemId])
+  @@index([facilityId, currentQuantity])
 }
 
 model InventoryBatch {
@@ -4768,18 +4806,25 @@ model InventoryBatch {
   facilityInventory   FacilityInventory @relation(fields: [facilityInventoryId], references: [id])
   batchNumber         String
   expiryDate          DateTime?
+  manufactureDate     DateTime?
   quantity            Int               @default(0)
   costPrice           Float             @default(0)
   sellingPrice        Float             @default(0)
   supplierId          String?
+  supplier            Supplier?         @relation(fields: [supplierId], references: [id])
+  purchaseOrderId     String?
+  goodsReceivedId     String?
   receivedAt          DateTime          @default(now())
-  status              String            @default("active") // active | expired | damaged | depleted
+  status              String            @default("active") // active | expired | damaged | depleted | quarantined | recalled
+  notes               String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
   transactions InventoryTransaction[]
 
   @@index([facilityInventoryId, expiryDate])
+  @@index([status, expiryDate])
+  @@index([supplierId])
 }
 
 model InventoryTransaction {
@@ -4790,18 +4835,25 @@ model InventoryTransaction {
   inventoryItem   InventoryItem   @relation(fields: [inventoryItemId], references: [id])
   batchId         String?
   batch           InventoryBatch? @relation(fields: [batchId], references: [id])
-  transactionType String // purchase | dispense | issue | receive | adjustment | return | transfer_out | transfer_in | damage | expiry
+  transactionType String // purchase | dispense | issue | receive | adjustment | return | transfer_out | transfer_in | damage | expiry | disposal | opening_balance | stocktake_adjustment | reversal
   quantity        Int // signed (+/-)
+  balanceBefore   Int?
+  balanceAfter    Int?
+  unitCost        Float?
+  totalValue      Float?
   referenceType   String?
   referenceId     String?
   performedById   String?
   performedBy     User?           @relation(fields: [performedById], references: [id])
   transactionAt   DateTime        @default(now())
+  reason          String?
   notes           String?
   createdAt       DateTime        @default(now())
 
   @@index([facilityId, transactionAt])
   @@index([inventoryItemId])
+  @@index([transactionType, transactionAt])
+  @@index([batchId])
 }
 
 model Supplier {
@@ -4819,6 +4871,7 @@ model Supplier {
   updatedAt      DateTime     @updatedAt
 
   purchaseOrders PurchaseOrder[]
+  batches        InventoryBatch[]
 
   @@unique([organizationId, code])
 }
@@ -4837,6 +4890,8 @@ model PurchaseOrder {
   requestedById       String?
   requestedBy         User?     @relation("poRequestedBy", fields: [requestedById], references: [id])
   approvedById        String?
+  approvedBy          User?     @relation("poApprovedBy", fields: [approvedById], references: [id])
+  approvedAt          DateTime?
   orderedAt           DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -4867,6 +4922,7 @@ model GoodsReceived {
   facilityId      String
   facility        Facility      @relation(fields: [facilityId], references: [id])
   receivedById    String?
+  receivedBy      User?         @relation("goodsReceivedBy", fields: [receivedById], references: [id])
   receivedAt      DateTime      @default(now())
   referenceNumber String?
   notes           String?
@@ -4884,9 +4940,12 @@ model StockTransfer {
   requestedById  String?
   requestedBy    User?     @relation("stRequestedBy", fields: [requestedById], references: [id])
   approvedById   String?
+  approvedBy     User?     @relation("stApprovedBy", fields: [approvedById], references: [id])
   receivedById   String?
+  receivedBy     User?     @relation("stReceivedBy", fields: [receivedById], references: [id])
   requestedAt    DateTime  @default(now())
   approvedAt     DateTime?
+  shippedAt      DateTime?
   receivedAt     DateTime?
   notes          String?
   createdAt      DateTime  @default(now())
@@ -4896,15 +4955,47 @@ model StockTransfer {
 }
 
 model StockTransferItem {
-  id              String        @id @default(cuid())
-  stockTransferId String
-  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id])
-  inventoryItemId String
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  batchId         String?
-  quantity        Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  stockTransferId  String
+  stockTransfer    StockTransfer @relation(fields: [stockTransferId], references: [id])
+  inventoryItemId  String
+  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  batchId          String?
+  quantity         Int           @default(0)
+  receivedQuantity Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+// ---------------------------------------------------------------------
+// STOCK ADJUSTMENT — controlled adjustments with before/after quantities
+// ---------------------------------------------------------------------
+model StockAdjustment {
+  id                 String        @id @default(cuid())
+  facilityId         String
+  facility           Facility      @relation(fields: [facilityId], references: [id])
+  inventoryItemId    String
+  inventoryItem      InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  batchId            String?
+  adjustmentType     String // counting_error | damaged | lost | found | data_correction | expired | conversion | other
+  beforeQuantity     Int
+  adjustmentQuantity Int
+  afterQuantity      Int
+  reason             String
+  notes              String?
+  status             String        @default("pending") // pending | approved | rejected | completed
+  requestedById      String?
+  requestedBy        User?         @relation("adjustmentRequestedBy", fields: [requestedById], references: [id])
+  approvedById       String?
+  approvedBy         User?         @relation("adjustmentApprovedBy", fields: [approvedById], references: [id])
+  approvedAt         DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([facilityId, status])
+  @@index([inventoryItemId])
+  @@index([adjustmentType, status])
 }
 
 // ---------------------------------------------------------------------

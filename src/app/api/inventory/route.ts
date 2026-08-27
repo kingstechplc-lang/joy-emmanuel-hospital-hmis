@@ -52,12 +52,22 @@ export async function GET(req: Request) {
   });
 
   // Compute current stock + flag low/out-of-stock per item
+  // NOTE: This is strictly additive — existing fields keep their shape; new
+  // schema fields are surfaced alongside so the rebuilt InventoryView can show
+  // stock value, reservations, quarantine, damaged, storage, etc.
   const computed = items.map((it: any) => {
     const fi = it.facilityInventory?.[0] || null;
     const currentQty = fi?.currentQuantity ?? 0;
-    const minQty = fi?.minimumQuantity ?? it.reorderLevel ?? 0;
-    const maxQty = fi?.maximumQuantity ?? 0;
+    const reservedQty = fi?.reservedQuantity ?? 0;
+    const quarantinedQty = fi?.quarantinedQuantity ?? 0;
+    const damagedQty = fi?.damagedQuantity ?? 0;
+    const minQty = fi?.minimumQuantity ?? it.minimumStock ?? it.reorderLevel ?? 0;
+    const maxQty = fi?.maximumQuantity ?? it.maximumStock ?? 0;
+    const lastCost = fi?.lastCostPrice ?? 0;
+    const averageCost = fi?.averageCost ?? 0;
     const batches = fi?.batches || [];
+    const availableQty = Math.max(0, currentQty - reservedQty - quarantinedQty - damagedQty);
+    const stockValue = Number(currentQty) * Number(lastCost || 0);
 
     let stockStatus = "in_stock";
     if (currentQty <= 0) stockStatus = "out_of_stock";
@@ -66,6 +76,7 @@ export async function GET(req: Request) {
     const showInList = !lowStockOnly || stockStatus !== "in_stock";
 
     return {
+      // --- existing fields (unchanged) ---
       id: it.id,
       name: it.name,
       sku: it.sku,
@@ -83,6 +94,38 @@ export async function GET(req: Request) {
       stockStatus,
       batches,
       _show: showInList,
+      // --- new schema fields (additive) ---
+      barcode: it.barcode || null,
+      subcategory: it.subcategory || null,
+      packSize: it.packSize || null,
+      manufacturer: it.manufacturer || null,
+      brand: it.brand || null,
+      countryOfOrigin: it.countryOfOrigin || null,
+      storageConditions: it.storageConditions || null,
+      minimumStock: it.minimumStock ?? 0,
+      maximumStock: it.maximumStock ?? 0,
+      reorderQuantity: it.reorderQuantity ?? 0,
+      safetyStock: it.safetyStock ?? 0,
+      isControlled: !!it.isControlled,
+      isConsumable: it.isConsumable ?? true,
+      isRefrigerated: !!it.isRefrigerated,
+      isHazardous: !!it.isHazardous,
+      isSterile: !!it.isSterile,
+      preferredSupplierId: it.preferredSupplierId || null,
+      status: it.status || "active",
+      createdById: it.createdById || null,
+      createdAt: it.createdAt || null,
+      // --- facility inventory extras (additive) ---
+      reservedQuantity: reservedQty,
+      quarantinedQuantity: quarantinedQty,
+      damagedQuantity: damagedQty,
+      availableQuantity: availableQty,
+      lastCostPrice: lastCost,
+      averageCost,
+      stockValue,
+      storeName: fi?.storeName || null,
+      binLocation: fi?.binLocation || null,
+      facilityId: fi?.facilityId || null,
     };
   }).filter((it: any) => it._show);
 
@@ -105,7 +148,15 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
   }
-  const { name, sku, itemType, category, unit, description, reorderLevel, medicationId } = body;
+  const {
+    name, sku, itemType, category, unit, description, reorderLevel, medicationId,
+    // New schema fields (all optional) — additive, fully backwards compatible
+    barcode, subcategory, packSize,
+    minimumStock, maximumStock, reorderQuantity, safetyStock,
+    manufacturer, brand, countryOfOrigin, storageConditions,
+    isControlled, isConsumable, isRefrigerated, isHazardous, isSterile,
+    preferredSupplierId,
+  } = body;
 
   if (!name || !sku || !itemType) {
     return NextResponse.json({ error: "name, sku, itemType are required" }, { status: 400 });
@@ -131,6 +182,25 @@ export async function POST(req: Request) {
       reorderLevel: Number(reorderLevel) || 0,
       medicationId: medicationId || null,
       status: "active",
+      // New fields — additive
+      barcode: barcode || null,
+      subcategory: subcategory || null,
+      packSize: packSize || null,
+      minimumStock: Number(minimumStock) || 0,
+      maximumStock: Number(maximumStock) || 0,
+      reorderQuantity: Number(reorderQuantity) || 0,
+      safetyStock: Number(safetyStock) || 0,
+      manufacturer: manufacturer || null,
+      brand: brand || null,
+      countryOfOrigin: countryOfOrigin || null,
+      storageConditions: storageConditions || null,
+      isControlled: !!isControlled,
+      isConsumable: isConsumable === undefined ? true : !!isConsumable,
+      isRefrigerated: !!isRefrigerated,
+      isHazardous: !!isHazardous,
+      isSterile: !!isSterile,
+      preferredSupplierId: preferredSupplierId || null,
+      createdById: session.user.id,
     },
   });
 
@@ -141,7 +211,7 @@ export async function POST(req: Request) {
     action: "INVENTORY_ITEM_CREATED",
     resourceType: "inventory_item",
     resourceId: item.id,
-    newValues: { name, sku, itemType, category, unit, reorderLevel },
+    newValues: { name, sku, itemType, category, unit, reorderLevel, barcode, manufacturer, brand },
   });
 
   return NextResponse.json({ item }, { status: 201 });

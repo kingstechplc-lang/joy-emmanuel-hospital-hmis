@@ -67,6 +67,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.description !== undefined) data.description = body.description;
   if (body.reorderLevel !== undefined) data.reorderLevel = Number(body.reorderLevel) || 0;
   if (body.status !== undefined) data.status = body.status;
+  // --- New schema fields (additive, optional) ---
+  if (body.barcode !== undefined) data.barcode = body.barcode || null;
+  if (body.subcategory !== undefined) data.subcategory = body.subcategory || null;
+  if (body.packSize !== undefined) data.packSize = body.packSize || null;
+  if (body.minimumStock !== undefined) data.minimumStock = Number(body.minimumStock) || 0;
+  if (body.maximumStock !== undefined) data.maximumStock = Number(body.maximumStock) || 0;
+  if (body.reorderQuantity !== undefined) data.reorderQuantity = Number(body.reorderQuantity) || 0;
+  if (body.safetyStock !== undefined) data.safetyStock = Number(body.safetyStock) || 0;
+  if (body.manufacturer !== undefined) data.manufacturer = body.manufacturer || null;
+  if (body.brand !== undefined) data.brand = body.brand || null;
+  if (body.countryOfOrigin !== undefined) data.countryOfOrigin = body.countryOfOrigin || null;
+  if (body.storageConditions !== undefined) data.storageConditions = body.storageConditions || null;
+  if (body.isControlled !== undefined) data.isControlled = !!body.isControlled;
+  if (body.isConsumable !== undefined) data.isConsumable = !!body.isConsumable;
+  if (body.isRefrigerated !== undefined) data.isRefrigerated = !!body.isRefrigerated;
+  if (body.isHazardous !== undefined) data.isHazardous = !!body.isHazardous;
+  if (body.isSterile !== undefined) data.isSterile = !!body.isSterile;
+  if (body.preferredSupplierId !== undefined) data.preferredSupplierId = body.preferredSupplierId || null;
 
   const updated = await db.inventoryItem.update({ where: { id }, data });
 
