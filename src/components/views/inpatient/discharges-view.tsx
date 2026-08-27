@@ -1399,13 +1399,23 @@ function ReportsPanel({ facilityId }: any) {
       const params = new URLSearchParams();
       params.set("type", reportType);
       if (facilityId) params.set("facilityId", facilityId);
-      if (reportType === "daily") params.set("date", date);
-      if (reportType === "monthly") params.set("date", date);
+      if (reportType === "daily" || reportType === "monthly") params.set("date", date);
       if (reportType === "los" || reportType === "by_type" || reportType === "audit") { params.set("from", from); params.set("to", to); }
       const data = await fetchJson(`/api/discharges/reports?${params.toString()}`);
       setResult(data);
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   };
+
+  const reportTypes = [
+    { value: "daily", label: "Daily Discharge Report", needsDate: true },
+    { value: "monthly", label: "Monthly Discharge Report", needsDate: true },
+    { value: "pending", label: "Pending Discharges", needsDate: false },
+    { value: "los", label: "Length of Stay Report", needsRange: true },
+    { value: "by_type", label: "Discharge Type Breakdown", needsRange: true },
+    { value: "delayed", label: "Delayed Discharges", needsDate: false },
+    { value: "audit", label: "Audit Log", needsRange: true },
+  ];
+  const currentReportType = reportTypes.find((r) => r.value === reportType);
 
   return (
     <div className="space-y-3">
@@ -1417,19 +1427,14 @@ function ReportsPanel({ facilityId }: any) {
               <Select value={reportType} onValueChange={(v) => { setReportType(v); setResult(null); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Daily Discharge Report</SelectItem>
-                  <SelectItem value="monthly">Monthly Discharge Report</SelectItem>
-                  <SelectItem value="los">Length of Stay Report</SelectItem>
-                  <SelectItem value="by_type">Discharge Type Breakdown</SelectItem>
-                  <SelectItem value="delayed">Delayed Discharges</SelectItem>
-                  <SelectItem value="audit">Audit Log</SelectItem>
+                  {reportTypes.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            {(reportType === "daily" || reportType === "monthly") && (
+            {currentReportType?.needsDate && (
               <div><Label>Date {reportType === "monthly" ? "(any day in month)" : ""}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
             )}
-            {(reportType === "los" || reportType === "by_type" || reportType === "audit") && (
+            {currentReportType?.needsRange && (
               <>
                 <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
                 <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
@@ -1437,15 +1442,17 @@ function ReportsPanel({ facilityId }: any) {
             )}
           </div>
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-500">{result ? `${result.count || 0} record(s)` : "No report generated yet"}</div>
+            <div className="text-xs text-slate-500">
+              {result ? `${result.count || 0} record(s) found` : "Configure parameters and click Generate"}
+            </div>
             <div className="flex gap-2">
-              {result && (
+              {result && (result.items?.length > 0 || reportType === "by_type") && (
                 <Button variant="outline" onClick={() => window.open(`/api/discharges/export?facilityId=${facilityId}&from=${from}&to=${to}`, "_blank")} className="gap-2 h-8">
                   <Download className="w-4 h-4" /> CSV Export
                 </Button>
               )}
               <Button onClick={generate} disabled={loading} className="gap-2 bg-indigo-600 hover:bg-indigo-700 h-8">
-                {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <FileBarChart className="w-4 h-4" />} Generate
+                {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <FileBarChart className="w-4 h-4" />} Generate Report
               </Button>
             </div>
           </div>
@@ -1455,19 +1462,280 @@ function ReportsPanel({ facilityId }: any) {
       {result && (
         <Card>
           <CardContent className="p-4">
-            {reportType === "los" && result.avgLOS != null && (
-              <div className="mb-3 p-3 bg-slate-50 rounded text-sm">
-                <strong>Average LOS:</strong> {result.avgLOS} days • <strong>Count:</strong> {result.count}
+            {/* Empty state */}
+            {(!result.items || result.items.length === 0) && reportType !== "by_type" && (
+              <div className="text-center py-8">
+                <FileBarChart className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                <div className="text-sm font-medium text-slate-700">No records found for this report</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {reportType === "daily" && `No discharges (requested or finalized) on ${date}.`}
+                  {reportType === "monthly" && `No discharges in ${result.month}.`}
+                  {reportType === "pending" && "No pending discharge requests. Create one from the Work Queue tab."}
+                  {reportType === "delayed" && "No delayed discharges. All clear!"}
+                  {reportType === "los" && `No finalized discharges with admission date between ${from} and ${to}.`}
+                  {reportType === "audit" && `No discharge audit events between ${from} and ${to}.`}
+                </div>
+                {(reportType === "daily" || reportType === "monthly" || reportType === "pending") && (
+                  <div className="text-[10px] text-slate-400 mt-2 max-w-md mx-auto">
+                    Tip: Discharge reports include both pending requests AND finalized discharges. To populate reports,
+                    admit a patient from the Admissions module, then request a discharge from the Work Queue tab.
+                  </div>
+                )}
               </div>
             )}
-            {reportType === "monthly" && result.byType && (
-              <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-                {Object.entries(result.byType).map(([t, c]) => (
-                  <div key={t} className="border rounded p-2 text-xs"><div className="text-[10px] text-slate-500 capitalize">{t.replace(/_/g, " ")}</div><div className="font-bold">{c as number}</div></div>
-                ))}
+
+            {/* Daily report — table */}
+            {reportType === "daily" && result.items?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-2">Daily Discharge Report — {result.date}</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-slate-700">Discharge #</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Patient</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Admission #</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Ward / Bed</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Type</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Status</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Diagnosis</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Discharged By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.items.map((d: any) => {
+                        const ba = d.admission?.bedAssignments?.[0];
+                        return (
+                          <tr key={d.id} className="border-b hover:bg-slate-50">
+                            <td className="p-2 font-mono text-[10px]">{d.dischargeNumber || "—"}</td>
+                            <td className="p-2"><div className="font-medium">{d.patient?.firstName} {d.patient?.lastName}</div><div className="text-[10px] text-slate-500">{d.patient?.patientNumber}</div></td>
+                            <td className="p-2 font-mono text-[10px]">{d.admission?.admissionNumber}</td>
+                            <td className="p-2 text-[10px]">{ba?.ward?.name || "—"} / {ba?.bed?.bedNumber || "—"}</td>
+                            <td className="p-2 capitalize">{(d.dischargeType || "routine").replace(/_/g, " ")}</td>
+                            <td className="p-2"><Badge className={`text-[9px] ${STATUS_COLORS[d.status] || ""}`}>{d.status.replace(/_/g, " ")}</Badge></td>
+                            <td className="p-2 text-[10px] max-w-xs truncate">{d.finalDiagnosis || "—"}</td>
+                            <td className="p-2 text-[10px]">{d.dischargedBy?.firstName || d.requestedBy?.firstName || "—"} {d.dischargedBy?.lastName || d.requestedBy?.lastName || ""}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-            <pre className="text-xs bg-slate-50 p-3 rounded overflow-x-auto max-h-[60vh]">{JSON.stringify(result, null, 2)}</pre>
+
+            {/* Monthly report — summary + table */}
+            {reportType === "monthly" && result.items?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-3">Monthly Discharge Report — {result.month}</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                  <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total</div><div className="text-xl font-bold text-indigo-700">{result.count}</div></div>
+                  {Object.entries(result.byStatus || {}).slice(0, 3).map(([s, c]) => (
+                    <div key={s} className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500 capitalize">{s.replace(/_/g, " ")}</div><div className="text-xl font-bold text-slate-700">{c as number}</div></div>
+                  ))}
+                </div>
+                {Object.keys(result.byType || {}).length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-[10px] text-slate-500 uppercase mb-1">By Type</div>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(result.byType).map(([t, c]) => (
+                        <Badge key={t} variant="outline" className="text-[10px] capitalize">{t.replace(/_/g, " ")}: {c as number}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-slate-700">Patient</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Admission #</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Type</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Status</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.items.map((d: any) => (
+                        <tr key={d.id} className="border-b hover:bg-slate-50">
+                          <td className="p-2"><div className="font-medium">{d.patient?.firstName} {d.patient?.lastName}</div><div className="text-[10px] text-slate-500">{d.patient?.patientNumber}</div></td>
+                          <td className="p-2 font-mono text-[10px]">{d.admission?.admissionNumber}</td>
+                          <td className="p-2 capitalize">{(d.dischargeType || "routine").replace(/_/g, " ")}</td>
+                          <td className="p-2"><Badge className={`text-[9px] ${STATUS_COLORS[d.status] || ""}`}>{d.status.replace(/_/g, " ")}</Badge></td>
+                          <td className="p-2 text-[10px]">{formatDate(d.dischargedAt, true)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Pending discharges */}
+            {reportType === "pending" && result.items?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-2">Pending Discharges — {result.count} total</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-slate-700">Patient</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Ward / Bed</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Type</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Status</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Requested</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Requested By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.items.map((d: any) => {
+                        const ba = d.admission?.bedAssignments?.[0];
+                        return (
+                          <tr key={d.id} className="border-b hover:bg-slate-50">
+                            <td className="p-2"><div className="font-medium">{d.patient?.firstName} {d.patient?.lastName}</div><div className="text-[10px] text-slate-500">{d.patient?.patientNumber}</div></td>
+                            <td className="p-2 text-[10px]">{ba?.ward?.name || "—"} / {ba?.bed?.bedNumber || "—"}</td>
+                            <td className="p-2 capitalize">{(d.dischargeType || "routine").replace(/_/g, " ")}</td>
+                            <td className="p-2"><Badge className={`text-[9px] ${STATUS_COLORS[d.status] || ""}`}>{d.status.replace(/_/g, " ")}</Badge></td>
+                            <td className="p-2 text-[10px]">{formatDate(d.requestedAt, true)}</td>
+                            <td className="p-2 text-[10px]">{d.requestedBy?.firstName} {d.requestedBy?.lastName}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* LOS report */}
+            {reportType === "los" && result.items?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-2">Length of Stay Report — {result.from?.slice(0, 10)} to {result.to?.slice(0, 10)}</div>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Average LOS</div><div className="text-xl font-bold text-indigo-700">{result.avgLOS} days</div></div>
+                  <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Min LOS</div><div className="text-xl font-bold text-emerald-700">{Math.min(...result.items.map((i: any) => i.los))} days</div></div>
+                  <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Max LOS</div><div className="text-xl font-bold text-amber-700">{Math.max(...result.items.map((i: any) => i.los))} days</div></div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-slate-700">Patient</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Admission #</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Ward</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Admitted</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Discharged</th>
+                        <th className="text-right p-2 font-semibold text-slate-700">LOS (days)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.items.map((d: any, i: number) => (
+                        <tr key={i} className="border-b hover:bg-slate-50">
+                          <td className="p-2 font-medium">{d.patient?.firstName} {d.patient?.lastName}</td>
+                          <td className="p-2 font-mono text-[10px]">{d.admission?.admissionNumber}</td>
+                          <td className="p-2 text-[10px]">{d.admission?.bedAssignments?.[0]?.ward?.name || "—"}</td>
+                          <td className="p-2 text-[10px]">{formatDate(d.admissionDate, true)}</td>
+                          <td className="p-2 text-[10px]">{formatDate(d.dischargedAt, true)}</td>
+                          <td className="p-2 text-right font-bold text-indigo-700">{d.los}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* By type breakdown */}
+            {reportType === "by_type" && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-3">Discharge Type Breakdown — {result.from?.slice(0, 10)} to {result.to?.slice(0, 10)}</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                  {result.items?.map((t: any) => (
+                    <div key={t.type} className="border rounded p-3 text-center">
+                      <div className="text-[10px] text-slate-500 capitalize">{t.type.replace(/_/g, " ")}</div>
+                      <div className="text-2xl font-bold text-indigo-700">{t.count}</div>
+                    </div>
+                  )) || <div className="text-xs text-slate-500">No data</div>}
+                </div>
+                {result.byStatus && result.byStatus.length > 0 && (
+                  <div>
+                    <div className="text-[10px] text-slate-500 uppercase mb-1">By Status</div>
+                    <div className="flex flex-wrap gap-1">
+                      {result.byStatus.map((s: any) => (
+                        <Badge key={s.status} className={`text-[10px] ${STATUS_COLORS[s.status] || ""}`}>{s.status.replace(/_/g, " ")}: {s.count}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Delayed discharges */}
+            {reportType === "delayed" && result.items?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-2">Delayed Discharges — {result.count} total</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-slate-700">Patient</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Ward / Bed</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Delay Reason</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Department</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Delayed At</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Expected</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.items.map((d: any) => {
+                        const ba = d.admission?.bedAssignments?.[0];
+                        return (
+                          <tr key={d.id} className="border-b hover:bg-slate-50">
+                            <td className="p-2"><div className="font-medium">{d.patient?.firstName} {d.patient?.lastName}</div><div className="text-[10px] text-slate-500">{d.patient?.patientNumber}</div></td>
+                            <td className="p-2 text-[10px]">{ba?.ward?.name || "—"} / {ba?.bed?.bedNumber || "—"}</td>
+                            <td className="p-2 text-[10px]">{d.delayReason}</td>
+                            <td className="p-2 text-[10px]">{d.delayDepartment || "—"}</td>
+                            <td className="p-2 text-[10px]">{formatDate(d.delayedAt, true)}</td>
+                            <td className="p-2 text-[10px]">{d.expectedDischargeAt ? formatDate(d.expectedDischargeAt, true) : "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Audit log */}
+            {reportType === "audit" && result.items?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-slate-700 mb-2">Discharge Audit Log — {result.from?.slice(0, 10)} to {result.to?.slice(0, 10)}</div>
+                <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="border-b bg-slate-50 sticky top-0">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-slate-700">Date/Time</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Action</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">User</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Resource ID</th>
+                        <th className="text-left p-2 font-semibold text-slate-700">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.items.map((log: any) => (
+                        <tr key={log.id} className="border-b hover:bg-slate-50">
+                          <td className="p-2 text-[10px]">{formatDate(log.createdAt, true)}</td>
+                          <td className="p-2"><Badge variant="outline" className="text-[9px]">{log.action}</Badge></td>
+                          <td className="p-2 text-[10px]">{log.user?.firstName} {log.user?.lastName}</td>
+                          <td className="p-2 font-mono text-[10px]">{log.resourceId?.slice(-8)}</td>
+                          <td className="p-2 text-[10px] text-slate-600 max-w-xs truncate">{log.newValues || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
