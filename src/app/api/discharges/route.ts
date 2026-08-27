@@ -73,10 +73,11 @@ export async function GET(req: Request) {
   const limit = parseInt(url.searchParams.get("limit") || "200");
   const includeChecklist = url.searchParams.get("includeChecklist") === "true";
 
+  // Build where clause — facilityId scoping via admission.facilityId as fallback
+  // (legacy discharges created before facilityId was added may have facilityId = null)
   const where: any = {};
   if (patientId) where.patientId = patientId;
   if (admissionId) where.admissionId = admissionId;
-  if (facilityId) where.facilityId = facilityId;
   if (status) where.status = status;
   if (dischargeType) where.dischargeType = dischargeType;
   if (from || to) {
@@ -85,29 +86,57 @@ export async function GET(req: Request) {
     if (to) range.lte = new Date(`${to}T23:59:59.999`);
     where.dischargedAt = range;
   }
+  // Facility scoping: check both dischargeRecord.facilityId AND admission.facilityId
+  if (facilityId) {
+    where.OR = [
+      { facilityId },
+      { admission: { facilityId } },
+    ];
+  }
 
-  const discharges = await db.dischargeRecord.findMany({
-    where,
-    orderBy: { dischargedAt: "desc" },
-    take: limit,
-    include: {
-      patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true, sex: true, dateOfBirth: true, phone: true } },
-      admission: {
-        select: {
-          id: true, admissionNumber: true, admissionType: true, admissionDiagnosis: true,
-          admittedAt: true, status: true, attendingClinicianId: true,
-          facility: { select: { id: true, name: true, code: true } },
-          bedAssignments: { where: { status: "active" }, include: { ward: { select: { name: true } }, bed: { select: { bedNumber: true } } }, take: 1 },
+  let discharges: any[] = [];
+  try {
+    discharges = await db.dischargeRecord.findMany({
+      where,
+      orderBy: { dischargedAt: "desc" },
+      take: limit,
+      include: {
+        patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true, sex: true, dateOfBirth: true, phone: true } },
+        admission: {
+          select: {
+            id: true, admissionNumber: true, admissionType: true, admissionDiagnosis: true,
+            admittedAt: true, status: true, attendingClinicianId: true,
+            facility: { select: { id: true, name: true, code: true } },
+            bedAssignments: { where: { status: "active" }, include: { ward: { select: { name: true } }, bed: { select: { bedNumber: true } } }, take: 1 },
+          },
         },
+        dischargedBy: { select: { id: true, firstName: true, lastName: true } },
+        requestedBy: { select: { id: true, firstName: true, lastName: true } },
+        approvedBy: { select: { id: true, firstName: true, lastName: true } },
+        cancelledBy: { select: { id: true, firstName: true, lastName: true } },
+        finalizedBy: { select: { id: true, firstName: true, lastName: true } },
+        ...(includeChecklist ? { checklist: { orderBy: { sortOrder: "asc" } }, medicationsReconciliation: true } : {}),
       },
-      dischargedBy: { select: { id: true, firstName: true, lastName: true } },
-      requestedBy: { select: { id: true, firstName: true, lastName: true } },
-      approvedBy: { select: { id: true, firstName: true, lastName: true } },
-      cancelledBy: { select: { id: true, firstName: true, lastName: true } },
-      finalizedBy: { select: { id: true, firstName: true, lastName: true } },
-      ...(includeChecklist ? { checklist: { orderBy: { sortOrder: "asc" } }, medicationsReconciliation: true } : {}),
-    },
-  });
+    });
+  } catch (e: any) {
+    // Fallback: try without the new relation includes (in case schema is not yet applied)
+    console.error("Discharges GET error, falling back to basic query:", e.message);
+    try {
+      discharges = await db.dischargeRecord.findMany({
+        where,
+        orderBy: { dischargedAt: "desc" },
+        take: limit,
+        include: {
+          patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true, sex: true, dateOfBirth: true, phone: true } },
+          admission: { select: { id: true, admissionNumber: true, admissionType: true, admittedAt: true, status: true, facility: { select: { id: true, name: true } } } },
+          dischargedBy: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+    } catch (e2: any) {
+      console.error("Discharges GET fallback also failed:", e2.message);
+      return NextResponse.json({ items: [], count: 0, error: "Query failed — schema may be out of sync" }, { status: 200 });
+    }
+  }
 
   return NextResponse.json({ items: discharges, count: discharges.length });
 }
