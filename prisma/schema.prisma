@@ -370,6 +370,14 @@ model User {
   ambulanceVehiclesCreated   AmbulanceVehicle[]         @relation("ambulanceCreator")
   ambulanceTripsRequested    AmbulanceTrip[]            @relation("ambulanceRequester")
   patientTransfers           PatientTransfer[]          @relation("ptRequestedBy")
+  transfersApproved          PatientTransfer[]          @relation("ptApprovedBy")
+  transfersAccepted          PatientTransfer[]          @relation("ptAcceptedBy")
+  transfersRejected          PatientTransfer[]          @relation("ptRejectedBy")
+  transfersDeparted          PatientTransfer[]          @relation("ptDepartedBy")
+  transfersArrived           PatientTransfer[]          @relation("ptArrivedBy")
+  transfersCompleted         PatientTransfer[]          @relation("ptCompletedBy")
+  transfersCancelled         PatientTransfer[]          @relation("ptCancelledBy")
+  transfersAmended           PatientTransfer[]          @relation("ptAmendedBy")
   immunizations              Immunization[]             @relation("immunizationAdmin")
   triageRecords              TriageRecord[]             @relation("triageNurse")
   vitalSigns                 VitalSign[]                @relation("vitalSignAuthor")
@@ -2449,33 +2457,165 @@ model BedAssignment {
 }
 
 model PatientTransfer {
-  id              String    @id @default(cuid())
-  patientId       String
-  patient         Patient   @relation(fields: [patientId], references: [id])
-  admissionId     String
-  admission       Admission @relation(fields: [admissionId], references: [id])
-  fromFacilityId  String
-  fromFacility    Facility  @relation("ptFromFacility", fields: [fromFacilityId], references: [id])
-  toFacilityId    String
-  toFacility      Facility  @relation("ptToFacility", fields: [toFacilityId], references: [id])
-  fromWardId      String?
-  toWardId        String?
-  fromBedId       String?
-  toBedId         String?
-  reason          String?
-  clinicalSummary String?
-  requestedById   String?
-  requestedBy     User?     @relation("ptRequestedBy", fields: [requestedById], references: [id])
-  approvedById    String?
-  acceptedById    String?
-  requestedAt     DateTime  @default(now())
-  acceptedAt      DateTime?
-  completedAt     DateTime?
-  status          String    @default("requested") // requested | approved | accepted | completed | cancelled
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  transferNumber          String?   @unique // TRF-2026-000001
+  patientId               String
+  patient                 Patient   @relation(fields: [patientId], references: [id])
+  admissionId             String
+  admission               Admission @relation(fields: [admissionId], references: [id])
+  fromFacilityId          String
+  fromFacility            Facility  @relation("ptFromFacility", fields: [fromFacilityId], references: [id])
+  toFacilityId            String
+  toFacility              Facility  @relation("ptToFacility", fields: [toFacilityId], references: [id])
+  fromWardId              String?
+  fromBedId               String?
+  toWardId                String?
+  toBedId                 String?
+  // ---- Transfer type & priority ----
+  transferType            String    @default("internal") // internal | external
+  transferCategory        String? // ward | bed | department | specialty | icu | emergency | theatre | imaging | procedure | facility | referral | specialist | rehabilitation | other
+  priority                String    @default("routine") // routine | urgent | emergency | critical
+  reason                  String?
+  clinicalSummary         String?
+  // ---- Destination contact (external) ----
+  toDepartment            String?
+  toAddress               String?
+  toContactPerson         String?
+  toContactPhone          String?
+  toContactEmail          String?
+  toDestinationNotes      String?
+  receivingClinicianId    String?
+  receivingClinicianName  String?
+  // ---- Referral & ambulance integration ----
+  referralId              String?
+  ambulanceTripId         String?
+  // ---- Transport ----
+  transportMethod         String? // hospital_ambulance | private_ambulance | family_vehicle | wheelchair | stretcher | other
+  transportRequirements   String? // JSON array: wheelchair, stretcher, oxygen, monitoring, escort, nurse_escort, clinician_escort
+  oxygenRequired          Boolean   @default(false)
+  cardiacMonitoring       Boolean   @default(false)
+  ivAccess                Boolean   @default(false)
+  isolationPrecautions    String?
+  escortRequired          String? // none | nurse | clinician | both
+  // ---- Clinical handover ----
+  handoverSummary         String?
+  nursingHandover         String?
+  // ---- Special requirements ----
+  specialRequirements     String?
+  clinicalNotes           String?
+  nursingNotes            String?
+  administrativeNotes     String?
+  transportNotes          String?
+  receivingNotes          String?
+  // ---- Workflow lifecycle timestamps ----
+  requestedById           String?
+  requestedBy             User?     @relation("ptRequestedBy", fields: [requestedById], references: [id])
+  approvedById            String?
+  approvedBy              User?     @relation("ptApprovedBy", fields: [approvedById], references: [id])
+  approvedAt              DateTime?
+  acceptedById            String?
+  acceptedBy              User?     @relation("ptAcceptedBy", fields: [acceptedById], references: [id])
+  acceptedAt              DateTime?
+  rejectedAt              DateTime?
+  rejectedById            String?
+  rejectedBy              User?     @relation("ptRejectedBy", fields: [rejectedById], references: [id])
+  rejectionReason         String?
+  departedAt              DateTime?
+  departedFrom            String?
+  departedById            String?
+  departedBy              User?     @relation("ptDepartedBy", fields: [departedById], references: [id])
+  conditionAtDeparture    String?
+  arrivedAt               DateTime?
+  arrivedAtLocation       String?
+  arrivedById             String?
+  arrivedBy               User?     @relation("ptArrivedBy", fields: [arrivedById], references: [id])
+  conditionOnArrival      String?
+  completedAt             DateTime?
+  completedById           String?
+  completedBy             User?     @relation("ptCompletedBy", fields: [completedById], references: [id])
+  isFinalized             Boolean   @default(false)
+  // ---- Cancellation / delay ----
+  cancelledAt             DateTime?
+  cancelledById           String?
+  cancelledBy             User?     @relation("ptCancelledBy", fields: [cancelledById], references: [id])
+  cancelReason            String?
+  delayedAt               DateTime?
+  delayReason             String?
+  delayDepartment         String?
+  expectedTransferAt      DateTime?
+  // ---- Amendment tracking ----
+  amendedById             String?
+  amendedBy               User?     @relation("ptAmendedBy", fields: [amendedById], references: [id])
+  amendedAt               DateTime?
+  amendmentReason         String?
+  version                 Int       @default(1)
+  // ---- Patient belongings & equipment ----
+  belongingsChecked       Boolean   @default(false)
+  belongingsNotes         String?
+  equipmentAccompanying   String? // JSON array
+  // ---- Acknowledgement ----
+  acknowledgedByPatient   Boolean   @default(false)
+  acknowledgedByCaregiver Boolean   @default(false)
+  caregiverName           String?
+  caregiverRelationship   String?
+  // ---- Workflow fields ----
+  requestedAt             DateTime  @default(now())
+  status                  String    @default("requested") // requested | pending_review | pending_approval | pending_destination | accepted | rejected | pending_bed | pending_transport | ready | in_transit | arrived | completed | cancelled | delayed
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  checklist      TransferChecklistItem[]
+  communications TransferCommunication[]
 
   @@index([patientId, status])
+  @@index([fromFacilityId, status])
+  @@index([toFacilityId, status])
+  @@index([transferType, status])
+  @@index([status, requestedAt])
+  @@index([priority, status])
+}
+
+// ---------------------------------------------------------------------
+// TRANSFER CHECKLIST — per-transfer completion tracking
+// ---------------------------------------------------------------------
+model TransferChecklistItem {
+  id            String          @id @default(cuid())
+  transferId    String
+  transfer      PatientTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  category      String // clinical | nursing | destination | transport | documentation
+  label         String
+  status        String          @default("pending") // pending | completed | not_applicable | blocked
+  completedById String?
+  completedAt   DateTime?
+  notes         String?
+  required      Boolean         @default(true)
+  sortOrder     Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([transferId, category])
+  @@index([transferId, status])
+}
+
+// ---------------------------------------------------------------------
+// TRANSFER COMMUNICATION LOG — auditable communication history
+// ---------------------------------------------------------------------
+model TransferCommunication {
+  id                  String          @id @default(cuid())
+  transferId          String
+  transfer            PatientTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  senderId            String?
+  senderName          String?
+  recipientName       String?
+  recipientDepartment String?
+  recipientFacility   String?
+  messageType         String // call | email | sms | internal_notification | other
+  message             String?
+  outcome             String? // delivered | acknowledged | accepted | rejected | no_response | other
+  sentAt              DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+
+  @@index([transferId, sentAt])
 }
 
 model DischargeRecord {
