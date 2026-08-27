@@ -146,6 +146,7 @@ model Facility {
   intakeOutputMonitoringPeriods IntakeOutputMonitoringPeriod[]
   intakeOutputAlerts            IntakeOutputAlert[]
   intakeOutputAlertConfigs      IntakeOutputAlertConfig[]
+  dischargeRecords              DischargeRecord[]
 
   @@unique([organizationId, code])
 }
@@ -319,79 +320,88 @@ model User {
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
-  staff                     Staff?
-  userRoles                 UserRole[]
-  appointmentsBooked        Appointment[]              @relation("apptBookedBy")
-  encounters                Encounter[]                @relation("encounterCreatedBy")
-  consultations             Consultation[]             @relation("consultationClinician")
-  prescriptions             Prescription[]             @relation("rxPrescriber")
-  labOrders                 LabOrder[]                 @relation("labOrderClinician")
-  imagingOrders             ImagingOrder[]             @relation("imagingOrderClinician")
-  procedures                Procedure[]                @relation("procedurePerformer")
-  admissions                Admission[]                @relation("admissionAdmittedBy")
-  discharges                DischargeRecord[]          @relation("dischargeUser")
-  nursingNotes              NursingNote[]              @relation("nursingNoteAuthor")
-  carePlans                 CarePlan[]                 @relation("carePlanAuthor")
-  referralsMade             Referral[]                 @relation("referralMadeBy")
-  referralsReceived         Referral[]                 @relation("referralReceivedBy")
-  referralEvents            ReferralEvent[]            @relation("referralEventActor")
-  referralFeedback          ReferralFeedback[]         @relation("referralFeedbackAuthor")
-  referralMessages          ReferralMessage[]          @relation("referralMessageSender")
-  aefiReported              AEFI[]                     @relation("aefiReportedBy")
-  aefiReviewed              AEFI[]                     @relation("aefiReviewedBy")
-  vaccineWastageDisposed    VaccineWastage[]           @relation("wasteDisposedBy")
-  coldChainRecorded         ColdChainAlert[]           @relation("coldChainRecordedBy")
-  coldChainAcked            ColdChainAlert[]           @relation("coldChainAckedBy")
+  staff                      Staff?
+  userRoles                  UserRole[]
+  appointmentsBooked         Appointment[]              @relation("apptBookedBy")
+  encounters                 Encounter[]                @relation("encounterCreatedBy")
+  consultations              Consultation[]             @relation("consultationClinician")
+  prescriptions              Prescription[]             @relation("rxPrescriber")
+  labOrders                  LabOrder[]                 @relation("labOrderClinician")
+  imagingOrders              ImagingOrder[]             @relation("imagingOrderClinician")
+  procedures                 Procedure[]                @relation("procedurePerformer")
+  admissions                 Admission[]                @relation("admissionAdmittedBy")
+  discharges                 DischargeRecord[]          @relation("dischargeUser")
+  dischargesRequested        DischargeRecord[]          @relation("dischargeRequester")
+  dischargesApproved         DischargeRecord[]          @relation("dischargeApprover")
+  dischargesCancelled        DischargeRecord[]          @relation("dischargeCanceller")
+  dischargesFinalized        DischargeRecord[]          @relation("dischargeFinalizer")
+  dischargesAmended          DischargeRecord[]          @relation("dischargeAmender")
+  dischargesClinicalCleared  DischargeRecord[]          @relation("dischargeClinicalClear")
+  dischargesNursingCleared   DischargeRecord[]          @relation("dischargeNursingClear")
+  dischargesFinancialCleared DischargeRecord[]          @relation("dischargeFinancialClear")
+  dischargesPharmacyCleared  DischargeRecord[]          @relation("dischargePharmacyClear")
+  nursingNotes               NursingNote[]              @relation("nursingNoteAuthor")
+  carePlans                  CarePlan[]                 @relation("carePlanAuthor")
+  referralsMade              Referral[]                 @relation("referralMadeBy")
+  referralsReceived          Referral[]                 @relation("referralReceivedBy")
+  referralEvents             ReferralEvent[]            @relation("referralEventActor")
+  referralFeedback           ReferralFeedback[]         @relation("referralFeedbackAuthor")
+  referralMessages           ReferralMessage[]          @relation("referralMessageSender")
+  aefiReported               AEFI[]                     @relation("aefiReportedBy")
+  aefiReviewed               AEFI[]                     @relation("aefiReviewedBy")
+  vaccineWastageDisposed     VaccineWastage[]           @relation("wasteDisposedBy")
+  coldChainRecorded          ColdChainAlert[]           @relation("coldChainRecordedBy")
+  coldChainAcked             ColdChainAlert[]           @relation("coldChainAckedBy")
   // Maternity back-relations
-  maternityRecords          MaternityRecord[]          @relation("maternityCreator")
-  ancVisitsRecorded         AncVisit[]                 @relation("ancVisitRecorder")
-  laborClinician            LaborAndDelivery[]         @relation("laborClinician")
-  laborMidwife              LaborAndDelivery[]         @relation("laborMidwife")
-  postnatalVisitsRecorded   PostnatalVisit[]           @relation("postnatalRecorder")
+  maternityRecords           MaternityRecord[]          @relation("maternityCreator")
+  ancVisitsRecorded          AncVisit[]                 @relation("ancVisitRecorder")
+  laborClinician             LaborAndDelivery[]         @relation("laborClinician")
+  laborMidwife               LaborAndDelivery[]         @relation("laborMidwife")
+  postnatalVisitsRecorded    PostnatalVisit[]           @relation("postnatalRecorder")
   // Medication back-relations
-  medicationsCreated        Medication[]               @relation("medicationCreator")
-  medicationsUpdated        Medication[]               @relation("medicationUpdater")
+  medicationsCreated         Medication[]               @relation("medicationCreator")
+  medicationsUpdated         Medication[]               @relation("medicationUpdater")
   // Service back-relations
-  servicesCreated           Service[]                  @relation("serviceCreator")
-  servicesUpdated           Service[]                  @relation("serviceUpdater")
-  servicePriceChanges       ServicePriceHistory[]      @relation("servicePriceChanger")
-  packagesCreated           ServicePackage[]           @relation("packageCreator")
+  servicesCreated            Service[]                  @relation("serviceCreator")
+  servicesUpdated            Service[]                  @relation("serviceUpdater")
+  servicePriceChanges        ServicePriceHistory[]      @relation("servicePriceChanger")
+  packagesCreated            ServicePackage[]           @relation("packageCreator")
   // Ambulance back-relations
-  ambulanceVehiclesCreated  AmbulanceVehicle[]         @relation("ambulanceCreator")
-  ambulanceTripsRequested   AmbulanceTrip[]            @relation("ambulanceRequester")
-  patientTransfers          PatientTransfer[]          @relation("ptRequestedBy")
-  immunizations             Immunization[]             @relation("immunizationAdmin")
-  triageRecords             TriageRecord[]             @relation("triageNurse")
-  vitalSigns                VitalSign[]                @relation("vitalSignAuthor")
-  invoices                  Invoice[]                  @relation("invoiceCreator")
-  payments                  Payment[]                  @relation("paymentReceiver")
-  refunds                   Refund[]                   @relation("refundProcessedBy")
-  purchaseOrders            PurchaseOrder[]            @relation("poRequestedBy")
-  inventoryTransactions     InventoryTransaction[]
-  stockTransfers            StockTransfer[]            @relation("stRequestedBy")
-  documents                 Document[]                 @relation("docUploader")
-  consents                  Consent[]                  @relation("consentRecorder")
-  tasks                     Task[]                     @relation("taskAssignee")
-  tasksCreated              Task[]                     @relation("taskCreator")
-  notifications             Notification[]
-  auditLogs                 AuditLog[]
-  breakGlassEvents          BreakGlassEvent[]
-  patientAccessLogs         PatientAccessLog[]
-  medicationAdministrations MedicationAdministration[]
-  systemSettings            SystemSetting[]
-  mergesPerformed           PatientMergeEvent[]        @relation("mergePerformedBy")
-  mergesApproved            PatientMergeEvent[]        @relation("mergeApprovedBy")
-  allergiesRecorded         Allergy[]                  @relation("allergiesRecorded")
-  maintenancePerformed      EquipmentMaintenance[]     @relation("maintenancePerformedBy")
-  incidentsReported         IncidentReport[]           @relation("incidentReporter")
-  handoversOutgoing         ShiftHandover[]            @relation("handoverOutgoing")
-  handoversIncoming         ShiftHandover[]            @relation("handoverIncoming")
-  wardRoundsAsConsultant    WardRound[]                @relation("wardRoundConsultant")
-  wardRoundsAsCreator       WardRound[]                @relation("wardRoundCreator")
-  intakeOutputRecorded      IntakeOutputEntry[]        @relation("intakeOutputRecorder")
-  intakeOutputVerified      IntakeOutputEntry[]        @relation("intakeOutputVerifier")
-  intakeOutputAmended       IntakeOutputEntry[]        @relation("intakeOutputAmender")
-  intakeOutputAlertsAck     IntakeOutputAlert[]        @relation("intakeOutputAlertAck")
+  ambulanceVehiclesCreated   AmbulanceVehicle[]         @relation("ambulanceCreator")
+  ambulanceTripsRequested    AmbulanceTrip[]            @relation("ambulanceRequester")
+  patientTransfers           PatientTransfer[]          @relation("ptRequestedBy")
+  immunizations              Immunization[]             @relation("immunizationAdmin")
+  triageRecords              TriageRecord[]             @relation("triageNurse")
+  vitalSigns                 VitalSign[]                @relation("vitalSignAuthor")
+  invoices                   Invoice[]                  @relation("invoiceCreator")
+  payments                   Payment[]                  @relation("paymentReceiver")
+  refunds                    Refund[]                   @relation("refundProcessedBy")
+  purchaseOrders             PurchaseOrder[]            @relation("poRequestedBy")
+  inventoryTransactions      InventoryTransaction[]
+  stockTransfers             StockTransfer[]            @relation("stRequestedBy")
+  documents                  Document[]                 @relation("docUploader")
+  consents                   Consent[]                  @relation("consentRecorder")
+  tasks                      Task[]                     @relation("taskAssignee")
+  tasksCreated               Task[]                     @relation("taskCreator")
+  notifications              Notification[]
+  auditLogs                  AuditLog[]
+  breakGlassEvents           BreakGlassEvent[]
+  patientAccessLogs          PatientAccessLog[]
+  medicationAdministrations  MedicationAdministration[]
+  systemSettings             SystemSetting[]
+  mergesPerformed            PatientMergeEvent[]        @relation("mergePerformedBy")
+  mergesApproved             PatientMergeEvent[]        @relation("mergeApprovedBy")
+  allergiesRecorded          Allergy[]                  @relation("allergiesRecorded")
+  maintenancePerformed       EquipmentMaintenance[]     @relation("maintenancePerformedBy")
+  incidentsReported          IncidentReport[]           @relation("incidentReporter")
+  handoversOutgoing          ShiftHandover[]            @relation("handoverOutgoing")
+  handoversIncoming          ShiftHandover[]            @relation("handoverIncoming")
+  wardRoundsAsConsultant     WardRound[]                @relation("wardRoundConsultant")
+  wardRoundsAsCreator        WardRound[]                @relation("wardRoundCreator")
+  intakeOutputRecorded       IntakeOutputEntry[]        @relation("intakeOutputRecorder")
+  intakeOutputVerified       IntakeOutputEntry[]        @relation("intakeOutputVerifier")
+  intakeOutputAmended        IntakeOutputEntry[]        @relation("intakeOutputAmender")
+  intakeOutputAlertsAck      IntakeOutputAlert[]        @relation("intakeOutputAlertAck")
 }
 
 model Staff {
@@ -2469,60 +2479,196 @@ model PatientTransfer {
 }
 
 model DischargeRecord {
-  id                      String    @id @default(cuid())
-  patientId               String
-  patient                 Patient   @relation(fields: [patientId], references: [id])
-  admissionId             String
-  admission               Admission @relation(fields: [admissionId], references: [id])
-  dischargeSummary        String?
-  finalDiagnosis          String?
-  procedures              String?
-  medications             String?
-  followUpPlan            String?
-  disposition             String? // home | transferred | referred | deceased | ama | absconded | other
-  dischargedById          String?
-  dischargedBy            User?     @relation("dischargeUser", fields: [dischargedById], references: [id])
-  dischargedAt            DateTime  @default(now())
+  id                        String    @id @default(cuid())
+  patientId                 String
+  patient                   Patient   @relation(fields: [patientId], references: [id])
+  admissionId               String
+  admission                 Admission @relation(fields: [admissionId], references: [id])
+  facilityId                String?
+  facility                  Facility? @relation(fields: [facilityId], references: [id])
+  dischargeNumber           String?   @unique // DIS-2026-000001
+  dischargeSummary          String?
+  finalDiagnosis            String?
+  procedures                String?
+  medications               String?
+  followUpPlan              String?
+  disposition               String? // home | transferred | referred | deceased | ama | absconded | other
+  dischargedById            String?
+  dischargedBy              User?     @relation("dischargeUser", fields: [dischargedById], references: [id])
+  dischargedAt              DateTime  @default(now())
   // ---- Extended structured fields ----
-  attendingClinicianId    String? // separate from discharging user
-  admissionDate           DateTime? // mirror of admission.admittedAt for report portability
-  primaryDiagnosisCode    String? // ICD-10 code
-  primaryDiagnosisName    String?
-  secondaryDiagnoses      String? // JSON array of {code, name}
-  investigationResults    String? // JSON array of important lab/imaging results
-  dischargeConditions     String? // patient condition at discharge
-  adviceOnDischarge       String?
-  sickLeaveDays           Int?
-  followUpAppointmentDate DateTime?
-  followUpClinic          String?
-  allergiesAtDischarge    String? // JSON array
-  billedAmount            Float?
-  insuranceProviderId     String?
-  dischargeType           String? // routine | transfer_to_facility | transfer_to_ward | ama | absconded | deceased | other
+  attendingClinicianId      String? // separate from discharging user
+  admissionDate             DateTime? // mirror of admission.admittedAt for report portability
+  primaryDiagnosisCode      String? // ICD-10 code
+  primaryDiagnosisName      String?
+  secondaryDiagnoses        String? // JSON array of {code, name}
+  investigationResults      String? // JSON array of important lab/imaging results
+  dischargeConditions       String? // patient condition at discharge
+  adviceOnDischarge         String?
+  sickLeaveDays             Int?
+  followUpAppointmentDate   DateTime?
+  followUpClinic            String?
+  followUpClinicianId       String?
+  allergiesAtDischarge      String? // JSON array
+  billedAmount              Float?
+  insuranceProviderId       String?
+  dischargeType             String? // routine | transfer_to_facility | transfer_to_ward | ama | absconded | deceased | other
   // Clearances
-  clinicalCleared         Boolean   @default(false)
-  clinicalClearedById     String?
-  clinicalClearedAt       DateTime?
-  nursingCleared          Boolean   @default(false)
-  nursingClearedById      String?
-  nursingClearedAt        DateTime?
-  financialCleared        Boolean   @default(false)
-  financialClearedById    String?
-  financialClearedAt      DateTime?
-  pharmacyCleared         Boolean   @default(false)
-  pharmacyClearedById     String?
-  pharmacyClearedAt       DateTime?
+  clinicalCleared           Boolean   @default(false)
+  clinicalClearedById       String?
+  clinicalClearedBy         User?     @relation("dischargeClinicalClear", fields: [clinicalClearedById], references: [id])
+  clinicalClearedAt         DateTime?
+  nursingCleared            Boolean   @default(false)
+  nursingClearedById        String?
+  nursingClearedBy          User?     @relation("dischargeNursingClear", fields: [nursingClearedById], references: [id])
+  nursingClearedAt          DateTime?
+  financialCleared          Boolean   @default(false)
+  financialClearedById      String?
+  financialClearedBy        User?     @relation("dischargeFinancialClear", fields: [financialClearedById], references: [id])
+  financialClearedAt        DateTime?
+  pharmacyCleared           Boolean   @default(false)
+  pharmacyClearedById       String?
+  pharmacyClearedBy         User?     @relation("dischargePharmacyClear", fields: [pharmacyClearedById], references: [id])
+  pharmacyClearedAt         DateTime?
   // Amendment / versioning
-  amendedFromId           String?
-  amendmentReason         String?
-  version                 Int       @default(1)
-  isLatest                Boolean   @default(true)
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  amendedFromId             String?
+  amendmentReason           String?
+  amendedById               String?
+  amendedBy                 User?     @relation("dischargeAmender", fields: [amendedById], references: [id])
+  amendedAt                 DateTime?
+  version                   Int       @default(1)
+  isLatest                  Boolean   @default(true)
+  // ---- Workflow lifecycle (new) ----
+  status                    String    @default("requested") // requested | clinical_review | approved | pending_clearance | pending_billing | pending_medication | pending_documentation | ready | discharged | cancelled | delayed
+  requestedById             String?
+  requestedBy               User?     @relation("dischargeRequester", fields: [requestedById], references: [id])
+  requestedAt               DateTime?
+  proposedDischargeAt       DateTime?
+  approvedById              String?
+  approvedBy                User?     @relation("dischargeApprover", fields: [approvedById], references: [id])
+  approvedAt                DateTime?
+  cancelledAt               DateTime?
+  cancelledById             String?
+  cancelledBy               User?     @relation("dischargeCanceller", fields: [cancelledById], references: [id])
+  cancelReason              String?
+  delayedAt                 DateTime?
+  delayReason               String?
+  delayDepartment           String?
+  expectedDischargeAt       DateTime?
+  finalizedAt               DateTime?
+  finalizedById             String?
+  finalizedBy               User?     @relation("dischargeFinalizer", fields: [finalizedById], references: [id])
+  isFinalized               Boolean   @default(false)
+  // ---- Discharge-type-specific fields ----
+  // DAMA
+  damaReason                String?
+  damaRisksExplained        Boolean   @default(false)
+  damaAdviceProvided        String?
+  damaAcknowledgedById      String?
+  damaAcknowledgedAt        DateTime?
+  damaWitnessName           String?
+  // Transfer
+  transferDestination       String?
+  transferReceivingFacility String?
+  transferReceivingDept     String?
+  transferContactPerson     String?
+  transferContactPhone      String?
+  transferReason            String?
+  transferTransportMethod   String?
+  transferAmbulanceTripId   String?
+  transferReferralId        String?
+  // Death
+  deathDate                 DateTime?
+  deathPronouncedById       String?
+  deathCause                String?
+  deathMortuaryAdmissionId  String?
+  // Absconded
+  abscondedLastSeenAt       DateTime?
+  abscondedLastLocation     String?
+  abscondedCircumstances    String?
+  abscondedStaffNotified    String?
+  // Patient education
+  patientEducationProvided  Boolean   @default(false)
+  patientEducationTopics    String? // JSON array
+  patientEducationNotes     String?
+  // Discharge instructions (structured)
+  instructionsMedication    String?
+  instructionsDiet          String?
+  instructionsActivity      String?
+  instructionsWoundCare     String?
+  instructionsFollowUp      String?
+  instructionsWarningSigns  String?
+  instructionsEmergency     String?
+  instructionsOther         String?
+  // Acknowledgement
+  acknowledgedByPatient     Boolean   @default(false)
+  acknowledgedByCaregiver   Boolean   @default(false)
+  caregiverName             String?
+  caregiverRelationship     String?
+  acknowledgedAt            DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  checklist                 DischargeChecklistItem[]
+  medicationsReconciliation DischargeMedication[]
 
   @@index([patientId])
   @@index([admissionId])
   @@index([dischargedAt])
+  @@index([facilityId, status])
+  @@index([status, dischargedAt])
+}
+
+// ---------------------------------------------------------------------
+// DISCHARGE CHECKLIST — configurable per-facility, completed per-discharge
+// ---------------------------------------------------------------------
+model DischargeChecklistItem {
+  id            String          @id @default(cuid())
+  dischargeId   String
+  discharge     DischargeRecord @relation(fields: [dischargeId], references: [id], onDelete: Cascade)
+  category      String // clinical | financial | pharmacy | nursing | records | follow_up | transport | patient_education
+  label         String
+  status        String          @default("pending") // pending | completed | not_applicable | blocked
+  completedById String?
+  completedAt   DateTime?
+  notes         String?
+  required      Boolean         @default(true)
+  sortOrder     Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([dischargeId, category])
+  @@index([dischargeId, status])
+}
+
+// ---------------------------------------------------------------------
+// DISCHARGE MEDICATION RECONCILIATION
+//   Tracks each medication's status through the discharge process:
+//   continue / stop / change / new / hold
+// ---------------------------------------------------------------------
+model DischargeMedication {
+  id                String          @id @default(cuid())
+  dischargeId       String
+  discharge         DischargeRecord @relation(fields: [dischargeId], references: [id], onDelete: Cascade)
+  medicationName    String
+  medicationId      String?
+  strength          String?
+  dose              String?
+  route             String?
+  frequency         String?
+  duration          String?
+  quantity          String?
+  instructions      String?
+  action            String          @default("continue") // continue | stop | change | new | hold
+  preAdmission      Boolean         @default(false)
+  inpatient         Boolean         @default(false)
+  dispensed         Boolean         @default(false)
+  dispensedQuantity String?
+  dispensedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([dischargeId, action])
 }
 
 // =====================================================================
