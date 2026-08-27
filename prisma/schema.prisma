@@ -147,6 +147,7 @@ model Facility {
   intakeOutputAlerts            IntakeOutputAlert[]
   intakeOutputAlertConfigs      IntakeOutputAlertConfig[]
   dischargeRecords              DischargeRecord[]
+  creditNotes                   CreditNote[]
 
   @@unique([organizationId, code])
 }
@@ -382,8 +383,19 @@ model User {
   triageRecords              TriageRecord[]             @relation("triageNurse")
   vitalSigns                 VitalSign[]                @relation("vitalSignAuthor")
   invoices                   Invoice[]                  @relation("invoiceCreator")
+  invoicesReviewed           Invoice[]                  @relation("invoiceReviewer")
+  invoicesApproved           Invoice[]                  @relation("invoiceApprover")
+  invoicesIssued             Invoice[]                  @relation("invoiceIssuer")
+  invoicesVoided             Invoice[]                  @relation("invoiceVoider")
+  invoicesCancelled          Invoice[]                  @relation("invoiceCanceller")
+  invoicesWrittenOff         Invoice[]                  @relation("invoiceWriteOff")
+  invoicesDiscountApproved   Invoice[]                  @relation("invoiceDiscountApprover")
   payments                   Payment[]                  @relation("paymentReceiver")
   refunds                    Refund[]                   @relation("refundProcessedBy")
+  refundsRequested           Refund[]                   @relation("refundRequestedBy")
+  refundsApproved            Refund[]                   @relation("refundApprovedBy")
+  creditNotesIssued          CreditNote[]               @relation("creditNoteIssuer")
+  invoiceAdjustmentsApproved InvoiceAdjustment[]        @relation("adjustmentApprover")
   purchaseOrders             PurchaseOrder[]            @relation("poRequestedBy")
   inventoryTransactions      InventoryTransaction[]
   stockTransfers             StockTransfer[]            @relation("stRequestedBy")
@@ -611,6 +623,7 @@ model Patient {
   wardRoundPatients             WardRoundPatient[]
   wardRoundNotes                WardRoundNote[]
   wardRoundActions              WardRoundAction[]
+  creditNotes                   CreditNote[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -4251,37 +4264,95 @@ model ServicePackageItem {
 }
 
 model Invoice {
-  id            String     @id @default(cuid())
-  patientId     String
-  patient       Patient    @relation(fields: [patientId], references: [id])
-  encounterId   String?
-  encounter     Encounter? @relation(fields: [encounterId], references: [id])
-  facilityId    String
-  facility      Facility   @relation(fields: [facilityId], references: [id])
-  invoiceNumber String
-  status        String     @default("draft") // draft | issued | partially_paid | paid | cancelled | refunded
-  subtotal      Float      @default(0)
-  discount      Float      @default(0)
-  tax           Float      @default(0)
-  total         Float      @default(0)
-  amountPaid    Float      @default(0)
-  balance       Float      @default(0)
-  currency      String     @default("GHS")
-  issuedAt      DateTime?
-  dueAt         DateTime?
-  createdById   String?
-  createdBy     User?      @relation("invoiceCreator", fields: [createdById], references: [id])
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                      String     @id @default(cuid())
+  patientId               String
+  patient                 Patient    @relation(fields: [patientId], references: [id])
+  encounterId             String?
+  encounter               Encounter? @relation(fields: [encounterId], references: [id])
+  admissionId             String?
+  facilityId              String
+  facility                Facility   @relation(fields: [facilityId], references: [id])
+  invoiceNumber           String
+  invoiceType             String     @default("patient") // patient | outpatient | inpatient | emergency | pharmacy | laboratory | imaging | procedure | theatre | maternity | ambulance | corporate | insurance | nhis | other
+  status                  String     @default("draft") // draft | pending_review | approved | issued | partially_paid | paid | overdue | cancelled | voided | refunded | written_off
+  payerType               String     @default("self_pay") // self_pay | nhis | private_insurance | corporate | employer | government | other
+  // Financial fields
+  subtotal                Float      @default(0)
+  discount                Float      @default(0)
+  discountReason          String?
+  discountApprovedById    String?
+  tax                     Float      @default(0)
+  taxRate                 Float      @default(0)
+  total                   Float      @default(0)
+  amountPaid              Float      @default(0)
+  amountRefunded          Float      @default(0)
+  amountCredited          Float      @default(0)
+  balance                 Float      @default(0)
+  // Payer responsibility
+  payerResponsibility     Float      @default(0)
+  patientResponsibility   Float      @default(0)
+  insuranceResponsibility Float      @default(0)
+  nhisResponsibility      Float      @default(0)
+  // Insurance/NHIS
+  insuranceProviderId     String?
+  insurancePolicyNumber   String?
+  insuranceAuthorization  String?
+  nhisNumber              String?
+  nhisClaimId             String?
+  // Corporate
+  corporateName           String?
+  corporateAccountNumber  String?
+  // Currency
+  currency                String     @default("GHS")
+  // Lifecycle timestamps
+  issuedAt                DateTime?
+  dueAt                   DateTime?
+  reviewedAt              DateTime?
+  reviewedById            String?
+  approvedAt              DateTime?
+  approvedById            String?
+  issuedById              String?
+  voidedAt                DateTime?
+  voidedById              String?
+  voidReason              String?
+  cancelledAt             DateTime?
+  cancelledById           String?
+  cancelReason            String?
+  refundedAt              DateTime?
+  writtenOffAt            DateTime?
+  writtenOffById          String?
+  writeOffReason          String?
+  writeOffAmount          Float?
+  // Notes
+  internalNotes           String?
+  patientNotes            String?
+  paymentTerms            String?
+  // Audit
+  createdById             String?
+  createdBy               User?      @relation("invoiceCreator", fields: [createdById], references: [id])
+  reviewedBy              User?      @relation("invoiceReviewer", fields: [reviewedById], references: [id])
+  approvedBy              User?      @relation("invoiceApprover", fields: [approvedById], references: [id])
+  issuedBy                User?      @relation("invoiceIssuer", fields: [issuedById], references: [id])
+  voidedBy                User?      @relation("invoiceVoider", fields: [voidedById], references: [id])
+  cancelledBy             User?      @relation("invoiceCanceller", fields: [cancelledById], references: [id])
+  writtenOffBy            User?      @relation("invoiceWriteOff", fields: [writtenOffById], references: [id])
+  discountApprovedBy      User?      @relation("invoiceDiscountApprover", fields: [discountApprovedById], references: [id])
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
 
   items           InvoiceItem[]
   payments        Payment[]
   refunds         Refund[]
   insuranceClaims InsuranceClaim[]
+  creditNotes     CreditNote[]
+  adjustments     InvoiceAdjustment[]
 
   @@unique([facilityId, invoiceNumber])
   @@index([patientId, status])
   @@index([facilityId, status, issuedAt])
+  @@index([status, dueAt])
+  @@index([payerType, status])
+  @@index([invoiceType, status])
 }
 
 model InvoiceItem {
@@ -4338,14 +4409,75 @@ model Refund {
   invoice       Invoice   @relation(fields: [invoiceId], references: [id])
   amount        Float
   reason        String?
+  refundMethod  String? // cash | mobile_money | card | bank | other
   status        String    @default("pending") // pending | approved | processed | rejected
   requestedById String?
+  requestedBy   User?     @relation("refundRequestedBy", fields: [requestedById], references: [id])
   approvedById  String?
+  approvedBy    User?     @relation("refundApprovedBy", fields: [approvedById], references: [id])
   processedById String?
   processedBy   User?     @relation("refundProcessedBy", fields: [processedById], references: [id])
   processedAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([paymentId, status])
+  @@index([invoiceId, status])
+  @@index([status, createdAt])
+}
+
+// ---------------------------------------------------------------------
+// CREDIT NOTE — for billing corrections, overbilling, approved discounts
+//   after issuance, returned services. References the original invoice.
+// ---------------------------------------------------------------------
+model CreditNote {
+  id               String    @id @default(cuid())
+  creditNoteNumber String
+  invoiceId        String
+  invoice          Invoice   @relation(fields: [invoiceId], references: [id])
+  facilityId       String
+  facility         Facility  @relation(fields: [facilityId], references: [id])
+  patientId        String
+  patient          Patient   @relation(fields: [patientId], references: [id])
+  amount           Float
+  reason           String
+  description      String?
+  status           String    @default("draft") // draft | issued | applied | reversed
+  issuedAt         DateTime?
+  issuedById       String?
+  issuedBy         User?     @relation("creditNoteIssuer", fields: [issuedById], references: [id])
+  appliedAt        DateTime?
+  reversedAt       DateTime?
+  reversalReason   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([facilityId, creditNoteNumber])
+  @@index([invoiceId])
+  @@index([patientId])
+  @@index([status, issuedAt])
+}
+
+// ---------------------------------------------------------------------
+// INVOICE ADJUSTMENT — for any financial adjustment after issuance
+//   (debit notes, write-offs, corrections)
+// ---------------------------------------------------------------------
+model InvoiceAdjustment {
+  id             String    @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
+  adjustmentType String // debit | credit | write_off | correction | other
+  amount         Float
+  reason         String
+  description    String?
+  approvedById   String?
+  approvedBy     User?     @relation("adjustmentApprover", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([invoiceId])
+  @@index([adjustmentType])
 }
 
 model InsuranceClaim {
