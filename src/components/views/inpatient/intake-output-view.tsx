@@ -1972,6 +1972,30 @@ function ReportsPanel({ facilityId, patient }: any) {
     }
   };
 
+  const needsPatient = ["daily", "shift", "rolling24h", "patient", "urine", "drain", "missing", "trend"].includes(reportType);
+  const hasPatient = !!patient?.id;
+  const canGenerate = !needsPatient || hasPatient;
+
+  // Helper to format ml values
+  const fmtMl = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocaleString(undefined, { maximumFractionDigits: 1 })} ml`);
+  const fmtSigned = (n: number | null | undefined) => {
+    if (n == null) return "—";
+    return `${n > 0 ? "+" : ""}${n.toLocaleString(undefined, { maximumFractionDigits: 1 })} ml`;
+  };
+
+  // Determine if result is empty
+  const isEmpty = (r: any) => {
+    if (!r) return true;
+    if (r.type === "daily" || r.type === "shift" || r.type === "rolling24h") return !r.entries || r.entries.length === 0;
+    if (r.type === "patient") return !r.entries || r.entries.length === 0;
+    if (r.type === "ward") return !r.items || r.items.length === 0;
+    if (r.type === "urine" || r.type === "drain") return !r.entries || r.entries.length === 0;
+    if (r.type === "missing") return !r.missingSlots || r.missingSlots.length === 0;
+    if (r.type === "trend") return !r.trend || r.trend.length === 0;
+    if (r.type === "audit") return !r.items || r.items.length === 0;
+    return false;
+  };
+
   return (
     <div className="space-y-3">
       <Card>
@@ -1987,51 +2011,38 @@ function ReportsPanel({ facilityId, patient }: any) {
               </Select>
             </div>
             {(reportType === "daily" || reportType === "shift") && (
-              <div>
-                <Label>Date</Label>
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </div>
+              <div><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
             )}
-            {(reportType === "rolling24h" || reportType === "patient" || reportType === "urine" || reportType === "drain" || reportType === "audit" || reportType === "trend") && (
+            {["rolling24h", "patient", "urine", "drain", "audit", "trend"].includes(reportType) && (
               <>
-                <div>
-                  <Label>From</Label>
-                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                </div>
-                <div>
-                  <Label>To</Label>
-                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-                </div>
+                <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+                <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
               </>
             )}
           </div>
           <div className="flex items-center justify-between">
             <div className="text-xs text-slate-500">
-              {patient?.id ? `Patient: ${patient.firstName} ${patient.lastName}` : "No patient selected — only facility-wide reports available."}
+              {needsPatient && !hasPatient ? (
+                <span className="text-amber-700">⚠ This report requires a patient. Select one from the Patient Balance tab.</span>
+              ) : hasPatient ? (
+                `Patient: ${patient.firstName} ${patient.lastName} (${patient.patientNumber})`
+              ) : (
+                "Facility-wide report — no patient required."
+              )}
             </div>
             <div className="flex gap-2">
-              {result && (
-                <Button variant="outline" onClick={() => window.print()} className="gap-2">
-                  <Printer className="w-4 h-4" /> Print Report
+              {result && !isEmpty(result) && (
+                <Button variant="outline" onClick={() => window.print()} className="gap-2 h-8">
+                  <Printer className="w-4 h-4" /> Print
                 </Button>
               )}
-              {result && patient?.id && (
-                <Button variant="outline" onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("patientId", patient.id);
-                  if (patient.admissionId) params.set("admissionId", patient.admissionId);
-                  if (reportType === "daily" || reportType === "shift") params.set("date", date);
-                  if (reportType === "rolling24h" || reportType === "patient" || reportType === "urine" || reportType === "drain" || reportType === "audit" || reportType === "trend") {
-                    params.set("from", from); params.set("to", to);
-                  }
-                  window.open(`/api/intake-output/export?patientId=${patient.id}&format=csv`, "_blank");
-                }} className="gap-2">
+              {result && !isEmpty(result) && hasPatient && (
+                <Button variant="outline" onClick={() => window.open(`/api/intake-output/export?patientId=${patient.id}&format=csv`, "_blank")} className="gap-2 h-8">
                   <Download className="w-4 h-4" /> CSV Export
                 </Button>
               )}
-              <Button onClick={generate} disabled={loading} className="gap-2 bg-teal-600 hover:bg-teal-700">
-                {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <FileBarChart className="w-4 h-4" />}
-                Generate Report
+              <Button onClick={generate} disabled={loading || !canGenerate} className="gap-2 bg-teal-600 hover:bg-teal-700 h-8">
+                {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <FileBarChart className="w-4 h-4" />} Generate Report
               </Button>
             </div>
           </div>
@@ -2041,7 +2052,360 @@ function ReportsPanel({ facilityId, patient }: any) {
       {result && (
         <Card>
           <CardContent className="p-4">
-            <pre className="text-xs bg-slate-50 p-3 rounded overflow-x-auto max-h-[60vh]">{JSON.stringify(result, null, 2)}</pre>
+            {/* EMPTY STATE */}
+            {isEmpty(result) ? (
+              <div className="text-center py-8">
+                <FileBarChart className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                <div className="text-sm font-medium text-slate-700">No records found for this report</div>
+                <div className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  {result.type === "daily" && `No I&O entries found for ${date}. Record intake/output entries from the Patient Balance tab to populate this report.`}
+                  {result.type === "shift" && `No I&O entries found for ${date}.`}
+                  {result.type === "rolling24h" && `No I&O entries in the last 24 hours.`}
+                  {result.type === "patient" && `No I&O entries found for this admission in the selected range.`}
+                  {result.type === "ward" && `No admitted patients found at this facility. Admit a patient from the Admissions module to see ward I&O data.`}
+                  {result.type === "urine" && `No urine output entries found between ${from} and ${to}.`}
+                  {result.type === "drain" && `No drain output entries found between ${from} and ${to}.`}
+                  {result.type === "missing" && (result.monitoringActive === false ? "No active monitoring period — start one from the Patient Balance tab to enable missing-entry detection." : "No missing documentation slots detected — all slots have entries!")}
+                  {result.type === "trend" && `No I&O data in the last 7 days.`}
+                  {result.type === "audit" && `No I&O audit events between ${from} and ${to}.`}
+                </div>
+                {(result.type === "daily" || result.type === "shift" || result.type === "rolling24h" || result.type === "patient" || result.type === "urine" || result.type === "drain") && (
+                  <div className="text-[10px] text-slate-400 mt-2 max-w-md mx-auto">
+                    Tip: To populate I&O reports, select a patient from the Patient Balance tab, then record intake and output entries.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* DAILY REPORT */}
+                {result.type === "daily" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Daily I&O Report — {result.date}</div>
+                    {result.patient && <div className="text-xs text-slate-500 mb-2">Patient: {result.patient.firstName} {result.patient.lastName} ({result.patient.patientNumber})</div>}
+                    {result.summary && (
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Intake</div><div className="text-lg font-bold text-emerald-700">{fmtMl(result.summary.intake)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Output</div><div className="text-lg font-bold text-amber-700">{fmtMl(result.summary.output)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Net</div><div className={`text-lg font-bold ${(result.summary.net || 0) >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(result.summary.net)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Urine</div><div className="text-lg font-bold text-violet-700">{fmtMl(result.summary.urine)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Drains</div><div className="text-lg font-bold text-amber-700">{fmtMl(result.summary.drains)}</div></div>
+                      </div>
+                    )}
+                    {result.hourly && result.hourly.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-[10px] text-slate-500 uppercase mb-1">Hourly Breakdown</div>
+                        <div className="overflow-x-auto max-h-48 overflow-y-auto">
+                          <table className="w-full text-xs">
+                            <thead className="border-b bg-slate-50 sticky top-0"><tr><th className="text-left p-2">Hour</th><th className="text-right p-2">Intake</th><th className="text-right p-2">Output</th><th className="text-right p-2">Net</th><th className="text-center p-2">Status</th></tr></thead>
+                            <tbody>
+                              {result.hourly.map((h: any) => (
+                                <tr key={h.hour} className={`border-b ${h.missing ? "bg-rose-50/40" : ""}`}>
+                                  <td className="p-2 font-mono">{h.hour}</td>
+                                  <td className="p-2 text-right text-emerald-700">{h.intake == null ? "—" : h.intake.toLocaleString()}</td>
+                                  <td className="p-2 text-right text-amber-700">{h.output == null ? "—" : h.output.toLocaleString()}</td>
+                                  <td className={`p-2 text-right ${h.net == null ? "text-slate-400" : h.net >= 0 ? "text-teal-700" : "text-rose-700"}`}>{h.net == null ? "—" : (h.net >= 0 ? "+" : "") + h.net.toLocaleString()}</td>
+                                  <td className="p-2 text-center">{h.missing ? <Badge variant="outline" className="text-rose-700 border-rose-200 bg-rose-50 text-[9px]">MISSING</Badge> : <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 text-[9px]">✓</Badge>}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-[10px] text-slate-500 uppercase mb-1">Entries ({result.entries?.length || 0})</div>
+                      <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                        <table className="w-full text-xs">
+                          <thead className="border-b bg-slate-50 sticky top-0"><tr><th className="text-left p-2">Time</th><th className="text-left p-2">Type</th><th className="text-left p-2">Category</th><th className="text-left p-2">Source</th><th className="text-right p-2">Amount</th></tr></thead>
+                          <tbody>
+                            {(result.entries || []).map((e: any) => (
+                              <tr key={e.id} className="border-b">
+                                <td className="p-2">{formatDate(e.eventAt, true)}</td>
+                                <td className="p-2"><Badge className={`text-[9px] ${ENTRY_TYPE_COLOR[e.entryType] || ""}`}>{e.entryType}</Badge></td>
+                                <td className="p-2 capitalize">{(e.category || e.fluidType || "—").replace(/_/g, " ")}</td>
+                                <td className="p-2">{e.source || "—"}</td>
+                                <td className={`p-2 text-right font-medium ${e.entryType === "intake" ? "text-emerald-700" : "text-amber-700"}`}>{e.amount.toLocaleString()} {e.unit}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SHIFT REPORT */}
+                {result.type === "shift" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Shift Report — {result.date}</div>
+                    {result.shiftTotals && result.shiftTotals.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {result.shiftTotals.map((s: any) => (
+                          <div key={s.shift} className="border rounded p-2">
+                            <div className="text-xs font-medium capitalize text-slate-700">{s.shift}</div>
+                            <div className="text-[10px] text-slate-500">{s.start} – {s.end}</div>
+                            <div className="text-xs mt-1 space-y-0.5">
+                              <div className="flex justify-between"><span>Intake</span><span className="text-emerald-700 font-medium">{fmtMl(s.intake)}</span></div>
+                              <div className="flex justify-between"><span>Output</span><span className="text-amber-700 font-medium">{fmtMl(s.output)}</span></div>
+                              <div className="flex justify-between border-t pt-0.5"><span className="font-medium">Net</span><span className={`font-bold ${s.net >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(s.net)}</span></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ROLLING 24H */}
+                {result.type === "rolling24h" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Rolling 24-Hour Balance</div>
+                    {result.summary && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Intake</div><div className="text-lg font-bold text-emerald-700">{fmtMl(result.summary.intake)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Output</div><div className="text-lg font-bold text-amber-700">{fmtMl(result.summary.output)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Net Balance</div><div className={`text-lg font-bold ${(result.summary.net || 0) >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(result.summary.net)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Entries</div><div className="text-lg font-bold text-slate-700">{result.entries?.length || 0}</div></div>
+                      </div>
+                    )}
+                    <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="border-b bg-slate-50 sticky top-0"><tr><th className="text-left p-2">Time</th><th className="text-left p-2">Type</th><th className="text-left p-2">Category</th><th className="text-right p-2">Amount</th></tr></thead>
+                        <tbody>
+                          {(result.entries || []).map((e: any) => (
+                            <tr key={e.id} className="border-b">
+                              <td className="p-2">{formatDate(e.eventAt, true)}</td>
+                              <td className="p-2"><Badge className={`text-[9px] ${ENTRY_TYPE_COLOR[e.entryType] || ""}`}>{e.entryType}</Badge></td>
+                              <td className="p-2 capitalize">{(e.category || e.fluidType || "—").replace(/_/g, " ")}</td>
+                              <td className={`p-2 text-right font-medium ${e.entryType === "intake" ? "text-emerald-700" : "text-amber-700"}`}>{e.amount.toLocaleString()} ml</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* PATIENT REPORT */}
+                {result.type === "patient" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Patient Fluid Balance (Admission-Scoped)</div>
+                    {result.summary && (
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Intake</div><div className="text-lg font-bold text-emerald-700">{fmtMl(result.summary.totalIntake)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Output</div><div className="text-lg font-bold text-amber-700">{fmtMl(result.summary.totalOutput)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Net Balance</div><div className={`text-lg font-bold ${(result.summary.netBalance || 0) >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(result.summary.netBalance)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Cumulative</div><div className={`text-lg font-bold ${(result.summary.cumulative || 0) >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(result.summary.cumulative)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Days</div><div className="text-lg font-bold text-slate-700">{result.summary.dayCount}</div></div>
+                      </div>
+                    )}
+                    {result.dailyCumulative && result.dailyCumulative.length > 0 && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="border-b bg-slate-50"><tr><th className="text-left p-2">Date</th><th className="text-right p-2">Intake</th><th className="text-right p-2">Output</th><th className="text-right p-2">Net</th><th className="text-right p-2">Cumulative</th></tr></thead>
+                          <tbody>
+                            {result.dailyCumulative.map((d: any) => (
+                              <tr key={d.date} className="border-b">
+                                <td className="p-2">{formatDate(d.date)}</td>
+                                <td className="p-2 text-right text-emerald-700">{d.intake.toLocaleString()}</td>
+                                <td className="p-2 text-right text-amber-700">{d.output.toLocaleString()}</td>
+                                <td className={`p-2 text-right ${d.net >= 0 ? "text-teal-700" : "text-rose-700"}`}>{d.net >= 0 ? "+" : ""}{d.net.toLocaleString()}</td>
+                                <td className={`p-2 text-right font-bold ${d.cumulative >= 0 ? "text-teal-700" : "text-rose-700"}`}>{d.cumulative >= 0 ? "+" : ""}{d.cumulative.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* WARD REPORT */}
+                {result.type === "ward" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Ward I&O Report — {result.date || "Today"}</div>
+                    {result.summary && (
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Patients</div><div className="text-lg font-bold text-slate-700">{result.summary.totalPatients}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">With Entries</div><div className="text-lg font-bold text-emerald-700">{result.summary.withEntries}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Missing</div><div className="text-lg font-bold text-rose-700">{result.summary.missing}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Intake</div><div className="text-lg font-bold text-emerald-700">{fmtMl(result.summary.totalIntake)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Output</div><div className="text-lg font-bold text-amber-700">{fmtMl(result.summary.totalOutput)}</div></div>
+                      </div>
+                    )}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="border-b bg-slate-50"><tr><th className="text-left p-2">Patient</th><th className="text-left p-2">Ward / Bed</th><th className="text-right p-2">Intake</th><th className="text-right p-2">Output</th><th className="text-right p-2">Net</th><th className="text-center p-2">Status</th></tr></thead>
+                        <tbody>
+                          {(result.items || []).map((it: any) => (
+                            <tr key={it.patientId} className="border-b">
+                              <td className="p-2"><div className="font-medium">{it.patient?.firstName} {it.patient?.lastName}</div><div className="text-[10px] text-slate-500">{it.patient?.patientNumber}</div></td>
+                              <td className="p-2 text-[10px]">{it.ward?.name || "—"} / Bed {it.bed?.bedNumber || "—"}</td>
+                              <td className="p-2 text-right text-emerald-700">{fmtMl(it.todayIntake)}</td>
+                              <td className="p-2 text-right text-amber-700">{fmtMl(it.todayOutput)}</td>
+                              <td className={`p-2 text-right ${it.todayNet >= 0 ? "text-teal-700" : "text-rose-700"}`}>{fmtSigned(it.todayNet)}</td>
+                              <td className="p-2 text-center">{it.missing ? <Badge variant="outline" className="text-rose-700 border-rose-200 bg-rose-50 text-[9px]">MISSING</Badge> : <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 text-[9px]">OK</Badge>}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* URINE REPORT */}
+                {result.type === "urine" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Urine Output Report</div>
+                    {result.summary && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Urine</div><div className="text-lg font-bold text-violet-700">{fmtMl(result.summary.totalUrine)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Per Hour</div><div className="text-lg font-bold text-violet-700">{result.summary.urinePerHour ? `${result.summary.urinePerHour.toFixed(0)} ml/h` : "—"}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Per kg/h</div><div className="text-lg font-bold text-violet-700">{result.summary.urinePerKgPerHour ? `${result.summary.urinePerKgPerHour.toFixed(2)} ml/kg/h` : "—"}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Weight</div><div className="text-lg font-bold text-slate-700">{result.summary.weightKg ? `${result.summary.weightKg} kg` : "—"}</div></div>
+                      </div>
+                    )}
+                    <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="border-b bg-slate-50 sticky top-0"><tr><th className="text-left p-2">Time</th><th className="text-right p-2">Volume</th><th className="text-left p-2">Route</th><th className="text-left p-2">Catheter</th></tr></thead>
+                        <tbody>
+                          {(result.entries || []).map((e: any) => (
+                            <tr key={e.id} className="border-b">
+                              <td className="p-2">{formatDate(e.eventAt, true)}</td>
+                              <td className="p-2 text-right font-medium text-violet-700">{e.amount.toLocaleString()} ml</td>
+                              <td className="p-2 capitalize">{e.route || "—"}</td>
+                              <td className="p-2 capitalize">{e.catheterStatus || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* DRAIN REPORT */}
+                {result.type === "drain" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Drain Output Report</div>
+                    {result.summary && (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Total Drain Output</div><div className="text-lg font-bold text-amber-700">{fmtMl(result.summary.totalDrainOutput)}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Drains</div><div className="text-lg font-bold text-slate-700">{result.summary.drainCount}</div></div>
+                        <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Entries</div><div className="text-lg font-bold text-slate-700">{result.summary.entryCount}</div></div>
+                      </div>
+                    )}
+                    {result.byDrain && result.byDrain.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-[10px] text-slate-500 uppercase mb-1">By Drain</div>
+                        <div className="flex flex-wrap gap-1">
+                          {result.byDrain.map((d: any) => (
+                            <Badge key={d.label} variant="outline" className="text-[10px]">{d.label}: {fmtMl(d.total)}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="overflow-x-auto max-h-60 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="border-b bg-slate-50 sticky top-0"><tr><th className="text-left p-2">Time</th><th className="text-left p-2">Drain Label</th><th className="text-right p-2">Volume</th></tr></thead>
+                        <tbody>
+                          {(result.entries || []).map((e: any) => (
+                            <tr key={e.id} className="border-b">
+                              <td className="p-2">{formatDate(e.eventAt, true)}</td>
+                              <td className="p-2">{e.drainLabel || "Unlabeled"}</td>
+                              <td className="p-2 text-right font-medium text-amber-700">{e.amount.toLocaleString()} ml</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* MISSING REPORT */}
+                {result.type === "missing" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Missing Documentation Report</div>
+                    {result.monitoringActive === false ? (
+                      <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-700">
+                        No active monitoring period. Start one from the Patient Balance tab to enable missing-entry detection.
+                      </div>
+                    ) : (
+                      <>
+                        {result.summary && (
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Missing Slots</div><div className="text-lg font-bold text-rose-700">{result.summary.missingCount}</div></div>
+                            <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Interval</div><div className="text-lg font-bold text-slate-700">{result.summary.intervalMinutes} min</div></div>
+                            <div className="border rounded p-2 text-center"><div className="text-[10px] text-slate-500">Window</div><div className="text-lg font-bold text-slate-700">{result.summary.windowHours}h</div></div>
+                          </div>
+                        )}
+                        {result.missingSlots && result.missingSlots.length > 0 ? (
+                          <div className="space-y-1">
+                            {result.missingSlots.map((slot: any, i: number) => (
+                              <div key={i} className="border rounded p-2 text-xs flex items-center gap-2">
+                                <Badge variant="outline" className="text-rose-700 border-rose-200 bg-rose-50 text-[9px]">MISSING</Badge>
+                                <span className="text-slate-700">{formatDate(slot.start, true)}</span>
+                                <span className="text-slate-400">→</span>
+                                <span className="text-slate-700">{formatDate(slot.end, true)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-sm text-emerald-700">
+                            ✓ No missing documentation slots — all slots have entries!
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* TREND REPORT */}
+                {result.type === "trend" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">7-Day Trend</div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="border-b bg-slate-50"><tr><th className="text-left p-2">Date</th><th className="text-right p-2">Intake</th><th className="text-right p-2">Output</th><th className="text-right p-2">Net</th><th className="text-right p-2">Cumulative</th></tr></thead>
+                        <tbody>
+                          {(result.trend || []).map((d: any) => (
+                            <tr key={d.date} className="border-b">
+                              <td className="p-2">{formatDate(d.date)}</td>
+                              <td className="p-2 text-right text-emerald-700">{d.intake.toLocaleString()}</td>
+                              <td className="p-2 text-right text-amber-700">{d.output.toLocaleString()}</td>
+                              <td className={`p-2 text-right ${d.net >= 0 ? "text-teal-700" : "text-rose-700"}`}>{d.net >= 0 ? "+" : ""}{d.net.toLocaleString()}</td>
+                              <td className={`p-2 text-right font-bold ${d.cumulative >= 0 ? "text-teal-700" : "text-rose-700"}`}>{d.cumulative >= 0 ? "+" : ""}{d.cumulative.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* AUDIT REPORT */}
+                {result.type === "audit" && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">I&O Audit Log — {from} to {to}</div>
+                    <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="border-b bg-slate-50 sticky top-0"><tr><th className="text-left p-2">Date/Time</th><th className="text-left p-2">Action</th><th className="text-left p-2">User</th><th className="text-left p-2">Resource ID</th><th className="text-left p-2">Details</th></tr></thead>
+                        <tbody>
+                          {(result.items || []).map((log: any) => (
+                            <tr key={log.id} className="border-b">
+                              <td className="p-2 text-[10px]">{formatDate(log.createdAt, true)}</td>
+                              <td className="p-2"><Badge variant="outline" className="text-[9px]">{log.action}</Badge></td>
+                              <td className="p-2 text-[10px]">{log.user?.firstName} {log.user?.lastName}</td>
+                              <td className="p-2 font-mono text-[10px]">{log.resourceId?.slice(-8)}</td>
+                              <td className="p-2 text-[10px] text-slate-600 max-w-xs truncate">{log.newValues || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       )}
