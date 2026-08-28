@@ -1,0 +1,58 @@
+// API: /api/training-requests — GET (list) + POST (create)
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getSession, hasPermission, auditLog } from "@/lib/session";
+import { PERMISSIONS } from "@/lib/permissions";
+import { apiRouteConfig } from "@/lib/api-route-config";
+export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
+
+export async function GET(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasPermission(session, PERMISSIONS.TRAINING_VIEW) && !hasPermission(session, PERMISSIONS.STAFF_VIEW)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const url = new URL(req.url);
+  const facilityId = url.searchParams.get("facilityId");
+  const departmentId = url.searchParams.get("departmentId");
+  const status = url.searchParams.get("status");
+  const where: any = { organizationId: session.user.organizationId };
+  if (facilityId) where.facilityId = facilityId;
+  if (departmentId) where.departmentId = departmentId;
+  if (status) where.status = status;
+  const items = await db.trainingRequest.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: 200,
+    include: {
+      facility: { select: { id: true, name: true } },
+      department: { select: { id: true, name: true } },
+      program: { select: { id: true, title: true } },
+    },
+  });
+  return NextResponse.json({ items, count: items.length });
+}
+
+export async function POST(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasPermission(session, PERMISSIONS.TRAINING_VIEW) && !hasPermission(session, PERMISSIONS.STAFF_VIEW) && !hasPermission(session, PERMISSIONS.SHIFT_MANAGE)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  let body: any;
+  try { body = JSON.parse(await req.text() || "{}"); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  const { facilityId, departmentId, programId, requestedTraining, reason, numberOfStaff, priority } = body;
+  if (!requestedTraining) return NextResponse.json({ error: "requestedTraining is required" }, { status: 400 });
+  const item = await db.trainingRequest.create({
+    data: {
+      organizationId: session.user.organizationId,
+      facilityId: facilityId || null,
+      departmentId: departmentId || null,
+      programId: programId || null,
+      requestedTraining,
+      reason,
+      numberOfStaff: parseInt(numberOfStaff, 10) || 1,
+      priority: priority || "normal",
+      requestedById: session.user.id,
+      status: "submitted",
+    },
+  });
+  await auditLog({ userId: session.user.id, organizationId: session.user.organizationId, action: "TRAINING_REQUEST_SUBMITTED", resourceType: "training_request", resourceId: item.id, newValues: { requestedTraining, priority } });
+  return NextResponse.json({ item }, { status: 201 });
+}

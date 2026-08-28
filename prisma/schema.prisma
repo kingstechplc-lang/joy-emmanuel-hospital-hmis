@@ -87,6 +87,24 @@ model Organization {
   attendancePolicies     AttendancePolicy[]
   attendancePeriods      AttendancePeriod[]
   overtimeRecords        OvertimeRecord[]
+  // --- Training advanced back-relations ---
+  trainingPrograms       TrainingProgram[]
+  trainingProviders      TrainingProvider[]
+  trainers               Trainer[]
+  trainingSessions       TrainingSession[]
+  trainingEnrollments    TrainingEnrollment[]
+  trainingAttendances    TrainingAttendance[]
+  trainingAssessments    TrainingAssessment[]
+  trainingAssessmentResults TrainingAssessmentResult[]
+  trainingCertificates   TrainingCertificate[]
+  trainingRequirements   TrainingRequirement[]
+  trainingRequests       TrainingRequest[]
+  trainingPlans          TrainingPlan[]
+  trainingEvaluations    TrainingEvaluation[]
+  trainingCompetencies   TrainingCompetency[]
+  staffCompetencies      StaffCompetency[]
+  cpdRecords             CPDRecord[]
+  externalTrainingRecords ExternalTrainingRecord[]
 }
 
 model Facility {
@@ -193,6 +211,12 @@ model Facility {
   attendancePolicies            AttendancePolicy[]
   attendancePeriods             AttendancePeriod[]
   overtimeRecords               OvertimeRecord[]
+  // --- Training advanced back-relations ---
+  trainingPrograms              TrainingProgram[]
+  trainingSessions              TrainingSession[]
+  trainingRequirements          TrainingRequirement[]
+  trainingRequests              TrainingRequest[]
+  trainingPlans                 TrainingPlan[]
 
   @@unique([organizationId, code])
 }
@@ -246,6 +270,12 @@ model Department {
   attendanceExceptions   AttendanceException[]
   attendancePolicies     AttendancePolicy[]
   overtimeRecords        OvertimeRecord[]
+  // --- Training advanced back-relations ---
+  trainingPrograms       TrainingProgram[]
+  trainingSessions       TrainingSession[]
+  trainingRequirements   TrainingRequirement[]
+  trainingRequests       TrainingRequest[]
+  trainingPlans          TrainingPlan[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -535,6 +565,9 @@ model User {
   periodLocks                AttendancePeriod[]         @relation("PeriodLocker")
   periodApprovals            AttendancePeriod[]         @relation("PeriodApprover")
   overtimeApprovals          OvertimeRecord[]           @relation("OvertimeApprover")
+  // --- Training advanced back-relations ---
+  assessmentAssessor         TrainingAssessmentResult[] @relation("AssessmentAssessor")
+  competencyAssessor         StaffCompetency[]          @relation("CompetencyAssessor")
 }
 
 model Staff {
@@ -654,6 +687,16 @@ model Staff {
   attendanceCorrections   AttendanceCorrection[]
   attendanceExceptions    AttendanceException[]
   overtimeRecords         OvertimeRecord[]
+  // --- Training advanced back-relations ---
+  trainerProfile          Trainer?            @relation("TrainerStaff")
+  trainingEnrollments     TrainingEnrollment[]  @relation("TrainingEnrollmentStaff")
+  trainingAttendances     TrainingAttendance[]  @relation("TrainingAttendanceStaff")
+  assessmentResults       TrainingAssessmentResult[] @relation("AssessmentResultStaff")
+  trainingCertificates    TrainingCertificate[] @relation("TrainingCertificateStaff")
+  trainingEvaluations     TrainingEvaluation[]  @relation("TrainingEvaluationStaff")
+  staffCompetencies       StaffCompetency[]     @relation("StaffCompetencyStaff")
+  cpdRecords              CPDRecord[]           @relation("CPDRecordStaff")
+  externalTrainingRecords ExternalTrainingRecord[] @relation("ExternalTrainingStaff")
 
   @@index([facilityId])
   @@index([departmentId])
@@ -6699,6 +6742,478 @@ model Certification {
 
   @@index([staffId])
   @@index([expiryDate])
+}
+
+// ---------------------------------------------------------------------
+// HR — ADVANCED TRAINING & STAFF DEVELOPMENT
+// ---------------------------------------------------------------------
+
+// Configurable training programs / catalog
+model TrainingProgram {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  title           String
+  code            String
+  description     String?
+  category        String?  // Clinical | Nursing | Pharmacy | Lab | Radiology | Emergency | Infection Control | Patient Safety | Occupational Safety | Admin | IT | Leadership | Compliance | Professional Development | Orientation | Mandatory
+  subcategory     String?
+  trainingType    String   @default("internal") // internal | external | workshop | seminar | conference | webinar | orientation | refresher | certification | skills | clinical | simulation | e_learning | on_job
+  deliveryMethod  String   @default("in_person") // in_person | online | hybrid | self_paced | workshop | simulation | practical | on_job
+  targetStaff     String?  // JSON: ["nurse","doctor","all"]
+  isMandatory     Boolean  @default(false)
+  durationHours   Float?
+  cpdPoints       Float?
+  validityMonths  Int?     // how long the certificate is valid
+  renewalMonths   Int?     // when to start renewal reminders before expiry
+  assessmentRequired Boolean @default(false)
+  passingScore    Float?   // percentage
+  certificateRequired Boolean @default(true)
+  cost            Float?   @default(0)
+  providerId      String?
+  provider        TrainingProvider? @relation(fields: [providerId], references: [id])
+  trainerId       String?
+  trainer         Trainer?  @relation(fields: [trainerId], references: [id])
+  status          String   @default("active") // draft | active | inactive | archived
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions        TrainingSession[]
+  enrollments     TrainingEnrollment[]
+  requirements    TrainingRequirement[]
+  assessments     TrainingAssessment[]
+  certificates    TrainingCertificate[]
+  evaluations     TrainingEvaluation[]
+  requests        TrainingRequest[]
+  planItems       TrainingPlan[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@index([facilityId, departmentId])
+}
+
+// Training providers (external organizations)
+model TrainingProvider {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  providerType    String?  // internal | external | academic | government | vendor
+  contactPerson   String?
+  email           String?
+  phone           String?
+  address         String?
+  website         String?
+  accreditation   String?
+  notes           String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  programs        TrainingProgram[]
+  externalRecords ExternalTrainingRecord[]
+
+  @@index([organizationId, active])
+}
+
+// Trainers / facilitators (internal staff or external)
+model Trainer {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String?  @unique // link to internal staff if internal trainer
+  staff           Staff?   @relation("TrainerStaff", fields: [staffId], references: [id])
+  name            String
+  isInternal      Boolean  @default(true)
+  profession      String?
+  qualification    String?
+  specialty       String?
+  contact         String?
+  email           String?
+  phone           String?
+  organization2   String?  // external org
+  status          String   @default("active") // active | inactive
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  programs        TrainingProgram[]
+  sessions        TrainingSession[]
+
+  @@index([organizationId, status])
+  @@index([staffId])
+}
+
+// Training sessions (scheduled instances of a program)
+model TrainingSession {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  programId       String
+  program         TrainingProgram @relation(fields: [programId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  sessionDate     DateTime
+  startTime       DateTime
+  endTime         DateTime?
+  venue           String?
+  building        String?
+  room            String?
+  onlineLink      String?  // for online/hybrid (access-restricted)
+  trainerId       String?
+  trainer         Trainer?  @relation(fields: [trainerId], references: [id])
+  deliveryMethod  String?  // override program default
+  maxCapacity     Int?
+  minCapacity     Int?
+  waitlistCapacity Int?
+  status          String   @default("scheduled") // scheduled | open | full | ongoing | completed | cancelled
+  cancellationReason String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  enrollments     TrainingEnrollment[]
+  attendances     TrainingAttendance[]
+
+  @@index([organizationId, sessionDate])
+  @@index([programId])
+  @@index([facilityId, sessionDate])
+}
+
+// Staff enrollment in training sessions
+model TrainingEnrollment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("TrainingEnrollmentStaff", fields: [staffId], references: [id])
+  programId       String?
+  program         TrainingProgram? @relation(fields: [programId], references: [id])
+  sessionId       String?
+  session         TrainingSession? @relation(fields: [sessionId], references: [id])
+  enrollmentDate  DateTime @default(now())
+  enrollmentSource String  @default("hr") // hr | self | nomination | bulk
+  status          String   @default("pending") // pending | approved | confirmed | waitlisted | attended | completed | withdrawn | absent
+  priority        String   @default("normal") // low | normal | high | urgent
+  nominatedById   String?
+  approvedById    String?
+  approvedAt      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  attendance      TrainingAttendance?
+  assessmentResults TrainingAssessmentResult[]
+  certificates    TrainingCertificate[]
+
+  @@unique([staffId, sessionId])
+  @@index([organizationId, status])
+  @@index([staffId, status])
+  @@index([sessionId, status])
+}
+
+// Training-specific attendance (does NOT duplicate StaffAttendance)
+model TrainingAttendance {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  enrollmentId    String   @unique
+  enrollment      TrainingEnrollment @relation(fields: [enrollmentId], references: [id])
+  staffId         String
+  staff           Staff    @relation("TrainingAttendanceStaff", fields: [staffId], references: [id])
+  sessionId       String?
+  session         TrainingSession? @relation(fields: [sessionId], references: [id])
+  checkInAt       DateTime?
+  checkOutAt      DateTime?
+  attendedMinutes Int?
+  status          String   @default("pending") // present | absent | late | partial | excused
+  attendancePercentage Float? // for partial attendance
+  recordedById    String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([staffId, sessionId])
+  @@index([organizationId, status])
+}
+
+// Training assessments (pre/post/practical)
+model TrainingAssessment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  programId       String
+  program         TrainingProgram @relation(fields: [programId], references: [id])
+  title           String
+  assessmentType  String   @default("post") // pre | post | quiz | written | practical | competency
+  maxScore        Float    @default(100)
+  passingScore    Float?
+  maxAttempts     Int      @default(1)
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  results         TrainingAssessmentResult[]
+
+  @@index([organizationId, programId])
+}
+
+// Assessment results per staff
+model TrainingAssessmentResult {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  assessmentId    String
+  assessment      TrainingAssessment @relation(fields: [assessmentId], references: [id])
+  enrollmentId    String?
+  enrollment      TrainingEnrollment? @relation(fields: [enrollmentId], references: [id])
+  staffId         String
+  staff           Staff    @relation("AssessmentResultStaff", fields: [staffId], references: [id])
+  attemptNumber   Int      @default(1)
+  score           Float
+  maxScore        Float    @default(100)
+  percentage      Float
+  passed          Boolean
+  assessorId      String?
+  assessor        User?    @relation("AssessmentAssessor", fields: [assessorId], references: [id])
+  assessmentDate  DateTime @default(now())
+  comments        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, staffId])
+  @@index([assessmentId])
+}
+
+// Training certificates
+model TrainingCertificate {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  certificateNumber String @unique
+  staffId         String
+  staff           Staff    @relation("TrainingCertificateStaff", fields: [staffId], references: [id])
+  programId       String?
+  program         TrainingProgram? @relation(fields: [programId], references: [id])
+  enrollmentId    String?
+  enrollment      TrainingEnrollment? @relation(fields: [enrollmentId], references: [id])
+  title           String
+  issueDate       DateTime @default(now())
+  expiryDate      DateTime?
+  issuingOrganization String?
+  verificationCode String?  @unique
+  documentUrl     String?
+  status          String   @default("valid") // pending | valid | expiring_soon | expired | revoked | suspended
+  revokedAt       DateTime?
+  revokedReason   String?
+  revokedById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId])
+  @@index([expiryDate])
+  @@index([programId])
+}
+
+// Configurable training requirements
+model TrainingRequirement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  programId       String?
+  program         TrainingProgram? @relation(fields: [programId], references: [id])
+  profession      String?
+  specialty       String?
+  jobRole         String?
+  employmentType  String?
+  isMandatory     Boolean  @default(true)
+  frequencyMonths Int?     // how often to renew
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([facilityId, departmentId])
+}
+
+// Training requests from departments
+model TrainingRequest {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  programId       String?
+  program         TrainingProgram? @relation(fields: [programId], references: [id])
+  requestedTraining String
+  reason          String?
+  numberOfStaff   Int      @default(1)
+  priority        String   @default("normal") // low | normal | high | urgent
+  requestedById   String?
+  status          String   @default("draft") // draft | submitted | under_review | approved | rejected | scheduled | completed
+  reviewComment   String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([facilityId, departmentId])
+}
+
+// Annual/quarterly training plans
+model TrainingPlan {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  name            String
+  year            Int
+  quarter         Int?
+  programId       String?
+  program         TrainingProgram? @relation(fields: [programId], references: [id])
+  targetStaffCount Int?
+  budget          Float?
+  actualCost      Float?
+  responsibleOfficer String?
+  status          String   @default("draft") // draft | approved | in_progress | completed | cancelled
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, year])
+  @@index([facilityId, departmentId])
+}
+
+// Training evaluations (feedback from participants)
+model TrainingEvaluation {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  programId       String?
+  program         TrainingProgram? @relation(fields: [programId], references: [id])
+  sessionId       String?
+  staffId         String
+  staff           Staff    @relation("TrainingEvaluationStaff", fields: [staffId], references: [id])
+  contentRating   Int?     // 1-5
+  trainerRating   Int?     // 1-5
+  relevanceRating Int?     // 1-5
+  venueRating     Int?     // 1-5
+  materialsRating Int?     // 1-5
+  overallRating   Int?     // 1-5
+  comments        String?
+  isAnonymous     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, programId])
+  @@index([staffId])
+}
+
+// Competency definitions
+model TrainingCompetency {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  description     String?
+  category        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  staffCompetencies StaffCompetency[]
+
+  @@unique([organizationId, name])
+}
+
+// Staff competency assessments
+model StaffCompetency {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("StaffCompetencyStaff", fields: [staffId], references: [id])
+  competencyId    String
+  competency      TrainingCompetency @relation(fields: [competencyId], references: [id])
+  level           String   @default("pending") // competent | not_yet_competent | reassessment_required | pending
+  score           Float?
+  assessorId      String?
+  assessor        User?    @relation("CompetencyAssessor", fields: [assessorId], references: [id])
+  assessmentDate  DateTime @default(now())
+  nextAssessmentDate DateTime?
+  comments        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([staffId, competencyId])
+  @@index([organizationId, level])
+  @@index([staffId])
+}
+
+// CPD records
+model CPDRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("CPDRecordStaff", fields: [staffId], references: [id])
+  activityName    String
+  activityType    String?  // training | conference | workshop | seminar | e_learning | self_study | other
+  cpdPoints       Float    @default(0)
+  cpdHours        Float    @default(0)
+  professionalBody String?
+  reportingPeriod String?  // e.g., "2026" or "2026-2027"
+  activityDate    DateTime @default(now())
+  certificateUrl  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, staffId])
+  @@index([staffId, activityDate])
+}
+
+// External training records (for external courses not in the catalog)
+model ExternalTrainingRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("ExternalTrainingStaff", fields: [staffId], references: [id])
+  courseName      String
+  providerId      String?
+  provider        TrainingProvider? @relation(fields: [providerId], references: [id])
+  providerName    String?
+  trainingDate    DateTime
+  endDate         DateTime?
+  location        String?
+  cost            Float?
+  certificateNumber String?
+  certificateUrl  String?
+  cpdPoints       Float?
+  approvalStatus  String   @default("pending") // pending | approved | rejected
+  approvedById    String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, staffId])
+  @@index([staffId, trainingDate])
 }
 
 // ---------------------------------------------------------------------

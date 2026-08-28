@@ -1216,21 +1216,159 @@ function ShiftTypesSettings({ canManage }: { canManage: boolean }) {
         )}
         <SeedDefaultsButton />
       </CardContent>
+      {showNew && <NewShiftTypeDialog onClose={() => setShowNew(false)} facilityId={activeFacilityId || undefined} />}
     </Card>
   );
 }
 
+function NewShiftTypeDialog({ onClose, facilityId }: { onClose: () => void; facilityId?: string }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [category, setCategory] = useState("regular");
+  const [startTime, setStartTime] = useState("08:00");
+  const [endTime, setEndTime] = useState("16:00");
+  const [overnight, setOvernight] = useState(false);
+  const [isOnCall, setIsOnCall] = useState(false);
+  const [colorHex, setColorHex] = useState("#3b82f6");
+  const [workingHours, setWorkingHours] = useState("8");
+  const [defaultBreakMinutes, setDefaultBreakMinutes] = useState("60");
+  const [description, setDescription] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/shift-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, code, category, startTime: startTime || null, endTime: endTime || null,
+          overnight, isOnCall, colorHex, workingHours: workingHours ? parseFloat(workingHours) : null,
+          defaultBreakMinutes: parseInt(defaultBreakMinutes, 10) || 0, description, facilityId: facilityId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Shift type created");
+      qc.invalidateQueries({ queryKey: ["shift-types"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Shift Type</DialogTitle>
+          <DialogDescription>Configure a custom shift type for your facility.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+          <div className="space-y-1.5">
+            <FieldLabel required>Name</FieldLabel>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Morning" />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel required>Code</FieldLabel>
+            <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g., MORNING" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="regular">Regular</SelectItem>
+                <SelectItem value="rotational">Rotational</SelectItem>
+                <SelectItem value="fixed">Fixed</SelectItem>
+                <SelectItem value="flexible">Flexible</SelectItem>
+                <SelectItem value="on_call">On Call</SelectItem>
+                <SelectItem value="emergency">Emergency</SelectItem>
+                <SelectItem value="weekend">Weekend</SelectItem>
+                <SelectItem value="holiday">Holiday</SelectItem>
+                <SelectItem value="temporary">Temporary</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Color</Label>
+            <div className="flex gap-2">
+              <Input type="color" value={colorHex} onChange={(e) => setColorHex(e.target.value)} className="w-16 h-9 p-1" />
+              <Input value={colorHex} onChange={(e) => setColorHex(e.target.value)} className="flex-1" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Start Time</Label>
+            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>End Time</Label>
+            <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Working Hours</Label>
+            <Input type="number" step="0.5" value={workingHours} onChange={(e) => setWorkingHours(e.target.value)} placeholder="8" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Break (minutes)</Label>
+            <Input type="number" value={defaultBreakMinutes} onChange={(e) => setDefaultBreakMinutes(e.target.value)} placeholder="60" />
+          </div>
+          <div className="space-y-1.5 md:col-span-2 flex gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={overnight} onChange={(e) => setOvernight(e.target.checked)} /> Overnight
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={isOnCall} onChange={(e) => setIsOnCall(e.target.checked)} /> On-Call
+            </label>
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label>Description</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !code} className="bg-emerald-600 hover:bg-emerald-700">
+            Create Shift Type
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function LeaveTypesSettings({ canManage }: { canManage: boolean }) {
+  const qc = useQueryClient();
+  const [showNew, setShowNew] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["leave-types-settings"],
     queryFn: () => fetchJson(`/api/leave-types`),
   });
   const items = data?.items || [];
 
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const res = await fetch(`/api/leave-types/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Updated");
+      qc.invalidateQueries({ queryKey: ["leave-types"] });
+    },
+  });
+
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Configured Leave Types ({items.length})</CardTitle>
+        {canManage && <Button size="sm" onClick={() => setShowNew(true)} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-3 h-3 mr-1" /> New</Button>}
       </CardHeader>
       <CardContent>
         {isLoading ? <LoadingState rows={4} /> : items.length === 0 ? (
@@ -1251,17 +1389,157 @@ function LeaveTypesSettings({ canManage }: { canManage: boolean }) {
                   {t.isSensitive && " • Sensitive"}
                   {t.requiresDocumentation && " • Doc required"}
                 </div>
+                {canManage && (
+                  <div className="mt-2 flex justify-end">
+                    <Button size="sm" variant="ghost" onClick={() => toggleActive.mutate({ id: t.id, active: !t.active })} className="h-6 text-xs">
+                      {t.active ? "Deactivate" : "Activate"}
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
         <SeedDefaultsButton />
       </CardContent>
+      {showNew && <NewLeaveTypeDialog onClose={() => setShowNew(false)} />}
     </Card>
   );
 }
 
+function NewLeaveTypeDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [category, setCategory] = useState("paid");
+  const [colorHex, setColorHex] = useState("#10b981");
+  const [defaultDays, setDefaultDays] = useState("30");
+  const [accrualRatePerMonth, setAccrualRatePerMonth] = useState("2.5");
+  const [carryForwardLimit, setCarryForwardLimit] = useState("15");
+  const [minDurationDays, setMinDurationDays] = useState("1");
+  const [maxDurationDays, setMaxDurationDays] = useState("");
+  const [noticePeriodDays, setNoticePeriodDays] = useState("7");
+  const [requiresDocumentation, setRequiresDocumentation] = useState(false);
+  const [requiresApprovalHierarchy, setRequiresApprovalHierarchy] = useState(true);
+  const [isSensitive, setIsSensitive] = useState(false);
+  const [description, setDescription] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/leave-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, code, category, colorHex,
+          defaultDays: defaultDays ? parseFloat(defaultDays) : null,
+          accrualRatePerMonth: accrualRatePerMonth ? parseFloat(accrualRatePerMonth) : null,
+          carryForwardLimit: carryForwardLimit ? parseFloat(carryForwardLimit) : null,
+          minDurationDays: parseFloat(minDurationDays) || 1,
+          maxDurationDays: maxDurationDays ? parseFloat(maxDurationDays) : null,
+          noticePeriodDays: parseInt(noticePeriodDays, 10) || 0,
+          requiresDocumentation, requiresApprovalHierarchy, isSensitive, description,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Leave type created");
+      qc.invalidateQueries({ queryKey: ["leave-types"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Leave Type</DialogTitle>
+          <DialogDescription>Configure a custom leave type with policy rules.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+          <div className="space-y-1.5">
+            <FieldLabel required>Name</FieldLabel>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave" />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel required>Code</FieldLabel>
+            <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g., ANNUAL" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
+                <SelectItem value="special">Special</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Color</Label>
+            <div className="flex gap-2">
+              <Input type="color" value={colorHex} onChange={(e) => setColorHex(e.target.value)} className="w-16 h-9 p-1" />
+              <Input value={colorHex} onChange={(e) => setColorHex(e.target.value)} className="flex-1" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Default Days</Label>
+            <Input type="number" step="0.5" value={defaultDays} onChange={(e) => setDefaultDays(e.target.value)} placeholder="30" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Accrual Rate (per month)</Label>
+            <Input type="number" step="0.01" value={accrualRatePerMonth} onChange={(e) => setAccrualRatePerMonth(e.target.value)} placeholder="2.5" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Carry Forward Limit</Label>
+            <Input type="number" step="0.5" value={carryForwardLimit} onChange={(e) => setCarryForwardLimit(e.target.value)} placeholder="15" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Min Duration (days)</Label>
+            <Input type="number" step="0.5" value={minDurationDays} onChange={(e) => setMinDurationDays(e.target.value)} placeholder="1" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Max Duration (days)</Label>
+            <Input type="number" step="0.5" value={maxDurationDays} onChange={(e) => setMaxDurationDays(e.target.value)} placeholder="90" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Notice Period (days)</Label>
+            <Input type="number" value={noticePeriodDays} onChange={(e) => setNoticePeriodDays(e.target.value)} placeholder="7" />
+          </div>
+          <div className="space-y-1.5 md:col-span-2 flex gap-4 flex-wrap">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={requiresDocumentation} onChange={(e) => setRequiresDocumentation(e.target.checked)} /> Requires Documentation
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={requiresApprovalHierarchy} onChange={(e) => setRequiresApprovalHierarchy(e.target.checked)} /> Approval Hierarchy
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={isSensitive} onChange={(e) => setIsSensitive(e.target.checked)} /> Sensitive (restricted access)
+            </label>
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label>Description</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !code} className="bg-emerald-600 hover:bg-emerald-700">
+            Create Leave Type
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function HolidaysSettings({ canManage }: { canManage: boolean }) {
+  const qc = useQueryClient();
+  const [showNew, setShowNew] = useState(false);
   const year = String(new Date().getFullYear());
   const { data, isLoading } = useQuery({
     queryKey: ["holidays-settings", year],
@@ -1269,10 +1547,24 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
   });
   const items = data?.items || [];
 
+  const deleteHoliday = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/holidays/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Holiday deleted");
+      qc.invalidateQueries({ queryKey: ["holidays"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Public Holidays ({year}) — {items.length}</CardTitle>
+        {canManage && <Button size="sm" onClick={() => setShowNew(true)} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-3 h-3 mr-1" /> New</Button>}
       </CardHeader>
       <CardContent>
         {isLoading ? <LoadingState rows={4} /> : items.length === 0 ? (
@@ -1285,9 +1577,14 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
                   <span className="font-medium">{h.name}</span>
                   <span className="text-slate-500 ml-2">{formatDate(h.date)}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <Badge variant="outline" className="text-xs capitalize">{h.type}</Badge>
                   {h.isRecurring && <Badge variant="outline" className="text-xs">Annual</Badge>}
+                  {canManage && (
+                    <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Delete holiday "${h.name}"?`)) deleteHoliday.mutate(h.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50">
+                      <Ban className="w-3 h-3" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -1295,7 +1592,83 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
         )}
         <SeedDefaultsButton />
       </CardContent>
+      {showNew && <NewHolidayDialog onClose={() => setShowNew(false)} />}
     </Card>
+  );
+}
+
+function NewHolidayDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [type, setType] = useState("public");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [description, setDescription] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/holidays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, date, type, isRecurring, description }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Holiday created");
+      qc.invalidateQueries({ queryKey: ["holidays"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New Public Holiday</DialogTitle>
+          <DialogDescription>Add a custom public holiday for your organization.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1.5">
+            <FieldLabel required>Holiday Name</FieldLabel>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Independence Day" />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel required>Date</FieldLabel>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Type</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="public">Public</SelectItem>
+                <SelectItem value="religious">Religious</SelectItem>
+                <SelectItem value="organizational">Organizational</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} /> Recurs annually
+            </label>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Description</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !date} className="bg-emerald-600 hover:bg-emerald-700">
+            Create Holiday
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

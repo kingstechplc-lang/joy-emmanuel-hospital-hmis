@@ -223,6 +223,24 @@ export const PERMISSIONS = {
   ATTENDANCE_PERIOD_LOCK: "attendance_period.lock",
   ATTENDANCE_PERIOD_UNLOCK: "attendance_period.unlock",
 
+  // Training & Staff Development
+  TRAINING_VIEW: "training.view",
+  TRAINING_CREATE: "training.create",
+  TRAINING_EDIT: "training.edit",
+  TRAINING_DELETE: "training.delete",
+  TRAINING_MANAGE: "training.manage",
+  TRAINING_ENROLL: "training.enroll",
+  TRAINING_APPROVE: "training.approve",
+  TRAINING_ATTENDANCE_RECORD: "training_attendance.record",
+  TRAINING_ASSESSMENT_MANAGE: "training_assessment.manage",
+  TRAINING_CERTIFICATE_MANAGE: "training_certificate.manage",
+  TRAINING_COMPETENCY_MANAGE: "training_competency.manage",
+  TRAINING_CPD_MANAGE: "training_cpd.manage",
+  TRAINING_REQUIREMENT_MANAGE: "training_requirement.manage",
+  TRAINING_REPORT_VIEW: "training_report.view",
+  TRAINING_REPORT_EXPORT: "training_report.export",
+  TRAINING_BUDGET_MANAGE: "training_budget.manage",
+
   // Nursing Documentation
   NURSING_VIEW: "nursing.view",
   NURSING_NOTE_CREATE: "nursing.note.create",
