@@ -151,6 +151,9 @@ model Facility {
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
   supplierComplaints            SupplierComplaint[]
+  // Staff module back-relations
+  staff                         Staff[]                        @relation("StaffFacility")
+  staffAssignments              StaffAssignment[]
 
   @@unique([organizationId, code])
 }
@@ -174,19 +177,22 @@ model Department {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  units           Unit[]
-  wards           Ward[]
-  encounters      Encounter[]
-  appointments    Appointment[]
-  queues          Queue[]
-  staffFacilities StaffFacility[]
-  userRoles       UserRole[]
-  staffShifts     StaffShift[]
-  equipment       Equipment[]
-  tasks           Task[]
-  shiftHandovers  ShiftHandover[]
-  services        Service[]
-  purchaseOrders  PurchaseOrder[]
+  units            Unit[]
+  wards            Ward[]
+  encounters       Encounter[]
+  appointments     Appointment[]
+  queues           Queue[]
+  staffFacilities  StaffFacility[]
+  userRoles        UserRole[]
+  staffShifts      StaffShift[]
+  equipment        Equipment[]
+  tasks            Task[]
+  shiftHandovers   ShiftHandover[]
+  services         Service[]
+  purchaseOrders   PurchaseOrder[]
+  // Staff module back-relations
+  staff            Staff[]           @relation("StaffDepartment")
+  staffAssignments StaffAssignment[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -458,13 +464,15 @@ model User {
   supplierDocsVerified       SupplierDocument[]         @relation("supplierDocVerifiedBy")
   supplierEvaluations        SupplierEvaluation[]       @relation("supplierEvaluatedBy")
   supplierComplaintsResolved SupplierComplaint[]        @relation("supplierComplaintResolvedBy")
+  // Staff module back-relations
+  staffCreatedBy             Staff[]                    @relation("StaffCreatedBy")
 }
 
 model Staff {
-  id                             String    @id @default(cuid())
-  userId                         String    @unique
-  user                           User      @relation(fields: [userId], references: [id])
-  staffNumber                    String    @unique
+  id                             String      @id @default(cuid())
+  userId                         String      @unique
+  user                           User        @relation(fields: [userId], references: [id])
+  staffNumber                    String      @unique
   firstName                      String
   middleName                     String?
   lastName                       String
@@ -473,19 +481,190 @@ model Staff {
   email                          String?
   professionalRole               String? // doctor | nurse | pharmacist | lab_scientist | radiographer | etc
   professionalRegistrationNumber String?
-  employmentStatus               String    @default("active") // active | on_leave | suspended | terminated
-  employmentType                 String? // full_time | part_time | contract | locum
+  employmentStatus               String      @default("active") // active | probation | on_leave | suspended | inactive | resigned | terminated | retired | deceased | contract_expired
+  employmentType                 String?     @default("permanent") // permanent | contract | temporary | casual | part_time | full_time | intern | volunteer | locum | consultant | agency
   hireDate                       DateTime?
   terminationDate                DateTime?
-  createdAt                      DateTime  @default(now())
-  updatedAt                      DateTime  @updatedAt
+  // --- Expanded personal & demographic fields ---
+  employeeNumber                 String?
+  preferredName                  String?
+  gender                         String?
+  photoUrl                       String?
+  // --- Employment & position fields ---
+  profession                     String?
+  specialty                      String?
+  secondarySpecialty             String?
+  position                       String?
+  jobGrade                       String?
+  jobLevel                       String?
+  departmentId                   String?
+  department                     Department? @relation("StaffDepartment", fields: [departmentId], references: [id])
+  facilityId                     String?
+  facility                       Facility?   @relation("StaffFacility", fields: [facilityId], references: [id])
+  supervisorId                   String? // self-reference via User's staff record (Staff.id)
+  supervisor                     Staff?      @relation("StaffSupervisor", fields: [supervisorId], references: [id])
+  supervisees                    Staff[]     @relation("StaffSupervisor")
+  // --- Lifecycle dates ---
+  employmentStartDate            DateTime?
+  probationStartDate             DateTime?
+  probationEndDate               DateTime?
+  confirmationDate               DateTime?
+  contractStartDate              DateTime?
+  contractEndDate                DateTime?
+  resignationDate                DateTime?
+  retirementDate                 DateTime?
+  separationDate                 DateTime?
+  separationReason               String?
+  separationType                 String? // resignation | termination | retirement | contract_expiry | transfer_out | other
+  // --- Contact & address ---
+  alternativePhone               String?
+  workEmail                      String?
+  address                        String?
+  city                           String?
+  region                         String?
+  country                        String?
+  // --- Emergency contact ---
+  emergencyContactName           String?
+  emergencyContactRelationship   String?
+  emergencyContactPhone          String?
+  emergencyContactAltPhone       String?
+  emergencyContactAddress        String?
+  // --- Professional / clinical metadata ---
+  staffCategory                  String      @default("clinical") // clinical | administrative | support_services
+  isClinical                     Boolean     @default(true)
+  canPrescribe                   Boolean     @default(false)
+  licenseNumber                  String?
+  licensingAuthority             String?
+  licenseExpiryDate              DateTime?
+  licenseStatus                  String      @default("active") // active | expired | suspended | revoked
+  // --- Identity & payroll ---
+  nationalId                     String?
+  taxIdNumber                    String?
+  bankName                       String?
+  bankAccountNumber              String?
+  bankAccountName                String?
+  payGrade                       String?
+  payrollId                      String?
+  // --- Misc ---
+  notes                          String?
+  createdById                    String?
+  createdBy                      User?       @relation("StaffCreatedBy", fields: [createdById], references: [id])
+  profileCompletion              Int         @default(0)
+  createdAt                      DateTime    @default(now())
+  updatedAt                      DateTime    @updatedAt
 
-  staffFacilities   StaffFacility[]
-  shifts            StaffShift[]
-  leaves            LeaveRecord[]
-  attendanceRecords StaffAttendance[]
-  trainingRecords   TrainingRecord[]
-  certifications    Certification[]
+  staffFacilities         StaffFacility[]
+  shifts                  StaffShift[]
+  leaves                  LeaveRecord[]
+  attendanceRecords       StaffAttendance[]
+  trainingRecords         TrainingRecord[]
+  certifications          Certification[]
+  // --- New HR back-relations ---
+  staffAssignments        StaffAssignment[]
+  staffCredentials        StaffCredential[]
+  staffStatusHistory      StaffStatusHistory[]
+  staffDocuments          StaffDocument[]
+  authorizedAssignments   StaffAssignment[]    @relation("StaffAssignmentAuthorizer")
+  verifiedCredentials     StaffCredential[]    @relation("StaffCredentialVerifier")
+  verifiedDocuments       StaffDocument[]      @relation("StaffDocumentVerifier")
+  authorizedStatusChanges StaffStatusHistory[] @relation("StaffStatusAuthorizer")
+
+  @@index([facilityId])
+  @@index([departmentId])
+  @@index([employmentStatus])
+  @@index([employmentType])
+  @@index([staffCategory])
+  @@index([profession])
+  @@index([licenseExpiryDate])
+  @@index([contractEndDate])
+}
+
+model StaffAssignment {
+  id             String      @id @default(cuid())
+  staffId        String
+  staff          Staff       @relation(fields: [staffId], references: [id])
+  facilityId     String?
+  facility       Facility?   @relation(fields: [facilityId], references: [id])
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  position       String?
+  supervisorId   String?
+  startDate      DateTime?
+  endDate        DateTime?
+  assignmentType String      @default("assignment") // assignment | transfer | promotion | secondment | acting
+  status         String      @default("active") // active | completed | revoked | superseded
+  reason         String?
+  authorizedById String?
+  authorizedBy   Staff?      @relation("StaffAssignmentAuthorizer", fields: [authorizedById], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([staffId])
+  @@index([facilityId])
+  @@index([departmentId])
+  @@index([status])
+}
+
+model StaffCredential {
+  id                 String    @id @default(cuid())
+  staffId            String
+  staff              Staff     @relation(fields: [staffId], references: [id])
+  credentialType     String? // license | certification | qualification | registration | training
+  credentialName     String
+  issuingInstitution String?
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  verificationStatus String    @default("pending") // pending | verified | rejected | expired
+  verifiedById       String?
+  verifiedBy         Staff?    @relation("StaffCredentialVerifier", fields: [verifiedById], references: [id])
+  verifiedAt         DateTime?
+  licenseNumber      String?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([staffId])
+  @@index([expiryDate])
+  @@index([verificationStatus])
+}
+
+model StaffStatusHistory {
+  id             String   @id @default(cuid())
+  staffId        String
+  staff          Staff    @relation(fields: [staffId], references: [id])
+  previousStatus String?
+  newStatus      String
+  effectiveDate  DateTime @default(now())
+  reason         String?
+  authorizedById String?
+  authorizedBy   Staff?   @relation("StaffStatusAuthorizer", fields: [authorizedById], references: [id])
+  authorizedAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@index([staffId])
+  @@index([effectiveDate])
+  @@index([newStatus])
+}
+
+model StaffDocument {
+  id                 String    @id @default(cuid())
+  staffId            String
+  staff              Staff     @relation(fields: [staffId], references: [id])
+  documentType       String? // contract | id_card | cv | certificate | medical | nda | offer_letter | other
+  documentName       String
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  verifiedById       String?
+  verifiedBy         Staff?    @relation("StaffDocumentVerifier", fields: [verifiedById], references: [id])
+  verifiedAt         DateTime?
+  verificationStatus String    @default("pending") // pending | verified | rejected | expired
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([staffId])
+  @@index([expiryDate])
+  @@index([verificationStatus])
 }
 
 model StaffFacility {
