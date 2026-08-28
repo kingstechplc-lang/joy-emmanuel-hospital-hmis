@@ -27,6 +27,7 @@ import {
 } from "./workforce-helpers";
 import { EmptyState, LoadingState, ErrorState, ClearableSearch, MiniStatCard } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { StaffSearchableSelect } from "@/components/ui/staff-searchable-select";
 
 // =====================================================================
 // SHIFT SWAPS TAB
@@ -197,12 +198,6 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
   });
   const targetShifts = targetShiftsData?.items || [];
 
-  const { data: staffData } = useQuery({
-    queryKey: ["staff-for-swap"],
-    queryFn: () => fetchJson("/api/staff"),
-  });
-  const staffList = staffData?.items || [];
-
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/shift-swaps", {
@@ -239,15 +234,12 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>Select your shift and the target staff/shift to swap with. Conflicts will be validated.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <FieldLabel required>Requester (You / On Behalf Of)</FieldLabel>
-            <Select value={requesterStaffId || undefined} onValueChange={(v) => { setRequesterStaffId(v); setRequesterShiftId(""); }}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {staffList.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <StaffSearchableSelect
+            value={requesterStaffId}
+            onValueChange={(v) => { setRequesterStaffId(v); setRequesterShiftId(""); }}
+            label="Requester (You / On Behalf Of)"
+            required
+          />
           {requesterStaffId && (
             <div className="space-y-1.5">
               <FieldLabel required>Requester&apos;s Shift</FieldLabel>
@@ -263,17 +255,13 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
               </Select>
             </div>
           )}
-          <div className="space-y-1.5">
-            <Label>Target Staff (to swap with)</Label>
-            <Select value={targetStaffId || undefined} onValueChange={(v) => { setTargetStaffId(v); setTargetShiftId(""); }}>
-              <SelectTrigger><SelectValue placeholder="Select target staff (optional — leave blank to broadcast)" /></SelectTrigger>
-              <SelectContent>
-                {staffList.filter((s: any) => s.id !== requesterStaffId).map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <StaffSearchableSelect
+            value={targetStaffId}
+            onValueChange={(v) => { setTargetStaffId(v); setTargetShiftId(""); }}
+            label="Target Staff (to swap with)"
+            placeholder="Search target staff (optional)..."
+            excludeIds={requesterStaffId ? [requesterStaffId] : []}
+          />
           {targetStaffId && (
             <div className="space-y-1.5">
               <Label>Target&apos;s Shift (to swap with — optional)</Label>
@@ -445,12 +433,6 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
   const [priority, setPriority] = useState("normal");
   const [notes, setNotes] = useState("");
 
-  const { data: staffData } = useQuery({
-    queryKey: ["staff-for-coverage", activeFacilityId],
-    queryFn: () => fetchJson(`/api/staff${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
-  });
-  const staffList = staffData?.items || [];
-
   // Fetch original staff's shifts on the selected date
   const { data: staffShiftsData } = useQuery({
     queryKey: ["staff-shifts-coverage", originalStaffId, shiftDate],
@@ -498,14 +480,13 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>Use this when staff cannot make a shift and a replacement is needed.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Original Staff (who cannot attend)</FieldLabel>
-            <Select value={originalStaffId || undefined} onValueChange={(v) => { setOriginalStaffId(v); setShiftId(""); }}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {staffList.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <StaffSearchableSelect
+              value={originalStaffId}
+              onValueChange={(v) => { setOriginalStaffId(v); setShiftId(""); }}
+              label="Original Staff (who cannot attend)"
+              required
+            />
           </div>
           {staffShifts.length > 0 && (
             <div className="space-y-1.5 md:col-span-2">
@@ -794,10 +775,6 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
   const [escalationOrder, setEscalationOrder] = useState("1");
   const [notes, setNotes] = useState("");
 
-  const { data: staffData } = useQuery({
-    queryKey: ["staff-for-oncall", activeFacilityId],
-    queryFn: () => fetchJson(`/api/staff${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
-  });
   const { data: deptData } = useQuery({
     queryKey: ["depts-for-oncall", activeFacilityId],
     queryFn: () => fetchJson(`/api/departments${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
@@ -844,14 +821,13 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>Assign staff to be on-call for a specified period.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId || undefined} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {(staffData?.items || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <StaffSearchableSelect
+              value={staffId}
+              onValueChange={setStaffId}
+              label="Staff Member"
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Department</Label>
@@ -1869,11 +1845,6 @@ function NewAvailabilityDialog({ onClose, date }: { onClose: () => void; date: s
   const [notes, setNotes] = useState("");
   const [availDate, setAvailDate] = useState(date);
 
-  const { data: staffData } = useQuery({
-    queryKey: ["staff-for-avail", activeFacilityId],
-    queryFn: () => fetchJson(`/api/staff${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
-  });
-
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/staff-availability", {
@@ -1908,15 +1879,12 @@ function NewAvailabilityDialog({ onClose, date }: { onClose: () => void; date: s
           <DialogDescription>Override a staff member&apos;s default availability for a specific date.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <FieldLabel required>Staff</FieldLabel>
-            <Select value={staffId || undefined} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {(staffData?.items || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <StaffSearchableSelect
+            value={staffId}
+            onValueChange={setStaffId}
+            label="Staff"
+            required
+          />
           <div className="space-y-1.5">
             <FieldLabel required>Date</FieldLabel>
             <Input type="date" value={availDate} onChange={(e) => setAvailDate(e.target.value)} />

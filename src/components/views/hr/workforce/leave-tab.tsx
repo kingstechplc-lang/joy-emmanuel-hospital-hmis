@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Plus, Search, Check, X, AlertTriangle, Lock, FileText, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { StaffSearchableSelect } from "@/components/ui/staff-searchable-select";
 import {
   fetchJson, usePermissions, ColoredBadge, LEAVE_STATUSES, formatDate,
 } from "./workforce-helpers";
@@ -270,12 +271,6 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
   const [supportingDocUrl, setSupportingDocUrl] = useState("");
   const [result, setResult] = useState<any>(null);
 
-  const { data: staffData } = useQuery({
-    queryKey: ["staff-for-leave", activeFacilityId],
-    queryFn: () => fetchJson(`/api/staff${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
-  });
-  const staffList = staffData?.items || [];
-
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/leave", {
@@ -325,16 +320,13 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId || undefined} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {staffList.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <StaffSearchableSelect
+              value={staffId}
+              onValueChange={setStaffId}
+              label="Staff Member"
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Leave Type</Label>

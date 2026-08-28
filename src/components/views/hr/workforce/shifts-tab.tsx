@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Plus, Search, Check, X, Ban, AlertTriangle, ArrowRightLeft, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { StaffSearchableSelect } from "@/components/ui/staff-searchable-select";
 import {
   fetchJson, usePermissions, ColoredBadge, SHIFT_STATUSES, formatTime, formatDuration, calcDurationHours,
 } from "./workforce-helpers";
@@ -215,18 +216,12 @@ function NewShiftDialog({ onClose, shiftTypes }: { onClose: () => void; shiftTyp
   const [skipConflicts, setSkipConflicts] = useState(false);
   const [conflictWarnings, setConflictWarnings] = useState<any[]>([]);
 
-  const { data: staffData } = useQuery({
-    queryKey: ["staff-for-shift", activeFacilityId],
-    queryFn: () => fetchJson(`/api/staff${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
-  });
-
   const { data: deptData } = useQuery({
     queryKey: ["depts-for-shift", activeFacilityId],
     queryFn: () => fetchJson(`/api/departments${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
     enabled: !!activeFacilityId,
   });
 
-  const staffList = staffData?.items || [];
   const depts = deptData?.items || [];
 
   const mutation = useMutation({
@@ -279,16 +274,13 @@ function NewShiftDialog({ onClose, shiftTypes }: { onClose: () => void; shiftTyp
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId || undefined} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {staffList.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <StaffSearchableSelect
+              value={staffId}
+              onValueChange={setStaffId}
+              label="Staff Member"
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <FieldLabel required>Shift Date</FieldLabel>

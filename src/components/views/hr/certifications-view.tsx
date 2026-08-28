@@ -37,6 +37,7 @@ import {EmptyState,
   ErrorState,
   formatDate, safeJson, ClearableSearch, usePagination, Pagination} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
+import { StaffSearchableSelect } from "@/components/ui/staff-searchable-select";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -429,23 +430,13 @@ function NewCertificationDialog({ onClose }: { onClose: () => void }) {
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Staff Member</FieldLabel>
-            <Select
-              value={form.staffId || undefined}
+          <div className="md:col-span-2">
+            <StaffSearchableSelect
+              value={form.staffId}
               onValueChange={(v) => setForm({ ...form, staffId: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select staff member" />
-              </SelectTrigger>
-              <SelectContent>
-                {staffList.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.firstName} {s.lastName} — {s.staffNumber}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              label="Staff Member"
+              required
+            />
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Certification Name</FieldLabel>

@@ -17,6 +17,8 @@ import {
   GraduationCap, Building2, UserCheck, Clock, Ban, ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { StaffSearchableSelect } from "@/components/ui/staff-searchable-select";
+import { SearchableSelect, type SearchableOption } from "@/components/ui/searchable-select";
 import {
   fetchJson, usePermissions, ColoredBadge, PROGRAM_STATUSES, SESSION_STATUSES,
   ENROLLMENT_STATUSES, CERTIFICATE_STATUSES, REQUEST_STATUSES, COMPETENCY_LEVELS,
@@ -391,14 +393,17 @@ function NewSessionDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>Create a new session for a training program.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Program</FieldLabel>
-            <Select value={programId || undefined} onValueChange={setProgramId}>
-              <SelectTrigger><SelectValue placeholder="Select program" /></SelectTrigger>
-              <SelectContent>
-                {programs.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.title} ({p.code})</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <SearchableSelect
+              options={programs.map((p: any) => ({ value: p.id, label: p.title, description: p.code, secondary: p.category }))}
+              value={programId}
+              onValueChange={setProgramId}
+              label="Program"
+              required
+              placeholder="Search training program..."
+              searchPlaceholder="Type program name or code..."
+              emptyText="No programs found."
+            />
           </div>
           <div className="space-y-1.5">
             <FieldLabel required>Session Date</FieldLabel>
@@ -406,13 +411,17 @@ function NewSessionDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>Trainer</Label>
-            <Select value={trainerId || "__none__"} onValueChange={(v) => setTrainerId(v === "__none__" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Select trainer" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">—</SelectItem>
-                {trainers.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { value: "__none__", label: "—" },
+                ...trainers.map((t: any) => ({ value: t.id, label: t.name, description: t.profession, secondary: t.isInternal ? "Internal" : "External" })),
+              ]}
+              value={trainerId || "__none__"}
+              onValueChange={(v) => setTrainerId(v === "__none__" ? "" : v)}
+              placeholder="Search trainer..."
+              searchPlaceholder="Type trainer name..."
+              emptyText="No trainers found."
+            />
           </div>
           <div className="space-y-1.5">
             <FieldLabel required>Start Time</FieldLabel>
@@ -557,7 +566,6 @@ function NewEnrollmentDialog({ onClose }: { onClose: () => void }) {
   const [priority, setPriority] = useState("normal");
   const [notes, setNotes] = useState("");
 
-  const { data: staffData } = useQuery({ queryKey: ["staff-for-enroll"], queryFn: () => fetchJson(`/api/staff`) });
   const { data: programsData } = useQuery({ queryKey: ["programs-for-enroll"], queryFn: () => fetchJson(`/api/training-programs`) });
   const { data: sessionsData } = useQuery({
     queryKey: ["sessions-for-enroll", programId],
@@ -592,23 +600,22 @@ function NewEnrollmentDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>Select staff and training program/session.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId || undefined} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {(staffData?.items || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <StaffSearchableSelect
+            value={staffId}
+            onValueChange={setStaffId}
+            label="Staff Member"
+            required
+          />
           <div className="space-y-1.5">
             <FieldLabel required>Program</FieldLabel>
-            <Select value={programId || undefined} onValueChange={(v) => { setProgramId(v); setSessionId(""); }}>
-              <SelectTrigger><SelectValue placeholder="Select program" /></SelectTrigger>
-              <SelectContent>
-                {(programsData?.items || []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={(programsData?.items || []).map((p: any) => ({ value: p.id, label: p.title, description: p.code, secondary: p.category }))}
+              value={programId}
+              onValueChange={(v) => { setProgramId(v); setSessionId(""); }}
+              placeholder="Search training program..."
+              searchPlaceholder="Type program name or code..."
+              emptyText="No programs found."
+            />
           </div>
           {programId && (
             <div className="space-y-1.5">
@@ -778,7 +785,6 @@ function NewCertificateDialog({ onClose }: { onClose: () => void }) {
   const [issuingOrganization, setIssuingOrganization] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
 
-  const { data: staffData } = useQuery({ queryKey: ["staff-for-cert"], queryFn: () => fetchJson(`/api/staff`) });
   const { data: programsData } = useQuery({ queryKey: ["programs-for-cert"], queryFn: () => fetchJson(`/api/training-programs`) });
 
   const mutation = useMutation({
@@ -808,24 +814,27 @@ function NewCertificateDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>A unique certificate number and verification code will be auto-generated.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 md:col-span-2">
-            <FieldLabel required>Staff Member</FieldLabel>
-            <Select value={staffId || undefined} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-              <SelectContent>
-                {(staffData?.items || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2">
+            <StaffSearchableSelect
+              value={staffId}
+              onValueChange={setStaffId}
+              label="Staff Member"
+              required
+            />
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Training Program</Label>
-            <Select value={programId || "__none__"} onValueChange={(v) => { setProgramId(v === "__none__" ? "" : v); const p = (programsData?.items || []).find((x: any) => x.id === v); if (p) setTitle(p.title); }}>
-              <SelectTrigger><SelectValue placeholder="Select program (optional)" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">—</SelectItem>
-                {(programsData?.items || []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { value: "__none__", label: "—" },
+                ...(programsData?.items || []).map((p: any) => ({ value: p.id, label: p.title, description: p.code, secondary: p.category })),
+              ]}
+              value={programId || "__none__"}
+              onValueChange={(v) => { setProgramId(v === "__none__" ? "" : v); const p = (programsData?.items || []).find((x: any) => x.id === v); if (p) setTitle(p.title); }}
+              placeholder="Search program (optional)..."
+              searchPlaceholder="Type program name..."
+              emptyText="No programs found."
+            />
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Certificate Title</FieldLabel>
@@ -1184,8 +1193,6 @@ function NewTrainerDialog({ onClose }: { onClose: () => void }) {
   const [organization2, setOrganization2] = useState("");
   const [notes, setNotes] = useState("");
 
-  const { data: staffData } = useQuery({ queryKey: ["staff-for-trainer"], queryFn: () => fetchJson(`/api/staff`) });
-
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/trainers", {
@@ -1209,15 +1216,13 @@ function NewTrainerDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isInternal} onChange={(e) => setIsInternal(e.target.checked)} /> Internal staff trainer</label></div>
           {isInternal && (
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Link to Staff</Label>
-              <Select value={staffId || "__none__"} onValueChange={(v) => setStaffId(v === "__none__" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="Select staff (optional)" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">—</SelectItem>
-                  {(staffData?.items || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.staffNumber}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="md:col-span-2">
+              <StaffSearchableSelect
+                value={staffId}
+                onValueChange={setStaffId}
+                label="Link to Staff (optional)"
+                placeholder="Search staff to link..."
+              />
             </div>
           )}
           <div className="space-y-1.5"><Label>Profession</Label><Input value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
