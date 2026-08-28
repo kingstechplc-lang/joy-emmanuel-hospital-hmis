@@ -417,6 +417,12 @@ model User {
   stockTransfers             StockTransfer[]            @relation("stRequestedBy")
   stockTransfersApproved     StockTransfer[]            @relation("stApprovedBy")
   stockTransfersReceived     StockTransfer[]            @relation("stReceivedBy")
+  stockTransfersRejected     StockTransfer[]            @relation("stRejectedBy")
+  stockTransfersPrepared     StockTransfer[]            @relation("stPreparedBy")
+  stockTransfersDispatched   StockTransfer[]            @relation("stDispatchedBy")
+  stockTransfersVerified     StockTransfer[]            @relation("stVerifiedBy")
+  stockTransfersCancelled    StockTransfer[]            @relation("stCancelledBy")
+  stockTransfersHeld         StockTransfer[]            @relation("stHeldBy")
   goodsReceived              GoodsReceived[]            @relation("goodsReceivedBy")
   inventoryItemsCreated      InventoryItem[]            @relation("inventoryItemCreator")
   stockAdjustmentsRequested  StockAdjustment[]          @relation("adjustmentRequestedBy")
@@ -5203,41 +5209,105 @@ model GoodsReceived {
 }
 
 model StockTransfer {
-  id             String    @id @default(cuid())
-  fromFacilityId String
-  fromFacility   Facility  @relation("stockFromFacility", fields: [fromFacilityId], references: [id])
-  toFacilityId   String
-  toFacility     Facility  @relation("stockToFacility", fields: [toFacilityId], references: [id])
-  transferNumber String
-  status         String    @default("requested") // requested | approved | shipped | received | cancelled
-  requestedById  String?
-  requestedBy    User?     @relation("stRequestedBy", fields: [requestedById], references: [id])
-  approvedById   String?
-  approvedBy     User?     @relation("stApprovedBy", fields: [approvedById], references: [id])
-  receivedById   String?
-  receivedBy     User?     @relation("stReceivedBy", fields: [receivedById], references: [id])
-  requestedAt    DateTime  @default(now())
-  approvedAt     DateTime?
-  shippedAt      DateTime?
-  receivedAt     DateTime?
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  transferNumber       String
+  transferType         String    @default("internal") // internal | department | pharmacy | facility | central_warehouse | emergency | return
+  fromFacilityId       String
+  fromFacility         Facility  @relation("stockFromFacility", fields: [fromFacilityId], references: [id])
+  toFacilityId         String
+  toFacility           Facility  @relation("stockToFacility", fields: [toFacilityId], references: [id])
+  fromDepartmentId     String?
+  toDepartmentId       String?
+  fromStoreName        String?
+  toStoreName          String?
+  status               String    @default("draft") // draft | pending_approval | approved | rejected | preparing | ready_for_dispatch | dispatched | in_transit | partially_received | received | verified | completed | cancelled | on_hold | discrepancy
+  priority             String    @default("normal") // low | normal | high | urgent | emergency
+  reason               String?
+  expectedDeliveryDate DateTime?
+  actualDeliveryDate   DateTime?
+  // Users
+  requestedById        String?
+  requestedBy          User?     @relation("stRequestedBy", fields: [requestedById], references: [id])
+  approvedById         String?
+  approvedBy           User?     @relation("stApprovedBy", fields: [approvedById], references: [id])
+  rejectedById         String?
+  rejectedBy           User?     @relation("stRejectedBy", fields: [rejectedById], references: [id])
+  rejectionReason      String?
+  preparedById         String?
+  preparedBy           User?     @relation("stPreparedBy", fields: [preparedById], references: [id])
+  preparedAt           DateTime?
+  dispatchedById       String?
+  dispatchedBy         User?     @relation("stDispatchedBy", fields: [dispatchedById], references: [id])
+  receivedById         String?
+  receivedBy           User?     @relation("stReceivedBy", fields: [receivedById], references: [id])
+  verifiedById         String?
+  verifiedBy           User?     @relation("stVerifiedBy", fields: [verifiedById], references: [id])
+  verifiedAt           DateTime?
+  cancelledById        String?
+  cancelledBy          User?     @relation("stCancelledBy", fields: [cancelledById], references: [id])
+  cancelReason         String?
+  heldById             String?
+  heldBy               User?     @relation("stHeldBy", fields: [heldById], references: [id])
+  holdReason           String?
+  // Dispatch info
+  carrierName          String?
+  trackingNumber       String?
+  dispatchNotes        String?
+  // Return
+  returnTransferId     String?
+  // Totals
+  totalQuantity        Int       @default(0)
+  totalValue           Float     @default(0)
+  // Timestamps
+  submittedAt          DateTime?
+  approvedAt           DateTime?
+  rejectedAt           DateTime?
+  dispatchedAt         DateTime?
+  receivedAt           DateTime?
+  completedAt          DateTime?
+  cancelledAt          DateTime?
+  heldAt               DateTime?
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   items StockTransferItem[]
+
+  @@unique([transferNumber])
+  @@index([fromFacilityId, status])
+  @@index([toFacilityId, status])
+  @@index([status, createdAt])
+  @@index([transferType, status])
+  @@index([priority, status])
 }
 
 model StockTransferItem {
-  id               String        @id @default(cuid())
-  stockTransferId  String
-  stockTransfer    StockTransfer @relation(fields: [stockTransferId], references: [id])
-  inventoryItemId  String
-  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  batchId          String?
-  quantity         Int           @default(0)
-  receivedQuantity Int           @default(0)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                 String        @id @default(cuid())
+  stockTransferId    String
+  stockTransfer      StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  inventoryItemId    String
+  inventoryItem      InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  batchId            String?
+  description        String?
+  category           String?
+  unit               String?
+  // Quantities
+  requestedQuantity  Int           @default(0)
+  approvedQuantity   Int           @default(0)
+  preparedQuantity   Int           @default(0)
+  dispatchedQuantity Int           @default(0)
+  receivedQuantity   Int           @default(0)
+  rejectedQuantity   Int           @default(0)
+  damagedQuantity    Int           @default(0)
+  // Cost
+  unitCost           Float         @default(0)
+  totalValue         Float         @default(0)
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([stockTransferId])
+  @@index([inventoryItemId])
 }
 
 // ---------------------------------------------------------------------
