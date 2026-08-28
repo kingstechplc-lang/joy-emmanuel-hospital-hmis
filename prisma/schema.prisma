@@ -67,6 +67,19 @@ model Organization {
   servicePackages        ServicePackage[]
   ambulanceVehicles      AmbulanceVehicle[]
   ambulanceTrips         AmbulanceTrip[]
+  // --- Shifts & Leave advanced back-relations ---
+  shiftTypes             ShiftType[]
+  shiftTemplates         ShiftTemplate[]
+  rosters                Roster[]
+  shiftSwaps             ShiftSwap[]
+  coverageRequests       CoverageRequest[]
+  onCallSchedules        OnCallSchedule[]
+  leaveTypes             LeaveType[]
+  leavePolicies          LeavePolicy[]
+  leaveBalances          LeaveBalance[]
+  holidays               Holiday[]
+  staffingRequirements   StaffingRequirement[]
+  shiftChangeRequests    ShiftChangeRequest[]
 }
 
 model Facility {
@@ -154,6 +167,19 @@ model Facility {
   // Staff module back-relations
   staff                         Staff[]                        @relation("StaffFacility")
   staffAssignments              StaffAssignment[]
+  // --- Shifts & Leave advanced back-relations ---
+  shiftTypes                    ShiftType[]
+  shiftTemplates                ShiftTemplate[]
+  rosters                       Roster[]
+  coverageRequests              CoverageRequest[]
+  staffAvailabilities           StaffAvailability[]
+  onCallSchedules               OnCallSchedule[]
+  leaveTypes                    LeaveType[]
+  leavePolicies                 LeavePolicy[]
+  leaveBalances                 LeaveBalance[]
+  holidays                      Holiday[]
+  staffingRequirements          StaffingRequirement[]
+  leaveRecords                  LeaveRecord[]
 
   @@unique([organizationId, code])
 }
@@ -193,6 +219,14 @@ model Department {
   // Staff module back-relations
   staff            Staff[]           @relation("StaffDepartment")
   staffAssignments StaffAssignment[]
+  // --- Shifts & Leave advanced back-relations ---
+  shiftTemplates   ShiftTemplate[]
+  rosters          Roster[]
+  coverageRequests CoverageRequest[]
+  leavePolicies    LeavePolicy[]
+  staffingRequirements StaffingRequirement[]
+  leaveRecords     LeaveRecord[]
+  onCallSchedules  OnCallSchedule[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -466,6 +500,15 @@ model User {
   supplierComplaintsResolved SupplierComplaint[]        @relation("supplierComplaintResolvedBy")
   // Staff module back-relations
   staffCreatedBy             Staff[]                    @relation("StaffCreatedBy")
+  // --- Shifts & Leave advanced back-relations ---
+  leaveApprovals             LeaveRecord[]              @relation("LeaveApprover")
+  rosterLocks                Roster[]                   @relation("RosterLocker")
+  rosterPublishes            Roster[]                   @relation("RosterPublisher")
+  rosterVersionChanges       RosterVersion[]            @relation("RosterVersionChanger")
+  swapSupervisorApprovals    ShiftSwap[]                @relation("SwapSupervisor")
+  coverageAssignments        CoverageRequest[]          @relation("CoverageAssigner")
+  leaveBalanceAdjustments    LeaveBalanceAdjustment[]   @relation("LeaveAdjuster")
+  shiftChangeReviews         ShiftChangeRequest[]       @relation("ChangeRequestReviewer")
 }
 
 model Staff {
@@ -568,6 +611,18 @@ model Staff {
   verifiedCredentials     StaffCredential[]    @relation("StaffCredentialVerifier")
   verifiedDocuments       StaffDocument[]      @relation("StaffDocumentVerifier")
   authorizedStatusChanges StaffStatusHistory[] @relation("StaffStatusAuthorizer")
+  // --- Shifts & Leave advanced back-relations ---
+  supervisedShifts        StaffShift[]         @relation("ShiftSupervisor")
+  swapRequests            ShiftSwap[]          @relation("SwapRequester")
+  swapTargets             ShiftSwap[]          @relation("SwapTarget")
+  coverageOriginals       CoverageRequest[]   @relation("CoverageOriginal")
+  coverageReplacements    CoverageRequest[]   @relation("CoverageReplacement")
+  staffAvailabilities     StaffAvailability[]
+  staffPreference         StaffPreference?
+  onCallSchedules         OnCallSchedule[]     @relation("OnCallStaff")
+  leaveBalances           LeaveBalance[]
+  leaveBalanceAdjustments LeaveBalanceAdjustment[]
+  shiftChangeRequests     ShiftChangeRequest[]
 
   @@index([facilityId])
   @@index([departmentId])
@@ -5572,36 +5627,543 @@ model EquipmentMaintenance {
 // ---------------------------------------------------------------------
 
 model StaffShift {
-  id           String      @id @default(cuid())
-  staffId      String
-  staff        Staff       @relation(fields: [staffId], references: [id])
-  facilityId   String
-  facility     Facility    @relation(fields: [facilityId], references: [id])
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  shiftDate    DateTime
-  startTime    DateTime
-  endTime      DateTime?
-  shiftType    String? // morning | evening | night | on_call
-  status       String      @default("scheduled") // scheduled | completed | cancelled | no_show
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  staffId         String
+  staff           Staff       @relation(fields: [staffId], references: [id])
+  facilityId      String
+  facility        Facility    @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  shiftDate       DateTime
+  startTime       DateTime
+  endTime         DateTime?
+  shiftType       String?     // morning | evening | night | on_call (legacy — kept for backward compat)
+  shiftTypeId     String?
+  shiftTypeRef    ShiftType?  @relation(fields: [shiftTypeId], references: [id])
+  rosterId        String?
+  roster          Roster?     @relation(fields: [rosterId], references: [id])
+  supervisorId    String?
+  supervisor      Staff?      @relation("ShiftSupervisor", fields: [supervisorId], references: [id])
+  status          String      @default("scheduled") // scheduled | checked_in | on_break | checked_out | late | absent | cancelled | no_show | completed
+  shiftCategory   String?     @default("regular") // regular | rotational | fixed | flexible | on_call | emergency | weekend | holiday | temporary | custom
+  isOnCall        Boolean     @default(false)
+  isOvernight     Boolean     @default(false)
+  notes           String?
+  breakMinutes    Int         @default(0)
+  paidBreak       Boolean     @default(true)
+  workingHours    Float?      // computed duration in hours
+  overtimeMinutes Int         @default(0)
+  attendanceReconciled Boolean @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  breaks          ShiftBreak[]
+  swapRequests    ShiftSwap[] @relation("SwapRequesterShift")
+  swapTargets     ShiftSwap[] @relation("SwapTargetShift")
+  coverageRequests CoverageRequest[]
+  changeRequests  ShiftChangeRequest[] @relation("ChangeRequestOriginalShift")
 
   @@index([staffId, shiftDate])
+  @@index([facilityId, shiftDate, status])
+  @@index([departmentId, shiftDate])
+  @@index([rosterId])
+  @@index([shiftTypeId])
 }
 
 model LeaveRecord {
-  id           String    @id @default(cuid())
-  staffId      String
-  staff        Staff     @relation(fields: [staffId], references: [id])
-  leaveType    String? // annual | sick | maternity | paternity | unpaid | study
-  startDate    DateTime
-  endDate      DateTime?
-  reason       String?
-  status       String    @default("pending") // pending | approved | rejected | cancelled
-  approvedById String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  staffId             String
+  staff               Staff     @relation(fields: [staffId], references: [id])
+  facilityId          String?
+  facility            Facility? @relation(fields: [facilityId], references: [id])
+  departmentId        String?
+  department          Department? @relation(fields: [departmentId], references: [id])
+  leaveType           String? // annual | sick | maternity | paternity | unpaid | study | compassionate | bereavement | emergency | public_duty | special
+  leaveTypeId         String? // FK to LeaveType when configured
+  leaveTypeRef        LeaveType? @relation(fields: [leaveTypeId], references: [id])
+  startDate           DateTime
+  endDate             DateTime?
+  returnDate          DateTime? // actual or expected return date
+  actualReturnDate    DateTime? // when staff actually resumed duty
+  partialDay          String?   @default("full") // full | half_first | half_second | hours
+  hoursOff            Float?    // for partial-day/hourly leave
+  reason              String?
+  reasonCode          String? // annual | sick | family | study | emergency | other
+  supportingDocUrl    String?
+  contactDuringLeave  String?
+  // Maternity-specific (sensitive — restricted access)
+  expectedDeliveryDate DateTime?
+  // Study leave-specific
+  institution         String?
+  courseName           String?
+  // Approval workflow
+  status              String    @default("pending") // draft | submitted | pending | approved | rejected | cancelled | withdrawn | extended | completed | overdue_return
+  approvedById        String?
+  approvedBy          User?     @relation("LeaveApprover", fields: [approvedById], references: [id])
+  reviewedById        String?
+  reviewComment       String?
+  // Extension support
+  extendedFromId      String? // self-ref to original leave if this is an extension
+  extendedFrom        LeaveRecord? @relation("LeaveExtension", fields: [extendedFromId], references: [id])
+  extensions         LeaveRecord[] @relation("LeaveExtension")
+  // Roster impact
+  rosterAdjusted      Boolean   @default(false)
+  // Confidentiality
+  isSensitive         Boolean   @default(false) // sick/maternity — restricted access
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([staffId, startDate])
+  @@index([facilityId, startDate])
+  @@index([departmentId, startDate])
+  @@index([status, startDate])
+  @@index([leaveType])
+}
+
+// ---------------------------------------------------------------------
+// HR — ADVANCED SHIFTS & LEAVE (production workforce scheduling)
+// ---------------------------------------------------------------------
+
+// Configurable shift types (replaces hardcoded morning/evening/night)
+model ShiftType {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  name            String   // Morning, Night, On-Call, 24-Hour, etc.
+  code            String   // e.g., NIGHT-12
+  category        String   @default("regular") // regular | rotational | fixed | flexible | on_call | emergency | weekend | holiday | temporary | custom
+  colorHex        String?  // for calendar UI
+  startTime       String?  // "HH:mm" — null if variable
+  endTime         String?  // "HH:mm" — null if variable
+  overnight       Boolean  @default(false)
+  isOnCall        Boolean  @default(false)
+  defaultBreakMinutes Int?
+  paidBreak       Boolean  @default(true)
+  workingHours    Float?   // calculated standard hours
+  description     String?
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  templates       ShiftTemplate[]
+  shifts          StaffShift[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
+
+// Reusable shift templates (named patterns)
+model ShiftTemplate {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  name            String
+  code            String
+  shiftTypeId     String?
+  shiftType       ShiftType?   @relation(fields: [shiftTypeId], references: [id])
+  startTime       String   // "HH:mm"
+  endTime         String   // "HH:mm"
+  breakMinutes    Int      @default(0)
+  paidBreak       Boolean  @default(true)
+  overnight       Boolean  @default(false)
+  isOnCall        Boolean  @default(false)
+  category        String   @default("regular")
+  workingHours    Float?
+  minStaff        Int?
+  requiredSkillMix String? // JSON: [{profession:"nurse", minCount:2, seniority:"senior"}]
+  description     String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([facilityId, departmentId])
+}
+
+// Roster (group of shift assignments for a date range / facility / dept)
+model Roster {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility     @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  name            String
+  startDate       DateTime
+  endDate         DateTime
+  status          String   @default("draft") // draft | review | approved | published | archived
+  lockedAt        DateTime?
+  lockedById      String?
+  lockedBy        User?        @relation("RosterLocker", fields: [lockedById], references: [id])
+  publishedAt     DateTime?
+  publishedById   String?
+  publishedBy     User?        @relation("RosterPublisher", fields: [publishedById], references: [id])
+  versionNumber   Int      @default(1)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  versions        RosterVersion[]
+  shifts          StaffShift[]
+
+  @@index([facilityId, status])
+  @@index([departmentId, startDate])
+}
+
+// Roster version history (audit of changes)
+model RosterVersion {
+  id              String   @id @default(cuid())
+  rosterId        String
+  roster          Roster   @relation(fields: [rosterId], references: [id])
+  versionNumber   Int
+  snapshot        String   // JSON snapshot of assignments
+  changedById     String?
+  changedBy       User?    @relation("RosterVersionChanger", fields: [changedById], references: [id])
+  changeReason    String?
+  createdAt       DateTime @default(now())
+
+  @@unique([rosterId, versionNumber])
+}
+
+// Shift swap requests (A↔B with supervisor approval)
+model ShiftSwap {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  requesterStaffId  String
+  requesterStaff    Staff    @relation("SwapRequester", fields: [requesterStaffId], references: [id])
+  targetStaffId     String?
+  targetStaff       Staff?   @relation("SwapTarget", fields: [targetStaffId], references: [id])
+  requesterShiftId  String
+  requesterShift    StaffShift @relation("SwapRequesterShift", fields: [requesterShiftId], references: [id])
+  targetShiftId     String?
+  targetShift       StaffShift? @relation("SwapTargetShift", fields: [targetShiftId], references: [id])
+  reason            String?
+  status            String   @default("requested") // requested | accepted | rejected | approved | cancelled | completed
+  requesterApprovedAt DateTime?
+  targetAcceptedAt  DateTime?
+  supervisorApprovedAt DateTime?
+  supervisorApprovedById String?
+  supervisorApprovedBy User? @relation("SwapSupervisor", fields: [supervisorApprovedById], references: [id])
+  rejectionReason   String?
+  conflictWarnings  String?  // JSON: list of detected conflicts
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([requesterStaffId])
+  @@index([targetStaffId])
+}
+
+// Coverage requests (when staff cannot make a shift)
+model CoverageRequest {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  facilityId        String
+  facility          Facility  @relation(fields: [facilityId], references: [id])
+  departmentId      String?
+  department        Department? @relation(fields: [departmentId], references: [id])
+  shiftId           String?
+  shift             StaffShift? @relation(fields: [shiftId], references: [id])
+  originalStaffId   String
+  originalStaff     Staff    @relation("CoverageOriginal", fields: [originalStaffId], references: [id])
+  replacementStaffId String?
+  replacementStaff  Staff?   @relation("CoverageReplacement", fields: [replacementStaffId], references: [id])
+  reason            String?  // sick | emergency | no_show | personal | other
+  requiredProfession String?
+  requiredSpecialty  String?
+  shiftDate         DateTime
+  startTime         DateTime
+  endTime           DateTime?
+  priority          String   @default("normal") // low | normal | high | urgent
+  status            String   @default("open") // open | assigned | fulfilled | cancelled | unresolved
+  assignedAt        DateTime?
+  assignedById      String?
+  assignedBy        User?    @relation("CoverageAssigner", fields: [assignedById], references: [id])
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([facilityId, status])
+  @@index([departmentId, status])
+  @@index([shiftDate, status])
+}
+
+// Staff availability (per-day override of default availability)
+model StaffAvailability {
+  id              String   @id @default(cuid())
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  date            DateTime @db.Date
+  status          String   @default("available") // available | unavailable | on_leave | off_duty | on_shift | on_call | absent | suspended
+  reason          String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([staffId, date])
+  @@index([facilityId, date])
+}
+
+// Staff shift preferences (soft constraints — not guaranteed)
+model StaffPreference {
+  id              String   @id @default(cuid())
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  preferredShiftTypes String? // JSON: ["morning","evening"]
+  preferredDays   String?  // JSON: ["mon","wed"]
+  unavailableDates String? // JSON: [{"date":"2026-01-01","reason":"family"}]
+  maxConsecutiveDays Int?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([staffId])
+}
+
+// On-call schedule (separate from regular shift assignment)
+model OnCallSchedule {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility  @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  staffId         String
+  staff           Staff     @relation("OnCallStaff", fields: [staffId], references: [id])
+  specialty       String?
+  startDate       DateTime
+  endDate         DateTime?
+  isPrimary       Boolean  @default(false)
+  isBackup        Boolean  @default(false)
+  contactMethod   String?  // phone | pager | sms | email
+  contactValue    String?
+  escalationOrder Int      @default(0)
+  status          String   @default("scheduled") // scheduled | active | completed | cancelled
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([facilityId, startDate, status])
+  @@index([departmentId, startDate])
+  @@index([staffId, startDate])
+}
+
+// Configurable leave types (replaces hardcoded annual/sick/etc)
+model LeaveType {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  name            String   // Annual, Sick, Maternity, etc.
+  code            String   // ANNUAL, SICK, MATERNITY
+  category        String   @default("paid") // paid | unpaid | special
+  colorHex        String?
+  defaultDays     Float?   // default annual entitlement
+  accrualRatePerMonth Float?
+  carryForwardLimit Float?
+  carryForwardExpiryMonths Int?
+  minDurationDays Float    @default(1)
+  maxDurationDays Float?
+  noticePeriodDays Int?
+  requiresDocumentation Boolean @default(false)
+  requiresApprovalHierarchy Boolean @default(true)
+  isSensitive     Boolean  @default(false) // sick/maternity — restricted
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  policies        LeavePolicy[]
+  leaveRecords    LeaveRecord[]
+  balances        LeaveBalance[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
+
+// Leave policy engine (per leave type, per facility/department if needed)
+model LeavePolicy {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  leaveTypeId     String
+  leaveType       LeaveType    @relation(fields: [leaveTypeId], references: [id])
+  name            String
+  eligibilityRules String?  // JSON: {"minServiceMonths":6,"employmentTypes":["permanent","contract"]}
+  approvalHierarchy String? // JSON: ["supervisor","department_head","hr"]
+  accrualFrequency String?  // monthly | annual | pro_rata | custom
+  accrualAmount   Float?
+  carryForwardEnabled Boolean @default(false)
+  carryForwardLimit Float?
+  carryForwardExpiryMonths Int?
+  negativeBalanceAllowed Boolean @default(false)
+  negativeBalanceLimit Float?
+  active          Boolean  @default(true)
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, leaveTypeId])
+}
+
+// Leave balance per staff per leave type per leave year
+model LeaveBalance {
+  id              String   @id @default(cuid())
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  leaveTypeId     String
+  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  leaveYear       String   // "2026" or "2026-2027" for financial year
+  yearStart       DateTime
+  yearEnd         DateTime
+  entitlement     Float    @default(0)
+  accrued         Float    @default(0)
+  used            Float    @default(0)
+  pending         Float    @default(0) // pending leave requests
+  carriedForward  Float    @default(0)
+  carriedForwardExpiry DateTime?
+  adjustments     Float    @default(0) // manual +/- adjustments
+  remaining       Float    @default(0) // entitlement + accrued + carriedForward + adjustments - used - pending
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  balanceAdjustments LeaveBalanceAdjustment[]
+
+  @@unique([staffId, leaveTypeId, leaveYear])
+  @@index([organizationId, leaveYear])
+  @@index([staffId])
+}
+
+// Audit-tracked manual balance adjustments
+model LeaveBalanceAdjustment {
+  id              String   @id @default(cuid())
+  leaveBalanceId  String
+  leaveBalance    LeaveBalance @relation(fields: [leaveBalanceId], references: [id])
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  adjustmentType  String   // credit | debit | carry_forward | accrual | reset
+  amount          Float
+  reason          String
+  authorizedById  String
+  authorizedBy    User?    @relation("LeaveAdjuster", fields: [authorizedById], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([leaveBalanceId, createdAt])
+  @@index([staffId, createdAt])
+}
+
+// Configurable public holidays
+model Holiday {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  name            String
+  date            DateTime @db.Date
+  type            String   @default("public") // public | religious | organizational
+  description     String?
+  isRecurring     Boolean  @default(false) // recurs annually
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, date, name])
+  @@index([organizationId, date])
+}
+
+// Department/unit minimum staffing requirements + skill mix
+model StaffingRequirement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility  @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  wardId          String?
+  shiftType       String?  // morning | evening | night | on_call | any
+  dayType         String   @default("weekday") // weekday | weekend | holiday | any
+  profession      String?
+  specialty       String?
+  seniority       String?  // junior | mid | senior | head
+  minCount        Int      @default(1)
+  idealCount      Int?
+  notes           String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([facilityId, departmentId, shiftType])
+}
+
+// Shift change requests (staff-initiated, without swap partner)
+model ShiftChangeRequest {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  originalShiftId String?
+  originalShift   StaffShift? @relation("ChangeRequestOriginalShift", fields: [originalShiftId], references: [id])
+  requestedShiftDate DateTime?
+  requestedShiftType String?
+  requestedStartTime DateTime?
+  requestedEndTime DateTime?
+  reasonCode      String?  // staff_request | emergency | coverage | department_need | operational | other
+  reason          String?
+  status          String   @default("pending") // pending | approved | rejected | changes_requested | cancelled
+  reviewedById    String?
+  reviewedBy      User?    @relation("ChangeRequestReviewer", fields: [reviewedById], references: [id])
+  reviewComment   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId, createdAt])
+}
+
+// Shift break records (paid/unpaid breaks taken)
+model ShiftBreak {
+  id              String   @id @default(cuid())
+  shiftId         String
+  shift           StaffShift @relation(fields: [shiftId], references: [id])
+  breakStart      DateTime
+  breakEnd        DateTime?
+  durationMinutes Int?
+  paid            Boolean  @default(true)
+  breakType       String   @default("meal") // meal | rest | personal | other
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([shiftId])
 }
 
 // ---------------------------------------------------------------------
