@@ -80,6 +80,13 @@ model Organization {
   holidays               Holiday[]
   staffingRequirements   StaffingRequirement[]
   shiftChangeRequests    ShiftChangeRequest[]
+  // --- Attendance advanced back-relations ---
+  attendanceEvents       AttendanceEvent[]
+  attendanceCorrections  AttendanceCorrection[]
+  attendanceExceptions   AttendanceException[]
+  attendancePolicies     AttendancePolicy[]
+  attendancePeriods      AttendancePeriod[]
+  overtimeRecords        OvertimeRecord[]
 }
 
 model Facility {
@@ -180,6 +187,12 @@ model Facility {
   holidays                      Holiday[]
   staffingRequirements          StaffingRequirement[]
   leaveRecords                  LeaveRecord[]
+  // --- Attendance advanced back-relations ---
+  attendanceEvents              AttendanceEvent[]
+  attendanceExceptions          AttendanceException[]
+  attendancePolicies            AttendancePolicy[]
+  attendancePeriods             AttendancePeriod[]
+  overtimeRecords               OvertimeRecord[]
 
   @@unique([organizationId, code])
 }
@@ -227,6 +240,12 @@ model Department {
   staffingRequirements StaffingRequirement[]
   leaveRecords     LeaveRecord[]
   onCallSchedules  OnCallSchedule[]
+  // --- Attendance advanced back-relations ---
+  staffAttendance        StaffAttendance[]
+  attendanceEvents       AttendanceEvent[]
+  attendanceExceptions   AttendanceException[]
+  attendancePolicies     AttendancePolicy[]
+  overtimeRecords        OvertimeRecord[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -509,6 +528,13 @@ model User {
   coverageAssignments        CoverageRequest[]          @relation("CoverageAssigner")
   leaveBalanceAdjustments    LeaveBalanceAdjustment[]   @relation("LeaveAdjuster")
   shiftChangeReviews         ShiftChangeRequest[]       @relation("ChangeRequestReviewer")
+  // --- Attendance advanced back-relations ---
+  attendanceManualEntries    StaffAttendance[]          @relation("AttendanceManualEntry")
+  correctionReviews          AttendanceCorrection[]     @relation("CorrectionReviewer")
+  exceptionResolutions       AttendanceException[]      @relation("ExceptionResolver")
+  periodLocks                AttendancePeriod[]         @relation("PeriodLocker")
+  periodApprovals            AttendancePeriod[]         @relation("PeriodApprover")
+  overtimeApprovals          OvertimeRecord[]           @relation("OvertimeApprover")
 }
 
 model Staff {
@@ -623,6 +649,11 @@ model Staff {
   leaveBalances           LeaveBalance[]
   leaveBalanceAdjustments LeaveBalanceAdjustment[]
   shiftChangeRequests     ShiftChangeRequest[]
+  // --- Attendance advanced back-relations ---
+  attendanceEvents        AttendanceEvent[]
+  attendanceCorrections   AttendanceCorrection[]
+  attendanceExceptions    AttendanceException[]
+  overtimeRecords         OvertimeRecord[]
 
   @@index([facilityId])
   @@index([departmentId])
@@ -5662,6 +5693,7 @@ model StaffShift {
   swapTargets     ShiftSwap[] @relation("SwapTargetShift")
   coverageRequests CoverageRequest[]
   changeRequests  ShiftChangeRequest[] @relation("ChangeRequestOriginalShift")
+  attendanceRecords StaffAttendance[]
 
   @@index([staffId, shiftDate])
   @@index([facilityId, shiftDate, status])
@@ -6366,21 +6398,267 @@ model PatientMergeEvent {
 // ---------------------------------------------------------------------
 
 model StaffAttendance {
-  id         String    @id @default(cuid())
-  staffId    String
-  staff      Staff     @relation(fields: [staffId], references: [id])
-  facilityId String
-  facility   Facility  @relation(fields: [facilityId], references: [id])
-  date       DateTime  @db.Date
-  checkInAt  DateTime?
-  checkOutAt DateTime?
-  status     String    @default("present") // present | late | absent | half_day
-  notes      String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  staffId             String
+  staff               Staff     @relation(fields: [staffId], references: [id])
+  facilityId          String
+  facility            Facility  @relation(fields: [facilityId], references: [id])
+  departmentId        String?
+  department          Department? @relation(fields: [departmentId], references: [id])
+  date                DateTime  @db.Date
+  shiftId             String?   // FK to StaffShift when integrated with roster
+  shift               StaffShift? @relation(fields: [shiftId], references: [id])
+  checkInAt           DateTime?
+  checkOutAt          DateTime?
+  rawCheckInAt        DateTime? // original unrounded timestamp from device
+  rawCheckOutAt       DateTime?
+  status              String    @default("present") // scheduled | present | checked_in | checked_out | late | early_departure | absent | on_leave | off_duty | on_call | half_day | overtime | missing_checkout | correction_pending | excused_absence | unscheduled | emergency_duty
+  source              String    @default("manual") // manual | web | mobile | biometric | rfid | qr | kiosk | api | device
+  deviceId            String?
+  deviceInfo          String?   // JSON: user-agent, IP, etc.
+  // Computed timing values
+  lateMinutes         Int       @default(0)
+  earlyDepartureMinutes Int     @default(0)
+  workedMinutes       Int       @default(0) // net worked minutes (after breaks)
+  grossMinutes        Int       @default(0) // gross duration check-in to check-out
+  breakMinutes        Int       @default(0) // total break minutes deducted
+  overtimeMinutes     Int       @default(0)
+  expectedStart       DateTime? // from shift assignment
+  expectedEnd         DateTime? // from shift assignment
+  isOvernight         Boolean   @default(false)
+  is24Hour            Boolean   @default(false)
+  isUnscheduled       Boolean   @default(false) // checked in without a shift
+  isEmergencyDuty     Boolean   @default(false)
+  isOnCallWorked      Boolean   @default(false) // actually worked vs just on-call assigned
+  isManualEntry       Boolean   @default(false)
+  manualEntryReason   String?
+  manualEntryById     String?
+  manualEntryBy       User?     @relation("AttendanceManualEntry", fields: [manualEntryById], references: [id])
+  // Period locking
+  periodId            String?   // FK to AttendancePeriod
+  isLocked            Boolean   @default(false) // locked by period close
+  // Audit
+  notes               String?
+  corrections         AttendanceCorrection[]
+  exceptions          AttendanceException[]
+  overtimeRecords     OvertimeRecord[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@unique([staffId, date])
   @@index([facilityId, date])
+  @@index([departmentId, date])
+  @@index([staffId, date])
+  @@index([shiftId])
+  @@index([status, date])
+  @@index([periodId])
+}
+
+// ---------------------------------------------------------------------
+// HR — ADVANCED ATTENDANCE (production workforce attendance system)
+// ---------------------------------------------------------------------
+
+// Raw attendance event log (from devices, mobile, web, etc.) — preserved for audit
+model AttendanceEvent {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  attendanceId    String?  // link to processed StaffAttendance record
+  timestamp       DateTime
+  eventType       String   // check_in | check_out | break_start | break_end
+  source          String   // manual | web | mobile | biometric | rfid | qr | kiosk | api | device
+  deviceId        String?
+  deviceInfo      String?  // JSON
+  location        String?  // optional geolocation info
+  processingStatus String  @default("pending") // pending | processed | duplicate | rejected
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([staffId, timestamp])
+  @@index([facilityId, timestamp])
+  @@index([processingStatus])
+}
+
+// Attendance correction requests (staff-initiated)
+model AttendanceCorrection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  attendanceId    String
+  attendance      StaffAttendance @relation(fields: [attendanceId], references: [id])
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  // Original values (preserved)
+  originalCheckInAt  DateTime?
+  originalCheckOutAt DateTime?
+  originalStatus     String?
+  // Requested values
+  requestedCheckInAt  DateTime?
+  requestedCheckOutAt DateTime?
+  requestedStatus     String?
+  reason          String
+  supportingDocUrl String?
+  // Workflow
+  status          String   @default("pending") // pending | approved | rejected | changes_requested | cancelled
+  reviewedById    String?
+  reviewedBy      User?    @relation("CorrectionReviewer", fields: [reviewedById], references: [id])
+  reviewComment   String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId, createdAt])
+  @@index([attendanceId])
+}
+
+// Attendance exceptions (system-detected anomalies — flags for review)
+model AttendanceException {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  attendanceId    String?
+  attendance      StaffAttendance? @relation(fields: [attendanceId], references: [id])
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  date            DateTime @db.Date
+  exceptionType   String   // late | early_departure | missing_checkout | absent | unscheduled | attendance_during_leave | duplicate_checkin | duplicate_checkout | excessive_hours | invalid_facility | schedule_mismatch | overtime_exceeded
+  severity        String   @default("warning") // info | warning | error
+  description     String
+  metadata        String?  // JSON with details
+  status          String   @default("open") // open | reviewed | resolved | escalated | ignored
+  resolvedById    String?
+  resolvedBy      User?    @relation("ExceptionResolver", fields: [resolvedById], references: [id])
+  resolutionNote  String?
+  resolvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([facilityId, date, status])
+  @@index([staffId, date])
+  @@index([exceptionType, status])
+}
+
+// Configurable attendance policies per facility/department
+model AttendancePolicy {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  name            String
+  // Thresholds
+  gracePeriodMinutes Int    @default(10) // grace before counting as late
+  lateThresholdMinutes Int @default(0) // minutes after shift start to count as late
+  earlyDepartureThresholdMinutes Int @default(15) // minutes before shift end to count as early
+  maxDailyHours   Float    @default(13)
+  overtimeThresholdMinutes Int @default(480) // 8h default; overtime beyond this
+  minRestHours    Float    @default(11)
+  // Break rules
+  breakDurationMinutes Int @default(30)
+  paidBreaks      Boolean  @default(true)
+  // Rounding
+  roundingMinutes Int      @default(0) // 0 = no rounding; 5/10/15 = round to nearest
+  roundingMode    String   @default("nearest") // nearest | up | down
+  // Missing checkout
+  missingCheckoutAction String @default("flag") // flag | auto_absent | auto_check_out
+  autoCheckoutTime String? // "18:00" if auto-checkout enabled
+  // Absence processing
+  absenceProcessingEnabled Boolean @default(true)
+  absenceProcessingDelayMinutes Int @default(120) // how long after shift start to mark absent
+  // Night/weekend/holiday
+  nightStartHour Int      @default(19)
+  nightEndHour   Int      @default(7)
+  weekendStartDay Int     @default(6) // Saturday=6
+  // Active
+  active          Boolean  @default(true)
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, active])
+  @@index([facilityId, departmentId])
+}
+
+// Attendance period (for payroll locking workflow)
+model AttendancePeriod {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  name            String   // "August 2026"
+  startDate       DateTime @db.Date
+  endDate         DateTime @db.Date
+  status          String   @default("open") // open | processing | review | approved | locked
+  lockedAt        DateTime?
+  lockedById      String?
+  lockedBy        User?    @relation("PeriodLocker", fields: [lockedById], references: [id])
+  approvedAt      DateTime?
+  approvedById    String?
+  approvedBy      User?    @relation("PeriodApprover", fields: [approvedById], references: [id])
+  // Summary stats (computed at lock time)
+  totalRecords    Int      @default(0)
+  totalExceptions Int      @default(0)
+  totalCorrections Int     @default(0)
+  totalOvertimeMinutes Int @default(0)
+  totalWorkedMinutes Int   @default(0)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, facilityId, startDate, endDate])
+  @@index([organizationId, status])
+}
+
+// Overtime records (separate from attendance for approval workflow)
+model OvertimeRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  facilityId      String
+  facility        Facility @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  attendanceId    String?
+  attendance      StaffAttendance? @relation(fields: [attendanceId], references: [id])
+  date            DateTime @db.Date
+  overtimeMinutes Int
+  category        String   @default("regular") // regular | night | weekend | holiday | emergency | on_call
+  reason          String?
+  // Approval workflow
+  status          String   @default("pending") // pending | approved | rejected | cancelled
+  approvedById    String?
+  approvedBy      User?    @relation("OvertimeApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+  // Payroll handoff
+  payrollConsumedAt DateTime?
+  payrollPeriodId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId, date])
+  @@index([facilityId, date])
+  @@index([category, status])
 }
 
 model TrainingRecord {

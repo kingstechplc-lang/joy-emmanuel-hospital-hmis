@@ -209,6 +209,20 @@ export const PERMISSIONS = {
   COVERAGE_MANAGE: "coverage.manage",
   STAFF_AVAILABILITY_MANAGE: "staff_availability.manage",
 
+  // Attendance — advanced workforce attendance system
+  ATTENDANCE_VIEW: "attendance.view",
+  ATTENDANCE_RECORD: "attendance.record",
+  ATTENDANCE_EDIT: "attendance.edit",
+  ATTENDANCE_MANAGE: "attendance.manage",
+  ATTENDANCE_REVIEW: "attendance.review",
+  ATTENDANCE_CORRECTION_APPROVE: "attendance_correction.approve",
+  ATTENDANCE_POLICY_MANAGE: "attendance_policy.manage",
+  ATTENDANCE_REPORT_VIEW: "attendance_report.view",
+  ATTENDANCE_EXPORT: "attendance.export",
+  OVERTIME_MANAGE: "overtime.manage",
+  ATTENDANCE_PERIOD_LOCK: "attendance_period.lock",
+  ATTENDANCE_PERIOD_UNLOCK: "attendance_period.unlock",
+
   // Nursing Documentation
   NURSING_VIEW: "nursing.view",
   NURSING_NOTE_CREATE: "nursing.note.create",
