@@ -186,6 +186,7 @@ model Department {
   tasks           Task[]
   shiftHandovers  ShiftHandover[]
   services        Service[]
+  purchaseOrders  PurchaseOrder[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -406,6 +407,12 @@ model User {
   invoiceAdjustmentsApproved InvoiceAdjustment[]        @relation("adjustmentApprover")
   purchaseOrders             PurchaseOrder[]            @relation("poRequestedBy")
   purchaseOrdersApproved     PurchaseOrder[]            @relation("poApprovedBy")
+  purchaseOrdersRejected     PurchaseOrder[]            @relation("poRejectedBy")
+  purchaseOrdersSent         PurchaseOrder[]            @relation("poSentBy")
+  purchaseOrdersAcked        PurchaseOrder[]            @relation("poAcknowledgedBy")
+  purchaseOrdersHeld         PurchaseOrder[]            @relation("poHeldBy")
+  purchaseOrdersClosed       PurchaseOrder[]            @relation("poClosedBy")
+  purchaseOrdersCancelled    PurchaseOrder[]            @relation("poCancelledBy")
   inventoryTransactions      InventoryTransaction[]
   stockTransfers             StockTransfer[]            @relation("stRequestedBy")
   stockTransfersApproved     StockTransfer[]            @relation("stApprovedBy")
@@ -5049,43 +5056,136 @@ model SupplierComplaint {
 }
 
 model PurchaseOrder {
-  id                  String    @id @default(cuid())
+  id                  String   @id @default(cuid())
   facilityId          String
-  facility            Facility  @relation(fields: [facilityId], references: [id])
+  facility            Facility @relation(fields: [facilityId], references: [id])
   supplierId          String
-  supplier            Supplier  @relation(fields: [supplierId], references: [id])
+  supplier            Supplier @relation(fields: [supplierId], references: [id])
   purchaseOrderNumber String
-  status              String    @default("draft") // draft | submitted | approved | ordered | partially_received | received | cancelled
-  subtotal            Float     @default(0)
-  tax                 Float     @default(0)
-  total               Float     @default(0)
-  requestedById       String?
-  requestedBy         User?     @relation("poRequestedBy", fields: [requestedById], references: [id])
-  approvedById        String?
-  approvedBy          User?     @relation("poApprovedBy", fields: [approvedById], references: [id])
-  approvedAt          DateTime?
-  orderedAt           DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  // Full lifecycle:
+  //   draft | pending_approval | approved | rejected | sent_to_supplier | acknowledged |
+  //   partially_received | fully_received | partially_invoiced | fully_invoiced |
+  //   partially_paid | fully_paid | closed | cancelled | on_hold | expired
+  status              String   @default("draft")
+  subtotal            Float    @default(0)
+  tax                 Float    @default(0)
+  total               Float    @default(0)
+
+  // --- Department / priority / scheduling ---
+  departmentId         String?
+  department           Department? @relation(fields: [departmentId], references: [id])
+  priority             String      @default("normal") // low | normal | high | urgent | emergency
+  expectedDeliveryDate DateTime?
+  actualDeliveryDate   DateTime?
+
+  // --- Currency / commercial terms ---
+  currency           String  @default("GHS")
+  paymentTerms       String? // cash | immediate | 7_days | 15_days | 30_days | 45_days | 60_days | 90_days | custom
+  deliveryTerms      String?
+  shippingAddress    String?
+  deliveryContact    String?
+  deliveryPhone      String?
+  shippingMethod     String?
+  supplierReference  String?
+  trackingNumber     String?
+  notes              String?
+  termsAndConditions String?
+
+  // --- Emergency handling ---
+  isEmergency     Boolean @default(false)
+  emergencyReason String?
+
+  // --- Revision control ---
+  revisionNumber Int @default(0)
+
+  // --- Supplier dispatch & acknowledgement ---
+  sentToSupplierAt    DateTime?
+  sentById            String?
+  sentBy              User?     @relation("poSentBy", fields: [sentById], references: [id])
+  acknowledgedAt      DateTime?
+  acknowledgedById    String?
+  acknowledgedBy      User?     @relation("poAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  supplierAckStatus   String? // pending | accepted | partially_accepted | rejected
+  supplierAckComments String?
+
+  // --- Approval / request ---
+  requestedById   String?
+  requestedBy     User?     @relation("poRequestedBy", fields: [requestedById], references: [id])
+  approvedById    String?
+  approvedBy      User?     @relation("poApprovedBy", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  submittedAt     DateTime?
+  rejectedAt      DateTime?
+  rejectedById    String?
+  rejectedBy      User?     @relation("poRejectedBy", fields: [rejectedById], references: [id])
+  rejectionReason String?
+  orderedAt       DateTime?
+
+  // --- On-hold ---
+  holdReason     String?
+  heldAt         DateTime?
+  heldById       String?
+  heldBy         User?     @relation("poHeldBy", fields: [heldById], references: [id])
+  previousStatus String? // used to restore from on_hold
+
+  // --- Close / cancel ---
+  closedAt      DateTime?
+  closedById    String?
+  closedBy      User?     @relation("poClosedBy", fields: [closedById], references: [id])
+  closeNotes    String?
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("poCancelledBy", fields: [cancelledById], references: [id])
+  cancelReason  String?
+
+  // --- Financial rollups (three-way matching) ---
+  totalReceived Float @default(0)
+  totalInvoiced Float @default(0)
+  totalPaid     Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   items              PurchaseOrderItem[]
   goodsReceived      GoodsReceived[]
   supplierComplaints SupplierComplaint[]
 
   @@unique([facilityId, purchaseOrderNumber])
+  @@index([supplierId, status])
+  @@index([facilityId, status])
+  @@index([status])
+  @@index([priority])
+  @@index([expectedDeliveryDate])
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   purchaseOrderId String
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  inventoryItemId String
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  quantity        Int           @default(0)
-  unitPrice       Float         @default(0)
-  total           Float         @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  description     String? // for non-stock / ad-hoc items
+  category        String?
+  unit            String?
+  quantity        Int            @default(0)
+  unitPrice       Float          @default(0)
+  discount        Float          @default(0) // flat amount per line
+  taxRate         Float          @default(0) // percentage, e.g. 15 = 15%
+  taxAmount       Float          @default(0)
+  total           Float          @default(0) // legacy line total (qty*price-discount)
+  lineTotal       Float          @default(0) // qty*price - discount + taxAmount
+
+  // --- Three-way matching rollups (per line) ---
+  receivedQuantity Int @default(0)
+  rejectedQuantity Int @default(0)
+  invoicedQuantity Int @default(0)
+  paidQuantity     Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([purchaseOrderId])
+  @@index([inventoryItemId])
 }
 
 model GoodsReceived {
