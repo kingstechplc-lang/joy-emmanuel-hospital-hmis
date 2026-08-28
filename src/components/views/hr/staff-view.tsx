@@ -2008,10 +2008,10 @@ function StaffDialog({ mode, staff, onClose }: { mode: "create" | "edit"; staff?
               </div>
               <div className="space-y-1.5">
                 <Label>Department</Label>
-                <Select value={form.departmentId || undefined} onValueChange={(v) => set("departmentId", v)}>
+                <Select value={form.departmentId || "__none__"} onValueChange={(v) => set("departmentId", v === "__none__" ? "" : v)}>
                   <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">—</SelectItem>
+                    <SelectItem value="__none__">—</SelectItem>
                     {departments.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -2177,10 +2177,10 @@ function LifecycleActionDialog({ staff, type, onClose }: { staff: any; type: str
           </div>
           <div className="space-y-1.5">
             <Label>New Department</Label>
-            <Select value={form.departmentId || undefined} onValueChange={(v) => set("departmentId", v)}>
+            <Select value={form.departmentId || "__none__"} onValueChange={(v) => set("departmentId", v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">—</SelectItem>
+                <SelectItem value="__none__">—</SelectItem>
                 {departments.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -2411,10 +2411,10 @@ function LifecycleActionDialog({ staff, type, onClose }: { staff: any; type: str
           </div>
           <div className="space-y-1.5">
             <Label>Department</Label>
-            <Select value={form.departmentId || undefined} onValueChange={(v) => set("departmentId", v)}>
+            <Select value={form.departmentId || "__none__"} onValueChange={(v) => set("departmentId", v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">—</SelectItem>
+                <SelectItem value="__none__">—</SelectItem>
                 {departments.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
