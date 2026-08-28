@@ -64,25 +64,45 @@ export async function GET(req: Request) {
     if (profession) where.profession = profession;
     if (staffCategory) where.staffCategory = staffCategory;
     if (typeof isClinical === "boolean") where.isClinical = isClinical;
-    if (facilityId) where.facilityId = facilityId;
     if (departmentId) where.departmentId = departmentId;
 
+    // When facilityId is provided, match staff whose direct facilityId matches
+    // OR who are assigned to that facility via the StaffFacility join table.
+    // This is an AND filter (staff must be at this facility).
+    if (facilityId) {
+      where.AND = [
+        {
+          OR: [
+            { facilityId: facilityId },
+            { staffFacilities: { some: { facilityId: facilityId } } },
+          ],
+        },
+      ];
+    }
+
+    // Search query — OR across multiple fields. This is also an AND filter
+    // (staff must match the search within the already-filtered set).
     if (q) {
-      where.OR = [
-        { firstName: { contains: q, mode: "insensitive" } },
-        { lastName: { contains: q, mode: "insensitive" } },
-        { preferredName: { contains: q, mode: "insensitive" } },
-        { staffNumber: { contains: q, mode: "insensitive" } },
-        { employeeNumber: { contains: q, mode: "insensitive" } },
-        { phone: { contains: q } },
-        { alternativePhone: { contains: q } },
-        { email: { contains: q, mode: "insensitive" } },
-        { workEmail: { contains: q, mode: "insensitive" } },
-        { licenseNumber: { contains: q, mode: "insensitive" } },
-        { professionalRole: { contains: q, mode: "insensitive" } },
-        { profession: { contains: q, mode: "insensitive" } },
-        { specialty: { contains: q, mode: "insensitive" } },
-        { position: { contains: q, mode: "insensitive" } },
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { firstName: { contains: q, mode: "insensitive" } },
+            { lastName: { contains: q, mode: "insensitive" } },
+            { preferredName: { contains: q, mode: "insensitive" } },
+            { staffNumber: { contains: q, mode: "insensitive" } },
+            { employeeNumber: { contains: q, mode: "insensitive" } },
+            { phone: { contains: q } },
+            { alternativePhone: { contains: q } },
+            { email: { contains: q, mode: "insensitive" } },
+            { workEmail: { contains: q, mode: "insensitive" } },
+            { licenseNumber: { contains: q, mode: "insensitive" } },
+            { professionalRole: { contains: q, mode: "insensitive" } },
+            { profession: { contains: q, mode: "insensitive" } },
+            { specialty: { contains: q, mode: "insensitive" } },
+            { position: { contains: q, mode: "insensitive" } },
+          ],
+        },
       ];
     }
 
