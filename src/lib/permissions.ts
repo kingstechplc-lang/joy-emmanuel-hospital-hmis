@@ -256,6 +256,27 @@ export const PERMISSIONS = {
   CERTIFICATION_DOCUMENT_VIEW: "certification_document.view",
   CERTIFICATION_REPORT_EXPORT: "certification_report.export",
 
+  // Finance & Payroll
+  FINANCE_VIEW: "finance.view",
+  FINANCE_MANAGE: "finance.manage",
+  PAYROLL_VIEW: "payroll.view",
+  PAYROLL_CREATE: "payroll.create",
+  PAYROLL_PROCESS: "payroll.process",
+  PAYROLL_REVIEW: "payroll.review",
+  PAYROLL_APPROVE: "payroll.approve",
+  PAYROLL_LOCK: "payroll.lock",
+  COMPENSATION_MANAGE: "compensation.manage",
+  ALLOWANCE_MANAGE: "allowance.manage",
+  DEDUCTION_MANAGE: "deduction.manage",
+  OVERTIME_PAYROLL_MANAGE: "overtime_payroll.manage",
+  LOAN_MANAGE: "loan.manage",
+  ADVANCE_MANAGE: "advance.manage",
+  PAYSLIP_VIEW: "payslip.view",
+  PAYSLIP_VIEW_OWN: "payslip.view_own",
+  FINANCE_REPORT_VIEW: "finance_report.view",
+  FINANCE_REPORT_EXPORT: "finance_report.export",
+  STATUTORY_RULE_MANAGE: "statutory_rule.manage",
+
   // Nursing Documentation
   NURSING_VIEW: "nursing.view",
   NURSING_NOTE_CREATE: "nursing.note.create",

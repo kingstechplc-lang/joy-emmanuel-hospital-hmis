@@ -41,6 +41,7 @@ import { ShiftsView } from "@/components/views/hr/shifts-view";
 import { AttendanceView } from "@/components/views/hr/attendance-view";
 import { TrainingView } from "@/components/views/hr/training-view";
 import { CertificationsView } from "@/components/views/hr/certifications-view";
+import { PayrollView } from "@/components/views/finance/payroll-view";
 import { DocumentsView } from "@/components/views/operations/documents-view";
 import { TasksView } from "@/components/views/operations/tasks-view";
 import { IncidentReportsView } from "@/components/views/operations/incident-reports-view";
@@ -123,6 +124,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   attendance: AttendanceView,
   training: TrainingView,
   certifications: CertificationsView,
+  payroll: PayrollView,
   documents: DocumentsView,
   tasks: TasksView,
   incident_reports: IncidentReportsView,
@@ -211,6 +213,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   attendance: "staff.view",
   training: "staff.view",
   certifications: "staff.view",
+  payroll: "staff.view",
   documents: "document.view",
   tasks: "task.assign",
   incident_reports: "task.assign",

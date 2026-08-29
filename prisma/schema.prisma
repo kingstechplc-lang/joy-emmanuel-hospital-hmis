@@ -110,6 +110,18 @@ model Organization {
   certificationIssuers    CertificationIssuer[]
   certificationRequirements CertificationRequirement[]
   certificationRenewals   CertificationRenewal[]
+  // --- Finance & Payroll back-relations ---
+  payrollPeriods          PayrollPeriod[]
+  payrollRuns             PayrollRun[]
+  salaryStructures        SalaryStructure[]
+  staffPayrollProfiles    StaffPayrollProfile[]
+  allowances              Allowance[]
+  deductions              Deduction[]
+  staffLoans              StaffLoan[]
+  salaryAdvances          SalaryAdvance[]
+  payrollAdjustments      PayrollAdjustment[]
+  statutoryRules          StatutoryRule[]
+  costCenters             CostCenter[]
 }
 
 model Facility {
@@ -225,6 +237,15 @@ model Facility {
   // --- Certification advanced back-relations ---
   certifications                 Certification[]
   certificationRequirements      CertificationRequirement[]
+  // --- Finance & Payroll back-relations ---
+  payrollPeriods                 PayrollPeriod[]
+  payrollRuns                    PayrollRun[]
+  salaryStructures               SalaryStructure[]
+  staffPayrollProfiles           StaffPayrollProfile[]
+  allowances                     Allowance[]
+  deductions                     Deduction[]
+  statutoryRules                 StatutoryRule[]
+  costCenters                    CostCenter[]
 
   @@unique([organizationId, code])
 }
@@ -287,6 +308,12 @@ model Department {
   // --- Certification advanced back-relations ---
   certifications         Certification[]
   certificationRequirements CertificationRequirement[]
+  // --- Finance & Payroll back-relations ---
+  payrollRuns            PayrollRun[]
+  staffPayrollProfiles   StaffPayrollProfile[]
+  allowances             Allowance[]
+  deductions             Deduction[]
+  costCenters            CostCenter[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -583,6 +610,9 @@ model User {
   certificationVerifier      Certification[]            @relation("CertificationVerifier")
   certVerificationBy         CertificationVerification[] @relation("CertVerificationBy")
   certStatusChanger          CertificationStatusHistory[] @relation("CertStatusChanger")
+  // --- Finance & Payroll back-relations ---
+  payrollPeriodCreator       PayrollPeriod[]           @relation("PayrollPeriodCreator")
+  payrollPeriodApprover      PayrollPeriod[]           @relation("PayrollPeriodApprover")
 }
 
 model Staff {
@@ -714,6 +744,13 @@ model Staff {
   externalTrainingRecords ExternalTrainingRecord[] @relation("ExternalTrainingStaff")
   // --- Certification advanced back-relations ---
   certificationRenewals   CertificationRenewal[]  @relation("CertRenewalStaff")
+  // --- Finance & Payroll back-relations ---
+  payrollRuns             PayrollRun[]            @relation("PayrollRunStaff")
+  payrollItems            PayrollItem[]           @relation("PayrollItemStaff")
+  payrollProfile          StaffPayrollProfile?    @relation("PayrollProfileStaff")
+  staffLoans              StaffLoan[]             @relation("StaffLoanStaff")
+  salaryAdvances          SalaryAdvance[]         @relation("SalaryAdvanceStaff")
+  payrollAdjustments      PayrollAdjustment[]     @relation("PayrollAdjustmentStaff")
 
   @@index([facilityId])
   @@index([departmentId])
@@ -6957,8 +6994,378 @@ model CertificationStatusHistory {
 }
 
 // ---------------------------------------------------------------------
-// HR — ADVANCED TRAINING & STAFF DEVELOPMENT
+// FINANCE & PAYROLL — Hospital-grade payroll management system
 // ---------------------------------------------------------------------
+
+// Payroll periods (monthly, biweekly, weekly, custom)
+model PayrollPeriod {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  name            String   // "August 2026 Payroll"
+  periodType      String   @default("monthly") // monthly | biweekly | weekly | custom
+  startDate       DateTime @db.Date
+  endDate         DateTime @db.Date
+  paymentDate     DateTime?
+  status          String   @default("draft") // draft | open | processing | pending_approval | approved | paid | locked | cancelled
+  // Summary stats (computed at finalization)
+  totalEmployees  Int      @default(0)
+  grossPayroll    Decimal  @default(0) @db.Decimal(14, 2)
+  totalDeductions Decimal  @default(0) @db.Decimal(14, 2)
+  employerContributions Decimal @default(0) @db.Decimal(14, 2)
+  netPayroll      Decimal  @default(0) @db.Decimal(14, 2)
+  // Workflow
+  createdById     String?
+  createdBy       User?    @relation("PayrollPeriodCreator", fields: [createdById], references: [id])
+  approvedById    String?
+  approvedBy      User?    @relation("PayrollPeriodApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  lockedAt        DateTime?
+  lockedById      String?
+  // Audit
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  payrollRuns     PayrollRun[]
+
+  @@unique([organizationId, facilityId, startDate, endDate])
+  @@index([organizationId, status])
+  @@index([facilityId, status])
+}
+
+// Individual payroll run per staff member
+model PayrollRun {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  payrollPeriodId String
+  payrollPeriod   PayrollPeriod @relation(fields: [payrollPeriodId], references: [id])
+  staffId         String
+  staff           Staff    @relation("PayrollRunStaff", fields: [staffId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  // Calculated values (snapshot at finalization)
+  basicSalary     Decimal  @default(0) @db.Decimal(14, 2)
+  totalAllowances Decimal  @default(0) @db.Decimal(14, 2)
+  totalOvertime   Decimal  @default(0) @db.Decimal(14, 2)
+  totalBonus      Decimal  @default(0) @db.Decimal(14, 2)
+  grossPay        Decimal  @default(0) @db.Decimal(14, 2)
+  totalDeductions Decimal  @default(0) @db.Decimal(14, 2)
+  employerContributions Decimal @default(0) @db.Decimal(14, 2)
+  netPay          Decimal  @default(0) @db.Decimal(14, 2)
+  // Payment
+  paymentStatus   String   @default("unpaid") // unpaid | pending | paid | failed | reversed
+  paymentMethod   String?  // bank_transfer | mobile_money | cash | cheque | other
+  paymentReference String?
+  paymentDate     DateTime?
+  // Status
+  status          String   @default("draft") // draft | calculated | reviewed | approved | paid | locked | reversed
+  exceptions      String?  // JSON array of exception flags
+  // Snapshot (JSON of all calculation details for audit/reproducibility)
+  snapshot        String?  // JSON: full calculation breakdown
+  // Audit
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           PayrollItem[]
+  adjustments     PayrollAdjustment[]
+
+  @@unique([payrollPeriodId, staffId])
+  @@index([organizationId, status])
+  @@index([staffId, payrollPeriodId])
+  @@index([paymentStatus])
+}
+
+// Individual payroll line items (earnings/deductions breakdown)
+model PayrollItem {
+  id              String   @id @default(cuid())
+  payrollRunId    String
+  payrollRun      PayrollRun @relation(fields: [payrollRunId], references: [id])
+  staffId         String
+  staff           Staff    @relation("PayrollItemStaff", fields: [staffId], references: [id])
+  itemType        String   // earning | deduction | statutory | employer_contribution | overtime | bonus | allowance
+  name            String   // "Basic Salary", "Housing Allowance", "PAYE Tax", "SSNIT", etc.
+  amount          Decimal  @db.Decimal(14, 2)
+  rate            Float?   // percentage rate if applicable
+  hours           Float?   // for overtime
+  isRecurring     Boolean  @default(false)
+  isStatutory     Boolean  @default(false)
+  referenceType   String?  // allowance | deduction | loan | advance | overtime | statutory_rule
+  referenceId     String?
+  createdAt       DateTime @default(now())
+
+  @@index([payrollRunId])
+  @@index([staffId])
+}
+
+// Configurable salary structures
+model SalaryStructure {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  name            String   // "Grade A", "Nursing Scale", etc.
+  code            String
+  description     String?
+  basicSalary     Decimal  @db.Decimal(14, 2)
+  currency        String   @default("GHS")
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  components      CompensationComponent[]
+  staffProfiles   StaffPayrollProfile[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
+
+// Components of a salary structure (allowances/deductions templates)
+model CompensationComponent {
+  id              String   @id @default(cuid())
+  salaryStructureId String
+  salaryStructure SalaryStructure @relation(fields: [salaryStructureId], references: [id])
+  name            String
+  componentType   String   // earning | deduction | statutory | employer_contribution
+  calculationType String   @default("fixed") // fixed | percentage
+  amount          Decimal  @default(0) @db.Decimal(14, 2)
+  percentage      Float?   // percentage of basic salary
+  isTaxable       Boolean  @default(false)
+  isStatutory     Boolean  @default(false)
+  isRecurring     Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([salaryStructureId])
+}
+
+// Staff payroll profile (links staff to salary structure + bank details)
+model StaffPayrollProfile {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String   @unique
+  staff           Staff    @relation("PayrollProfileStaff", fields: [staffId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  salaryStructureId String?
+  salaryStructure SalaryStructure? @relation(fields: [salaryStructureId], references: [id])
+  // Compensation
+  basicSalary     Decimal  @db.Decimal(14, 2)
+  payFrequency    String   @default("monthly") // monthly | biweekly | weekly
+  currency        String   @default("GHS")
+  // Bank/payment details
+  bankName        String?
+  bankAccountNumber String?
+  bankAccountName  String?
+  paymentMethod   String   @default("bank_transfer")
+  // Tax
+  taxIdNumber     String?
+  taxExempt       Boolean  @default(false)
+  // Status
+  payrollStatus   String   @default("active") // active | inactive | suspended | exited
+  effectiveDate   DateTime?
+  // Audit
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, payrollStatus])
+  @@index([facilityId])
+}
+
+// Configurable allowances
+model Allowance {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  code            String
+  allowanceType   String   @default("fixed") // fixed | percentage | shift_based | performance
+  amount          Decimal  @default(0) @db.Decimal(14, 2)
+  percentage      Float?   // percentage of basic
+  isTaxable       Boolean  @default(true)
+  isRecurring     Boolean  @default(true)
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  profession      String?  // eligible profession
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
+
+// Configurable deductions
+model Deduction {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  code            String
+  deductionType   String   @default("fixed") // fixed | percentage
+  amount          Decimal  @default(0) @db.Decimal(14, 2)
+  percentage      Float?
+  isStatutory     Boolean  @default(false)
+  isRecurring     Boolean  @default(true)
+  priority        Int      @default(100) // lower = deducted first
+  requiresApproval Boolean @default(false)
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
+
+// Staff loans
+model StaffLoan {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("StaffLoanStaff", fields: [staffId], references: [id])
+  loanAmount      Decimal  @db.Decimal(14, 2)
+  interestRate    Float    @default(0)
+  principal       Decimal  @db.Decimal(14, 2)
+  balance         Decimal  @db.Decimal(14, 2)
+  installment     Decimal  @db.Decimal(14, 2)
+  startDate       DateTime
+  endDate         DateTime?
+  term            Int      // number of installments
+  status          String   @default("pending") // pending | approved | active | completed | defaulted | cancelled
+  approvedById    String?
+  approvedAt      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId, status])
+}
+
+// Salary advances
+model SalaryAdvance {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("SalaryAdvanceStaff", fields: [staffId], references: [id])
+  amount          Decimal  @db.Decimal(14, 2)
+  balance         Decimal  @db.Decimal(14, 2)
+  installment     Decimal  @db.Decimal(14, 2)
+  requestDate     DateTime @default(now())
+  repaymentStartDate DateTime?
+  repaymentMonths Int      @default(1)
+  reason          String?
+  status          String   @default("pending") // pending | approved | active | completed | cancelled | rejected
+  approvedById    String?
+  approvedAt      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId, status])
+}
+
+// Payroll adjustments (bonuses, corrections, back pay)
+model PayrollAdjustment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  payrollRunId    String?
+  payrollRun      PayrollRun? @relation(fields: [payrollRunId], references: [id])
+  staffId         String
+  staff           Staff    @relation("PayrollAdjustmentStaff", fields: [staffId], references: [id])
+  adjustmentType  String   // bonus | correction | back_pay | deduction_correction | allowance_correction
+  amount          Decimal  @db.Decimal(14, 2)
+  reason          String
+  period          String?  // which payroll period it applies to
+  status          String   @default("pending") // pending | approved | applied | rejected
+  approvedById    String?
+  approvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([staffId])
+}
+
+// Configurable statutory rules (PAYE, SSNIT, etc.)
+model StatutoryRule {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String   // "PAYE Tax", "SSNIT Pension", etc.
+  code            String
+  ruleType        String   // tax | pension | insurance | other_statutory
+  calculationType String   @default("percentage") // percentage | fixed | tiered
+  rate            Float    @default(0) // percentage
+  fixedAmount     Decimal? @db.Decimal(14, 2)
+  // Tiered tax brackets (JSON: [{from: 0, to: 500, rate: 0}, {from: 500, to: 1000, rate: 5}, ...])
+  brackets        String?
+  // Thresholds
+  threshold       Decimal? @db.Decimal(14, 2)
+  cap             Decimal? @db.Decimal(14, 2)
+  // Responsibility
+  borneBy         String   @default("employee") // employee | employer | shared
+  employerRate    Float    @default(0)
+  // Effective dates
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  active          Boolean  @default(true)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+  @@index([ruleType, active])
+}
+
+// Cost centers
+model CostCenter {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  name            String
+  code            String
+  description     String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
 
 // Configurable training programs / catalog
 model TrainingProgram {
