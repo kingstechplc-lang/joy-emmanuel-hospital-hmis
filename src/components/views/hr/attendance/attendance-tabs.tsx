@@ -827,6 +827,8 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
 // =====================================================================
 export function SettingsTab() {
   const { can } = usePermissions();
+  const qc = useQueryClient();
+  const [showNewPolicy, setShowNewPolicy] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["attendance-policies"],
@@ -835,11 +837,22 @@ export function SettingsTab() {
 
   const items = data?.items || [];
 
+  const deletePolicy = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/attendance/policies/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => { toast.success("Policy deactivated"); qc.invalidateQueries({ queryKey: ["attendance-policies"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Attendance Policies ({items.length})</CardTitle>
+          {can(["attendance_policy.manage", "shift.manage"]) && <Button size="sm" onClick={() => setShowNewPolicy(true)} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-3 h-3 mr-1" /> New Policy</Button>}
         </CardHeader>
         <CardContent>
           {isLoading ? <LoadingState rows={3} /> : items.length === 0 ? (
@@ -848,7 +861,10 @@ export function SettingsTab() {
             <div className="space-y-2">
               {items.map((p: any) => (
                 <div key={p.id} className="p-3 bg-slate-50 rounded text-sm">
-                  <div className="font-medium">{p.name}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{p.name}</div>
+                    {can(["attendance_policy.manage", "shift.manage"]) && <Button size="sm" variant="ghost" onClick={() => { if (confirm("Deactivate this policy?")) deletePolicy.mutate(p.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
+                  </div>
                   <div className="text-xs text-slate-500 mt-1">{p.facility?.name || "All facilities"} • {p.department?.name || "All departments"}</div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mt-2">
                     <div>Grace: <span className="font-medium">{p.gracePeriodMinutes}m</span></div>
@@ -884,7 +900,77 @@ export function SettingsTab() {
           </div>
         </CardContent>
       </Card>
+      {showNewPolicy && <NewAttendancePolicyDialog onClose={() => setShowNewPolicy(false)} />}
     </div>
+  );
+}
+
+function NewAttendancePolicyDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [facilityId, setFacilityId] = useState("__none__");
+  const [gracePeriodMinutes, setGracePeriodMinutes] = useState("10");
+  const [lateThresholdMinutes, setLateThresholdMinutes] = useState("0");
+  const [earlyDepartureThresholdMinutes, setEarlyDepartureThresholdMinutes] = useState("15");
+  const [maxDailyHours, setMaxDailyHours] = useState("13");
+  const [overtimeThresholdMinutes, setOvertimeThresholdMinutes] = useState("480");
+  const [breakDurationMinutes, setBreakDurationMinutes] = useState("30");
+  const [paidBreaks, setPaidBreaks] = useState(true);
+  const [roundingMinutes, setRoundingMinutes] = useState("0");
+  const [nightStartHour, setNightStartHour] = useState("19");
+  const [nightEndHour, setNightEndHour] = useState("7");
+  const [notes, setNotes] = useState("");
+
+  const { data: facilitiesData } = useQuery({ queryKey: ["facilities-for-att-policy"], queryFn: () => fetchJson(`/api/facilities`) });
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/attendance/policies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, facilityId: facilityId !== "__none__" ? facilityId : undefined,
+          gracePeriodMinutes: parseInt(gracePeriodMinutes, 10),
+          lateThresholdMinutes: parseInt(lateThresholdMinutes, 10),
+          earlyDepartureThresholdMinutes: parseInt(earlyDepartureThresholdMinutes, 10),
+          maxDailyHours: parseFloat(maxDailyHours),
+          overtimeThresholdMinutes: parseInt(overtimeThresholdMinutes, 10),
+          breakDurationMinutes: parseInt(breakDurationMinutes, 10),
+          paidBreaks,
+          roundingMinutes: parseInt(roundingMinutes, 10),
+          nightStartHour: parseInt(nightStartHour, 10),
+          nightEndHour: parseInt(nightEndHour, 10),
+          notes,
+        }),
+      });
+      const d = await res.json(); if (!res.ok) throw new Error(d.error || "Failed"); return d;
+    },
+    onSuccess: () => { toast.success("Policy created"); qc.invalidateQueries({ queryKey: ["attendance-policies"] }); onClose(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>New Attendance Policy</DialogTitle><DialogDescription>Configure grace periods, thresholds, break rules, and rounding for attendance calculations.</DialogDescription></DialogHeader>
+        <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Default Hospital Policy" /></div>
+          <div className="space-y-1.5"><Label>Facility</Label><Select value={facilityId} onValueChange={setFacilityId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">All Facilities</SelectItem>{(facilitiesData?.items || []).map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-1.5"><Label>Grace Period (minutes)</Label><Input type="number" value={gracePeriodMinutes} onChange={(e) => setGracePeriodMinutes(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Late Threshold (minutes)</Label><Input type="number" value={lateThresholdMinutes} onChange={(e) => setLateThresholdMinutes(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Early Departure Threshold (minutes)</Label><Input type="number" value={earlyDepartureThresholdMinutes} onChange={(e) => setEarlyDepartureThresholdMinutes(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Max Daily Hours</Label><Input type="number" step="0.5" value={maxDailyHours} onChange={(e) => setMaxDailyHours(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Overtime Threshold (minutes)</Label><Input type="number" value={overtimeThresholdMinutes} onChange={(e) => setOvertimeThresholdMinutes(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Break Duration (minutes)</Label><Input type="number" value={breakDurationMinutes} onChange={(e) => setBreakDurationMinutes(e.target.value)} /></div>
+          <div className="space-y-1.5"><label className="flex items-center gap-2 text-sm pt-6"><input type="checkbox" checked={paidBreaks} onChange={(e) => setPaidBreaks(e.target.checked)} /> Paid Breaks</label></div>
+          <div className="space-y-1.5"><Label>Rounding (minutes, 0=none)</Label><Input type="number" value={roundingMinutes} onChange={(e) => setRoundingMinutes(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Night Start Hour</Label><Input type="number" min="0" max="23" value={nightStartHour} onChange={(e) => setNightStartHour(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Night End Hour</Label><Input type="number" min="0" max="23" value={nightEndHour} onChange={(e) => setNightEndHour(e.target.value)} /></div>
+          <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+        </div>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Policy</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -893,27 +979,63 @@ export function SettingsTab() {
 // =====================================================================
 export function AnalyticsTab() {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [departmentId, setDepartmentId] = useState("all");
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
+  if (dateFrom) params.set("dateFrom", dateFrom);
+  if (dateTo) params.set("dateTo", dateTo);
   const qs = `?${params.toString()}`;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["attendance-analytics", activeFacilityId],
+    queryKey: ["attendance-analytics", activeFacilityId, dateFrom, dateTo],
     queryFn: () => fetchJson(`/api/attendance/analytics${qs}`),
   });
 
-  if (isLoading) return <LoadingState rows={6} />;
+  const { data: deptsData } = useQuery({
+    queryKey: ["depts-for-analytics", activeFacilityId],
+    queryFn: () => fetchJson(`/api/departments${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
+    enabled: !!activeFacilityId,
+  });
+
+  const allDepts = deptsData?.items || [];
 
   const summary = data?.summary || {};
   const trend = data?.trend || [];
-  const deptComparison = data?.departmentComparison || [];
+  let deptComparison = data?.departmentComparison || [];
   const facComparison = data?.facilityComparison || [];
+
+  // Client-side department filter
+  if (departmentId !== "all") {
+    deptComparison = deptComparison.filter((d: any) => d.departmentId === departmentId);
+  }
 
   return (
     <div className="space-y-4">
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-3 flex flex-col md:flex-row gap-3 flex-wrap">
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="md:w-40" placeholder="From" />
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="md:w-40" placeholder="To" />
+          <Select value={departmentId} onValueChange={setDepartmentId}>
+            <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {allDepts.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(dateFrom || dateTo || departmentId !== "all") && (
+            <Button variant="outline" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); setDepartmentId("all"); }}>Clear</Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {isLoading ? <LoadingState rows={6} /> : (
+      <>
       <div>
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">ATTENDANCE ANALYTICS — Last 30 Days</h3>
+        <h3 className="text-sm font-semibold text-slate-700 mb-3">ATTENDANCE ANALYTICS {dateFrom || dateTo ? `(${dateFrom || "Start"} to ${dateTo || "Today"})` : "— Last 30 Days"}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <StatBox label="Total Records" value={summary.totalRecords ?? 0} />
           <StatBox label="Late Count" value={summary.lateCount ?? 0} color="text-amber-700" />
@@ -1018,6 +1140,8 @@ export function AnalyticsTab() {
             </div>
           </CardContent>
         </Card>
+      )}
+      </>
       )}
     </div>
   );

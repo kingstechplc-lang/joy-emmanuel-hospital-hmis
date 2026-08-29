@@ -17,6 +17,7 @@ import {
   PeriodsTab, SettingsTab, AnalyticsTab,
 } from "./attendance/attendance-tabs";
 import { usePermissions } from "./attendance/attendance-helpers";
+import { ModuleHelp } from "@/components/ui-helpers";
 
 type Section = {
   id: string;
@@ -71,6 +72,23 @@ export function AttendanceView() {
           </p>
         </div>
       </div>
+
+      {/* Help */}
+
+      <ModuleHelp
+        title="Attendance Management"
+        sections={[
+          { title: "Dashboard", content: "Real-time attendance statistics: scheduled, present, checked in/out, late, absent, on leave, off duty, on call, early departures, overtime, missing check-outs, pending corrections, and open exceptions." },
+          { title: "Check-In/Out", content: "Check staff in and out. The system automatically: finds the scheduled shift, calculates late arrival (with configurable grace period), detects overnight shifts, creates exceptions for late/unscheduled attendance, and logs raw events for audit." },
+          { title: "Exceptions", content: "Auto-detected anomalies (late, early departure, missing check-out, absent, unscheduled, attendance during leave). Authorized users can resolve, escalate, or ignore exceptions with notes." },
+          { title: "Corrections", content: "Staff can submit correction requests (e.g., forgot to check out). Workflow: Request \u2192 Supervisor Review \u2192 Approve/Reject. Approval transactionally updates attendance + resolves exceptions." },
+          { title: "Overtime", content: "Auto-calculated on check-out when worked hours exceed scheduled hours. Requires supervisor approval before payroll consumption. Categories: regular, night, weekend, holiday, emergency, on-call." },
+          { title: "Attendance Periods", content: "Create periods for payroll locking. Workflow: Open \u2192 Processing \u2192 Review \u2192 Approved \u2192 Locked. Locking prevents further attendance modifications." },
+          { title: "Analytics", content: "Trends, department/facility comparisons, attendance rate, and breakdown by status. Use date range and department filters to focus the analysis." },
+          { title: "Settings", content: "Configure attendance policies (grace period, late threshold, early departure threshold, max daily hours, overtime threshold, break rules, rounding, night/weekend hours)." },
+        ]}
+      />
+
 
       {/* Desktop nav */}
       <div className="hidden md:block">

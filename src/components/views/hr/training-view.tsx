@@ -15,6 +15,7 @@ import {
   RequestsTab, ProvidersTrainersTab, SettingsTab,
 } from "./training/training-tabs";
 import { usePermissions } from "./training/training-helpers";
+import { ModuleHelp } from "@/components/ui-helpers";
 
 type Section = {
   id: string;
@@ -66,6 +67,22 @@ export function TrainingView() {
           </p>
         </div>
       </div>
+
+      {/* Help */}
+
+      <ModuleHelp
+        title="Training & Staff Development"
+        sections={[
+          { title: "Dashboard", content: "Real-time training statistics: total programs, upcoming sessions, enrollments, certificates, CPD records, mandatory compliance rate, and expiring certifications." },
+          { title: "Training Programs", content: "Create configurable training programs with category, type, delivery method, duration, CPD points, validity period, assessment requirements, and certificate requirements." },
+          { title: "Sessions", content: "Schedule training sessions for programs. Each session has a date, time, venue, trainer, and capacity. Enrollments are tracked per session." },
+          { title: "Enrollments", content: "Enroll staff in training programs/sessions. Workflow: Pending \u2192 Approved \u2192 Attended \u2192 Completed. Auto-waitlist when session is full." },
+          { title: "Certificates", content: "Issue certificates with auto-generated unique certificate numbers and verification codes. Supports revocation with reason. Renewal creates a new certificate and archives the old one." },
+          { title: "Providers & Trainers", content: "Manage external training providers (organizations) and trainers (internal staff or external individuals)." },
+          { title: "Settings", content: "Seed default training programs (BLS, ACLS, IPC, Fire Safety, etc.) and competencies. Configure training requirements and competency definitions." },
+        ]}
+      />
+
 
       {/* Desktop nav */}
       <div className="hidden md:block">

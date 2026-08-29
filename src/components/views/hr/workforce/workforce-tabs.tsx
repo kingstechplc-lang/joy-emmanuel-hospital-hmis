@@ -1650,6 +1650,8 @@ function NewHolidayDialog({ onClose }: { onClose: () => void }) {
 
 function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const qc = useQueryClient();
+  const [showNew, setShowNew] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["staffing-req-settings", activeFacilityId],
     queryFn: () => fetchJson(`/api/staffing-requirements${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
@@ -1657,10 +1659,21 @@ function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
   });
   const items = data?.items || [];
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/staffing-requirements/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => { toast.success("Requirement deactivated"); qc.invalidateQueries({ queryKey: ["staffing-req-settings"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Staffing Requirements ({items.length})</CardTitle>
+        {canManage && <Button size="sm" onClick={() => setShowNew(true)} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-3 h-3 mr-1" /> New</Button>}
       </CardHeader>
       <CardContent>
         {isLoading ? <LoadingState rows={3} /> : items.length === 0 ? (
@@ -1675,31 +1688,139 @@ function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
                   <span className="text-slate-500 ml-2">• {r.shiftType || "Any"}</span>
                   <span className="text-slate-500 ml-2">• {r.dayType}</span>
                 </div>
-                <div className="flex gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs">
                   <Badge variant="outline">{r.profession || "Any"}</Badge>
                   <Badge variant="outline">Min: {r.minCount}</Badge>
                   {r.idealCount && <Badge variant="outline">Ideal: {r.idealCount}</Badge>}
+                  {canManage && <Button size="sm" variant="ghost" onClick={() => { if (confirm("Deactivate this requirement?")) deleteMutation.mutate(r.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
                 </div>
               </div>
             ))}
           </div>
         )}
       </CardContent>
+      {showNew && <NewStaffingReqDialog onClose={() => setShowNew(false)} />}
     </Card>
   );
 }
 
+function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
+  const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const qc = useQueryClient();
+  const [departmentId, setDepartmentId] = useState("__none__");
+  const [shiftType, setShiftType] = useState("__none__");
+  const [dayType, setDayType] = useState("weekday");
+  const [profession, setProfession] = useState("");
+  const [seniority, setSeniority] = useState("");
+  const [minCount, setMinCount] = useState("1");
+  const [idealCount, setIdealCount] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { data: deptData } = useQuery({
+    queryKey: ["depts-for-staffing-req", activeFacilityId],
+    queryFn: () => fetchJson(`/api/departments${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
+    enabled: !!activeFacilityId,
+  });
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/staffing-requirements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          facilityId: activeFacilityId,
+          departmentId: departmentId !== "__none__" ? departmentId : undefined,
+          shiftType: shiftType !== "__none__" ? shiftType : undefined,
+          dayType,
+          profession: profession || undefined,
+          seniority: seniority || undefined,
+          minCount: parseInt(minCount, 10),
+          idealCount: idealCount ? parseInt(idealCount, 10) : undefined,
+          notes,
+        }),
+      });
+      const d = await res.json(); if (!res.ok) throw new Error(d.error || "Failed"); return d;
+    },
+    onSuccess: () => { toast.success("Staffing requirement created"); qc.invalidateQueries({ queryKey: ["staffing-req-settings"] }); onClose(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>New Staffing Requirement</DialogTitle><DialogDescription>Define minimum staffing levels for a department/shift/day type.</DialogDescription></DialogHeader>
+        <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="space-y-1.5 md:col-span-2">
+            <Label>Department</Label>
+            <Select value={departmentId} onValueChange={setDepartmentId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Any Department</SelectItem>
+                {(deptData?.items || []).map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Shift Type</Label>
+            <Select value={shiftType} onValueChange={setShiftType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Any Shift</SelectItem>
+                <SelectItem value="morning">Morning</SelectItem>
+                <SelectItem value="evening">Evening</SelectItem>
+                <SelectItem value="night">Night</SelectItem>
+                <SelectItem value="on_call">On Call</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Day Type</Label>
+            <Select value={dayType} onValueChange={setDayType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="weekday">Weekday</SelectItem>
+                <SelectItem value="weekend">Weekend</SelectItem>
+                <SelectItem value="holiday">Holiday</SelectItem>
+                <SelectItem value="any">Any Day</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>Profession (optional)</Label><Input value={profession} onChange={(e) => setProfession(e.target.value)} placeholder="e.g., nurse" /></div>
+          <div className="space-y-1.5"><Label>Seniority (optional)</Label><Input value={seniority} onChange={(e) => setSeniority(e.target.value)} placeholder="e.g., senior" /></div>
+          <div className="space-y-1.5"><FieldLabel required>Min Count</FieldLabel><Input type="number" min="1" value={minCount} onChange={(e) => setMinCount(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Ideal Count (optional)</Label><Input type="number" value={idealCount} onChange={(e) => setIdealCount(e.target.value)} /></div>
+          <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+        </div>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !activeFacilityId} className="bg-emerald-600 hover:bg-emerald-700">Create Requirement</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function LeavePoliciesSettings({ canManage }: { canManage: boolean }) {
+  const qc = useQueryClient();
+  const [showNew, setShowNew] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["leave-policies-settings"],
     queryFn: () => fetchJson(`/api/leave-policies`),
   });
   const items = data?.items || [];
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/leave-policies/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => { toast.success("Policy deactivated"); qc.invalidateQueries({ queryKey: ["leave-policies-settings"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Leave Policies ({items.length})</CardTitle>
+        {canManage && <Button size="sm" onClick={() => setShowNew(true)} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-3 h-3 mr-1" /> New</Button>}
       </CardHeader>
       <CardContent>
         {isLoading ? <LoadingState rows={3} /> : items.length === 0 ? (
@@ -1708,19 +1829,131 @@ function LeavePoliciesSettings({ canManage }: { canManage: boolean }) {
           <div className="space-y-2">
             {items.map((p: any) => (
               <div key={p.id} className="p-3 bg-slate-50 rounded text-sm">
-                <div className="font-medium">{p.name}</div>
+                <div className="flex items-center justify-between">
+                  <div className="font-medium">{p.name}</div>
+                  {canManage && <Button size="sm" variant="ghost" onClick={() => { if (confirm("Deactivate this policy?")) deleteMutation.mutate(p.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
+                </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {p.leaveType?.name} • {p.facility?.name || "All facilities"} • {p.department?.name || "All depts"}
                 </div>
                 <div className="text-xs text-slate-600 mt-1">
-                  Accrual: {p.accrualFrequency || "—"} ({p.accrualAmount || 0}) • Carry-forward: {p.carryForwardEnabled ? `Yes (max ${p.carryForwardLimit || 0})` : "No"} • Negative: {p.negativeBalanceAllowed ? `Yes (max ${p.negativeBalanceLimit || 0})` : "No"}
+                  Accrual: {p.accrualFrequency || "\u2014"} ({p.accrualAmount || 0}) • Carry-forward: {p.carryForwardEnabled ? `Yes (max ${p.carryForwardLimit || 0})` : "No"} • Negative: {p.negativeBalanceAllowed ? `Yes (max ${p.negativeBalanceLimit || 0})` : "No"}
                 </div>
               </div>
             ))}
           </div>
         )}
       </CardContent>
+      {showNew && <NewLeavePolicyDialog onClose={() => setShowNew(false)} />}
     </Card>
+  );
+}
+
+function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [leaveTypeId, setLeaveTypeId] = useState("");
+  const [facilityId, setFacilityId] = useState("__none__");
+  const [departmentId, setDepartmentId] = useState("__none__");
+  const [accrualFrequency, setAccrualFrequency] = useState("monthly");
+  const [accrualAmount, setAccrualAmount] = useState("");
+  const [carryForwardEnabled, setCarryForwardEnabled] = useState(false);
+  const [carryForwardLimit, setCarryForwardLimit] = useState("");
+  const [carryForwardExpiryMonths, setCarryForwardExpiryMonths] = useState("");
+  const [negativeBalanceAllowed, setNegativeBalanceAllowed] = useState(false);
+  const [negativeBalanceLimit, setNegativeBalanceLimit] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { data: leaveTypesData } = useQuery({ queryKey: ["leave-types-for-policy"], queryFn: () => fetchJson(`/api/leave-types`) });
+  const { data: facilitiesData } = useQuery({ queryKey: ["facilities-for-policy"], queryFn: () => fetchJson(`/api/facilities`) });
+  const { data: deptsData } = useQuery({ queryKey: ["depts-for-policy", facilityId], queryFn: () => fetchJson(`/api/departments${facilityId !== "__none__" ? `?facilityId=${facilityId}` : ""}`), enabled: facilityId !== "__none__" });
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/leave-policies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, leaveTypeId,
+          facilityId: facilityId !== "__none__" ? facilityId : undefined,
+          departmentId: departmentId !== "__none__" ? departmentId : undefined,
+          accrualFrequency: accrualFrequency || undefined,
+          accrualAmount: accrualAmount ? parseFloat(accrualAmount) : undefined,
+          carryForwardEnabled,
+          carryForwardLimit: carryForwardLimit ? parseFloat(carryForwardLimit) : undefined,
+          carryForwardExpiryMonths: carryForwardExpiryMonths ? parseInt(carryForwardExpiryMonths, 10) : undefined,
+          negativeBalanceAllowed,
+          negativeBalanceLimit: negativeBalanceLimit ? parseFloat(negativeBalanceLimit) : undefined,
+          notes,
+        }),
+      });
+      const d = await res.json(); if (!res.ok) throw new Error(d.error || "Failed"); return d;
+    },
+    onSuccess: () => { toast.success("Leave policy created"); qc.invalidateQueries({ queryKey: ["leave-policies-settings"] }); onClose(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>New Leave Policy</DialogTitle><DialogDescription>Define accrual, carry-forward, and negative balance rules for a leave type.</DialogDescription></DialogHeader>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+          <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave Policy 2026" /></div>
+          <div className="space-y-1.5">
+            <FieldLabel required>Leave Type</FieldLabel>
+            <Select value={leaveTypeId || "__none__"} onValueChange={setLeaveTypeId}>
+              <SelectTrigger><SelectValue placeholder="Select leave type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">\u2014</SelectItem>
+                {(leaveTypesData?.items || []).map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Facility (optional)</Label>
+            <Select value={facilityId} onValueChange={(v) => { setFacilityId(v); setDepartmentId("__none__"); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">All Facilities</SelectItem>
+                {(facilitiesData?.items || []).map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Department (optional)</Label>
+            <Select value={departmentId} onValueChange={setDepartmentId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">All Departments</SelectItem>
+                {(deptsData?.items || []).map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Accrual Frequency</Label>
+            <Select value={accrualFrequency} onValueChange={setAccrualFrequency}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="annual">Annual</SelectItem>
+                <SelectItem value="pro_rata">Pro-rata</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>Accrual Amount (days)</Label><Input type="number" step="0.5" value={accrualAmount} onChange={(e) => setAccrualAmount(e.target.value)} placeholder="e.g., 2.5" /></div>
+          <div className="space-y-1.5 md:col-span-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={carryForwardEnabled} onChange={(e) => setCarryForwardEnabled(e.target.checked)} /> Allow Carry Forward</label></div>
+          {carryForwardEnabled && (<>
+            <div className="space-y-1.5"><Label>Carry Forward Limit (days)</Label><Input type="number" step="0.5" value={carryForwardLimit} onChange={(e) => setCarryForwardLimit(e.target.value)} placeholder="e.g., 15" /></div>
+            <div className="space-y-1.5"><Label>Carry Forward Expiry (months)</Label><Input type="number" value={carryForwardExpiryMonths} onChange={(e) => setCarryForwardExpiryMonths(e.target.value)} placeholder="e.g., 3" /></div>
+          </>)}
+          <div className="space-y-1.5 md:col-span-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={negativeBalanceAllowed} onChange={(e) => setNegativeBalanceAllowed(e.target.checked)} /> Allow Negative Balance</label></div>
+          {negativeBalanceAllowed && <div className="space-y-1.5"><Label>Negative Balance Limit (days)</Label><Input type="number" step="0.5" value={negativeBalanceLimit} onChange={(e) => setNegativeBalanceLimit(e.target.value)} placeholder="e.g., 5" /></div>}
+          <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+        </div>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !leaveTypeId} className="bg-emerald-600 hover:bg-emerald-700">Create Policy</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

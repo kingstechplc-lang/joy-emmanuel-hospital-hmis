@@ -22,6 +22,7 @@ import {
   SettingsTab, AvailabilityTab,
 } from "./workforce/workforce-tabs";
 import { usePermissions } from "./workforce/workforce-helpers";
+import { ModuleHelp } from "@/components/ui-helpers";
 
 type Section = {
   id: string;
@@ -79,6 +80,23 @@ export function ShiftsView() {
           </p>
         </div>
       </div>
+
+      {/* Help */}
+
+      <ModuleHelp
+        title="Shifts & Leave"
+        sections={[
+          { title: "Dashboard", content: "Shows real-time statistics for today's shifts and leave. Includes total shifts, scheduled staff, on-duty, night shift, on-call, unfilled shifts, pending swaps, coverage requests, and overtime hours. Also shows today's staffing list and on-call assignments." },
+          { title: "Shift Assignments", content: "Create individual shift assignments for staff. The system validates conflicts (overlapping shifts, insufficient rest, leave conflicts) before allowing assignment. Each shift can be marked as morning, evening, night, or on-call." },
+          { title: "Duty Roster", content: "Create rosters (groups of shifts for a date range). Rosters go through: Draft \u2192 Review \u2192 Approved \u2192 Published \u2192 Locked. Publishing notifies affected staff. Locking prevents further changes." },
+          { title: "Shift Calendar", content: "Combined monthly calendar showing shifts, leave, holidays, and on-call assignments. Color-coded by type. Click a date to see all events." },
+          { title: "Shift Swaps", content: "Staff can request swaps with another staff member. Workflow: Requester submits \u2192 Target accepts \u2192 Supervisor approves. The system checks for conflicts before approving." },
+          { title: "Coverage", content: "When staff cannot attend a shift, create a coverage request. The system suggests replacement staff ranked by suitability (same facility, profession match, availability, workload)." },
+          { title: "Leave Management", content: "Submit leave requests with balance checks and conflict detection. Approval workflow: Pending \u2192 Approved/Rejected. Upon approval, leave balance is automatically deducted and staff status changes to on_leave." },
+          { title: "Settings", content: "Configure shift types, leave types, public holidays, staffing requirements (minimum staffing per department/shift), and leave policies (accrual, carry-forward, negative balance rules). Use 'Seed Defaults' to load standard configurations." },
+        ]}
+      />
+
 
       {/* Desktop nav */}
       <div className="hidden md:block">

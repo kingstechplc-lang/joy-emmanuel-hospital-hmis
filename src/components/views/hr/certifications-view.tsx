@@ -12,6 +12,7 @@ import {
 import { CertDashboard } from "./certifications/cert-dashboard";
 import { CertRecordsTab, CertSettingsTab } from "./certifications/cert-tabs";
 import { usePermissions } from "./certifications/cert-helpers";
+import { ModuleHelp } from "@/components/ui-helpers";
 
 type Section = {
   id: string;
@@ -58,6 +59,22 @@ export function CertificationsView() {
           </p>
         </div>
       </div>
+
+      {/* Help */}
+
+      <ModuleHelp
+        title="Certifications & Credentials"
+        sections={[
+          { title: "Dashboard", content: "Real-time certification statistics: total, active, expiring (30/60/90 days), expired, pending verification/approval, suspended, revoked, and mandatory compliance rate." },
+          { title: "Certification Lifecycle", content: "Submit \u2192 Verify (with method, reference, notes) \u2192 Approve \u2192 Active \u2192 Expiry Monitoring \u2192 Renew. Each step is tracked in status history with full audit trail." },
+          { title: "Credential Types", content: "Distinguish between: Professional License (authorization to practice), Certification (demonstrated competency), Registration, Permit, Accreditation, and Training Certificate." },
+          { title: "Verification", content: "Record verification method (document review, issuing org, portal, physical inspection, HR, supervisor, external). Do NOT claim 'verified by issuing body' unless actual verification occurred." },
+          { title: "Renewal", content: "Renewing a certification transactionally: archives old cert, creates renewal record, creates new cert with new dates, notifies staff, and preserves full history." },
+          { title: "Suspension/Revocation/Reactivation", content: "Suspend or revoke certifications with required reason and audit trail. Reactivate suspended/revoked certifications when policy allows." },
+          { title: "Settings", content: "Configure certification types (BLS, ACLS, Medical License, etc.), issuing organizations (Medical & Dental Council, Nursing Council, etc.), and mandatory requirements per role/department." },
+        ]}
+      />
+
 
       {/* Desktop nav */}
       <div className="hidden md:block">

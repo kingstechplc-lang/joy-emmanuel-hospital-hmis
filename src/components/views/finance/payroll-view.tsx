@@ -17,6 +17,7 @@ import {
   Plus, Lock, Check, Play, TrendingUp, Award, Ban, RefreshCcw, Wallet, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ModuleHelp } from "@/components/ui-helpers";
 import {
   fetchJson, usePermissions, ColoredBadge, PERIOD_STATUSES, PAYMENT_STATUSES, LOAN_STATUSES,
   formatDate, formatCurrency,
