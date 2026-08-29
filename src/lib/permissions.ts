@@ -241,6 +241,21 @@ export const PERMISSIONS = {
   TRAINING_REPORT_EXPORT: "training_report.export",
   TRAINING_BUDGET_MANAGE: "training_budget.manage",
 
+  // Certifications & Credentials
+  CERTIFICATION_VIEW: "certification.view",
+  CERTIFICATION_CREATE: "certification.create",
+  CERTIFICATION_EDIT: "certification.edit",
+  CERTIFICATION_DELETE: "certification.delete",
+  CERTIFICATION_VERIFY: "certification.verify",
+  CERTIFICATION_APPROVE: "certification.approve",
+  CERTIFICATION_RENEW: "certification.renew",
+  CERTIFICATION_SUSPEND: "certification.suspend",
+  CERTIFICATION_REVOKE: "certification.revoke",
+  CERTIFICATION_REQUIREMENT_MANAGE: "certification_requirement.manage",
+  CERTIFICATION_ISSUER_MANAGE: "certification_issuer.manage",
+  CERTIFICATION_DOCUMENT_VIEW: "certification_document.view",
+  CERTIFICATION_REPORT_EXPORT: "certification_report.export",
+
   // Nursing Documentation
   NURSING_VIEW: "nursing.view",
   NURSING_NOTE_CREATE: "nursing.note.create",

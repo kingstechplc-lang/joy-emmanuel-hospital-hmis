@@ -105,6 +105,11 @@ model Organization {
   staffCompetencies      StaffCompetency[]
   cpdRecords             CPDRecord[]
   externalTrainingRecords ExternalTrainingRecord[]
+  // --- Certification advanced back-relations ---
+  certificationTypes      CertificationType[]
+  certificationIssuers    CertificationIssuer[]
+  certificationRequirements CertificationRequirement[]
+  certificationRenewals   CertificationRenewal[]
 }
 
 model Facility {
@@ -217,6 +222,9 @@ model Facility {
   trainingRequirements          TrainingRequirement[]
   trainingRequests              TrainingRequest[]
   trainingPlans                 TrainingPlan[]
+  // --- Certification advanced back-relations ---
+  certifications                 Certification[]
+  certificationRequirements      CertificationRequirement[]
 
   @@unique([organizationId, code])
 }
@@ -276,6 +284,9 @@ model Department {
   trainingRequirements   TrainingRequirement[]
   trainingRequests       TrainingRequest[]
   trainingPlans          TrainingPlan[]
+  // --- Certification advanced back-relations ---
+  certifications         Certification[]
+  certificationRequirements CertificationRequirement[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -568,6 +579,10 @@ model User {
   // --- Training advanced back-relations ---
   assessmentAssessor         TrainingAssessmentResult[] @relation("AssessmentAssessor")
   competencyAssessor         StaffCompetency[]          @relation("CompetencyAssessor")
+  // --- Certification advanced back-relations ---
+  certificationVerifier      Certification[]            @relation("CertificationVerifier")
+  certVerificationBy         CertificationVerification[] @relation("CertVerificationBy")
+  certStatusChanger          CertificationStatusHistory[] @relation("CertStatusChanger")
 }
 
 model Staff {
@@ -697,6 +712,8 @@ model Staff {
   staffCompetencies       StaffCompetency[]     @relation("StaffCompetencyStaff")
   cpdRecords              CPDRecord[]           @relation("CPDRecordStaff")
   externalTrainingRecords ExternalTrainingRecord[] @relation("ExternalTrainingStaff")
+  // --- Certification advanced back-relations ---
+  certificationRenewals   CertificationRenewal[]  @relation("CertRenewalStaff")
 
   @@index([facilityId])
   @@index([departmentId])
@@ -6725,23 +6742,218 @@ model TrainingRecord {
 }
 
 model Certification {
-  id                String       @id @default(cuid())
-  staffId           String
-  staff             Staff        @relation(fields: [staffId], references: [id])
-  organizationId    String
-  organization      Organization @relation(fields: [organizationId], references: [id])
-  certificationName String
-  issuingBody       String?
-  issueDate         DateTime
-  expiryDate        DateTime?
-  certificateNumber String?
-  status            String       @default("active") // active | expired | revoked
-  notes             String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id                    String       @id @default(cuid())
+  staffId               String
+  staff                 Staff        @relation(fields: [staffId], references: [id])
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  facilityId            String?
+  facility              Facility?    @relation(fields: [facilityId], references: [id])
+  departmentId          String?
+  department            Department?  @relation(fields: [departmentId], references: [id])
+  // Certification details
+  certificationName     String
+  certificationTypeId   String?
+  certificationType     CertificationType? @relation(fields: [certificationTypeId], references: [id])
+  credentialType        String       @default("certification") // professional_license | certification | registration | permit | accreditation | credential | training_certificate
+  category              String?      // Clinical | Nursing | Pharmacy | Lab | Radiology | Emergency | Management | IT | Safety | Infection Prevention | Occupational Health | Professional | Technical | Regulatory | Administrative
+  issuingBody           String?
+  issuerId              String?
+  issuer                CertificationIssuer? @relation(fields: [issuerId], references: [id])
+  issuingCountry        String?
+  // Numbers
+  certificateNumber     String?
+  licenseNumber         String?
+  registrationNumber    String?
+  // Dates
+  issueDate             DateTime
+  effectiveDate         DateTime?
+  expiryDate            DateTime?
+  renewalDate           DateTime?
+  gracePeriodDays       Int?
+  // Status
+  status                String       @default("active") // draft | pending_verification | pending_approval | active | expiring_soon | expired | suspended | revoked | rejected | renewal_pending | renewal_submitted | archived
+  isMandatory           Boolean      @default(false)
+  // Verification
+  verificationStatus    String       @default("pending") // pending | verified | rejected | not_required
+  verifiedById          String?
+  verifiedBy            User?        @relation("CertificationVerifier", fields: [verifiedById], references: [id])
+  verifiedAt            DateTime?
+  verificationMethod    String?      // issuing_org | portal | document_review | physical_inspection | hr_verification | supervisor_verification | external
+  verificationReference String?
+  verificationUrl       String?
+  verificationNotes     String?
+  // Renewal
+  renewalStatus         String?      // not_due | due | submitted | in_progress | completed
+  renewedFromId         String?      // self-ref to previous certification if this is a renewal
+  // Document
+  documentUrl           String?
+  // Notes
+  notes                 String?
+  // Audit
+  createdById           String?
+  updatedById           String?
+  // Suspended/Revoked
+  suspendedAt           DateTime?
+  suspendedReason       String?
+  suspendedById         String?
+  revokedAt             DateTime?
+  revokedReason         String?
+  revokedById           String?
+  reactivatedAt         DateTime?
+  reactivatedReason     String?
+  reactivatedById       String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  verifications         CertificationVerification[]
+  renewals              CertificationRenewal[]
+  statusHistory         CertificationStatusHistory[]
 
   @@index([staffId])
+  @@index([organizationId, status])
   @@index([expiryDate])
+  @@index([facilityId, status])
+  @@index([departmentId])
+  @@index([verificationStatus])
+  @@index([certificationTypeId])
+}
+
+// Configurable certification types
+model CertificationType {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  code            String
+  category        String?  // Clinical | Nursing | Pharmacy | Lab | Radiology | Emergency | Management | IT | Safety | etc.
+  credentialType  String   @default("certification") // professional_license | certification | registration | permit | accreditation | credential | training_certificate
+  description     String?
+  isMandatory     Boolean  @default(false)
+  defaultValidityMonths Int?
+  requiresVerification Boolean @default(true)
+  requiresApproval Boolean  @default(true)
+  allowsExpiry    Boolean  @default(true)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  certifications  Certification[]
+  requirements    CertificationRequirement[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, active])
+}
+
+// Issuing organizations / licensing bodies
+model CertificationIssuer {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  name            String
+  type            String?  // government | professional_body | academic | vendor | internal
+  country         String?
+  contactPerson   String?
+  email           String?
+  phone           String?
+  website         String?
+  address         String?
+  accreditation   String?
+  verificationUrl String?
+  notes           String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  certifications  Certification[]
+
+  @@index([organizationId, active])
+}
+
+// Configurable certification requirements
+model CertificationRequirement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  certificationTypeId String?
+  certificationType   CertificationType? @relation(fields: [certificationTypeId], references: [id])
+  certificationName   String  // denormalized for easy display
+  profession      String?
+  specialty       String?
+  jobRole         String?
+  employmentType  String?
+  staffCategory   String?
+  isMandatory     Boolean  @default(true)
+  validityMonths  Int?     // how often to renew
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([facilityId, departmentId])
+  @@index([certificationTypeId])
+}
+
+// Verification history per certification
+model CertificationVerification {
+  id              String   @id @default(cuid())
+  certificationId String
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  verifiedById    String?
+  verifiedBy      User?    @relation("CertVerificationBy", fields: [verifiedById], references: [id])
+  verificationStatus String // pending | verified | rejected
+  verificationMethod String?
+  verificationReference String?
+  verificationUrl String?
+  verificationNotes String?
+  verifiedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([certificationId, createdAt])
+}
+
+// Renewal records
+model CertificationRenewal {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  certificationId String
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  staffId         String
+  staff           Staff    @relation("CertRenewalStaff", fields: [staffId], references: [id])
+  renewalDate     DateTime @default(now())
+  newIssueDate    DateTime
+  newExpiryDate   DateTime?
+  newCertificateNumber String?
+  documentUrl     String?
+  status          String   @default("submitted") // submitted | verified | approved | rejected | completed
+  verifiedById    String?
+  approvedById    String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([certificationId])
+  @@index([staffId])
+}
+
+// Status history / audit trail per certification
+model CertificationStatusHistory {
+  id              String   @id @default(cuid())
+  certificationId String
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  previousStatus  String?
+  newStatus       String
+  changedById     String?
+  changedBy       User?    @relation("CertStatusChanger", fields: [changedById], references: [id])
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  @@index([certificationId, createdAt])
 }
 
 // ---------------------------------------------------------------------
