@@ -1022,6 +1022,7 @@ model Patient {
   wardRoundNotes                WardRoundNote[]
   wardRoundActions              WardRoundAction[]
   creditNotes                   CreditNote[]
+  insuranceAuthorizations       InsuranceAuthorization[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -1132,6 +1133,8 @@ model InsuranceProvider {
   plans                 InsurancePlan[]
   contacts              ProviderContact[]
   facilityRelationships ProviderFacilityRelationship[]
+  eligibilityVerifications EligibilityVerification[]
+  insuranceAuthorizations InsuranceAuthorization[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1282,10 +1285,13 @@ model InsuranceAuthorization {
   id                  String         @id @default(cuid())
   organizationId      String
   insuranceProviderId String
+  insuranceProvider   InsuranceProvider @relation(fields: [insuranceProviderId], references: [id])
   insurancePlanId     String?
   insurancePlan       InsurancePlan? @relation(fields: [insurancePlanId], references: [id], onDelete: SetNull)
   patientId           String?
+  patient             Patient?       @relation(fields: [patientId], references: [id])
   serviceId           String? // FK → Service
+  service             Service?       @relation(fields: [serviceId], references: [id])
   authorizationNumber String?
   authorizationDate   DateTime?
   expiryDate          DateTime?
@@ -1370,6 +1376,11 @@ model Encounter {
   tasks                     Task[]
   maternityRecords          MaternityRecord[]
   intakeOutputEntries       IntakeOutputEntry[]
+  // Upstream NHIS workflow back-relations (Phase 5 — Encounter Coverage, Attendance, Readiness)
+  encounterCoverage         EncounterCoverage?
+  attendanceVerification    AttendanceVerification?
+  claimReadinessAssessments ClaimReadinessAssessment[]
+  eligibilityVerifications  EligibilityVerification[]
 
   @@unique([facilityId, encounterNumber])
   @@index([patientId, facilityId])
@@ -4554,6 +4565,7 @@ model Service {
   invoiceItems    InvoiceItem[]
   vaccineCatalogs VaccineCatalog[]
   packageItems    ServicePackageItem[]
+  insuranceAuthorizations InsuranceAuthorization[]
 
   @@unique([organizationId, code])
   @@index([departmentId])
@@ -5090,22 +5102,198 @@ model EligibilityVerification {
   patientId             String
   patient               Patient   @relation(fields: [patientId], references: [id])
   insuranceProviderId   String?
+  insuranceProvider     InsuranceProvider? @relation(fields: [insuranceProviderId], references: [id])
+  patientInsuranceId    String? // link to specific PatientInsurance record
   membershipNumber      String?
+  encounterId           String? // encounter-scoped verification (NEW)
+  encounter             Encounter? @relation(fields: [encounterId], references: [id])
+  facilityId            String? // facility where verification happened (NEW)
+
+  // Verification event metadata
   verificationDate      DateTime  @default(now())
-  verificationStatus    String    @default("not_verified") // not_verified | verified | active | inactive | expired | unable_to_verify | pending
-  coverageStatus        String? // active | expired | suspended
+  verificationStatus    String    @default("not_verified") // not_verified | verified | active | inactive | expired | unable_to_verify | pending | failed | manual_verified
+  coverageStatus        String? // active | expired | suspended | unknown
   coverageStart         DateTime?
   coverageEnd           DateTime?
-  verificationSource    String    @default("manual") // manual | api | card_check
-  verificationReference String? // external reference
+
+  // Method/source distinction (sections 12, 14, 40 of the master prompt)
+  // method = the high-level approach used; source = the system that produced the result
+  verificationMethod    String    @default("manual") // integrated | manual | external | unavailable | pending (NEW)
+  verificationSource    String    @default("manual") // nhia_integration | manual | external | local | other (NEW — extended vocab)
+  verificationReference String? // external reference (e.g., NHIA transaction ref)
+  responseData          String?   @db.Text // raw API response payload (JSON string) (NEW)
+  requestPayload        String?   @db.Text // what was sent to the payer API (JSON string, scrubbed of secrets) (NEW)
+  expiresAt             DateTime? // when this verification result is no longer valid (NEW — typically encounter-end or coverageEnd)
+
+  // Outcome
+  resultMessage         String? // human-readable result reason (NEW)
   verifiedById          String?
   verifiedByName        String?
   notes                 String?
   createdAt             DateTime  @default(now())
 
+  // Relation to attendance verification (NEW — one eligibility check may pair with one attendance check)
+  attendanceVerificationId String? // FK to AttendanceVerification (NEW)
+
   @@index([patientId])
   @@index([organizationId])
   @@index([verificationStatus])
+  @@index([encounterId])
+  @@index([patientInsuranceId])
+  @@index([facilityId, verificationDate])
+}
+
+// ---------------------------------------------------------------------
+// ENCOUNTER COVERAGE — Encounter-level payer/coverage selection
+// ---------------------------------------------------------------------
+// Captures WHICH payer/insurance applies to a specific encounter.
+// This is the authoritative source of truth for "this encounter is NHIS-covered"
+// (distinct from "this patient HAS NHIS" which is PatientInsurance).
+//
+// Without this, the system has to infer encounter coverage from Invoice.payerType,
+// which is fragile because invoices can be split or amended.
+// ---------------------------------------------------------------------
+model EncounterCoverage {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  facilityId           String
+  encounterId          String    @unique // one coverage record per encounter
+  encounter            Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  // Payer selection (sections 7, 8, 9, 10, 11 of master prompt)
+  payerType            String    @default("self_pay") // self_pay | nhis | private_insurance | corporate | employer | government | other
+  patientInsuranceId   String? // link to specific PatientInsurance (when payer is insurance-based)
+  insuranceProviderId  String? // denormalized for fast queries
+  insurancePlanId      String? // link to InsurancePlan if a specific plan applies
+  insuranceAuthorizationId String? // link to InsuranceAuthorization if pre-auth was obtained
+
+  // Coverage snapshot (captured at time of selection — never silently changes)
+  coveragePercentage   Float     @default(0) // 0-100, how much the payer covers
+  patientCopay         Float     @default(0) // flat copay amount in GHS
+  patientResponsibility Float    @default(0) // computed patient share
+  payerResponsibility  Float     @default(0) // computed payer share
+
+  // Lifecycle
+  status               String    @default("active") // active | superseded | cancelled
+  selectedById         String?
+  selectedByName       String?
+  selectedAt           DateTime  @default(now())
+  notes                String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([encounterId])
+  @@index([payerType])
+  @@index([patientInsuranceId])
+}
+
+// ---------------------------------------------------------------------
+// ATTENDANCE VERIFICATION — Encounter-level NHIA attendance verification
+// ---------------------------------------------------------------------
+// Captures the CCC / OTAC / biometric code that PROVES the patient
+// physically attended the facility for this specific encounter.
+//
+// CRITICAL DISTINCTION (section 11, 14, 15 of master prompt):
+//   MEMBERSHIP (PatientInsurance) ≠ ELIGIBILITY (EligibilityVerification)
+//   ≠ ATTENDANCE (this model) ≠ COVERAGE (EncounterCoverage)
+//   ≠ CLAIM READINESS (computed) ≠ CLAIM ACCEPTANCE (InsuranceClaim.status)
+//
+// These are NEVER collapsed into one boolean.
+// ---------------------------------------------------------------------
+model AttendanceVerification {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  facilityId           String
+  encounterId          String    @unique // one attendance record per encounter
+  encounter            Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patientId            String
+  patientInsuranceId   String? // link to the insurance record used for this attendance
+
+  // Method — CCC ≠ OTAC ≠ BIOMETRIC ≠ OTHER (section 15)
+  method               String    @default("CCC") // CCC | OTAC | BIOMETRIC | OTHER | NOT_REQUIRED
+  code                 String? // the actual verification code (CCC, OTAC, biometric ID, etc.)
+  codeHash             String? // hash of the code for replay-duplicate detection (NEW)
+  transactionRef       String? // external transaction reference from NHIA/bridge
+
+  // Verification status
+  verificationStatus   String    @default("pending") // pending | verified | failed | not_required | expired
+  verifiedAt           DateTime?
+  expiresAt            DateTime? // when the attendance code expires (e.g., OTACs are short-lived)
+
+  // Source/method metadata (section 40)
+  source               String    @default("local") // nhia_integration | manual | external | local | other
+  resultMessage        String? // human-readable result reason
+  responseData         String?   @db.Text // raw response payload (JSON)
+
+  // Audit
+  capturedById         String?
+  capturedByName       String?
+  capturedAt           DateTime  @default(now())
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([encounterId])
+  @@index([patientId])
+  @@index([method, verificationStatus])
+  @@index([codeHash]) // for duplicate/replay detection
+}
+
+// ---------------------------------------------------------------------
+// CLAIM READINESS ASSESSMENT — Snapshot of claim-readiness per encounter
+// ---------------------------------------------------------------------
+// Computed by the Claim Readiness Engine. Each evaluation creates a new row
+// (history preserved — never overwritten, per section 13 of master prompt).
+//
+// The encounter is "claim ready" only when status = "READY_FOR_EXPORT"
+// AND every check has passed.
+// ---------------------------------------------------------------------
+model ClaimReadinessAssessment {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  facilityId           String?
+  encounterId          String
+  encounter            Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patientId            String?
+  patientName          String?
+
+  // Overall status (section 25)
+  status               String    @default("not_ready") // not_ready | ready_for_validation | validation_failed | ready_for_export | exported
+  readinessScore       Int       @default(0) // 0-100, percentage of checks passed
+  checksTotal          Int       @default(0)
+  checksPassed         Int       @default(0)
+  checksFailed         Int       @default(0)
+  checksWarning        Int       @default(0)
+
+  // Detailed checklist (JSON array of { checkId, label, status, severity, message, source })
+  checks               String?   @db.Text
+
+  // Failure summary (section 27 — actionable reasons)
+  failureSummary       String?   @db.Text
+  warningsSummary      String?   @db.Text
+
+  // Links to upstream workflow artifacts
+  coverageId           String? // FK to EncounterCoverage
+  eligibilityVerificationId String? // FK to latest EligibilityVerification
+  attendanceVerificationId String? // FK to AttendanceVerification
+  invoiceId            String?
+  insuranceClaimId     String?
+
+  // Audit
+  evaluatedById        String?
+  evaluatedByName      String?
+  evaluatedAt          DateTime  @default(now())
+  notes                String?
+
+  createdAt            DateTime  @default(now())
+
+  @@index([organizationId, facilityId])
+  @@index([encounterId])
+  @@index([status])
+  @@index([evaluatedAt])
 }
 
 // ---------------------------------------------------------------------

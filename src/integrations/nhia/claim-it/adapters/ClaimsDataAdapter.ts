@@ -87,8 +87,46 @@ export async function buildICOFromEncounter(
     take: 1,
   }) : [];
 
-  // Resolve NHIS number
-  const nhisInsurance = patient.insurance?.[0];
+  // --- UPSTREAM NHIS WORKFLOW DATA (Phase 9 integration) ---
+  // Pull real attendance verification, encounter coverage, and latest eligibility
+  // from the new upstream tables. Falls back gracefully if records don't exist
+  // (e.g., encounters created before the upstream workflow was deployed).
+
+  // Encounter-level coverage — authoritative source of payer for this encounter
+  const encounterCoverage = await db.encounterCoverage.findFirst({
+    where: { encounterId, status: "active" },
+    orderBy: { selectedAt: "desc" },
+  }).catch(() => null);
+
+  // Attendance verification (CCC/OTAC) — encounter-scoped
+  const attendanceRecord = await db.attendanceVerification.findUnique({
+    where: { encounterId },
+  }).catch(() => null);
+
+  // Latest eligibility verification for this encounter (or fall back to patient-level)
+  const eligibilityRecord = await db.eligibilityVerification.findFirst({
+    where: {
+      OR: [
+        { encounterId },
+        { patientId: encounter.patientId },
+      ],
+    },
+    orderBy: { verificationDate: "desc" },
+  }).catch(() => null);
+
+  // If encounter coverage exists, use its patientInsuranceId to fetch the right PatientInsurance
+  // (instead of just grabbing the patient's most recent insurance record)
+  const coveragePatientInsuranceId = encounterCoverage?.patientInsuranceId;
+  const coveragePatientInsurance = coveragePatientInsuranceId
+    ? await db.patientInsurance.findUnique({
+        where: { id: coveragePatientInsuranceId },
+        include: { insuranceProvider: true },
+      }).catch(() => null)
+    : null;
+
+  // Resolve NHIS number — prefer encounter-coverage-linked PatientInsurance,
+  // fall back to most recent patient insurance, then invoice, then identifier
+  const nhisInsurance = coveragePatientInsurance || patient.insurance?.[0];
   const nhisNumber = nhisInsurance?.membershipNumber || invoice?.nhisNumber ||
     patient.identifiers?.find(i => i.identifierType === "insurance_number")?.identifierValue || null;
   const ghanaCardPin = patient.identifiers?.find(i => i.identifierType === "ghana_card")?.identifierValue || null;
@@ -150,10 +188,27 @@ export async function buildICOFromEncounter(
     referralInfo,
   };
 
-  const attendanceVerification: AttendanceVerification = {
-    method: "CCC", code: null, verifiedAt: null,
-    verificationStatus: "NOT_REQUIRED", source: "HMIS", transactionRef: null,
-  };
+  // --- Attendance Verification (Phase 9 — uses real upstream data) ---
+  // Map the AttendanceVerification DB record to the ICO type.
+  // If no record exists, fall back to "NOT_REQUIRED" (legacy behaviour for
+  // encounters created before the upstream workflow was deployed).
+  const attendanceVerification: AttendanceVerification = attendanceRecord
+    ? {
+        method: attendanceRecord.method as any,
+        code: attendanceRecord.code,
+        verifiedAt: attendanceRecord.verifiedAt,
+        verificationStatus: attendanceRecord.verificationStatus.toUpperCase() as any,
+        source: attendanceRecord.source,
+        transactionRef: attendanceRecord.transactionRef,
+      }
+    : {
+        method: "CCC",
+        code: null,
+        verifiedAt: null,
+        verificationStatus: "NOT_REQUIRED",
+        source: "HMIS",
+        transactionRef: null,
+      };
 
   // Diagnoses
   const icoDiagnoses: ICODiagnosis[] = diagnoses.map(d => ({
@@ -242,12 +297,40 @@ export async function buildICOFromEncounter(
     insuranceClaimId: insuranceClaims[0]?.id || null,
   };
 
-  // Warnings
+  // Warnings — distinguish "missing upstream data" from "missing schema field"
   if (!nhisNumber) warnings.push("Patient NHIS number not found.");
   if (!facility.region) warnings.push("Facility region not configured.");
   if (icoDiagnoses.length === 0) warnings.push("No diagnoses found.");
   if (services.length === 0 && drugs.length === 0) warnings.push("No billable items found.");
-  if (!attendanceVerification.code) warnings.push("CCC code not available — SCHEMA GAP.");
+
+  // Attendance verification warnings — context-aware
+  if (!attendanceRecord) {
+    warnings.push("No attendance verification record for this encounter — using NOT_REQUIRED fallback. Capture CCC/OTAC code via Records Desk for NHIS claims.");
+  } else if (attendanceRecord.verificationStatus !== "verified" && attendanceRecord.verificationStatus !== "not_required") {
+    warnings.push(`Attendance verification status is '${attendanceRecord.verificationStatus}' (method: ${attendanceRecord.method}). Claim may be rejected.`);
+  } else if (attendanceRecord.verificationStatus === "verified" && !attendanceRecord.code && attendanceRecord.method !== "NOT_REQUIRED") {
+    warnings.push("Attendance marked verified but no code captured — claim may be rejected.");
+  }
+
+  // Encounter coverage warning
+  if (!encounterCoverage) {
+    warnings.push("No encounter coverage record found — payer inferred from invoice. Use Records Desk to explicitly select encounter payer for accurate claim preparation.");
+  } else if (encounterCoverage.payerType === "nhis" && !encounterCoverage.patientInsuranceId) {
+    warnings.push("Encounter coverage is NHIS but no PatientInsurance linked — claim may be rejected.");
+  }
+
+  // Eligibility verification warning
+  if (encounterCoverage?.payerType === "nhis") {
+    if (!eligibilityRecord) {
+      warnings.push("No eligibility verification record found — claim may be rejected without verified eligibility.");
+    } else if (eligibilityRecord.verificationStatus === "pending") {
+      warnings.push("Eligibility verification is still pending.");
+    } else if (eligibilityRecord.verificationStatus === "failed" || eligibilityRecord.verificationStatus === "unable_to_verify") {
+      warnings.push(`Eligibility verification ${eligibilityRecord.verificationStatus} — claim will likely be rejected.`);
+    } else if (eligibilityRecord.expiresAt && new Date(eligibilityRecord.expiresAt) < new Date()) {
+      warnings.push("Eligibility verification has expired — re-verify before submitting claim.");
+    }
+  }
 
   return {
     ico: {
