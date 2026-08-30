@@ -360,3 +360,26 @@ export function ServiceSelect(props: Omit<EntitySelectProps, "endpoint" | "getLa
     />
   );
 }
+
+/** Searchable insurance provider dropdown backed by /api/insurance-providers */
+export function InsuranceProviderSelect(props: Omit<EntitySelectProps, "endpoint" | "getLabel" | "getId" | "getSubtitle" | "getCode" | "queryParam" | "placeholder"> & {
+  providerType?: string; // nhis | private | corporate | managed_care | ...
+}) {
+  const { providerType, ...rest } = props;
+  return (
+    <EntitySelect
+      endpoint="/api/insurance-providers"
+      queryParam="q"
+      queryParams={{ status: "active", ...(providerType ? { providerType } : {}) }}
+      getLabel={(p) => p.name}
+      getId={(p) => p.id}
+      getSubtitle={(p) => {
+        const parts = [p.code, p.providerType, p.shortName].filter(Boolean);
+        return parts.length ? parts.join(" · ") : null;
+      }}
+      getCode={(p) => p.code || null}
+      placeholder="Search insurance provider by name or code..."
+      {...rest}
+    />
+  );
+}

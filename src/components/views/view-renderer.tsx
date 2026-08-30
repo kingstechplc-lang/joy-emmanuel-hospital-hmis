@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
 import { DashboardView } from "@/components/views/dashboard-view";
 import { RecordsDeskView } from "@/components/views/clinical/records-desk-view";
+import { NhisWorkflowView } from "@/components/views/clinical/nhis-workflow/nhis-workflow-view";
 import { OPDView } from "@/components/views/clinical/opd-view";
 import { PatientsView } from "@/components/views/patients/patients-view";
 import { PatientRegistrationView } from "@/components/views/patients/patient-registration-view";
@@ -88,6 +89,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   dashboard: DashboardView,
   workflow_dashboard: WorkflowDashboardView,
   records_desk: RecordsDeskView,
+  nhis_workflow: NhisWorkflowView,
   opd: OPDView,
   patients: PatientsView,
   patient_new: PatientRegistrationView,
@@ -178,6 +180,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   records_desk: "patient.view",
+  nhis_workflow: "encounter_coverage.view",
   opd: "encounter.view",
   patients: "patient.view",
   patient_new: "patient.create",

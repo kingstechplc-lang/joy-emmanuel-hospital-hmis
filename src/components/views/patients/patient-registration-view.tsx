@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 import { FieldLabel } from "@/components/ui/required-label";
 import { safeJson } from "@/components/ui-helpers";
+import { InsuranceProviderSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 
 interface DuplicateMatch {
   matchType: string;
@@ -44,7 +45,8 @@ export function PatientRegistrationView() {
     occupation: "", phone: "", alternativePhone: "", email: "",
     address: "", city: "", region: "", preferredLanguage: "en", bloodGroup: "",
     ghanaCard: "", passport: "",
-    insuranceProviderId: "", membershipNumber: "", policyNumber: "",
+    insuranceProviderId: "", insuranceProviderName: "",
+    membershipNumber: "", policyNumber: "",
     principalMember: "", relationshipToPrincipal: "self",
     coverageStart: "", coverageEnd: "",
     emergencyContactName: "", emergencyContactRelationship: "", emergencyContactPhone: "",
@@ -291,24 +293,39 @@ export function PatientRegistrationView() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Insurance Information</CardTitle>
-            <CardDescription>NHIS or private insurance membership details.</CardDescription>
+            <CardDescription>Select an insurance provider to enable NHIS/insurance membership capture. Leave blank for self-pay patients.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-3">
+              <Label>Insurance Provider</Label>
+              <InsuranceProviderSelect
+                value={form.insuranceProviderId ? { id: form.insuranceProviderId, label: form.insuranceProviderName || "" } as EntitySelectValue : null}
+                onChange={(v) => {
+                  setField("insuranceProviderId", v?.id || "");
+                  setField("insuranceProviderName", v?.label || "");
+                }}
+              />
+              {!form.insuranceProviderId && (
+                <p className="text-[11px] text-slate-500 mt-1">
+                  No provider selected — patient will be registered as self-pay. You can add insurance later from the patient record.
+                </p>
+              )}
+            </div>
             <div>
               <Label>Membership / Insurance Number</Label>
-              <Input value={form.membershipNumber} onChange={(e) => setField("membershipNumber", e.target.value)} />
+              <Input value={form.membershipNumber} onChange={(e) => setField("membershipNumber", e.target.value)} disabled={!form.insuranceProviderId} placeholder={form.insuranceProviderId ? "e.g. NHIS1234567890" : "Select provider first"} />
             </div>
             <div>
               <Label>Policy Number</Label>
-              <Input value={form.policyNumber} onChange={(e) => setField("policyNumber", e.target.value)} />
+              <Input value={form.policyNumber} onChange={(e) => setField("policyNumber", e.target.value)} disabled={!form.insuranceProviderId} />
             </div>
             <div>
               <Label>Principal Member</Label>
-              <Input value={form.principalMember} onChange={(e) => setField("principalMember", e.target.value)} placeholder="Self or name of principal" />
+              <Input value={form.principalMember} onChange={(e) => setField("principalMember", e.target.value)} disabled={!form.insuranceProviderId} placeholder="Self or name of principal" />
             </div>
             <div>
               <Label>Relationship to Principal</Label>
-              <Select value={form.relationshipToPrincipal || undefined} onValueChange={(v) => setField("relationshipToPrincipal", v)}>
+              <Select value={form.relationshipToPrincipal || undefined} onValueChange={(v) => setField("relationshipToPrincipal", v)} disabled={!form.insuranceProviderId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="self">Self</SelectItem>
@@ -321,11 +338,11 @@ export function PatientRegistrationView() {
             </div>
             <div>
               <Label>Coverage Start</Label>
-              <Input type="date" value={form.coverageStart} onChange={(e) => setField("coverageStart", e.target.value)} />
+              <Input type="date" value={form.coverageStart} onChange={(e) => setField("coverageStart", e.target.value)} disabled={!form.insuranceProviderId} />
             </div>
             <div>
               <Label>Coverage End</Label>
-              <Input type="date" value={form.coverageEnd} onChange={(e) => setField("coverageEnd", e.target.value)} />
+              <Input type="date" value={form.coverageEnd} onChange={(e) => setField("coverageEnd", e.target.value)} disabled={!form.insuranceProviderId} />
             </div>
           </CardContent>
         </Card>

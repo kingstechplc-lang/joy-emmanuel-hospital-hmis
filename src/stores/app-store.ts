@@ -63,6 +63,7 @@ export type ViewKey =
   | "settings_insurance_providers"
   | "settings_system"
   | "records_desk"
+  | "nhis_workflow"
   | "opd"
   | "ward_rounds"
   | "intake_output"
@@ -147,6 +148,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", category: "Overview" },
   { key: "workflow_dashboard", label: "Workflow & Notifications", icon: "BellRing", category: "Overview" },
   { key: "records_desk", label: "Records Desk", icon: "ClipboardCheck", permission: "patient.view", category: "Clinical" },
+  { key: "nhis_workflow", label: "NHIS Workflow", icon: "ShieldCheck", permission: "encounter_coverage.view", category: "Clinical" },
   { key: "opd", label: "Outpatient (OPD)", icon: "Stethoscope", permission: "encounter.view", category: "Clinical" },
   { key: "patients", label: "Patients", icon: "Users", permission: "patient.view", category: "Clinical" },
   { key: "patient_new", label: "Register Patient", icon: "UserPlus", permission: "patient.create", category: "Clinical" },
