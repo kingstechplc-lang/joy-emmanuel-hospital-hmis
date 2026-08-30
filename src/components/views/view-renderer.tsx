@@ -213,7 +213,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   attendance: "staff.view",
   training: "staff.view",
   certifications: "staff.view",
-  payroll: "staff.view",
+  payroll: "payroll.view",
   documents: "document.view",
   tasks: "task.assign",
   incident_reports: "task.assign",

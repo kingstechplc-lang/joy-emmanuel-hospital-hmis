@@ -189,7 +189,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "attendance", label: "Attendance", icon: "Clock", permission: "staff.view", category: "Human Resources" },
   { key: "training", label: "Training", icon: "GraduationCap", permission: "staff.view", category: "Human Resources" },
   { key: "certifications", label: "Certifications", icon: "Award", permission: "staff.view", category: "Human Resources" },
-  { key: "payroll", label: "Payroll", icon: "DollarSign", permission: "staff.view", category: "Human Resources" },
+  { key: "payroll", label: "Payroll", icon: "DollarSign", permission: "payroll.view", category: "Human Resources" },
 
   { key: "documents", label: "Documents", icon: "FolderOpen", permission: "document.view", category: "Operations" },
   { key: "tasks", label: "Tasks", icon: "CheckSquare", permission: "task.assign", category: "Operations" },

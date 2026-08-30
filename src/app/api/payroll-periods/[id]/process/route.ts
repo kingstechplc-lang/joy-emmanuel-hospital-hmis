@@ -47,7 +47,7 @@ function calculateTiered(bracketsJson: string | null, base: number): { amount: n
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, PERMISSIONS.PAYROLL_PROCESS) && !hasPermission(session, PERMISSIONS.PAYROLL_CREATE) && !hasPermission(session, PERMISSIONS.FINANCE_MANAGE) && !hasPermission(session, PERMISSIONS.SHIFT_MANAGE)) {
+  if (!hasPermission(session, PERMISSIONS.PAYROLL_PROCESS) && !hasPermission(session, PERMISSIONS.PAYROLL_CREATE)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

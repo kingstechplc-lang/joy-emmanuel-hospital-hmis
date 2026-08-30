@@ -129,7 +129,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
-    return NextResponse.json({ item: { ...staff, profileCompletion: completion } });
+    // Privacy: Filter sensitive bank/tax fields unless caller has payroll permissions
+    const canViewPayrollDetails = hasPermission(session, PERMISSIONS.PAYROLL_VIEW) || hasPermission(session, PERMISSIONS.COMPENSATION_MANAGE) || session.user.roles?.includes("super_admin");
+    const staffData: any = { ...staff, profileCompletion: completion };
+    if (!canViewPayrollDetails) {
+      delete staffData.bankName;
+      delete staffData.bankAccountNumber;
+      delete staffData.bankAccountName;
+      delete staffData.taxIdNumber;
+      delete staffData.nationalId;
+      delete staffData.payGrade;
+      delete staffData.payrollId;
+    }
+
+    return NextResponse.json({ item: staffData });
   } catch (e: any) {
     console.error("[GET /api/staff/[id]] error:", e);
     return NextResponse.json({ error: e?.message || "Failed to load staff" }, { status: 500 });
