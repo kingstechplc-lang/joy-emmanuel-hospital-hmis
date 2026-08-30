@@ -32,6 +32,7 @@ export type ViewKey =
   | "billing_payments"
   | "billing_refunds"
   | "insurance_claims"
+  | "nhia_claims"
   | "inventory"
   | "suppliers"
   | "purchase_orders"
@@ -177,6 +178,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "billing_payments", label: "Payments", icon: "CreditCard", permission: "billing.view", category: "Finance" },
   { key: "billing_refunds", label: "Refunds", icon: "RotateCcw", permission: "billing.view", category: "Finance" },
   { key: "insurance_claims", label: "Insurance Claims", icon: "ShieldCheck", permission: "insurance.view", category: "Finance" },
+  { key: "nhia_claims", label: "NHIA CLAIM-it", icon: "FileCode2", permission: "nhia_claim.view", category: "Finance" },
 
   { key: "inventory", label: "Inventory", icon: "Boxes", permission: "inventory.view", category: "Inventory" },
   { key: "suppliers", label: "Suppliers", icon: "Truck", permission: "inventory.view", category: "Inventory" },

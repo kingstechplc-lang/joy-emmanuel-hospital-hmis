@@ -9638,3 +9638,72 @@ model BloodCrossmatch {
   @@index([patientId])
   @@index([crossmatchResult])
 }
+
+// =====================================================================
+// NHIA CLAIM-it XML EXPORT — Persisted record of every XML generation.
+// Each row = one encounter → ICO → XML → file/bridge export attempt.
+// Stores the full XML payload so users can re-download without
+// re-running the pipeline, plus a validation summary for audit.
+// =====================================================================
+model NhiaClaimExport {
+  id                 String   @id @default(cuid())
+  organizationId     String
+  facilityId         String?
+  encounterId        String
+  patientId          String?
+  patientName        String?
+  invoiceId          String?
+  insuranceClaimId   String?
+
+  // Identifiers
+  claimNumber        String   @unique // CLM-<facilityCode>-<dateStr>-<encHash>
+  batchRef           String?  // BAT-<facilityCode>-<yyyy-MM>
+  submissionPeriod   String?  // yyyy-MM
+
+  // Generation status: draft | validated | xml_generated | exported | failed
+  status             String   @default("draft")
+
+  // Validation summary
+  isValid            Boolean  @default(false)
+  errorCount         Int      @default(0)
+  warningCount       Int      @default(0)
+  validationErrors   String?  // JSON array of ValidationError
+  adapterWarnings    String?  // JSON array of strings (from buildICOFromEncounter)
+
+  // Financial summary (snapshotted from ICO totals)
+  totalServiceAmount  Float   @default(0)
+  totalDrugAmount     Float   @default(0)
+  grossAmount         Float   @default(0)
+  nhisAmount          Float   @default(0)
+  patientAmount       Float   @default(0)
+  netAmount           Float   @default(0)
+  itemCount           Int     @default(0)
+  diagnosisCount      Int     @default(0)
+
+  // XML payload (nullable if generation failed before serialization)
+  xmlPayload          String? @db.Text
+  xmlSizeBytes        Int?
+
+  // Transport
+  transportMode       String? // file | bridge
+  filePath            String?
+  submissionRef       String? // external ref returned by bridge
+  transportError      String?
+
+  // Audit
+  generatedById       String?
+  generatedByName     String?
+  generatedAt         DateTime @default(now())
+  downloadedAt        DateTime?
+  downloadCount       Int      @default(0)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([encounterId])
+  @@index([patientId])
+  @@index([status])
+  @@index([submissionPeriod])
+  @@index([generatedAt])
+}

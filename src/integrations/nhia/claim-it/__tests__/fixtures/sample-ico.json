@@ -1,0 +1,179 @@
+{
+  "header": {
+    "claimBatchRef": "BAT-AG042-2026-08",
+    "claimNumber": "CLM-AG042-20260815-A1B2C3D4",
+    "submissionPeriod": "2026-08",
+    "generatedAt": "2026-08-15T10:30:00",
+    "schemaVersion": "2.0",
+    "transactionType": "NEW",
+    "currency": "GHS",
+    "facilityCode": "AG042",
+    "providerId": null
+  },
+  "facility": {
+    "facilityId": "fac_001",
+    "facilityCode": "AG042",
+    "facilityName": "Joy Emmanuel Hospital - Accra",
+    "hpn": null,
+    "region": "Greater Accra",
+    "district": null,
+    "facilityType": "district_hospital",
+    "ownership": null
+  },
+  "patient": {
+    "internalPatientId": "pat_001",
+    "patientNumber": "JEM-0000123",
+    "nhisNumber": "NHIS1234567890",
+    "ghanaCardPin": "GHA-729485637-1",
+    "cardSerialNumber": "SN-2024-0042",
+    "surname": "Mensah",
+    "otherNames": "Kwabena Owusu",
+    "dateOfBirth": "1985-04-12",
+    "sex": "M",
+    "phone": "+233244567890",
+    "insuranceProvider": "NHIS",
+    "insuranceMembershipStatus": "active",
+    "nhisEligibilityStatus": "verified"
+  },
+  "encounter": {
+    "encounterId": "enc_001",
+    "encounterNumber": "ENC-2026-000042",
+    "visitDate": "2026-08-15",
+    "arrivalTime": "2026-08-15T09:15:00",
+    "encounterType": "OPD",
+    "opdIpdStatus": "OPD",
+    "department": "General OPD",
+    "specialty": null,
+    "attendingProvider": null,
+    "admissionDate": null,
+    "dischargeDate": null,
+    "referralInfo": {
+      "referringFacilityName": "Korle Bu Teaching Hospital",
+      "referringFacilityCode": "KB001",
+      "referringFacilityCCC": null,
+      "referralDate": "2026-08-14",
+      "referralReason": "Specialist consultation for hypertension management"
+    }
+  },
+  "attendanceVerification": {
+    "method": "CCC",
+    "code": null,
+    "verifiedAt": null,
+    "verificationStatus": "NOT_REQUIRED",
+    "source": "HMIS",
+    "transactionRef": null
+  },
+  "diagnoses": [
+    {
+      "diagnosisCode": "I10",
+      "diagnosisDescription": "Essential (primary) hypertension",
+      "diagnosisType": "PRIMARY",
+      "codingSystem": "ICD-10",
+      "gdrgCode": "G-DRG-95",
+      "gdrgName": "Hypertension management - outpatient",
+      "isPrimary": true
+    },
+    {
+      "diagnosisCode": "E11.9",
+      "diagnosisDescription": "Type 2 diabetes mellitus without complications",
+      "diagnosisType": "SECONDARY",
+      "codingSystem": "ICD-10",
+      "gdrgCode": null,
+      "gdrgName": null,
+      "isPrimary": false
+    }
+  ],
+  "services": [
+    {
+      "internalItemId": "itm_001",
+      "nhisTariffCode": "CONS-001",
+      "serviceCode": "OPD-CONSULT",
+      "serviceDescription": "General OPD consultation",
+      "quantity": 1,
+      "unitPrice": 35.00,
+      "approvedTariffPrice": 35.00,
+      "totalAmount": 35.00,
+      "serviceDate": "2026-08-15",
+      "department": "General OPD",
+      "provider": "Dr. Adjei Mensah",
+      "itemStatus": "ACTIVE",
+      "gdrgCode": null,
+      "gdrgName": null,
+      "serviceCategory": "CONSULTATION"
+    },
+    {
+      "internalItemId": "itm_002",
+      "nhisTariffCode": "LAB-BSC-100",
+      "serviceCode": "LAB-BSC",
+      "serviceDescription": "Full Blood Count",
+      "quantity": 1,
+      "unitPrice": 25.00,
+      "approvedTariffPrice": 22.00,
+      "totalAmount": 25.00,
+      "serviceDate": "2026-08-15",
+      "department": "Laboratory",
+      "provider": null,
+      "itemStatus": "ACTIVE",
+      "gdrgCode": null,
+      "gdrgName": null,
+      "serviceCategory": "INVESTIGATION"
+    }
+  ],
+  "drugs": [
+    {
+      "internalItemId": "itm_003",
+      "nhisMedicineCode": "AML-5MG",
+      "gndlCode": null,
+      "medicineName": "Amlodipine 5mg",
+      "strength": "5 mg",
+      "formulation": "tablet",
+      "quantity": 30,
+      "unit": "tablet",
+      "unitPrice": 0.50,
+      "approvedNhisPrice": 0.45,
+      "totalAmount": 15.00,
+      "dispensingDate": "2026-08-15",
+      "prescription": "5mg x od x 30 days",
+      "prescriberId": "usr_001",
+      "pharmacistId": null,
+      "itemStatus": "ACTIVE"
+    },
+    {
+      "internalItemId": "itm_004",
+      "nhisMedicineCode": "MET-500MG",
+      "gndlCode": null,
+      "medicineName": "Metformin 500mg",
+      "strength": "500 mg",
+      "formulation": "tablet",
+      "quantity": 60,
+      "unit": "tablet",
+      "unitPrice": 0.30,
+      "approvedNhisPrice": 0.25,
+      "totalAmount": 18.00,
+      "dispensingDate": "2026-08-15",
+      "prescription": "500mg x bd x 30 days",
+      "prescriberId": "usr_001",
+      "pharmacistId": null,
+      "itemStatus": "ACTIVE"
+    }
+  ],
+  "totals": {
+    "totalServiceAmount": 60.00,
+    "totalDrugAmount": 33.00,
+    "grossAmount": 93.00,
+    "totalDeductions": 0,
+    "patientAmount": 0,
+    "nhisAmount": 93.00,
+    "netAmount": 93.00
+  },
+  "metadata": {
+    "sourceSystem": "JEM-HMIS",
+    "sourceVersion": "1.0",
+    "tariffScheduleVersion": null,
+    "medicinePriceVersion": null,
+    "baseDataVersion": null,
+    "encounterId": "enc_001",
+    "invoiceId": "inv_001",
+    "insuranceClaimId": "clm_001"
+  }
+}

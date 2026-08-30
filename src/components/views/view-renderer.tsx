@@ -31,6 +31,7 @@ import { InvoicesView } from "@/components/views/billing/invoices-view";
 import { PaymentsView } from "@/components/views/billing/payments-view";
 import { RefundsView } from "@/components/views/billing/refunds-view";
 import { InsuranceClaimsView } from "@/components/views/billing/insurance-claims-view";
+import { NhiaClaimsView } from "@/components/views/finance/nhia-claims-view";
 import { InventoryView } from "@/components/views/inventory/inventory-view";
 import { SuppliersView } from "@/components/views/inventory/suppliers-view";
 import { PurchaseOrdersView } from "@/components/views/inventory/purchase-orders-view";
@@ -114,6 +115,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   billing_payments: PaymentsView,
   billing_refunds: RefundsView,
   insurance_claims: InsuranceClaimsView,
+  nhia_claims: NhiaClaimsView,
   inventory: InventoryView,
   suppliers: SuppliersView,
   purchase_orders: PurchaseOrdersView,
@@ -203,6 +205,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   billing_payments: "billing.view",
   billing_refunds: "billing.view",
   insurance_claims: "insurance.view",
+  nhia_claims: "nhia_claim.view",
   inventory: "inventory.view",
   suppliers: "inventory.view",
   purchase_orders: "procurement.manage",

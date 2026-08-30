@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Claims schemaVersion="2.0">
+  <Claim>
+    <Header>
+      <ClaimBatchRef>BAT-AG042-2026-08</ClaimBatchRef>
+      <ClaimNumber>CLM-AG042-20260815-A1B2C3D4</ClaimNumber>
+      <SubmissionPeriod>2026-08</SubmissionPeriod>
+      <GeneratedAt>2026-08-15T10:30:00</GeneratedAt>
+      <SchemaVersion>2.0</SchemaVersion>
+      <TransactionType>NEW</TransactionType>
+      <Currency>GHS</Currency>
+      <FacilityCode>AG042</FacilityCode>
+    </Header>
+    <Facility>
+      <FacilityId>fac_001</FacilityId>
+      <FacilityCode>AG042</FacilityCode>
+      <FacilityName>Joy Emmanuel Hospital - Accra</FacilityName>
+      <Region>Greater Accra</Region>
+      <FacilityType>district_hospital</FacilityType>
+    </Facility>
+    <Patient>
+      <PatientId>pat_001</PatientId>
+      <PatientNumber>JEM-0000123</PatientNumber>
+      <MemberNumber>NHIS1234567890</MemberNumber>
+      <GhanaCardPIN>GHA-729485637-1</GhanaCardPIN>
+      <CardSerialNumber>SN-2024-0042</CardSerialNumber>
+      <Surname>Mensah</Surname>
+      <OtherNames>Kwabena Owusu</OtherNames>
+      <DateOfBirth>1985-04-12</DateOfBirth>
+      <Sex>M</Sex>
+      <Phone>+233244567890</Phone>
+      <InsuranceProvider>NHIS</InsuranceProvider>
+      <InsuranceMembershipStatus>active</InsuranceMembershipStatus>
+      <NhisEligibilityStatus>verified</NhisEligibilityStatus>
+    </Patient>
+    <Encounter>
+      <EncounterId>enc_001</EncounterId>
+      <EncounterNumber>ENC-2026-000042</EncounterNumber>
+      <VisitDate>2026-08-15</VisitDate>
+      <ArrivalTime>2026-08-15T09:15:00</ArrivalTime>
+      <EncounterType>OPD</EncounterType>
+      <OpdIpdStatus>OPD</OpdIpdStatus>
+      <Department>General OPD</Department>
+      <Referral>
+        <ReferringFacilityName>Korle Bu Teaching Hospital</ReferringFacilityName>
+        <ReferringFacilityCode>KB001</ReferringFacilityCode>
+        <ReferralDate>2026-08-14</ReferralDate>
+        <ReferralReason>Specialist consultation for hypertension management</ReferralReason>
+      </Referral>
+    </Encounter>
+    <AttendanceVerification>
+      <Method>CCC</Method>
+      <VerificationStatus>NOT_REQUIRED</VerificationStatus>
+      <Source>HMIS</Source>
+    </AttendanceVerification>
+    <Diagnoses>
+      <Diagnosis>
+        <DiagnosisCode>I10</DiagnosisCode>
+        <DiagnosisDescription>Essential (primary) hypertension</DiagnosisDescription>
+        <DiagnosisType>PRIMARY</DiagnosisType>
+        <CodingSystem>ICD-10</CodingSystem>
+        <GDRGCode>G-DRG-95</GDRGCode>
+        <GDRGName>Hypertension management - outpatient</GDRGName>
+        <IsPrimary>true</IsPrimary>
+      </Diagnosis>
+      <Diagnosis>
+        <DiagnosisCode>E11.9</DiagnosisCode>
+        <DiagnosisDescription>Type 2 diabetes mellitus without complications</DiagnosisDescription>
+        <DiagnosisType>SECONDARY</DiagnosisType>
+        <CodingSystem>ICD-10</CodingSystem>
+        <IsPrimary>false</IsPrimary>
+      </Diagnosis>
+    </Diagnoses>
+    <Services>
+      <Service>
+        <ItemId>itm_001</ItemId>
+        <NhisTariffCode>CONS-001</NhisTariffCode>
+        <ServiceCode>OPD-CONSULT</ServiceCode>
+        <ServiceDescription>General OPD consultation</ServiceDescription>
+        <Quantity>1</Quantity>
+        <UnitPrice>35.00</UnitPrice>
+        <ApprovedTariffPrice>35.00</ApprovedTariffPrice>
+        <TotalAmount>35.00</TotalAmount>
+        <ServiceDate>2026-08-15</ServiceDate>
+        <ServiceDepartment>General OPD</ServiceDepartment>
+        <ServiceProvider>Dr. Adjei Mensah</ServiceProvider>
+        <ItemStatus>ACTIVE</ItemStatus>
+        <ServiceCategory>CONSULTATION</ServiceCategory>
+      </Service>
+      <Service>
+        <ItemId>itm_002</ItemId>
+        <NhisTariffCode>LAB-BSC-100</NhisTariffCode>
+        <ServiceCode>LAB-BSC</ServiceCode>
+        <ServiceDescription>Full Blood Count</ServiceDescription>
+        <Quantity>1</Quantity>
+        <UnitPrice>25.00</UnitPrice>
+        <ApprovedTariffPrice>22.00</ApprovedTariffPrice>
+        <TotalAmount>25.00</TotalAmount>
+        <ServiceDate>2026-08-15</ServiceDate>
+        <ServiceDepartment>Laboratory</ServiceDepartment>
+        <ItemStatus>ACTIVE</ItemStatus>
+        <ServiceCategory>INVESTIGATION</ServiceCategory>
+      </Service>
+    </Services>
+    <Drugs>
+      <Drug>
+        <ItemId>itm_003</ItemId>
+        <NhisMedicineCode>AML-5MG</NhisMedicineCode>
+        <MedicineName>Amlodipine 5mg</MedicineName>
+        <Strength>5 mg</Strength>
+        <Formulation>tablet</Formulation>
+        <Quantity>30</Quantity>
+        <Unit>tablet</Unit>
+        <UnitPrice>0.50</UnitPrice>
+        <ApprovedNhisPrice>0.45</ApprovedNhisPrice>
+        <TotalAmount>15.00</TotalAmount>
+        <DispensingDate>2026-08-15</DispensingDate>
+        <Prescription>5mg x od x 30 days</Prescription>
+        <PrescriberId>usr_001</PrescriberId>
+        <ItemStatus>ACTIVE</ItemStatus>
+      </Drug>
+      <Drug>
+        <ItemId>itm_004</ItemId>
+        <NhisMedicineCode>MET-500MG</NhisMedicineCode>
+        <MedicineName>Metformin 500mg</MedicineName>
+        <Strength>500 mg</Strength>
+        <Formulation>tablet</Formulation>
+        <Quantity>60</Quantity>
+        <Unit>tablet</Unit>
+        <UnitPrice>0.30</UnitPrice>
+        <ApprovedNhisPrice>0.25</ApprovedNhisPrice>
+        <TotalAmount>18.00</TotalAmount>
+        <DispensingDate>2026-08-15</DispensingDate>
+        <Prescription>500mg x bd x 30 days</Prescription>
+        <PrescriberId>usr_001</PrescriberId>
+        <ItemStatus>ACTIVE</ItemStatus>
+      </Drug>
+    </Drugs>
+    <Totals>
+      <TotalServiceAmount>60.00</TotalServiceAmount>
+      <TotalDrugAmount>33.00</TotalDrugAmount>
+      <GrossAmount>93.00</GrossAmount>
+      <TotalDeductions>0.00</TotalDeductions>
+      <PatientAmount>0.00</PatientAmount>
+      <NhisAmount>93.00</NhisAmount>
+      <NetAmount>93.00</NetAmount>
+    </Totals>
+    <Metadata>
+      <SourceSystem>JEM-HMIS</SourceSystem>
+      <SourceVersion>1.0</SourceVersion>
+    </Metadata>
+  </Claim>
+</Claims>
