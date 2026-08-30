@@ -293,7 +293,7 @@ export function NhisWorkflowView() {
       {activeFacilityId && (
         <>
           {/* STEP 1: Patient selection */}
-          <Card className="border-emerald-200">
+          <Card className="border-emerald-200 overflow-visible">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">1</div>

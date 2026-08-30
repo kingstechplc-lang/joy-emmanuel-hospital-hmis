@@ -290,7 +290,7 @@ export function PatientRegistrationView() {
         </Card>
 
         {/* Insurance */}
-        <Card>
+        <Card className="overflow-visible">
           <CardHeader>
             <CardTitle className="text-lg">Insurance Information</CardTitle>
             <CardDescription>Select an insurance provider to enable NHIS/insurance membership capture. Leave blank for self-pay patients.</CardDescription>
