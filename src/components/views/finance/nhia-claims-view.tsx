@@ -1001,6 +1001,8 @@ function DetailDialog({ record, onClose, onDownload }: {
   onDownload: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const setView = useAppStore((s) => s.setView);
+  const selectEncounter = useAppStore((s) => s.selectEncounter);
   const errors = useMemo(() => {
     try { return record.validationErrors ? JSON.parse(record.validationErrors) : []; } catch { return []; }
   }, [record]);
@@ -1128,6 +1130,28 @@ function DetailDialog({ record, onClose, onDownload }: {
         </ScrollArea>
 
         <DialogFooter className="px-6 py-3 shrink-0 border-t bg-slate-50">
+          <Button
+            variant="outline"
+            className="h-9 mr-auto"
+            onClick={() => {
+              if (record.encounterId) selectEncounter(record.encounterId);
+              setView("insurance_claims");
+              onClose();
+            }}
+          >
+            <ShieldCheck className="w-4 h-4 mr-1.5" /> View Insurance Claim
+          </Button>
+          <Button
+            variant="outline"
+            className="h-9"
+            onClick={() => {
+              if (record.encounterId) selectEncounter(record.encounterId);
+              setView("nhis_workflow");
+              onClose();
+            }}
+          >
+            <ShieldCheck className="w-4 h-4 mr-1.5" /> Open NHIS Workflow
+          </Button>
           <Button variant="outline" onClick={onClose} className="h-9">Close</Button>
           <Button
             disabled={!record.xmlPayload}

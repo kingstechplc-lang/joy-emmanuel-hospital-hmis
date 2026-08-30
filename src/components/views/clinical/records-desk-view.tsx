@@ -41,6 +41,7 @@ export function RecordsDeskView() {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const setView = useAppStore((s) => s.setView);
   const selectPatient = useAppStore((s) => s.selectPatient);
+  const selectEncounter = useAppStore((s) => s.selectEncounter);
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
@@ -74,7 +75,7 @@ export function RecordsDeskView() {
           <DashboardTab activeFacilityId={activeFacilityId} />
         </TabsContent>
         <TabsContent value="checkin" className="mt-4">
-          <CheckInTab activeFacilityId={activeFacilityId} setView={setView} selectPatient={selectPatient} />
+          <CheckInTab activeFacilityId={activeFacilityId} setView={setView} selectPatient={selectPatient} selectEncounter={selectEncounter} />
         </TabsContent>
         <TabsContent value="requests" className="mt-4">
           <RequestsTab />
@@ -192,7 +193,7 @@ function DashboardTab({ activeFacilityId }: { activeFacilityId: string | null })
 // =====================================================================
 // CHECK-IN TAB (existing check-in functionality, enhanced UI)
 // =====================================================================
-function CheckInTab({ activeFacilityId, setView, selectPatient }: { activeFacilityId: string | null; setView: (v: any) => void; selectPatient: (id: string) => void }) {
+function CheckInTab({ activeFacilityId, setView, selectPatient, selectEncounter }: { activeFacilityId: string | null; setView: (v: any) => void; selectPatient: (id: string) => void; selectEncounter: (id: string) => void }) {
   const qc = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -228,7 +229,22 @@ function CheckInTab({ activeFacilityId, setView, selectPatient }: { activeFacili
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Patient checked in successfully");
+      // After check-in, offer the NHIS Workflow shortcut if an encounter was created
+      // (not when patient was already checked in)
+      const encounterId = data.encounter?.id;
+      const payerType = data.encounterCoverage?.payerType || data.payerType;
+      const isNhls = payerType === "nhis" || payerType === "NHIS";
+
+      toast.success(data.message || "Patient checked in successfully", isNhls && encounterId ? {
+        action: {
+          label: "Open NHIS Workflow →",
+          onClick: () => {
+            selectEncounter(encounterId);
+            setView("nhis_workflow");
+          },
+        },
+      } : undefined);
+
       qc.invalidateQueries({ queryKey: ["records-stats"] });
       qc.invalidateQueries({ queryKey: ["encounters"] });
       qc.invalidateQueries({ queryKey: ["queue"] });

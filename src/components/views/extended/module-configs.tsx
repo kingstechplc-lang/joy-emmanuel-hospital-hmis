@@ -1174,7 +1174,7 @@ export const IT_TICKET_CONFIG: ModuleConfig = {
 export const CODING_RECORD_CONFIG: ModuleConfig = {
   viewKey: "coding_records",
   title: "Coding & Claims",
-  description: "ICD-10/11, CPT, SNOMED coding for encounters and insurance claim preparation.",
+  description: "Clinical coding (ICD-10/11, CPT, SNOMED) for encounters. Claim lifecycle is managed in Finance → Insurance Claims.",
   icon: FileText,
   apiPath: "coding-records",
   queryKey: "coding-records",
@@ -1188,21 +1188,11 @@ export const CODING_RECORD_CONFIG: ModuleConfig = {
       { value: "cpt", label: "CPT" },
       { value: "snomed", label: "SNOMED" },
     ]},
-    { param: "claimStatus", label: "Claim Status", options: [
-      { value: "pending", label: "Pending" },
-      { value: "submitted", label: "Submitted" },
-      { value: "approved", label: "Approved" },
-      { value: "rejected", label: "Rejected" },
-      { value: "paid", label: "Paid" },
-    ]},
+    // NOTE: claimStatus filter removed — claim lifecycle is owned by Finance → Insurance Claims.
+    // Coding records are now purely about clinical coding, not claim state.
   ],
-  statusField: "claimStatus",
-  workflowActions: [
-    { fromStatus: "pending", toStatus: "submitted", label: "Submit Claim", icon: Send },
-    { fromStatus: "submitted", toStatus: "approved", label: "Mark Approved", icon: CheckCircle2 },
-    { fromStatus: "submitted", toStatus: "rejected", label: "Mark Rejected", icon: XCircle, requireNote: true },
-    { fromStatus: "approved", toStatus: "paid", label: "Mark Paid", icon: CheckCircle2 },
-  ],
+  // statusField + workflowActions removed — these duplicated InsuranceClaim.status lifecycle.
+  // Coding records no longer have their own claim-state workflow.
   fields: [
     { name: "patientName", label: "Patient Name", type: "text", required: true, group: "Patient" },
     { name: "patientId", label: "Patient ID", type: "text", group: "Patient" },
@@ -1219,16 +1209,10 @@ export const CODING_RECORD_CONFIG: ModuleConfig = {
     { name: "coderName", label: "Coder", type: "text", group: "Coder" },
     { name: "coderId", label: "Coder ID", type: "text", group: "Coder" },
     { name: "codingDate", label: "Coding Date", type: "datetime-local", group: "Coder" },
-    { name: "claimId", label: "Claim ID", type: "text", group: "Claim" },
-    { name: "claimStatus", label: "Claim Status", type: "select", options: [
-      { value: "pending", label: "Pending" },
-      { value: "submitted", label: "Submitted" },
-      { value: "approved", label: "Approved" },
-      { value: "rejected", label: "Rejected" },
-      { value: "paid", label: "Paid" },
-    ], group: "Claim" },
-    { name: "claimAmount", label: "Claim Amount", type: "number", group: "Claim" },
-    { name: "notes", label: "Notes", type: "textarea", full: true, group: "Other" },
+    // claimId retained as a reference link (read-only text) — NOT a parallel claim status system.
+    // Claim lifecycle (submit/approve/reject/pay) is managed in Finance → Insurance Claims.
+    { name: "claimId", label: "Linked Claim ID (reference)", type: "text", group: "Claim Reference" },
+    { name: "notes", label: "Coding Notes", type: "textarea", full: true, group: "Other" },
   ],
   auditActionCreate: "CODING_RECORD_CREATED",
   auditActionUpdate: "CODING_RECORD_UPDATED",

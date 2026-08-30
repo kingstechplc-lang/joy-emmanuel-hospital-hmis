@@ -110,6 +110,130 @@ export async function POST(req: Request) {
     else warnings.push("G-DRG code not set — recommended for NHIS claims");
   }
 
+  // 11. Upstream Claim Readiness — compose with the operational readiness engine
+  // (does NOT duplicate the engine — calls the existing /api/claim-readiness logic)
+  // Surfaces upstream failures (missing eligibility, attendance, coverage, etc.)
+  // as additional issues so the user has a single view of all blocking problems.
+  let upstreamReadiness: any = null;
+  if (claim.encounterId) {
+    try {
+      const { evaluateReadiness } = await import("@/lib/nhis-workflow/claim-readiness-engine");
+      // Build the context inline (mirrors /api/claim-readiness/route.ts buildReadinessContext)
+      const encounter = await db.encounter.findUnique({
+        where: { id: claim.encounterId },
+        include: { facility: true },
+      });
+      if (encounter && encounter.facility.organizationId === session.user.organizationId) {
+        const [patient, encounterCoverage, latestEligibility, attendanceVerification, diagnoses, invoice, insuranceClaim] = await Promise.all([
+          db.patient.findUnique({
+            where: { id: encounter.patientId },
+            select: { id: true, firstName: true, lastName: true, dateOfBirth: true, sex: true, phone: true },
+          }),
+          db.encounterCoverage.findFirst({
+            where: { encounterId: claim.encounterId!, status: "active" },
+            orderBy: { selectedAt: "desc" },
+          }),
+          db.eligibilityVerification.findFirst({
+            where: { OR: [{ encounterId: claim.encounterId }, { patientId: encounter.patientId }] },
+            orderBy: { verificationDate: "desc" },
+          }),
+          db.attendanceVerification.findUnique({ where: { encounterId: claim.encounterId! } }),
+          db.diagnosis.findMany({
+            where: { encounterId: claim.encounterId },
+            select: { id: true, diagnosisCode: true, diagnosisName: true, isPrimary: true, codeSystem: true },
+            orderBy: [{ isPrimary: "desc" }, { diagnosedAt: "asc" }],
+          }),
+          db.invoice.findFirst({
+            where: { encounterId: claim.encounterId, status: { in: ["issued", "paid", "partially_paid"] } },
+            orderBy: { issuedAt: "desc" },
+            include: { items: { include: { service: true } } },
+          }),
+          db.insuranceClaim.findFirst({
+            where: { encounterId: claim.encounterId },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, claimNumber: true, status: true, isNhisValidated: true },
+          }),
+        ]);
+
+        // Fetch patientInsurance if coverage links to one
+        let patientInsurance: any = null;
+        if (encounterCoverage?.patientInsuranceId) {
+          patientInsurance = await db.patientInsurance.findUnique({
+            where: { id: encounterCoverage.patientInsuranceId },
+            include: { insuranceProvider: { select: { id: true, name: true, code: true, providerType: true } } },
+          });
+        }
+
+        const ctx = {
+          encounter: {
+            id: encounter.id, encounterNumber: encounter.encounterNumber,
+            encounterType: encounter.encounterType, startAt: encounter.startAt,
+            status: encounter.status, patientId: encounter.patientId, facilityId: encounter.facilityId,
+          },
+          patient: patient ? {
+            id: patient.id, firstName: patient.firstName, lastName: patient.lastName,
+            dateOfBirth: patient.dateOfBirth, sex: patient.sex, phone: patient.phone,
+          } : null,
+          patientInsurance: patientInsurance ? {
+            id: patientInsurance.id, membershipNumber: patientInsurance.membershipNumber,
+            policyNumber: patientInsurance.policyNumber, status: patientInsurance.status,
+            verificationStatus: patientInsurance.verificationStatus, coverageEnd: patientInsurance.coverageEnd,
+            insuranceProvider: {
+              id: patientInsurance.insuranceProvider.id, name: patientInsurance.insuranceProvider.name,
+              code: patientInsurance.insuranceProvider.code, providerType: patientInsurance.insuranceProvider.providerType,
+            },
+          } : null,
+          encounterCoverage: encounterCoverage ? {
+            id: encounterCoverage.id, payerType: encounterCoverage.payerType, status: encounterCoverage.status,
+            patientInsuranceId: encounterCoverage.patientInsuranceId, insuranceProviderId: encounterCoverage.insuranceProviderId,
+          } : null,
+          latestEligibility: latestEligibility ? {
+            id: latestEligibility.id, verificationStatus: latestEligibility.verificationStatus,
+            verificationMethod: latestEligibility.verificationMethod, verificationSource: latestEligibility.verificationSource,
+            coverageEnd: latestEligibility.coverageEnd, expiresAt: latestEligibility.expiresAt,
+            verificationDate: latestEligibility.verificationDate,
+          } : null,
+          attendanceVerification: attendanceVerification ? {
+            id: attendanceVerification.id, method: attendanceVerification.method,
+            code: attendanceVerification.code, verificationStatus: attendanceVerification.verificationStatus,
+            verifiedAt: attendanceVerification.verifiedAt, expiresAt: attendanceVerification.expiresAt,
+          } : null,
+          diagnoses,
+          services: invoice?.items?.filter((it: any) => it.service).map((it: any) => ({
+            id: it.service.id, name: it.service.name, code: it.service.code,
+            nhisServiceCode: it.service.nhisServiceCode, nhisPrice: it.service.nhisPrice,
+            nhisEligible: it.service.nhisEligible,
+          })) || [],
+          medications: [],
+          invoice: invoice ? {
+            id: invoice.id, invoiceNumber: invoice.invoiceNumber, payerType: invoice.payerType,
+            status: invoice.status, total: invoice.total, balance: invoice.balance,
+            nhisResponsibility: invoice.nhisResponsibility, patientResponsibility: invoice.patientResponsibility,
+          } : null,
+          insuranceClaim: insuranceClaim ? {
+            id: insuranceClaim.id, claimNumber: insuranceClaim.claimNumber,
+            status: insuranceClaim.status, isNhisValidated: insuranceClaim.isNhisValidated,
+          } : null,
+        } as any;
+
+        upstreamReadiness = evaluateReadiness(ctx);
+        // Surface upstream failures as additional issues
+        const upstreamFailures = upstreamReadiness.checks.filter((c: any) => c.status === "FAIL");
+        for (const f of upstreamFailures) {
+          issues.push(`[Upstream] ${f.label}: ${f.message}`);
+        }
+        // Surface upstream warnings
+        const upstreamWarnings = upstreamReadiness.checks.filter((c: any) => c.status === "WARNING");
+        for (const w of upstreamWarnings) {
+          warnings.push(`[Upstream] ${w.label}: ${w.message}`);
+        }
+      }
+    } catch (e: any) {
+      // Non-fatal — if upstream readiness fails, just skip it
+      console.error("[insurance-claims/validate] Upstream readiness check failed:", e?.message);
+    }
+  }
+
   const completeness = Math.round((checksPassed / checksTotal) * 100);
   const isValid = issues.length === 0;
 
@@ -129,5 +253,13 @@ export async function POST(req: Request) {
     warnings,
     checksPassed,
     checksTotal,
+    upstreamReadiness: upstreamReadiness ? {
+      status: upstreamReadiness.status,
+      readinessScore: upstreamReadiness.readinessScore,
+      checksPassed: upstreamReadiness.checksPassed,
+      checksTotal: upstreamReadiness.checksTotal,
+      checksFailed: upstreamReadiness.checksFailed,
+      failureSummary: upstreamReadiness.failureSummary,
+    } : null,
   });
 }

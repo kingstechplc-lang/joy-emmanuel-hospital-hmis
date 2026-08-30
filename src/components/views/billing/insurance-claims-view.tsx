@@ -18,7 +18,7 @@ import {
   AlertCircle, CheckCircle2, Download, Layers, LayoutDashboard, ListFilter,
   Eye, Activity, History, MessageSquare, CreditCard, Wallet, ClipboardList,
   Clock, AlertTriangle, FileText, TrendingUp, Hash, Calendar, Building2, User,
-  ArrowRight, Loader2, Stethoscope as StethoscopeIcon
+  ArrowRight, Loader2, Stethoscope as StethoscopeIcon, FileCode2
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -705,6 +705,8 @@ function ClaimDetailDialog({
   canEdit: boolean;
 }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const selectEncounter = useAppStore((s) => s.selectEncounter);
+  const setView = useAppStore((s) => s.setView);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["insurance-claim-detail", claimId],
@@ -953,6 +955,33 @@ function ClaimDetailDialog({
         )}
 
         <DialogFooter>
+          {claim?.encounterId && (
+            <Button
+              variant="outline"
+              className="mr-auto"
+              onClick={() => {
+                selectEncounter(claim.encounterId);
+                setView("nhia_claims");
+                onClose();
+              }}
+            >
+              <FileCode2 className="w-3.5 h-3.5 mr-1.5" />
+              Open in NHIA CLAIM-it
+            </Button>
+          )}
+          {claim?.encounterId && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                selectEncounter(claim.encounterId);
+                setView("nhis_workflow");
+                onClose();
+              }}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              Open NHIS Workflow
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

@@ -264,6 +264,73 @@ export async function POST(req: Request) {
     );
   }
 
+  // ─── 4.5. Auto-create EncounterCoverage ─────────────────────────
+  // Records Desk owns "Encounter coverage creation/confirmation" per the
+  // authoritative architecture. At check-in we derive the payer from the
+  // patient's primary active PatientInsurance and persist an
+  // EncounterCoverage row so downstream modules (NHIS Workflow, Insurance
+  // Claims, CLAIM-it) have an authoritative payer context for this encounter.
+  //
+  // Mapping: provider.providerType → encounter-coverage payerType
+  //   nhis / government          → "nhis"
+  //   private / managed_care     → "private_insurance"
+  //   corporate / employer_sponsored → "corporate"
+  //   self_funded / other / null → "self_pay"
+  //
+  // This is a DEFAULT — NHIS Workflow can confirm/modify it later.
+  // Non-fatal: if coverage creation fails, check-in still succeeds.
+  let encounterCoverage: any = null;
+  try {
+    const primaryInsurance = patient.insurance[0] || null;
+    const providerType = primaryInsurance?.insuranceProvider?.providerType || null;
+
+    let derivedPayerType: string = "self_pay";
+    if (providerType === "nhis" || providerType === "government") {
+      derivedPayerType = "nhis";
+    } else if (providerType === "private" || providerType === "managed_care") {
+      derivedPayerType = "private_insurance";
+    } else if (providerType === "corporate" || providerType === "employer_sponsored") {
+      derivedPayerType = "corporate";
+    }
+
+    encounterCoverage = await db.encounterCoverage.create({
+      data: {
+        organizationId: session.user.organizationId,
+        facilityId,
+        encounterId: encounter.id,
+        payerType: derivedPayerType,
+        patientInsuranceId: primaryInsurance?.id || null,
+        insuranceProviderId: primaryInsurance?.insuranceProviderId || null,
+        coveragePercentage: derivedPayerType === "self_pay" ? 0 : 100,
+        patientCopay: 0,
+        patientResponsibility: 0,
+        payerResponsibility: 0,
+        status: "active",
+        selectedById: session.user.id,
+        selectedByName: session.user.name || session.user.username,
+        notes: "Auto-created at check-in — confirm or modify in NHIS Workflow.",
+      },
+    });
+
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId,
+      action: "ENCOUNTER_COVERAGE_SELECTED",
+      resourceType: "encounterCoverage",
+      resourceId: encounterCoverage.id,
+      newValues: {
+        encounterId: encounter.id,
+        payerType: derivedPayerType,
+        patientInsuranceId: primaryInsurance?.id || null,
+        autoCreated: true,
+      },
+    });
+  } catch (covErr: any) {
+    console.error("[check-in] Error auto-creating EncounterCoverage (non-critical):", covErr?.message);
+    // Don't fail check-in — coverage can be created later from NHIS Workflow
+  }
+
   // ─── 5. Optionally add to OPD queue ───────────────────────────
   let queueEntry: any = null;
   if (addToQueue) {
@@ -350,6 +417,7 @@ export async function POST(req: Request) {
     eligibility,
     payerType,
     insuranceInfo,
+    encounterCoverage,
     allergies: patient.allergies,
     queueEntry,
     alreadyCheckedIn: false,
