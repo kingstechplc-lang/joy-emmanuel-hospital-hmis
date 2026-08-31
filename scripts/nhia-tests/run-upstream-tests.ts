@@ -350,25 +350,45 @@ describe("Engine: no services and no medications (warnings)", () => {
   assert(result.checksWarning >= 2, "at least 2 warnings");
 });
 
-describe("Engine: manual vs official eligibility verification distinction", () => {
+describe("Engine: manual vs NHIA operational eligibility verification distinction", () => {
   // Manual verification → still passes but with WARNING severity (not INFO)
   const ctxManual = buildContext({
-    latestEligibility: { ...baseEligibility(), verificationSource: "manual" },
+    latestEligibility: { ...baseEligibility(), verificationMethod: "manual", verificationSource: "manual" },
   });
   const resultManual = evaluateReadiness(ctxManual);
   const manualCheck = resultManual.checks.find(c => c.checkId === "eligibility_verified")!;
   assertEqual(manualCheck.status, "PASS", "manual verification passes");
   assertEqual(manualCheck.severity, "WARNING", "manual verification is WARNING severity");
-  assert(manualCheck.message.includes("Manually verified"), "message mentions manual");
+  assert(manualCheck.message.includes("Manual Record Check"), "message mentions Manual Record Check");
 
-  // Official NHIA verification → passes with INFO severity
-  const ctxOfficial = buildContext({
-    latestEligibility: { ...baseEligibility(), verificationSource: "nhia_integration" },
+  // NHIA operational verification → passes with INFO severity (not WARNING)
+  const ctxOperational = buildContext({
+    latestEligibility: { ...baseEligibility(), verificationMethod: "facility_operational", verificationSource: "nhia_operational" },
   });
-  const resultOfficial = evaluateReadiness(ctxOfficial);
-  const officialCheck = resultOfficial.checks.find(c => c.checkId === "eligibility_verified")!;
-  assertEqual(officialCheck.severity, "INFO", "official verification is INFO severity");
-  assert(officialCheck.message.includes("Officially verified"), "message mentions official");
+  const resultOperational = evaluateReadiness(ctxOperational);
+  const operationalCheck = resultOperational.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(operationalCheck.status, "PASS", "operational verification passes");
+  assertEqual(operationalCheck.severity, "INFO", "operational verification is INFO severity");
+  assert(operationalCheck.message.includes("NHIA Operational"), "message mentions NHIA Operational");
+
+  // NHIA direct API verification → passes with INFO severity
+  const ctxDirect = buildContext({
+    latestEligibility: { ...baseEligibility(), verificationMethod: "api", verificationSource: "nhia_direct" },
+  });
+  const resultDirect = evaluateReadiness(ctxDirect);
+  const directCheck = resultDirect.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(directCheck.status, "PASS", "direct API verification passes");
+  assertEqual(directCheck.severity, "INFO", "direct API verification is INFO severity");
+  assert(directCheck.message.includes("NHIA Direct"), "message mentions NHIA Direct");
+
+  // OTAC verification → does NOT satisfy eligibility (it's attendance, not eligibility)
+  const ctxOtac = buildContext({
+    latestEligibility: { ...baseEligibility(), verificationMethod: "otac", verificationSource: "nhia_otac" },
+  });
+  const resultOtac = evaluateReadiness(ctxOtac);
+  const otacCheck = resultOtac.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(otacCheck.status, "FAIL", "OTAC does not satisfy eligibility");
+  assert(otacCheck.message.includes("OTAC proves attendance, not membership eligibility"), "message explains OTAC ≠ eligibility");
 });
 
 describe("Engine: existing rejected InsuranceClaim triggers warning", () => {

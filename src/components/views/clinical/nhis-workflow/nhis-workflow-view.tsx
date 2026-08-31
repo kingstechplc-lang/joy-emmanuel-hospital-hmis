@@ -122,7 +122,7 @@ It exposes the upstream workflow that feeds the existing CLAIM-it XML integratio
   1. Select patient (from Patient Master Index)
   2. Select encounter (or create new)
   3. Choose encounter payer / coverage (NHIS, private, self-pay)
-  4. Verify eligibility (manual or official NHIA when configured)
+  4. Verify eligibility (using the actual verification method used by your facility)
   5. Capture attendance verification (CCC / OTAC / biometric)
   6. Manage pre-authorizations if required
   7. Evaluate claim readiness — see actionable checklist
@@ -143,14 +143,26 @@ This workspace never generates XML directly — it feeds the downstream CLAIM-it
 Each is represented explicitly. A green "Verified" on one does NOT imply the others.`,
   },
   {
-    title: "NHIA live verification",
-    content: `Official NHIA verification requires the NHIA_API_BASE_URL environment variable to be configured.
+    title: "NHIA verification methods",
+    content: `The system recognizes multiple NHIA verification evidence levels:
 
-If the env var is absent, the system shows:
-  "Official NHIA verification is currently unavailable."
+  LEVEL 1 — NHIA Direct Verified: Direct authorized NHIA API response.
+            Requires NHIA_API_BASE_URL configuration. Not currently configured.
 
-Manual and external verification are always available and clearly labeled as such.
-The system NEVER fabricates an official verification result.`,
+  LEVEL 2 — NHIA Operational Verification: NHIA-recognized facility-side
+            operational process. Legitimate and NHIA-recognized.
+
+  LEVEL 3 — NHIA Attendance Verified (OTAC/*929#): Patient generated OTAC,
+            staff validated the code. Proves attendance, NOT eligibility.
+
+  LEVEL 4 — External Verification: Staff verified through an authorized
+            external NHIA/facility system.
+
+  LEVEL 5 — Manual Record Check: Staff physically checked NHIS card,
+            membership number, coverage dates.
+
+All levels are legitimate verification evidence. The system accurately records
+the method used rather than labeling everything non-API as "unverified."`,
   },
   {
     title: "Sensitive code handling",
@@ -663,15 +675,32 @@ function EligibilityPanel({ encounterId, patientId, coverage, latestEligibility,
             {latestEligibility.resultMessage && (
               <p className="text-xs p-2 bg-slate-50 rounded border border-slate-200">{latestEligibility.resultMessage}</p>
             )}
-            {/* Warning for manual verification */}
-            {latestEligibility.verificationSource === "manual" && latestEligibility.verificationStatus === "verified" && (
-              <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
-                <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-slate-700">
-                  This is a <b>manual verification</b> — not an official NHIA verification. Official NHIA integration requires <code className="font-mono text-[10px] bg-amber-100 px-1 rounded">NHIA_API_BASE_URL</code> to be configured.
-                </p>
-              </div>
-            )}
+            {/* Evidence-level indicator (replaces the old "not official NHIA" warning) */}
+            {latestEligibility.verificationStatus === "verified" && (() => {
+              const m = latestEligibility.verificationMethod;
+              const s = latestEligibility.verificationSource;
+              let evidenceLabel = "Manual Record Check";
+              let evidenceColor = "bg-amber-50 border-amber-200 text-amber-700";
+              if (s === "nhia_direct" || s === "nhia_integration") {
+                evidenceLabel = "NHIA Direct Verified — direct API response";
+                evidenceColor = "bg-emerald-50 border-emerald-200 text-emerald-700";
+              } else if (s === "nhia_operational" || m === "facility_operational") {
+                evidenceLabel = "NHIA Operational Verification — authorized facility process";
+                evidenceColor = "bg-blue-50 border-blue-200 text-blue-700";
+              } else if (s === "nhia_otac" || m === "otac") {
+                evidenceLabel = "NHIA Attendance Verified — OTAC/*929# (attendance only, not eligibility)";
+                evidenceColor = "bg-cyan-50 border-cyan-200 text-cyan-700";
+              } else if (m === "external" || s === "external") {
+                evidenceLabel = "External Verification Recorded — verified via external NHIA/facility system";
+                evidenceColor = "bg-violet-50 border-violet-200 text-violet-700";
+              }
+              return (
+                <div className={`flex items-start gap-2 p-2 border rounded text-xs ${evidenceColor}`}>
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <p>{evidenceLabel}</p>
+                </div>
+              );
+            })()}
             {canManage && (
               <Button size="sm" variant="outline" onClick={onOpenDialog}>
                 <RefreshCw className="w-3 h-3 mr-1" /> Re-verify
@@ -767,6 +796,12 @@ function AttendancePanel({ encounterId, patientId, coverage, attendance, canCapt
               <div>
                 <p className="text-slate-400 text-[10px] uppercase font-semibold">Method</p>
                 <p className="font-bold text-slate-800">{attendance.method}</p>
+                {attendance.source === "nhia_otac" && (
+                  <p className="text-[10px] text-cyan-600 font-semibold">NHIA *929# OTAC</p>
+                )}
+                {attendance.source === "nhia_operational" && (
+                  <p className="text-[10px] text-blue-600 font-semibold">NHIA Operational</p>
+                )}
               </div>
               <div>
                 <p className="text-slate-400 text-[10px] uppercase font-semibold">Code</p>
@@ -1261,8 +1296,8 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
   onSaved: () => void;
 }) {
   const qc = useQueryClient();
-  const [method, setMethod] = useState("manual");
-  const [source, setSource] = useState("manual");
+  const [method, setMethod] = useState("facility_operational");
+  const [source, setSource] = useState("nhia_operational");
   const [status, setStatus] = useState("verified");
   const [coverageEnd, setCoverageEnd] = useState("");
   const [reference, setReference] = useState("");
@@ -1270,7 +1305,9 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const nhiaApiAvailable = false; // Client-side hint — actual enforcement is server-side
+  // Direct NHIA API is not configured (NHIA_API_BASE_URL is a server-side env var).
+  // The UI offers operational, OTAC, external, and manual methods which are all legitimate.
+  // The eligibility API endpoint enforces the direct-API refusal server-side.
 
   const handleSave = async () => {
     setSaving(true);
@@ -1295,7 +1332,7 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
       onSaved();
     } catch (e: any) {
       if (e.status === 422) {
-        setError(e.data?.error || "Official NHIA verification is not configured. Use manual or external source.");
+        setError(e.data?.error || "Direct NHIA API verification is not configured. Use facility_operational, otac, external, or manual method instead.");
       } else {
         setError(e.message);
       }
@@ -1312,39 +1349,41 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
           <DialogDescription>Record an eligibility check for this encounter.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          {/* NHIA availability warning */}
-          {!nhiaApiAvailable && (
-            <div className="p-2.5 bg-blue-50 border border-blue-200 rounded text-xs flex items-start gap-2">
-              <Info className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-              <p className="text-slate-700">
-                Official NHIA verification is currently unavailable.
-                Manual/external verification may be recorded according to your facility workflow.
-              </p>
+          {/* NHIA direct API availability notice (truthful, not dismissive) */}
+          <div className="p-2.5 bg-blue-50 border border-blue-200 rounded text-xs flex items-start gap-2">
+            <Info className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+            <div className="text-slate-700">
+              <p className="font-semibold">Direct NHIA API: Not configured</p>
+              <p className="mt-0.5">Direct API verification requires NHIA_API_BASE_URL. However, your facility can still record legitimate NHIA operational, OTAC, external, or manual verification using the options below.</p>
             </div>
-          )}
+          </div>
 
           <div>
             <Label className="text-xs font-semibold">Verification Method</Label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="manual">Manual (card check, phone call)</SelectItem>
-                <SelectItem value="external">External (third-party portal)</SelectItem>
-                <SelectItem value="integrated">Integrated (live API — requires configuration)</SelectItem>
+                <SelectItem value="facility_operational">NHIA Facility/Operational Verification</SelectItem>
+                <SelectItem value="otac">OTAC / *929# (Attendance)</SelectItem>
+                <SelectItem value="external">External (NHIA/facility system)</SelectItem>
+                <SelectItem value="manual">Manual Record Check (card check)</SelectItem>
+                <SelectItem value="api" disabled>NHIA Direct API (not configured)</SelectItem>
                 <SelectItem value="unavailable">Unavailable (service down)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label className="text-xs font-semibold">Source</Label>
+            <Label className="text-xs font-semibold">Verification Source/Channel</Label>
             <Select value={source} onValueChange={setSource}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="manual">Manual</SelectItem>
-                <SelectItem value="external">External</SelectItem>
+                <SelectItem value="nhia_operational">NHIA Operational Channel</SelectItem>
+                <SelectItem value="nhia_otac">NHIA OTAC (*929#)</SelectItem>
+                <SelectItem value="external">External NHIA/Facility System</SelectItem>
                 <SelectItem value="local">Local (HMIS database lookup)</SelectItem>
-                <SelectItem value="nhia_integration">NHIA Integration (official)</SelectItem>
+                <SelectItem value="manual">Manual Record Review</SelectItem>
+                <SelectItem value="nhia_direct" disabled>NHIA Direct API (not configured)</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -1425,6 +1464,11 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
     setSaving(true);
     setError(null);
     try {
+      // Derive the source from the method — OTAC is NHIA OTAC, CCC is NHIA operational
+      const derivedSource = method === "OTAC" ? "nhia_otac"
+                          : method === "CCC" ? "nhia_operational"
+                          : method === "BIOMETRIC" ? "nhia_operational"
+                          : "local";
       const payload: any = {
         encounterId,
         patientInsuranceId: coverage?.patientInsuranceId,
@@ -1432,7 +1476,7 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
         verificationStatus: status,
         transactionRef: reference || undefined,
         resultMessage: notes || undefined,
-        source: "manual",
+        source: derivedSource,
       };
       // Only send code if user entered one (don't send empty string — backend treats as "no code")
       if (code && method !== "NOT_REQUIRED") {

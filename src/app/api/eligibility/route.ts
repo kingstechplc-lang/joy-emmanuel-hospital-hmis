@@ -28,12 +28,34 @@ const ALLOWED_STATUSES = new Set([
   "unable_to_verify", "pending", "failed", "manual_verified",
 ]);
 
+// Extended vocabulary per the NHIS/NHIA verification semantics audit.
+// These values are backward-compatible with existing records.
+// New values: api, facility_operational, otac (methods);
+//             nhia_direct, nhia_operational, nhia_otac (sources).
 const ALLOWED_METHODS = new Set([
-  "integrated", "manual", "external", "unavailable", "pending",
+  // New semantic values
+  "api",                   // Direct API call to authorized NHIA interface
+  "facility_operational",  // NHIA-recognized facility-side operational process
+  "otac",                  // OTAC/*929# attendance-based verification
+  // Legacy values (still supported for backward compatibility)
+  "integrated",            // alias for api (legacy)
+  "manual",                // Staff manually checked documentation
+  "external",              // Staff used an external NHIA/facility system
+  "unavailable",           // Service was down
+  "pending",               // Awaiting result
 ]);
 
 const ALLOWED_SOURCES = new Set([
-  "nhia_integration", "manual", "external", "local", "other",
+  // New semantic values
+  "nhia_direct",           // Direct NHIA API response (requires NHIA_API_BASE_URL)
+  "nhia_operational",      // NHIA-recognized facility operational channel
+  "nhia_otac",             // NHIA OTAC via *929#
+  // Legacy values (still supported for backward compatibility)
+  "nhia_integration",      // alias for nhia_direct (legacy)
+  "external",              // External NHIA/facility system
+  "local",                 // Local HMIS database check
+  "manual",                // Manual record review
+  "other",                 // Other
 ]);
 
 // Scrub sensitive fields from request payload before persisting
@@ -49,11 +71,15 @@ function scrubRequestPayload(payload: any): string | null {
   return JSON.stringify(scrubbed);
 }
 
-// Determine whether the verification method requires a live API call
-// and whether that API is available in this deployment.
+// Determine whether the verification source requires a live NHIA API connection.
+// Only nhia_direct / nhia_integration require the API — facility operational
+// channels (nhia_operational, nhia_otac) are legitimate NHIA-recognized
+// processes that do NOT need a direct API connection.
+function requiresNhiaLiveApi(source: string): boolean {
+  return source === "nhia_direct" || source === "nhia_integration";
+}
+
 function isNhiaLiveApiAvailable(): boolean {
-  // Future: check for NHIA_API_BASE_URL env var or settings record
-  // For now, NO live NHIA API is configured — we never fabricate official verification.
   return !!process.env.NHIA_API_BASE_URL;
 }
 
@@ -123,26 +149,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Invalid verificationSource. Allowed: ${[...ALLOWED_SOURCES].join(", ")}` }, { status: 400 });
   }
 
-  // --- CRITICAL SAFETY: Never fake official NHIA verification (section 39) ---
-  // If user requests verificationSource = "nhia_integration" but no live API is configured,
-  // downgrade to "unavailable" status with a clear message.
+  // --- Set defaults ---
   let finalStatus = verificationStatus || "verified";
   let finalSource = verificationSource || "manual";
   let finalMethod = verificationMethod || "manual";
   let finalMessage = resultMessage || null;
 
-  if (finalSource === "nhia_integration" && !isNhiaLiveApiAvailable()) {
+  // --- CRITICAL SAFETY: Never fabricate direct NHIA API verification ---
+  // Only refuse if the source is nhia_direct/nhia_integration (direct API)
+  // AND no live API is configured. Facility operational channels
+  // (nhia_operational, nhia_otac) are legitimate and do NOT require API config.
+  if (requiresNhiaLiveApi(finalSource) && !isNhiaLiveApiAvailable()) {
     return NextResponse.json({
-      error: "NHIA live verification API is not configured. Use verificationSource='manual' or 'external' for non-official checks, or set NHIA_API_BASE_URL env var to enable official verification.",
-      nhiaApiAvailable: false,
-    }, { status: 422 });
-  }
-
-  // If user attempts to mark as "verified" with source="local" but method="integrated",
-  // that's contradictory — refuse.
-  if (finalStatus === "verified" && finalSource === "local" && finalMethod === "integrated") {
-    return NextResponse.json({
-      error: "Cannot mark as verified with source=local and method=integrated. Use method='manual' for local checks.",
+      error: "Direct NHIA API verification is not configured. Use 'facility_operational' (NHIA facility process), 'otac' (*929# attendance), 'external' (external NHIA system), or 'manual' (record check) for non-API verification. Set NHIA_API_BASE_URL to enable direct API verification.",
+      nhiaDirectApiAvailable: false,
     }, { status: 422 });
   }
 

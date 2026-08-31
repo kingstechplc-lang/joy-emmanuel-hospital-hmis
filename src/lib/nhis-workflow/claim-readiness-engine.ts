@@ -8,7 +8,22 @@
 // This engine NEVER queries the database directly — it accepts a
 // preloaded EncounterReadinessContext (gathered by the API route).
 // This makes it unit-testable without a DB.
+//
+// IMPORTANT (verification semantics audit):
+// This engine uses the verification-evidence helper to distinguish:
+//   - DIRECT_NHIA_VERIFIED (direct API)
+//   - NHIA_OPERATIONAL_VERIFIED (facility operational)
+//   - NHIA_ATTENDANCE_VERIFIED (OTAC/*929#)
+//   - EXTERNAL_VERIFIED (external NHIA system)
+//   - MANUAL_REVIEW (manual record check)
+//   - NOT_VERIFIED
+//
+// OTAC satisfies ATTENDANCE, NOT ELIGIBILITY.
+// All legitimate evidence levels satisfy the corresponding requirement.
+// The engine does NOT downgrade operational/external verification.
 // =====================================================================
+
+import { getEvidenceLevel, satisfiesEligibility, satisfiesAttendance, type VerificationEvidenceLevel } from "./verification-evidence";
 
 export type CheckSeverity = "ERROR" | "WARNING" | "INFO";
 export type CheckStatus = "PASS" | "FAIL" | "WARNING" | "SKIP";
@@ -230,7 +245,7 @@ function checkEligibilityVerified(ctx: ReadinessContext): ReadinessCheck {
       severity: "ERROR",
       message: "No eligibility verification record found for this encounter",
       source: "Eligibility Verification",
-      remediationHint: "Run eligibility verification from Records Desk before claim preparation.",
+      remediationHint: "Record eligibility verification via NHIS Workflow before claim preparation.",
     };
   }
   // Check expiry
@@ -246,8 +261,24 @@ function checkEligibilityVerified(ctx: ReadinessContext): ReadinessCheck {
       remediationHint: "Re-run eligibility verification — the previous result has expired.",
     };
   }
-  const okStatuses = ["verified", "active", "manual_verified"];
-  if (!okStatuses.includes(ev.verificationStatus)) {
+
+  // Use the evidence-level helper to determine if this is a legitimate verification
+  const evidence = getEvidenceLevel(ev.verificationMethod, ev.verificationSource, ev.verificationStatus);
+
+  // OTAC does NOT satisfy eligibility — it's attendance evidence only
+  if (evidence.level === "NHIA_ATTENDANCE_VERIFIED") {
+    return {
+      checkId: "eligibility_verified",
+      label: "Eligibility verified",
+      status: "FAIL",
+      severity: "ERROR",
+      message: `Attendance verified via OTAC, but eligibility has NOT been separately verified. OTAC proves attendance, not membership eligibility.`,
+      source: "Eligibility Verification",
+      remediationHint: "Record a separate eligibility verification (facility operational, external, or manual record check).",
+    };
+  }
+
+  if (!evidence.isLegitimate) {
     return {
       checkId: "eligibility_verified",
       label: "Eligibility verified",
@@ -255,21 +286,21 @@ function checkEligibilityVerified(ctx: ReadinessContext): ReadinessCheck {
       severity: "ERROR",
       message: `Eligibility verification status: ${ev.verificationStatus} (method: ${ev.verificationMethod}, source: ${ev.verificationSource})`,
       source: "Eligibility Verification",
-      remediationHint: "Eligibility must be verified before claim preparation. Re-run or use manual verification if appropriate.",
+      remediationHint: "Eligibility must be verified before claim preparation. Use NHIA operational, external, or manual record check.",
     };
   }
-  // Distinguish official vs manual (section 39 — never lie about source)
-  const isOfficial = ev.verificationSource === "nhia_integration";
+
+  // Pass — include the evidence level in the message for transparency
   return {
     checkId: "eligibility_verified",
     label: "Eligibility verified",
     status: "PASS",
-    severity: isOfficial ? "INFO" : "WARNING",
-    message: isOfficial
-      ? `Officially verified via NHIA integration (ref: ${ev.verificationDate.toISOString()})`
-      : `Manually verified (source: ${ev.verificationSource}) — NOT official NHIA verification`,
+    severity: evidence.level === "MANUAL_REVIEW" ? "WARNING" : "INFO",
+    message: `${evidence.label} — ${evidence.description}`,
     source: "Eligibility Verification",
-    remediationHint: isOfficial ? undefined : "For official NHIA verification, integrate the NHIA live API.",
+    remediationHint: evidence.level === "MANUAL_REVIEW"
+      ? "For higher confidence, use NHIA operational verification or direct API when available."
+      : undefined,
   };
 }
 

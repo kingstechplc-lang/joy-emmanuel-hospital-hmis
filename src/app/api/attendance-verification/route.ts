@@ -27,7 +27,17 @@ export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
 const ALLOWED_METHODS = new Set(["CCC", "OTAC", "BIOMETRIC", "OTHER", "NOT_REQUIRED"]);
 const ALLOWED_STATUSES = new Set(["pending", "verified", "failed", "not_required", "expired"]);
-const ALLOWED_SOURCES = new Set(["nhia_integration", "manual", "external", "local", "other"]);
+// Extended sources per verification semantics audit — nhia_otac is a legitimate
+// NHIA-recognized attendance channel (does NOT require API config)
+const ALLOWED_SOURCES = new Set([
+  "nhia_otac",          // NHIA OTAC via *929# (legitimate NHIA attendance channel)
+  "nhia_operational",   // NHIA-recognized facility operational process
+  "nhia_integration",   // legacy alias for nhia_direct
+  "manual",             // Manual record check
+  "external",           // External NHIA/facility system
+  "local",              // Local HMIS check
+  "other",              // Other
+]);
 
 // Hash a verification code for replay-duplicate detection.
 // We use SHA-256 with a static salt prefix — this is NOT for password security,
