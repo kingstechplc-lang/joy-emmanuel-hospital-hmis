@@ -1036,6 +1036,8 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
   onSaved: () => void;
 }) {
   const qc = useQueryClient();
+  const setView = useAppStore((s) => s.setView);
+  const selectPatient = useAppStore((s) => s.selectPatient);
   const [payerType, setPayerType] = useState(existing?.payerType || "self_pay");
   const [patientInsuranceId, setPatientInsuranceId] = useState(existing?.patientInsuranceId || "");
   const [coveragePercentage, setCoveragePercentage] = useState(existing?.coveragePercentage?.toString() || "100");
@@ -1050,6 +1052,9 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
   });
   const patientInsurances = insuranceQuery.data?.insurance || [];
   const isInsurancePayer = ["nhis", "private_insurance", "corporate"].includes(payerType);
+
+  // Cannot proceed if insurance payer selected but no insurance record available/selected
+  const insuranceBlocked = isInsurancePayer && (patientInsurances.length === 0 || !patientInsuranceId);
 
   const handleSave = async () => {
     setSaving(true);
@@ -1082,7 +1087,13 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
         <div className="space-y-3 py-2">
           <div>
             <Label className="text-xs font-semibold">Payer Type</Label>
-            <Select value={payerType} onValueChange={setPayerType}>
+            <Select value={payerType} onValueChange={(v) => {
+              setPayerType(v);
+              // Reset insurance selection when switching away from insurance-based payers
+              if (!["nhis", "private_insurance", "corporate"].includes(v)) {
+                setPatientInsuranceId("");
+              }
+            }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="self_pay">Self-Pay</SelectItem>
@@ -1099,9 +1110,25 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
             <div>
               <Label className="text-xs font-semibold">Patient Insurance Record</Label>
               {patientInsurances.length === 0 ? (
-                <p className="text-xs text-amber-700 p-2 bg-amber-50 border border-amber-200 rounded mt-1">
-                  This patient has no insurance records. Add one from Patient 360 → Edit.
-                </p>
+                <div className="mt-1 p-3 bg-amber-50 border border-amber-200 rounded space-y-2">
+                  <p className="text-xs text-amber-800 flex items-start gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <span>This patient has no insurance records on file. You must add one before selecting an insurance payer, or choose <b>Self-Pay</b> instead.</span>
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs w-full"
+                    onClick={() => {
+                      selectPatient(patientId);
+                      setView("patient_360");
+                      onClose();
+                    }}
+                  >
+                    <User className="w-3 h-3 mr-1" /> Go to Patient 360 to Add Insurance
+                  </Button>
+                </div>
               ) : (
                 <Select value={patientInsuranceId} onValueChange={setPatientInsuranceId}>
                   <SelectTrigger><SelectValue placeholder="Select insurance record..." /></SelectTrigger>
@@ -1133,7 +1160,7 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving || (isInsurancePayer && !patientInsuranceId && patientInsurances.length > 0)}>
+          <Button onClick={handleSave} disabled={saving || insuranceBlocked}>
             {saving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
             {existing ? "Update Coverage" : "Select Payer"}
           </Button>
