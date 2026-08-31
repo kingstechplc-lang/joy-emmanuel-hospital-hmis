@@ -1046,11 +1046,12 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
   const [saving, setSaving] = useState(false);
 
   // Fetch patient's insurance records
+  // NOTE: /api/patients/[id] returns { patient: { ..., insurance: [...] } } — insurance is nested under `patient`
   const insuranceQuery = useQuery({
     queryKey: ["patient-insurance-for-coverage", patientId],
     queryFn: () => fetchJson(`/api/patients/${patientId}`),
   });
-  const patientInsurances = insuranceQuery.data?.insurance || [];
+  const patientInsurances = insuranceQuery.data?.patient?.insurance || [];
   const isInsurancePayer = ["nhis", "private_insurance", "corporate"].includes(payerType);
 
   // Cannot proceed if insurance payer selected but no insurance record available/selected
@@ -1130,16 +1131,79 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
                   </Button>
                 </div>
               ) : (
-                <Select value={patientInsuranceId} onValueChange={setPatientInsuranceId}>
-                  <SelectTrigger><SelectValue placeholder="Select insurance record..." /></SelectTrigger>
-                  <SelectContent>
-                    {patientInsurances.map((pi: any) => (
-                      <SelectItem key={pi.id} value={pi.id}>
-                        {pi.insuranceProvider?.name || "Unknown"} — {pi.membershipNumber || pi.policyNumber || "no number"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="mt-1 space-y-1.5 max-h-48 overflow-y-auto">
+                  {patientInsurances.map((pi: any) => {
+                    const now = new Date();
+                    const isExpired = pi.coverageEnd && new Date(pi.coverageEnd) < now;
+                    const isFuture = pi.coverageStart && new Date(pi.coverageStart) > now;
+                    const isActive = !isExpired && !isFuture && pi.status === "active";
+                    const isSelected = patientInsuranceId === pi.id;
+
+                    return (
+                      <button
+                        key={pi.id}
+                        type="button"
+                        onClick={() => setPatientInsuranceId(pi.id)}
+                        className={`w-full text-left p-2.5 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? "border-violet-500 bg-violet-50 ring-1 ring-violet-200"
+                            : isExpired
+                            ? "border-rose-200 bg-rose-50/30 hover:border-rose-300"
+                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-semibold text-slate-900">
+                                {pi.insuranceProvider?.name || "Unknown Provider"}
+                              </span>
+                              {pi.insuranceProvider?.code && (
+                                <Badge variant="outline" className="text-[9px] h-4 px-1 font-mono">
+                                  {pi.insuranceProvider.code}
+                                </Badge>
+                              )}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                                isActive ? "bg-emerald-100 text-emerald-700" :
+                                isExpired ? "bg-rose-100 text-rose-700" :
+                                isFuture ? "bg-blue-100 text-blue-700" :
+                                "bg-slate-100 text-slate-600"
+                              }`}>
+                                {isActive ? "ACTIVE" : isExpired ? "EXPIRED" : isFuture ? "FUTURE" : "INACTIVE"}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
+                              {pi.membershipNumber && (
+                                <div>Member #: <span className="font-mono font-semibold">{pi.membershipNumber}</span></div>
+                              )}
+                              {pi.policyNumber && (
+                                <div>Policy #: <span className="font-mono">{pi.policyNumber}</span></div>
+                              )}
+                              <div>
+                                Coverage: {pi.coverageStart ? formatDate(pi.coverageStart) : "—"} → {pi.coverageEnd ? formatDate(pi.coverageEnd) : "—"}
+                              </div>
+                              {pi.relationshipToPrincipal && (
+                                <div>Relationship: <span className="capitalize">{pi.relationshipToPrincipal}</span></div>
+                              )}
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle2 className="w-4 h-4 text-violet-600 shrink-0 mt-0.5" />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Helper for expired-only scenario (Phase 13 — Scenario B) */}
+              {patientInsurances.length > 0 && patientInsurances.every((pi: any) =>
+                (pi.coverageEnd && new Date(pi.coverageEnd) < new Date()) || pi.status !== "active"
+              ) && (
+                <p className="text-[11px] text-amber-700 mt-1.5 flex items-start gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>Insurance records exist, but none are currently active. You can still select an expired record, but the claim may be rejected.</span>
+                </p>
               )}
             </div>
           )}
