@@ -278,10 +278,14 @@ export async function POST(req: Request) {
   //   self_funded / other / null → "self_pay"
   //
   // This is a DEFAULT — NHIS Workflow can confirm/modify it later.
-  // Non-fatal: if coverage creation fails, check-in still succeeds.
+  // If the patient has multiple active insurance records, we pick the first
+  // as a DEFAULT SUGGESTION but flag it so staff know to confirm in NHIS Workflow.
   let encounterCoverage: any = null;
+  let coverageWarning: string | null = null;
+
   try {
-    const primaryInsurance = patient.insurance[0] || null;
+    const activeInsurances = patient.insurance; // already filtered to status: "active" at query time
+    const primaryInsurance = activeInsurances[0] || null;
     const providerType = primaryInsurance?.insuranceProvider?.providerType || null;
 
     let derivedPayerType: string = "self_pay";
@@ -291,6 +295,11 @@ export async function POST(req: Request) {
       derivedPayerType = "private_insurance";
     } else if (providerType === "corporate" || providerType === "employer_sponsored") {
       derivedPayerType = "corporate";
+    }
+
+    // If patient has multiple active insurance records, flag for confirmation
+    if (activeInsurances.length > 1) {
+      coverageWarning = `Patient has ${activeInsurances.length} active insurance records. Encounter coverage was auto-created using the first (${primaryInsurance?.insuranceProvider?.name || "unknown"}). Please confirm the correct payer in NHIS Workflow.`;
     }
 
     encounterCoverage = await db.encounterCoverage.create({
@@ -308,7 +317,9 @@ export async function POST(req: Request) {
         status: "active",
         selectedById: session.user.id,
         selectedByName: session.user.name || session.user.username,
-        notes: "Auto-created at check-in — confirm or modify in NHIS Workflow.",
+        notes: activeInsurances.length > 1
+          ? "Auto-created at check-in (DEFAULT from multiple insurance records — confirm in NHIS Workflow)."
+          : "Auto-created at check-in — confirm or modify in NHIS Workflow.",
       },
     });
 
@@ -324,11 +335,14 @@ export async function POST(req: Request) {
         payerType: derivedPayerType,
         patientInsuranceId: primaryInsurance?.id || null,
         autoCreated: true,
+        multipleInsurances: activeInsurances.length > 1,
       },
     });
   } catch (covErr: any) {
-    console.error("[check-in] Error auto-creating EncounterCoverage (non-critical):", covErr?.message);
-    // Don't fail check-in — coverage can be created later from NHIS Workflow
+    // Phase 3 rule 7: do not silently swallow coverage creation failure.
+    // Surface a warning to staff so they know to create coverage manually.
+    console.error("[check-in] Error auto-creating EncounterCoverage:", covErr?.message);
+    coverageWarning = `Encounter coverage could not be auto-created at check-in (${covErr?.message || "unknown error"}). Please create it manually in NHIS Workflow before proceeding to claims.`;
   }
 
   // ─── 5. Optionally add to OPD queue ───────────────────────────
@@ -418,6 +432,7 @@ export async function POST(req: Request) {
     payerType,
     insuranceInfo,
     encounterCoverage,
+    coverageWarning,
     allergies: patient.allergies,
     queueEntry,
     alreadyCheckedIn: false,

@@ -1055,7 +1055,11 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
   const isInsurancePayer = ["nhis", "private_insurance", "corporate"].includes(payerType);
 
   // Cannot proceed if insurance payer selected but no insurance record available/selected
-  const insuranceBlocked = isInsurancePayer && (patientInsurances.length === 0 || !patientInsuranceId);
+  // Phase 5: expired records require explicit override authorization
+  const selectedInsurance = patientInsurances.find((pi: any) => pi.id === patientInsuranceId);
+  const isSelectedExpired = selectedInsurance && selectedInsurance.coverageEnd && new Date(selectedInsurance.coverageEnd) < new Date();
+  const canOverrideExpired = can("encounter_coverage.manage") || can("nhia_claim.config");
+  const insuranceBlocked = isInsurancePayer && (patientInsurances.length === 0 || !patientInsuranceId || (isSelectedExpired && !canOverrideExpired));
 
   const handleSave = async () => {
     setSaving(true);
@@ -1203,6 +1207,18 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
                 <p className="text-[11px] text-amber-700 mt-1.5 flex items-start gap-1">
                   <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
                   <span>Insurance records exist, but none are currently active. You can still select an expired record, but the claim may be rejected.</span>
+                </p>
+              )}
+              {/* Phase 5: expired record override warning */}
+              {isSelectedExpired && (
+                <p className="text-[11px] text-rose-700 mt-1.5 flex items-start gap-1">
+                  <Lock className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>
+                    The selected insurance record is <b>EXPIRED</b>.
+                    {canOverrideExpired
+                      ? " You have override permission — proceed with caution. The claim will likely be rejected."
+                      : " Only users with encounter_coverage.manage or nhia_claim.config permission can override and select an expired record."}
+                  </span>
                 </p>
               )}
             </div>

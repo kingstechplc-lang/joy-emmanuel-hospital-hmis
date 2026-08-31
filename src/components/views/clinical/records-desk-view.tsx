@@ -235,6 +235,20 @@ function CheckInTab({ activeFacilityId, setView, selectPatient, selectEncounter 
       const payerType = data.encounterCoverage?.payerType || data.payerType;
       const isNhls = payerType === "nhis" || payerType === "NHIS";
 
+      // Surface coverage warnings (multi-insurance or creation failure)
+      if (data.coverageWarning) {
+        toast.warning(data.coverageWarning, isNhls && encounterId ? {
+          duration: 8000,
+          action: {
+            label: "Open NHIS Workflow →",
+            onClick: () => {
+              selectEncounter(encounterId);
+              setView("nhis_workflow");
+            },
+          },
+        } : { duration: 8000 });
+      }
+
       toast.success(data.message || "Patient checked in successfully", isNhls && encounterId ? {
         action: {
           label: "Open NHIS Workflow →",
