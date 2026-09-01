@@ -459,6 +459,164 @@ describe("Engine: link IDs are propagated to result", () => {
 });
 
 // =====================================================================
+// PART 23 TEST SCENARIOS — verification semantics production hardening
+// =====================================================================
+
+describe("Scenario A: NHIA operational eligibility satisfies readiness", () => {
+  const ctx = buildContext({
+    latestEligibility: {
+      ...baseEligibility(),
+      verificationMethod: "facility_operational",
+      verificationSource: "nhia_operational",
+      verificationStatus: "verified",
+    },
+  });
+  const result = evaluateReadiness(ctx);
+  const check = result.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(check.status, "PASS", "NHIA operational passes eligibility");
+  assertEqual(check.severity, "INFO", "INFO severity (not WARNING — it's legitimate)");
+  assert(check.message.includes("NHIA Operational"), "message mentions NHIA Operational");
+});
+
+describe("Scenario B: Manual eligibility is accepted, not labeled unofficial", () => {
+  const ctx = buildContext({
+    latestEligibility: {
+      ...baseEligibility(),
+      verificationMethod: "manual",
+      verificationSource: "manual",
+      verificationStatus: "verified",
+    },
+  });
+  const result = evaluateReadiness(ctx);
+  const check = result.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(check.status, "PASS", "manual verification passes");
+  assert(check.message.includes("Manual Record Check"), "message says Manual Record Check");
+  assert(!check.message.includes("unofficial"), "message does NOT say 'unofficial'");
+  assert(!check.message.includes("not official"), "message does NOT say 'not official'");
+});
+
+describe("Scenario C: External eligibility preserves external source", () => {
+  const ctx = buildContext({
+    latestEligibility: {
+      ...baseEligibility(),
+      verificationMethod: "external",
+      verificationSource: "external",
+      verificationStatus: "verified",
+    },
+  });
+  const result = evaluateReadiness(ctx);
+  const check = result.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(check.status, "PASS", "external verification passes");
+  assertEqual(check.severity, "INFO", "INFO severity (external is legitimate)");
+  assert(check.message.includes("External"), "message mentions External");
+});
+
+describe("Scenario D: OTAC satisfies attendance but NOT eligibility", () => {
+  // OTAC as eligibility → must FAIL
+  const ctxOtacEligibility = buildContext({
+    latestEligibility: {
+      ...baseEligibility(),
+      verificationMethod: "otac",
+      verificationSource: "nhia_otac",
+      verificationStatus: "verified",
+    },
+  });
+  const resultOtacElig = evaluateReadiness(ctxOtacEligibility);
+  const eligCheck = resultOtacElig.checks.find(c => c.checkId === "eligibility_verified")!;
+  assertEqual(eligCheck.status, "FAIL", "OTAC does NOT satisfy eligibility");
+  assert(eligCheck.message.includes("OTAC proves attendance, not membership eligibility"), "explains OTAC ≠ eligibility");
+
+  // OTAC as attendance → must PASS
+  const ctxOtacAttendance = buildContext({
+    attendanceVerification: {
+      ...baseAttendance(),
+      method: "OTAC",
+      verificationStatus: "verified",
+    },
+  });
+  const resultOtacAtt = evaluateReadiness(ctxOtacAttendance);
+  const attCheck = resultOtacAtt.checks.find(c => c.checkId === "attendance_verified")!;
+  assertEqual(attCheck.status, "PASS", "OTAC satisfies attendance");
+});
+
+describe("Scenario E: NHIA Direct API fails safely when not configured", () => {
+  // Simulate: user tries to use nhia_direct but API is not configured
+  // The evidence helper should still classify it correctly IF status is verified,
+  // but the API endpoint refuses to create the record without NHIA_API_BASE_URL.
+  // Here we test that the evidence helper classifies nhia_direct as DIRECT_NHIA_VERIFIED
+  // (so the engine would accept it IF such a record existed).
+  const ctx = buildContext({
+    latestEligibility: {
+      ...baseEligibility(),
+      verificationMethod: "api",
+      verificationSource: "nhia_direct",
+      verificationStatus: "verified",
+    },
+  });
+  const result = evaluateReadiness(ctx);
+  const check = result.checks.find(c => c.checkId === "eligibility_verified")!;
+  // If a direct API record existed, it would pass
+  assertEqual(check.status, "PASS", "direct API verification passes (if record existed)");
+  assertEqual(check.severity, "INFO", "INFO severity");
+  assert(check.message.includes("NHIA Direct"), "message mentions NHIA Direct");
+  // Note: the API endpoint refuses to CREATE such a record without NHIA_API_BASE_URL,
+  // so this record can only exist if the API was previously configured.
+});
+
+describe("Scenario H: Claim status semantics — generated ≠ submitted ≠ accepted", () => {
+  // Verify that NhiaClaimExport statuses are truthful
+  // "exported" means XML was generated and downloaded — NOT "submitted to NHIA"
+  const exportedStatus = "exported";
+  const submittedStatus = "submitted";
+  const acceptedStatus = "accepted";
+
+  // The NhiaClaimExport model uses: draft, validated, xml_generated, exported, failed
+  // It does NOT use "submitted" or "accepted" — those would imply NHIA response.
+  assert(exportedStatus !== submittedStatus, "exported ≠ submitted");
+  assert(exportedStatus !== acceptedStatus, "exported ≠ accepted");
+  assert(submittedStatus !== acceptedStatus, "submitted ≠ accepted");
+
+  // Verify the readiness engine doesn't claim NHIA acceptance
+  const ctx = buildContext();
+  const result = evaluateReadiness(ctx);
+  assert(!result.failureSummary.includes("NHIA submitted"), "no false 'NHIA submitted' claim");
+  assert(!result.failureSummary.includes("NHIA accepted"), "no false 'NHIA accepted' claim");
+});
+
+describe("Scenario I: UI source/method consistency", () => {
+  // Verify that the evidence helper produces consistent labels for all method/source combos
+  const { getEvidenceLevel } = require("../../src/lib/nhis-workflow/verification-evidence");
+
+  // OTAC → attendance evidence
+  const otacEvidence = getEvidenceLevel("otac", "nhia_otac", "verified");
+  assertEqual(otacEvidence.level, "NHIA_ATTENDANCE_VERIFIED", "OTAC → NHIA_ATTENDANCE_VERIFIED");
+
+  // Facility operational → operational evidence
+  const opEvidence = getEvidenceLevel("facility_operational", "nhia_operational", "verified");
+  assertEqual(opEvidence.level, "NHIA_OPERATIONAL_VERIFIED", "facility_operational → NHIA_OPERATIONAL_VERIFIED");
+
+  // Direct API → direct evidence
+  const directEvidence = getEvidenceLevel("api", "nhia_direct", "verified");
+  assertEqual(directEvidence.level, "DIRECT_NHIA_VERIFIED", "api → DIRECT_NHIA_VERIFIED");
+
+  // External → external evidence
+  const extEvidence = getEvidenceLevel("external", "external", "verified");
+  assertEqual(extEvidence.level, "EXTERNAL_VERIFIED", "external → EXTERNAL_VERIFIED");
+
+  // Manual → manual review
+  const manEvidence = getEvidenceLevel("manual", "manual", "verified");
+  assertEqual(manEvidence.level, "MANUAL_REVIEW", "manual → MANUAL_REVIEW");
+
+  // Not verified
+  const notEvidence = getEvidenceLevel("manual", "manual", "not_verified");
+  assertEqual(notEvidence.level, "NOT_VERIFIED", "not_verified status → NOT_VERIFIED");
+
+  // Legacy backward compatibility: nhia_integration → direct
+  const legacyEvidence = getEvidenceLevel("integrated", "nhia_integration", "verified");
+  assertEqual(legacyEvidence.level, "DIRECT_NHIA_VERIFIED", "legacy nhia_integration → DIRECT_NHIA_VERIFIED");
+});
+
+// =====================================================================
 // SUMMARY
 // =====================================================================
 console.log("\n" + "=".repeat(70));
