@@ -12,6 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Single worker — shared DB state
+  timeout: 120_000, // 2 min per test — dev server compilation is slow
   reporter: [
     ["html", { open: "never" }],
     ["list"],
@@ -21,6 +22,8 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+    navigationTimeout: 60000,
+    actionTimeout: 15000,
   },
   projects: [
     {
@@ -33,5 +36,7 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Give the dev server extra time to compile on first request
+    stdout: "pipe",
   },
 });

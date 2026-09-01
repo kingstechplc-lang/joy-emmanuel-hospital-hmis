@@ -86,3 +86,5 @@ server.log
 
 # Dev server PID files
 *.pid
+test-results/
+/test-results/
