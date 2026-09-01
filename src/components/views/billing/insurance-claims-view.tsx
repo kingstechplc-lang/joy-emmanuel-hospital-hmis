@@ -639,6 +639,38 @@ function ValidateResultDialog({
               </div>
             )}
 
+            {/* Upstream Readiness Summary (from the claim-readiness engine) */}
+            {result.upstreamReadiness && (
+              <div className={`p-3 rounded-lg border ${
+                result.upstreamReadiness.status === "ready_for_export" ? "bg-emerald-50 border-emerald-200" :
+                result.upstreamReadiness.status === "ready_for_validation" ? "bg-amber-50 border-amber-200" :
+                "bg-rose-50 border-rose-200"
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Encounter Readiness
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    result.upstreamReadiness.status === "ready_for_export" ? "text-emerald-700" :
+                    result.upstreamReadiness.status === "ready_for_validation" ? "text-amber-700" :
+                    "text-rose-700"
+                  }`}>
+                    {result.upstreamReadiness.readinessScore}% ({result.upstreamReadiness.checksPassed}/{result.upstreamReadiness.checksTotal})
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 mb-1">
+                  Status: <span className="font-semibold capitalize">{result.upstreamReadiness.status.replace(/_/g, " ")}</span>
+                  {" — "}
+                  {result.upstreamReadiness.checksFailed} failed, {result.upstreamReadiness.checksTotal - result.upstreamReadiness.checksPassed - result.upstreamReadiness.checksFailed} passed/warning
+                </p>
+                {result.upstreamReadiness.failureSummary && (
+                  <pre className="text-[10px] text-rose-700 whitespace-pre-wrap font-sans mt-1.5">
+                    {result.upstreamReadiness.failureSummary}
+                  </pre>
+                )}
+              </div>
+            )}
+
             {/* Issues */}
             {result.issues && result.issues.length > 0 && (
               <div>

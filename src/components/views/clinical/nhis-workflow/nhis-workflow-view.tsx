@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useAppStore } from "@/stores/app-store";
@@ -189,6 +189,8 @@ export function NhisWorkflowView() {
   const selectPatient = useAppStore((s) => s.selectPatient);
   const selectEncounter = useAppStore((s) => s.selectEncounter);
   const setView = useAppStore((s) => s.setView);
+  const storeSelectedPatientId = useAppStore((s) => s.selectedPatientId);
+  const storeSelectedEncounterId = useAppStore((s) => s.selectedEncounterId);
 
   const qc = useQueryClient();
   const [selectedPatient, setSelectedPatient] = useState<PatientPickerValue | null>(null);
@@ -197,6 +199,35 @@ export function NhisWorkflowView() {
   const [showEligibilityDialog, setShowEligibilityDialog] = useState(false);
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
   const [showAuthorizationDialog, setShowAuthorizationDialog] = useState(false);
+
+  // --- Hydrate from app store on mount (when navigated from Records Desk / Claims / CLAIM-it) ---
+  // When another view calls selectEncounter(id) + setView("nhis_workflow"), we need to
+  // pick up that selection and pre-populate the local state so the user doesn't have
+  // to re-search the patient and re-select the encounter.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (hydrated) return;
+    // Pre-select encounter from store
+    if (storeSelectedEncounterId && !selectedEncounterId) {
+      setSelectedEncounterId(storeSelectedEncounterId);
+    }
+    // Pre-select patient from store — fetch minimal info to populate the PatientPicker chip
+    if (storeSelectedPatientId && !selectedPatient) {
+      fetchJson(`/api/patients/${storeSelectedPatientId}`).then((data) => {
+        const p = data?.patient;
+        if (p) {
+          setSelectedPatient({
+            patientId: p.id,
+            patientName: `${p.firstName} ${p.middleName || ""} ${p.lastName}`.trim(),
+            patientNumber: p.patientNumber,
+            patientSex: p.sex,
+            patientPhone: p.phone,
+          });
+        }
+      }).catch(() => { /* non-fatal — user can search manually */ });
+    }
+    setHydrated(true);
+  }, [hydrated, storeSelectedEncounterId, storeSelectedPatientId, selectedEncounterId, selectedPatient]);
 
   // --- Permissions ---
   const canManageCoverage = can("encounter_coverage.manage");

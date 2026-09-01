@@ -16,7 +16,7 @@ import {
   ArrowLeft, Users, Activity, Stethoscope, HeartPulse, FlaskConical,
   Pill, ClipboardList, BedDouble, Receipt, FileText, ScrollText,
   AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert, Edit, Save,
-  RefreshCw,
+  RefreshCw, ShieldCheck, FileCode2, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
@@ -385,16 +385,40 @@ export function Patient360View() {
                         <th className="text-left p-3 font-semibold text-slate-700">Type</th>
                         <th className="text-left p-3 font-semibold text-slate-700">Status</th>
                         <th className="text-left p-3 font-semibold text-slate-700">Started</th>
+                        <th className="text-right p-3 font-semibold text-slate-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {p.encounters.map((e: any) => (
-                        <tr key={e.id} onClick={() => openEncounter(e.id)} className="border-b hover:bg-emerald-50/50 cursor-pointer">
-                          <td className="p-3 font-mono text-xs">{e.encounterNumber}</td>
-                          <td className="p-3">{e.facility?.name || "—"}</td>
-                          <td className="p-3 capitalize">{e.encounterType}</td>
-                          <td className="p-3"><StatusBadge status={e.status} /></td>
-                          <td className="p-3 text-slate-600">{formatDate(e.startAt, true)}</td>
+                        <tr key={e.id} className="border-b hover:bg-emerald-50/50">
+                          <td className="p-3 font-mono text-xs cursor-pointer" onClick={() => openEncounter(e.id)}>{e.encounterNumber}</td>
+                          <td className="p-3 cursor-pointer" onClick={() => openEncounter(e.id)}>{e.facility?.name || "—"}</td>
+                          <td className="p-3 capitalize cursor-pointer" onClick={() => openEncounter(e.id)}>{e.encounterType}</td>
+                          <td className="p-3 cursor-pointer" onClick={() => openEncounter(e.id)}><StatusBadge status={e.status} /></td>
+                          <td className="p-3 text-slate-600 cursor-pointer" onClick={() => openEncounter(e.id)}>{formatDate(e.startAt, true)}</td>
+                          <td className="p-3 text-right whitespace-nowrap">
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); selectEncounter(e.id); selectPatient(e.patientId); setView("nhis_workflow"); }}
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-1.5 py-1 rounded mr-1"
+                              title="Open NHIS Workflow for this encounter"
+                            >
+                              <ShieldCheck className="w-3 h-3" /> NHIS
+                            </button>
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); selectEncounter(e.id); setView("insurance_claims"); }}
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-1.5 py-1 rounded mr-1"
+                              title="View Insurance Claims for this encounter"
+                            >
+                              <Receipt className="w-3 h-3" /> Claims
+                            </button>
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); selectEncounter(e.id); setView("nhia_claims"); }}
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-1.5 py-1 rounded"
+                              title="Open NHIA CLAIM-it for this encounter"
+                            >
+                              <FileCode2 className="w-3 h-3" /> CLAIM-it
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

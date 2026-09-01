@@ -173,6 +173,19 @@ export async function POST(req: Request) {
 
   if (existingEncounter) {
     // Patient already checked in — return the existing encounter
+    // Also check if EncounterCoverage exists for this encounter
+    let existingCoverage: any = null;
+    let coverageWarning: string | null = null;
+    try {
+      existingCoverage = await db.encounterCoverage.findFirst({
+        where: { encounterId: existingEncounter.id, status: "active" },
+        orderBy: { selectedAt: "desc" },
+      });
+      if (!existingCoverage) {
+        coverageWarning = "Existing encounter has no EncounterCoverage. Please create one in NHIS Workflow before proceeding to claims.";
+      }
+    } catch { /* non-fatal */ }
+
     return NextResponse.json({
       encounter: existingEncounter,
       patient: {
@@ -188,6 +201,8 @@ export async function POST(req: Request) {
       eligibility,
       payerType,
       insuranceInfo,
+      encounterCoverage: existingCoverage,
+      coverageWarning,
       allergies: patient.allergies,
       alreadyCheckedIn: true,
       message: "Patient is already checked in at this facility. Existing encounter returned.",
@@ -284,9 +299,18 @@ export async function POST(req: Request) {
   let coverageWarning: string | null = null;
 
   try {
-    const activeInsurances = patient.insurance; // already filtered to status: "active" at query time
+    // Filter to only insurances where the PROVIDER is also active
+    // (a terminated/suspended provider should not produce valid coverage)
+    const activeInsurances = patient.insurance.filter(
+      (i) => i.insuranceProvider?.status === "active"
+    );
     const primaryInsurance = activeInsurances[0] || null;
     const providerType = primaryInsurance?.insuranceProvider?.providerType || null;
+
+    // If patient had insurance records but all providers are inactive, warn staff
+    if (patient.insurance.length > 0 && activeInsurances.length === 0) {
+      coverageWarning = `Patient has ${patient.insurance.length} insurance record(s), but all linked providers are inactive. Coverage set to self-pay. Please verify the provider status in Administration → Insurance Providers.`;
+    }
 
     let derivedPayerType: string = "self_pay";
     if (providerType === "nhis" || providerType === "government") {
