@@ -1101,6 +1101,11 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const perms: string[] = user?.permissions || [];
+  const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
+
   const qc = useQueryClient();
   const setView = useAppStore((s) => s.setView);
   const selectPatient = useAppStore((s) => s.selectPatient);
