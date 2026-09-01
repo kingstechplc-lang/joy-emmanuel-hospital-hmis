@@ -13,7 +13,12 @@
     "db:reset": "prisma migrate reset",
     "seed": "tsx scripts/seed.ts",
     "seed:phase2": "tsx scripts/seed-phase2.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:claimit": "tsx scripts/nhia-tests/run-tests.ts",
+    "test:upstream": "tsx scripts/nhia-tests/run-upstream-tests.ts",
+    "test:e2e-integration": "tsx scripts/nhia-tests/e2e-test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -88,6 +93,7 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/glob": "^9.0.0",
     "@types/react": "^19",
