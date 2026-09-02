@@ -445,6 +445,7 @@ model User {
   status              String       @default("active") // active | disabled | locked | pending
   lastLoginAt         DateTime?
   passwordChangedAt   DateTime?
+  mustChangePassword  Boolean      @default(false) // force password change on next login
   failedLoginAttempts Int          @default(0)
   lockedUntil         DateTime?
   mfaEnabled          Boolean      @default(false)

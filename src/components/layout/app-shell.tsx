@@ -39,7 +39,7 @@ async function fetchJson(url: string) {
 }
 
 export function AppShell() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
@@ -48,6 +48,13 @@ export function AppShell() {
   const setActiveFacility = useAppStore((s) => s.setActiveFacility);
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Redirect to /change-password if mustChangePassword is set
+  useEffect(() => {
+    if (status === "authenticated" && (session?.user as any)?.mustChangePassword) {
+      window.location.href = "/change-password";
+    }
+  }, [status, session]);
 
   // Fetch facilities (for facility switcher)
   const { data: facilitiesData } = useQuery({

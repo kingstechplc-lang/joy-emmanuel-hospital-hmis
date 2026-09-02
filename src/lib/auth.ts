@@ -84,6 +84,7 @@ export const authOptions: NextAuthOptions = {
           facilityId: user.userRoles.find((ur) => ur.facilityId)?.facilityId || null,
           departmentId: user.userRoles.find((ur) => ur.departmentId)?.departmentId || null,
           permissions: Array.from(permSet),
+          mustChangePassword: user.mustChangePassword,
         } as any;
       },
     }),
@@ -106,6 +107,7 @@ export const authOptions: NextAuthOptions = {
         token.facilityId = (user as any).facilityId;
         token.departmentId = (user as any).departmentId;
         token.permissions = (user as any).permissions || [];
+        token.mustChangePassword = (user as any).mustChangePassword || false;
         token.permsRefreshedAt = Date.now();
       }
 
@@ -173,6 +175,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).facilityId = token.facilityId;
         (session.user as any).departmentId = token.departmentId;
         (session.user as any).permissions = token.permissions;
+        (session.user as any).mustChangePassword = token.mustChangePassword;
       }
       return session;
     },
