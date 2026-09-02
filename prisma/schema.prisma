@@ -457,6 +457,7 @@ model User {
   userRoles                  UserRole[]
   appointmentsBooked         Appointment[]              @relation("apptBookedBy")
   encounters                 Encounter[]                @relation("encounterCreatedBy")
+  cancelledEncounters        Encounter[]                @relation("encounterCancelledBy")
   consultations              Consultation[]             @relation("consultationClinician")
   prescriptions              Prescription[]             @relation("rxPrescriber")
   labOrders                  LabOrder[]                 @relation("labOrderClinician")
@@ -1354,6 +1355,16 @@ model Encounter {
   endAt            DateTime?
   createdById      String?
   createdBy        User?       @relation("encounterCreatedBy", fields: [createdById], references: [id])
+  // --- Encounter module upgrade fields (additive, backward-compatible) ---
+  source           String      @default("walkin") // walkin | appointment | referral | emergency | telemedicine
+  externalId       String?     // external system identifier (not globally unique — scoped by source+facility)
+  checkInAt        DateTime?   // explicit check-in timestamp (aliases startAt for clarity)
+  checkOutAt       DateTime?    // explicit check-out timestamp (aliases endAt for clarity)
+  cancelledAt      DateTime?   // when the encounter was cancelled
+  cancelledById    String?     // who cancelled (User ID)
+  cancelledBy      User?       @relation("encounterCancelledBy", fields: [cancelledById], references: [id])
+  cancelReason     String?     // reason for cancellation
+  notes            String?     // free-text encounter notes
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
@@ -1386,6 +1397,7 @@ model Encounter {
   @@unique([facilityId, encounterNumber])
   @@index([patientId, facilityId])
   @@index([facilityId, status, startAt])
+  @@index([facilityId, source, startAt])
 }
 
 model Appointment {

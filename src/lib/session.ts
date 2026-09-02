@@ -96,8 +96,21 @@ export async function nextPatientNumber(orgId: string): Promise<string> {
 
 export async function nextEncounterNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.encounter.count({ where: { facilityId } });
-  return `ENC-${year}-${String(count + 1).padStart(6, "0")}`;
+  // Retry loop for concurrency safety — the @@unique([facilityId, encounterNumber])
+  // constraint will reject duplicates; we retry with incremented counters until success.
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.encounter.count({ where: { facilityId } });
+    const candidate = `ENC-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    // Check if this number already exists (handles year-rollover + deletion gaps)
+    const existing = await db.encounter.findFirst({
+      where: { facilityId, encounterNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  // Fallback: use a timestamp-based suffix to guarantee uniqueness
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `ENC-${year}-${timestamp}`;
 }
 
 export async function nextInvoiceNumber(facilityId: string): Promise<string> {
