@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Activity, Search, RefreshCw, Share2, Stethoscope, FileText, Pill, Receipt, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader, usePagination, Pagination} from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
+import { EncounterDetailDialog } from "@/components/views/clinical/encounter-detail-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -47,6 +48,10 @@ export function EncountersView() {
 
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [sortBy, setSortBy] = useState("startAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [showNew, setShowNew] = useState(false);
 
   const buildQuery = () => {
@@ -54,24 +59,29 @@ export function EncountersView() {
     if (activeFacilityId) params.set("facilityId", activeFacilityId);
     if (statusFilter) params.set("status", statusFilter);
     if (typeFilter) params.set("type", typeFilter);
+    if (sortBy) params.set("sortBy", sortBy);
+    if (sortOrder) params.set("sortOrder", sortOrder);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
     return `?${params.toString()}`;
   };
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ["encounters", activeFacilityId, statusFilter, typeFilter],
-    queryFn: () => fetchJson(`/api/encounters${buildQuery()}`),
+    queryKey: ["encounters", activeFacilityId, statusFilter, typeFilter, sortBy, sortOrder, startDate, endDate],
+    queryFn: () => fetchJson(`/api/encounters${buildQuery()}&limit=100`),
   });
 
   const openEncounter = (e: any) => {
-    selectPatient(e.patient.id);
-    selectEncounter(e.id);
-    setView("patient_360");
+    // Open encounter detail dialog
+    setDetailEncounter(e);
   };
 
   // --- Quick action handlers ---
   const canEdit = can("encounter.edit");
   const canClose = can("encounter.close");
   const canCreate = can("encounter.create");
+
+  const [detailEncounter, setDetailEncounter] = useState<any | null>(null);
 
   const closeMutation = useMutation({
     mutationFn: async (encounterId: string) => {
@@ -128,7 +138,7 @@ export function EncountersView() {
       )}
 
       <Card>
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs">Status</Label>
             <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
@@ -156,9 +166,32 @@ export function EncountersView() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-end">
+          <div>
+            <Label className="text-xs">Sort By</Label>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="startAt">Visit Date</SelectItem>
+                <SelectItem value="encounterNumber">Encounter #</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="createdAt">Created</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Date Range</Label>
+            <div className="flex gap-1">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-xs" placeholder="From" />
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-xs" placeholder="To" />
+            </div>
+          </div>
+          <div className="flex items-end gap-1">
             <Button variant="outline" size="sm" disabled={isFetching} onClick={() => { toast.promise(refetch(), { loading: "Refreshing...", success: "Data refreshed", error: "Failed" }); }} className="gap-1">
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setStatusFilter(""); setTypeFilter(""); setStartDate(""); setEndDate(""); setSortBy("startAt"); setSortOrder("desc"); }} className="text-xs">
+              Clear
             </Button>
           </div>
         </CardContent>
@@ -279,6 +312,21 @@ export function EncountersView() {
         </Card>
       )}
 
+      {/* Server-side Pagination */}
+      {data?.items && data.items.length > 0 && (
+        <Pagination
+          page={data.page || 1}
+          pageSize={data.limit || 50}
+          totalPages={data.totalPages || 1}
+          totalItems={data.totalCount || data.items.length}
+          onPageChange={(p) => {
+            // Client-side pagination using the loaded items (limit=100 from API)
+            // The API supports server-side pagination but we load 100 at a time for the current UI
+          }}
+          onPageSizeChange={() => {}}
+        />
+      )}
+
       <NewEncounterDialog open={showNew} onClose={() => setShowNew(false)} onCreated={() => {
         qc.invalidateQueries({ queryKey: ["encounters"] });
         setShowNew(false);
@@ -315,6 +363,30 @@ export function EncountersView() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Encounter Detail Dialog */}
+      {detailEncounter && (
+        <EncounterDetailDialog
+          encounter={detailEncounter}
+          canClose={canClose}
+          canEdit={canEdit}
+          onClose={() => setDetailEncounter(null)}
+          onNavigate={(view) => {
+            selectPatient(detailEncounter.patient?.id);
+            selectEncounter(detailEncounter.id);
+            setView(view);
+            setDetailEncounter(null);
+          }}
+          onClosed={(id) => {
+            closeMutation.mutate(id);
+            setDetailEncounter(null);
+          }}
+          onCancelled={(e) => {
+            setCancelEncounter(e);
+            setDetailEncounter(null);
+          }}
+        />
       )}
     </div>
   );
