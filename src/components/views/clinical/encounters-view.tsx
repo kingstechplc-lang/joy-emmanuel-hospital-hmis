@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Activity, Search, RefreshCw, Share2 } from "lucide-react";
+import { Plus, Activity, Search, RefreshCw, Share2, Stethoscope, FileText, Pill, Receipt, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, calculateAge, safeJson, PageHeader} from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
@@ -61,6 +61,43 @@ export function EncountersView() {
     selectEncounter(e.id);
     setView("patient_360");
   };
+
+  // --- Quick action handlers ---
+  const canEdit = can("encounter.edit");
+  const canClose = can("encounter.close");
+  const canCreate = can("encounter.create");
+
+  const closeMutation = useMutation({
+    mutationFn: async (encounterId: string) => {
+      const res = await fetch(`/api/encounters/${encounterId}/close`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      if (!res.ok) { const e = await safeJson(res).catch(() => ({})); throw new Error(e.error || "Failed to close"); }
+      return safeJson(res);
+    },
+    onSuccess: (data: any) => {
+      toast.success(data.message || "Encounter closed");
+      if (data.warnings?.length > 0) toast.warning(`Warnings: ${data.warnings.join(", ")}`);
+      qc.invalidateQueries({ queryKey: ["encounters"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async ({ encounterId, reason }: { encounterId: string; reason: string }) => {
+      const res = await fetch(`/api/encounters/${encounterId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel", reason }) });
+      if (!res.ok) { const e = await safeJson(res).catch(() => ({})); throw new Error(e.error || "Failed to cancel"); }
+      return safeJson(res);
+    },
+    onSuccess: () => {
+      toast.success("Encounter cancelled");
+      qc.invalidateQueries({ queryKey: ["encounters"] });
+      setCancelEncounter(null);
+      setCancelReason("");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const [cancelEncounter, setCancelEncounter] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   return (
     <div className="space-y-4">
@@ -169,7 +206,55 @@ export function EncountersView() {
                       <td className="p-3"><StatusBadge status={e.priority} /></td>
                       <td className="p-3"><StatusBadge status={e.status} /></td>
                       <td className="p-3 text-slate-600">{formatDate(e.startAt, true)}</td>
-                      <td className="p-3 text-right" onClick={(ev) => ev.stopPropagation()}>
+                      <td className="p-3 text-right whitespace-nowrap" onClick={(ev) => ev.stopPropagation()}>
+                        {/* Quick Actions */}
+                        <button
+                          onClick={() => { selectPatient(e.patient.id); selectEncounter(e.id); setView("triage"); }}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-1.5 py-1 rounded mr-1"
+                          title="Triage"
+                        >
+                          <Stethoscope className="w-3 h-3" /> Triage
+                        </button>
+                        <button
+                          onClick={() => { selectPatient(e.patient.id); selectEncounter(e.id); setView("consultations"); }}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-1.5 py-1 rounded mr-1"
+                          title="Consultation"
+                        >
+                          <FileText className="w-3 h-3" /> Consult
+                        </button>
+                        <button
+                          onClick={() => { selectPatient(e.patient.id); selectEncounter(e.id); setView("prescriptions"); }}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-600 hover:text-teal-700 hover:bg-teal-50 px-1.5 py-1 rounded mr-1"
+                          title="Prescribe"
+                        >
+                          <Pill className="w-3 h-3" /> Rx
+                        </button>
+                        <button
+                          onClick={() => { selectPatient(e.patient.id); selectEncounter(e.id); setView("billing_invoices"); }}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-1.5 py-1 rounded mr-1"
+                          title="Bill"
+                        >
+                          <Receipt className="w-3 h-3" /> Bill
+                        </button>
+                        {canClose && !["completed", "cancelled", "discharged"].includes(e.status) && (
+                          <button
+                            onClick={() => closeMutation.mutate(e.id)}
+                            disabled={closeMutation.isPending}
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-1.5 py-1 rounded mr-1"
+                            title="Close Encounter"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Close
+                          </button>
+                        )}
+                        {canClose && !["completed", "cancelled", "discharged"].includes(e.status) && (
+                          <button
+                            onClick={() => { setCancelEncounter(e); }}
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-1.5 py-1 rounded"
+                            title="Cancel Encounter"
+                          >
+                            <XCircle className="w-3 h-3" /> Cancel
+                          </button>
+                        )}
                         <SpecialtyReferralButton
                           patient={e.patient}
                           fromDepartment={e.encounterType?.toUpperCase() || "OPD"}
@@ -192,6 +277,39 @@ export function EncountersView() {
         qc.invalidateQueries({ queryKey: ["encounters"] });
         setShowNew(false);
       }} defaultFacilityId={activeFacilityId} />
+
+      {/* Cancel Encounter Dialog */}
+      {cancelEncounter && (
+        <Dialog open onOpenChange={() => setCancelEncounter(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><XCircle className="w-5 h-5 text-rose-600" /> Cancel Encounter</DialogTitle>
+              <DialogDescription>
+                Cancel <span className="font-mono font-semibold">{cancelEncounter.encounterNumber}</span> — {cancelEncounter.patient?.firstName} {cancelEncounter.patient?.lastName}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Label>Reason for Cancellation *</Label>
+              <Input
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="e.g. Patient left without being seen, duplicate, etc."
+              />
+              <p className="text-xs text-amber-600">This action cannot be undone. The encounter will be marked as cancelled with an audit record.</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCancelEncounter(null)}>Don't Cancel</Button>
+              <Button
+                onClick={() => cancelMutation.mutate({ encounterId: cancelEncounter.id, reason: cancelReason })}
+                disabled={cancelMutation.isPending || !cancelReason.trim()}
+                className="bg-rose-600 hover:bg-rose-700"
+              >
+                {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancel"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
