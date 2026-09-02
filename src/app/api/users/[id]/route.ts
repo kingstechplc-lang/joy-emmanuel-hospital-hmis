@@ -93,6 +93,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     roles,
     action,
     newPassword,
+    forceChange,
   } = body;
 
   const existing = await db.user.findUnique({ where: { id }, include: { userRoles: true } });
@@ -162,7 +163,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const passwordHash = await bcrypt.hash(newPassword, 10);
     const updated = await db.user.update({
       where: { id },
-      data: { passwordHash, passwordChangedAt: new Date(), failedLoginAttempts: 0, lockedUntil: null },
+      data: {
+        passwordHash,
+        passwordChangedAt: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        mustChangePassword: forceChange === true,
+      },
     });
     await auditLog({
       userId: session.user.id,
@@ -171,6 +178,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       action: "USER_PASSWORD_RESET",
       resourceType: "user",
       resourceId: id,
+      newValues: { forceChange: forceChange === true },
     });
     return NextResponse.json({ item: { id: updated.id } });
   }

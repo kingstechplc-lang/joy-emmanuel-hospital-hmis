@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { UserCircle, Search, Plus, Edit, Ban, CheckCircle2, KeyRound, Lock, X } from "lucide-react";
+import { UserCircle, Search, Plus, Edit, Ban, CheckCircle2, KeyRound, Lock, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatRelative, formatDate, safeJson, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers"
 
@@ -248,6 +248,7 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
   });
   const [showResetPwd, setShowResetPwd] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [forceChange, setForceChange] = useState(true);
   const [selectedRoles, setSelectedRoles] = useState<any[]>(
     existingUser?.roles?.map((r: any) => ({
       roleId: r.roleId || r.id,
@@ -301,7 +302,7 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
       const res = await fetch(`/api/users/${existingUser.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reset_password", newPassword }),
+        body: JSON.stringify({ action: "reset_password", newPassword, forceChange }),
       });
       if (!res.ok) {
         const e = await safeJson(res).catch(() => ({}));
@@ -310,9 +311,11 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
       return safeJson(res);
     },
     onSuccess: () => {
-      toast.success("Password reset");
+      toast.success(forceChange ? "Password reset — user must change on next login" : "Password reset");
       setShowResetPwd(false);
       setNewPassword("");
+      setForceChange(true);
+      qc.invalidateQueries({ queryKey: ["users-admin"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -431,15 +434,32 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
                   <KeyRound className="w-4 h-4" /> Reset Password
                 </Button>
               ) : (
-                <div className="space-y-2">
-                  <Label>New Password</Label>
-                  <div className="flex gap-2">
-                    <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password (min 6 chars)" />
-                    <Button type="button" onClick={() => resetPwdMutation.mutate()} disabled={resetPwdMutation.isPending || newPassword.length < 6}>
-                      Reset
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => { setShowResetPwd(false); setNewPassword(""); }}>Cancel</Button>
+                <div className="space-y-3">
+                  <div>
+                    <Label>New Password</Label>
+                    <div className="flex gap-2">
+                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password (min 6 chars)" />
+                      <Button type="button" onClick={() => resetPwdMutation.mutate()} disabled={resetPwdMutation.isPending || newPassword.length < 6}>
+                        {resetPwdMutation.isPending ? "Resetting..." : "Reset"}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => { setShowResetPwd(false); setNewPassword(""); setForceChange(true); }}>Cancel</Button>
+                    </div>
                   </div>
+                  <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={forceChange}
+                      onChange={(e) => setForceChange(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>Force password change on next login</span>
+                  </label>
+                  {forceChange && (
+                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      The user will be redirected to /change-password after logging in.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
