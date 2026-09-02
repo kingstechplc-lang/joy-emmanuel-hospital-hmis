@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,11 @@ const ENCOUNTER_TYPES = [
 ];
 
 export function EncountersView() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const perms: string[] = user?.permissions || [];
+  const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
+
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const setView = useAppStore((s) => s.setView);
   const selectPatient = useAppStore((s) => s.selectPatient);
