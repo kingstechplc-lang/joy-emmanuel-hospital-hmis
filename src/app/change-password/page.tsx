@@ -62,7 +62,7 @@ export default function ChangePasswordPage() {
     }
   };
 
-  const isForced = session?.user?.mustChangePassword;
+  const isForced = (session?.user as any)?.mustChangePassword;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">

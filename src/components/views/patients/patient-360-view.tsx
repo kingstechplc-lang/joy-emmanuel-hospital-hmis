@@ -39,6 +39,7 @@ export function Patient360View() {
   const selectedPatientId = useAppStore((s) => s.selectedPatientId);
   const setView = useAppStore((s) => s.setView);
   const selectEncounter = useAppStore((s) => s.selectEncounter);
+  const selectPatient = useAppStore((s) => s.selectPatient);
   const qc = useQueryClient();
   const [tab, setTab] = useState("overview");
   const [showEdit, setShowEdit] = useState(false);
