@@ -56,6 +56,61 @@ export function AppShell() {
     }
   }, [status, session]);
 
+  // === Client-side idle/session timeout ===
+  // Fetches the configured session timeout from system settings and
+  // forces logout after the specified minutes of inactivity.
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    let timeoutMs = 8 * 60 * 60 * 1000; // default 8h
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Fetch the configured timeout
+    fetch("/api/system-settings")
+      .then((res) => res.json())
+      .then((data: any) => {
+        const items: any[] = data?.items || [];
+        const setting = items.find((s: any) => s.settingKey === "security_session_timeout_min");
+        if (setting && setting.settingValue) {
+          const mins = parseInt(setting.settingValue, 10);
+          if (mins > 0) timeoutMs = mins * 60 * 1000;
+        }
+        startIdleTimer();
+      })
+      .catch(() => startIdleTimer());
+
+    function startIdleTimer() {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        // Time's up — sign out
+        import("next-auth/react").then(({ signOut }) => {
+          signOut({ redirect: false }).then(() => {
+            window.location.href = "/?reason=timeout";
+          });
+        });
+      }, timeoutMs);
+    }
+
+    // Reset the timer on any user activity
+    function resetTimer() {
+      startIdleTimer();
+    }
+
+    // Track user activity
+    window.addEventListener("mousedown", resetTimer);
+    window.addEventListener("keydown", resetTimer);
+    window.addEventListener("scroll", resetTimer);
+    window.addEventListener("touchstart", resetTimer);
+
+    return () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      window.removeEventListener("mousedown", resetTimer);
+      window.removeEventListener("keydown", resetTimer);
+      window.removeEventListener("scroll", resetTimer);
+      window.removeEventListener("touchstart", resetTimer);
+    };
+  }, [status]);
+
   // Fetch facilities (for facility switcher)
   const { data: facilitiesData } = useQuery({
     queryKey: ["facilities"],

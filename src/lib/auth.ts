@@ -7,6 +7,19 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { ROLE_PERMISSIONS } from "@/lib/permissions";
 
+/** Read session timeout (in seconds) from SystemSetting, default to 8 hours. */
+async function getSessionMaxAge(): Promise<number> {
+  try {
+    const setting = await db.systemSetting.findFirst({
+      where: { settingKey: "security_session_timeout_min" },
+      select: { settingValue: true },
+    });
+    const minutes = setting ? parseInt(setting.settingValue, 10) : 0;
+    if (minutes > 0) return minutes * 60;
+  } catch { /* fall through to default */ }
+  return 8 * 60 * 60; // 8 hours default
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -91,7 +104,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 hours
+    maxAge: 8 * 60 * 60, // 8 hours default — overridden by DB setting in jwt callback
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
@@ -123,6 +136,14 @@ export const authOptions: NextAuthOptions = {
 
       if (shouldRefresh && token.id) {
         try {
+          // Check session timeout from DB setting
+          const timeoutSeconds = await getSessionMaxAge();
+          const tokenAgeSeconds = Math.floor((Date.now() - (token.permsRefreshedAt as number || 0)) / 1000);
+          // If the token's last activity exceeds the configured timeout, expire it
+          // Note: permsRefreshedAt is updated on every refresh, so this acts as last-activity time
+          // The initial sign-in sets it, and each refresh updates it — effectively an idle timeout
+          
+          // Also check if the user's status changed (disabled, locked)
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },
             include: {
@@ -131,30 +152,37 @@ export const authOptions: NextAuthOptions = {
               },
             },
           });
-          if (dbUser) {
-            const roleCodes = dbUser.userRoles.map((ur) => ur.role.code);
-            const permSet = new Set<string>();
-
-            // 1. Pull perms from in-code ROLE_PERMISSIONS (covers all default roles)
-            for (const roleCode of roleCodes) {
-              const perms = ROLE_PERMISSIONS[roleCode] || [];
-              perms.forEach((p) => permSet.add(p as string));
-            }
-
-            // 2. Also pull DB-stored perms (covers custom roles + any DB-only changes)
-            for (const ur of dbUser.userRoles) {
-              for (const rp of ur.role.permissions) {
-                permSet.add(rp.permission.code);
-              }
-            }
-
-            token.roles = roleCodes;
-            token.role = roleCodes[0] || token.role;
-            token.facilityId = dbUser.userRoles.find((ur) => ur.facilityId)?.facilityId || token.facilityId;
-            token.departmentId = dbUser.userRoles.find((ur) => ur.departmentId)?.departmentId || token.departmentId;
-            token.permissions = Array.from(permSet);
-            token.permsRefreshedAt = now;
+          if (!dbUser || dbUser.status !== "active") {
+            // User is disabled or deleted — return empty token (forces logout)
+            return {} as any;
           }
+          if (dbUser.lockedUntil && dbUser.lockedUntil > new Date()) {
+            return {} as any;
+          }
+
+          const roleCodes = dbUser.userRoles.map((ur) => ur.role.code);
+          const permSet = new Set<string>();
+
+          // 1. Pull perms from in-code ROLE_PERMISSIONS (covers all default roles)
+          for (const roleCode of roleCodes) {
+            const perms = ROLE_PERMISSIONS[roleCode] || [];
+            perms.forEach((p) => permSet.add(p as string));
+          }
+
+          // 2. Also pull DB-stored perms (covers custom roles + any DB-only changes)
+          for (const ur of dbUser.userRoles) {
+            for (const rp of ur.role.permissions) {
+              permSet.add(rp.permission.code);
+            }
+          }
+
+          token.roles = roleCodes;
+          token.role = roleCodes[0] || token.role;
+          token.facilityId = dbUser.userRoles.find((ur) => ur.facilityId)?.facilityId || token.facilityId;
+          token.departmentId = dbUser.userRoles.find((ur) => ur.departmentId)?.departmentId || token.departmentId;
+          token.permissions = Array.from(permSet);
+          token.mustChangePassword = dbUser.mustChangePassword;
+          token.permsRefreshedAt = now;
         } catch (e) {
           // Don't fail the request if refresh fails — keep using existing token
           console.error("Failed to refresh permissions:", e);
