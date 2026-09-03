@@ -51,6 +51,8 @@ import {
   Wallet,
   Timer,
   Gauge,
+  ListChecks,
+  Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -63,6 +65,8 @@ import {
   safeJson,
   PageHeader,
   Pagination,
+  MiniStatCard,
+  ClearableSearch,
 } from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 import { EncounterDetailDialog } from "@/components/views/clinical/encounter-detail-dialog";
@@ -412,14 +416,21 @@ export function EncountersView() {
 
       {/* ============================================================ */}
       {/* KPI / Statistics Dashboard                                    */}
+      {/* Aligned with the existing HMIS design system — uses the same */}
+      {/* MiniStatCard + gradient pattern as Discharges, Nursing, etc.  */}
       {/* ============================================================ */}
       {activeFacilityId && (
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Gauge className="w-4 h-4 text-blue-600" /> Encounter Statistics
-              </CardTitle>
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-blue-600" /> Encounter Statistics
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Live KPIs from the database. Comparison % shown against the prior comparable period.
+                </CardDescription>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Label className="text-xs text-slate-500">Range:</Label>
                 <Select value={kpiRange} onValueChange={setKpiRange}>
@@ -465,11 +476,6 @@ export function EncountersView() {
                 </Button>
               </div>
             </div>
-            <CardDescription className="text-xs">
-              KPIs are computed live from the database and respect facility isolation. Click{" "}
-              <span className="font-semibold">Today/Yesterday/Week/Month</span> or pick a custom
-              range. Comparison deltas are shown against the prior comparable period.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {kpiQuery.isError ? (
@@ -477,8 +483,18 @@ export function EncountersView() {
                 message="Failed to load KPIs"
                 onRetry={() => kpiQuery.refetch()}
               />
+            ) : kpiQuery.isLoading || !kpiQuery.data?.kpis ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {Array.from({ length: 11 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-20 rounded-xl bg-slate-100 animate-pulse"
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
             ) : (
-              <KpiGrid kpis={kpiQuery.data?.kpis} loading={kpiQuery.isLoading} />
+              <EncounterKpiGrid kpis={kpiQuery.data.kpis} />
             )}
           </CardContent>
         </Card>
@@ -486,35 +502,24 @@ export function EncountersView() {
 
       {/* ============================================================ */}
       {/* Search + Advanced Filters                                    */}
+      {/* Uses ClearableSearch from ui-helpers (same pattern as        */}
+      {/* Discharges, Nursing, Pharmacy, Inventory, etc.)              */}
       {/* ============================================================ */}
       {activeFacilityId && (
         <Card>
           <CardContent className="p-4 space-y-3">
-            {/* Search bar — prominent */}
+            {/* Search bar — prominent, uses shared ClearableSearch */}
             <div>
-              <Label className="text-xs font-semibold text-slate-700">
+              <Label className="text-xs font-semibold text-slate-700 mb-1 block">
                 Search Encounters
               </Label>
-              <div className="relative mt-1">
-                <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="text"
-                  placeholder="Search by encounter #, patient name, MRN, phone, Ghana Card, or external ID…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 text-sm"
-                  aria-label="Search encounters"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                    aria-label="Clear search"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+              <ClearableSearch
+                value={search}
+                onChange={(v) => setSearch(v)}
+                placeholder="Search by encounter #, patient name, MRN, phone, Ghana Card, or external ID…"
+                inputClassName="text-sm"
+                className="max-w-3xl"
+              />
               <p className="text-[10px] text-slate-500 mt-1">
                 Server-side search across encounter number, external ID, patient name, MRN,
                 phone, and patient identifiers (Ghana Card etc.). Minimum 1 character.
@@ -750,9 +755,9 @@ export function EncountersView() {
                     variant="ghost"
                     size="sm"
                     onClick={clearAllFilters}
-                    className="text-xs h-8"
+                    className="text-xs h-8 gap-1"
                   >
-                    Clear
+                    <Filter className="w-3 h-3" /> Clear
                   </Button>
                 )}
               </div>
@@ -760,24 +765,24 @@ export function EncountersView() {
 
             {/* Active filter summary */}
             {hasActiveFilters && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t">
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  Active:
+              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
+                  <Filter className="w-3 h-3" /> Active:
                 </span>
                 {debouncedSearch && (
-                  <Badge>Search: "{debouncedSearch}"</Badge>
+                  <FilterChip>Search: “{debouncedSearch}”</FilterChip>
                 )}
-                {statusFilter && <Badge>Status: {statusFilter}</Badge>}
-                {typeFilter && <Badge>Type: {typeFilter}</Badge>}
-                {sourceFilter && <Badge>Source: {sourceFilter}</Badge>}
-                {priorityFilter && <Badge>Priority: {priorityFilter}</Badge>}
-                {departmentFilter && <Badge>Dept</Badge>}
-                {payerFilter && <Badge>Payer: {payerFilter}</Badge>}
-                {providerFilter && <Badge>Provider</Badge>}
+                {statusFilter && <FilterChip>Status: {statusFilter}</FilterChip>}
+                {typeFilter && <FilterChip>Type: {typeFilter}</FilterChip>}
+                {sourceFilter && <FilterChip>Source: {sourceFilter}</FilterChip>}
+                {priorityFilter && <FilterChip>Priority: {priorityFilter}</FilterChip>}
+                {departmentFilter && <FilterChip>Dept</FilterChip>}
+                {payerFilter && <FilterChip>Payer: {payerFilter}</FilterChip>}
+                {providerFilter && <FilterChip>Provider</FilterChip>}
                 {(startDate || endDate) && (
-                  <Badge>
+                  <FilterChip>
                     Date: {startDate || "…"} → {endDate || "…"}
-                  </Badge>
+                  </FilterChip>
                 )}
               </div>
             )}
@@ -1060,194 +1065,139 @@ export function EncountersView() {
 }
 
 // =====================================================================
-// KPI Grid Component
+// EncounterKpiGrid — uses MiniStatCard from ui-helpers to match the
+// existing HMIS design system (gradient backgrounds, watermark icon,
+// hover-lift). Same pattern as DischargesView, NursingView, etc.
 // =====================================================================
-function KpiGrid({ kpis, loading }: { kpis: any; loading: boolean }) {
-  if (loading || !kpis) {
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-        {Array.from({ length: 11 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-20 bg-slate-100 rounded-lg animate-pulse"
-            aria-hidden="true"
-          />
-        ))}
-      </div>
-    );
-  }
+function EncounterKpiGrid({ kpis }: { kpis: any }) {
+  // Compute average duration display string
+  const avgDurationValue =
+    kpis.avgDurationMinutes?.value !== null && kpis.avgDurationMinutes?.value !== undefined
+      ? formatMinutes(kpis.avgDurationMinutes.value)
+      : "—";
+  const avgDurationSublabel =
+    kpis.avgDurationMinutes?.sampleSize !== undefined && kpis.avgDurationMinutes?.sampleSize > 0
+      ? `n=${kpis.avgDurationMinutes.sampleSize}`
+      : undefined;
 
+  // Build sublabels showing comparison % vs. previous period
+  const buildSublabel = (kpi: any): string | undefined => {
+    if (kpi?.deltaPct === undefined || kpi?.deltaPct === null) return undefined;
+    const sign = kpi.deltaPct > 0 ? "+" : "";
+    return `${sign}${kpi.deltaPct.toFixed(1)}% vs prev`;
+  };
+
+  // 11 KPI cards in the established MiniStatCard pattern
+  // Colors mirror the gradients used by DischargesView / NursingView
   const cards: Array<{
-    key: string;
     label: string;
-    icon: any;
-    color: string;
-    bg: string;
     value: string | number;
-    delta?: number | null;
-    sampleSize?: number;
+    icon: any;
+    gradient: string;
+    sublabel?: string;
     title?: string;
   }> = [
     {
-      key: "total",
-      label: "Total",
-      icon: Activity,
-      color: "text-slate-700",
-      bg: "bg-slate-50 border-slate-200",
+      label: "Total Encounters",
       value: kpis.total?.value ?? 0,
-      delta: kpis.total?.deltaPct,
+      icon: Activity,
+      gradient: "from-blue-500 to-blue-600",
+      sublabel: buildSublabel(kpis.total),
       title: kpis.total?.definition,
     },
     {
-      key: "today",
-      label: "Today",
-      icon: CalendarDays,
-      color: "text-blue-700",
-      bg: "bg-blue-50 border-blue-200",
+      label: "Today's Encounters",
       value: kpis.today?.value ?? 0,
-      delta: kpis.today?.deltaPct,
+      icon: CalendarDays,
+      gradient: "from-cyan-500 to-cyan-600",
+      sublabel: buildSublabel(kpis.today),
       title: kpis.today?.definition,
     },
     {
-      key: "active",
-      label: "Active",
-      icon: Clock,
-      color: "text-amber-700",
-      bg: "bg-amber-50 border-amber-200",
+      label: "Active (Open)",
       value: kpis.active?.value ?? 0,
-      delta: kpis.active?.deltaPct,
+      icon: Clock,
+      gradient: "from-amber-500 to-amber-600",
+      sublabel: buildSublabel(kpis.active),
       title: kpis.active?.definition,
     },
     {
-      key: "closed",
       label: "Closed",
-      icon: CheckCircle2,
-      color: "text-emerald-700",
-      bg: "bg-emerald-50 border-emerald-200",
       value: kpis.closed?.value ?? 0,
-      delta: kpis.closed?.deltaPct,
+      icon: CheckCircle2,
+      gradient: "from-emerald-500 to-emerald-600",
+      sublabel: buildSublabel(kpis.closed),
       title: kpis.closed?.definition,
     },
     {
-      key: "cancelled",
       label: "Cancelled",
-      icon: XCircle,
-      color: "text-rose-700",
-      bg: "bg-rose-50 border-rose-200",
       value: kpis.cancelled?.value ?? 0,
-      delta: kpis.cancelled?.deltaPct,
+      icon: XCircle,
+      gradient: "from-rose-500 to-rose-600",
+      sublabel: buildSublabel(kpis.cancelled),
       title: kpis.cancelled?.definition,
     },
     {
-      key: "walkIn",
       label: "Walk-in",
-      icon: Users,
-      color: "text-slate-700",
-      bg: "bg-slate-50 border-slate-200",
       value: kpis.walkIn?.value ?? 0,
-      delta: kpis.walkIn?.deltaPct,
+      icon: Users,
+      gradient: "from-slate-500 to-slate-600",
+      sublabel: buildSublabel(kpis.walkIn),
       title: kpis.walkIn?.definition,
     },
     {
-      key: "appointment",
       label: "Appointment",
-      icon: CalendarCheck,
-      color: "text-cyan-700",
-      bg: "bg-cyan-50 border-cyan-200",
       value: kpis.appointment?.value ?? 0,
-      delta: kpis.appointment?.deltaPct,
+      icon: CalendarCheck,
+      gradient: "from-indigo-500 to-indigo-600",
+      sublabel: buildSublabel(kpis.appointment),
       title: kpis.appointment?.definition,
     },
     {
-      key: "emergency",
       label: "Emergency",
-      icon: Ambulance,
-      color: "text-red-700",
-      bg: "bg-red-50 border-red-200",
       value: kpis.emergency?.value ?? 0,
-      delta: kpis.emergency?.deltaPct,
+      icon: Ambulance,
+      gradient: "from-red-500 to-rose-600",
+      sublabel: buildSublabel(kpis.emergency),
       title: kpis.emergency?.definition,
     },
     {
-      key: "insured",
       label: "Insured/NHIS",
-      icon: ShieldCheck,
-      color: "text-indigo-700",
-      bg: "bg-indigo-50 border-indigo-200",
       value: kpis.insured?.value ?? 0,
-      delta: kpis.insured?.deltaPct,
+      icon: ShieldCheck,
+      gradient: "from-violet-500 to-violet-600",
+      sublabel: buildSublabel(kpis.insured),
       title: kpis.insured?.definition,
     },
     {
-      key: "selfPay",
       label: "Self-Pay",
-      icon: Wallet,
-      color: "text-violet-700",
-      bg: "bg-violet-50 border-violet-200",
       value: kpis.selfPay?.value ?? 0,
-      delta: kpis.selfPay?.deltaPct,
+      icon: Wallet,
+      gradient: "from-teal-500 to-cyan-600",
+      sublabel: buildSublabel(kpis.selfPay),
       title: kpis.selfPay?.definition,
     },
     {
-      key: "avgDurationMinutes",
       label: "Avg Duration",
+      value: avgDurationValue,
       icon: Timer,
-      color: "text-slate-700",
-      bg: "bg-slate-50 border-slate-200",
-      value:
-        kpis.avgDurationMinutes?.value !== null && kpis.avgDurationMinutes?.value !== undefined
-          ? formatMinutes(kpis.avgDurationMinutes.value)
-          : "—",
-      delta: kpis.avgDurationMinutes?.deltaPct,
-      sampleSize: kpis.avgDurationMinutes?.sampleSize,
+      gradient: "from-slate-600 to-slate-700",
+      sublabel: avgDurationSublabel,
       title: kpis.avgDurationMinutes?.definition,
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-      {cards.map((c) => (
-        <div
-          key={c.key}
-          className={`p-3 rounded-lg border ${c.bg} transition-colors`}
-          title={c.title}
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
-              {c.label}
-            </span>
-            <c.icon className={`w-3.5 h-3.5 ${c.color}`} />
-          </div>
-          <div className={`text-xl font-bold ${c.color}`}>
-            {c.value}
-            {c.sampleSize !== undefined && c.sampleSize > 0 && (
-              <span className="text-[9px] text-slate-400 ml-1 font-normal">
-                (n={c.sampleSize})
-              </span>
-            )}
-          </div>
-          {c.delta !== undefined && c.delta !== null && (
-            <div
-              className={`text-[10px] mt-0.5 flex items-center gap-0.5 ${
-                c.delta > 0
-                  ? "text-emerald-600"
-                  : c.delta < 0
-                    ? "text-rose-600"
-                    : "text-slate-500"
-              }`}
-            >
-              {c.delta > 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : c.delta < 0 ? (
-                <TrendingDown className="w-3 h-3" />
-              ) : null}
-              {c.delta > 0 ? "+" : ""}
-              {c.delta.toFixed(1)}% vs prev
-            </div>
-          )}
-          {c.delta === null && (
-            <div className="text-[10px] text-slate-400 mt-0.5 italic">no prior data</div>
-          )}
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {cards.map((c, i) => (
+        <div key={i} title={c.title} className="has-tooltip">
+          <MiniStatCard
+            label={c.label}
+            value={c.value as any}
+            icon={c.icon}
+            gradient={c.gradient}
+            sublabel={c.sublabel}
+          />
         </div>
       ))}
     </div>
@@ -1262,8 +1212,11 @@ function formatMinutes(min: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-// Small Badge component for active filter chips
-function Badge({ children }: { children: React.ReactNode }) {
+// =====================================================================
+// FilterChip — small pill that summarizes an active filter
+// (uses a softer style consistent with the HMIS color palette)
+// =====================================================================
+function FilterChip({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
       {children}

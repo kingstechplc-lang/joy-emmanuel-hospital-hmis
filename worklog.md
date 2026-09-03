@@ -147,3 +147,43 @@ Stage Summary:
 - Final Playwright: 17/17 PASS
 - No schema changes, no destructive operations, no duplicate code
 - Push pending user credentials
+
+---
+Task ID: 17 (Follow-up)
+Agent: main
+Task: Align Encounters KPI card design with the existing HMIS architecture/design system; push to GitHub
+
+Work Log:
+- User feedback: ensure the stats KPI cards/design aligns with existing architecture/designs.
+- Inspected existing dashboard pattern at src/components/views/dashboard-view.tsx — uses StatCard with gradient backgrounds (kpi-gradient-blue/red/emerald/etc.) defined in src/app/globals.css.
+- Inspected MiniStatCard helper at src/components/ui-helpers.tsx — this is the shared, established design-system component used by DischargesView, NursingView, Pharmacy, Inventory, etc. Pattern: rounded-xl bg-gradient-to-br + watermark icon + 2xl extrabold value + sublabel.
+- Inspected ClearableSearch helper — established pattern for search inputs across the app.
+- Replaced custom KpiGrid component (which used mismatched slate-50/amber-50/blue-50 colored cards) with new EncounterKpiGrid component that uses the shared MiniStatCard helper. 11 KPI cards now use the same gradient pattern as DischargesView/NursingView:
+    Total Encounters → from-blue-500 to-blue-600
+    Today's Encounters → from-cyan-500 to-cyan-600
+    Active (Open) → from-amber-500 to-amber-600
+    Closed → from-emerald-500 to-emerald-600
+    Cancelled → from-rose-500 to-rose-600
+    Walk-in → from-slate-500 to-slate-600
+    Appointment → from-indigo-500 to-indigo-600
+    Emergency → from-red-500 to-rose-600
+    Insured/NHIS → from-violet-500 to-violet-600
+    Self-Pay → from-teal-500 to-cyan-600
+    Avg Duration → from-slate-600 to-slate-700
+- Comparison % vs. previous period now shown as MiniStatCard's `sublabel` field (the existing sublabel slot in the shared component) instead of a separate delta block. This is the design-system-native way to show secondary info.
+- Replaced custom search input (with hand-rolled Search/X icons) with the shared ClearableSearch component from ui-helpers. This matches the pattern used by Discharges, Nursing, Pharmacy, Inventory, etc.
+- Renamed Badge → FilterChip (same styling) for clarity.
+- Added Filter icon to the "Clear" button and "Active:" label for visual consistency.
+- Updated Playwright tests:
+    Test 7 — updated KPI label expectations to match new labels (Total → "Total Encounters", Today → "Today's Encounters", Active → "Active (Open)", etc.)
+    Tests 8, 9, 13 — updated search input selector from `input[aria-label="Search encounters"]` to `input[placeholder*="Search by encounter"]` (ClearableSearch doesn't expose aria-label on the input, but the placeholder is unique and stable)
+- Verified syntax: transpileModule clean on encounters-view.tsx
+- Verified production build: "✓ Compiled successfully in 62s"
+- Re-ran full Playwright suite: 17/17 PASS (5.6 min)
+
+Stage Summary:
+- Encounters KPI cards now use the same MiniStatCard + gradient pattern as every other dashboard in the HMIS (Discharges, Nursing, Pharmacy, Inventory, etc.)
+- Search input now uses the shared ClearableSearch component (consistent with the rest of the app)
+- 17/17 Playwright tests PASS with the new aligned design
+- Production build PASSES
+- No functional changes — only design alignment

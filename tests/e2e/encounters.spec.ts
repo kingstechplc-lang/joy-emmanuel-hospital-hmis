@@ -130,7 +130,19 @@ test.describe("Encounters Module", () => {
     // Wait for KPI cards to render — they appear once the API responds.
     await page.waitForTimeout(3000);
     // Verify each KPI label is present (with generous timeout for first-load compile)
-    const kpiLabels = ["Total", "Today", "Active", "Closed", "Cancelled", "Walk-in", "Appointment", "Emergency", "Self-Pay", "Avg Duration"];
+    // Labels match the established MiniStatCard pattern (gradient cards).
+    const kpiLabels = [
+      "Total Encounters",
+      "Today's Encounters",
+      "Active (Open)",
+      "Closed",
+      "Cancelled",
+      "Walk-in",
+      "Appointment",
+      "Emergency",
+      "Self-Pay",
+      "Avg Duration",
+    ];
     for (const label of kpiLabels) {
       await expect(page.locator(`text=${label}`).first()).toBeVisible({ timeout: 15000 });
     }
@@ -141,7 +153,8 @@ test.describe("Encounters Module", () => {
   test("8: Search bar is visible and debounced", async ({ page }) => {
     await navigateToView(page, "Encounters");
     await expect(page.locator("text=Search Encounters").first()).toBeVisible({ timeout: 10000 });
-    const searchInput = page.locator('input[aria-label="Search encounters"]');
+    // Use the placeholder to identify the search input (ClearableSearch has no aria-label)
+    const searchInput = page.locator('input[placeholder*="Search by encounter"]');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
     // Type into the search field — should not crash
     await searchInput.fill("ENC");
@@ -153,7 +166,7 @@ test.describe("Encounters Module", () => {
   test("9: Search filters the table server-side", async ({ page }) => {
     await navigateToView(page, "Encounters");
     await page.waitForTimeout(2000);
-    const searchInput = page.locator('input[aria-label="Search encounters"]');
+    const searchInput = page.locator('input[placeholder*="Search by encounter"]');
     await searchInput.fill("ZZZZNOTFOUND");
     // Wait for debounce (300ms) + API request + render.
     // First-time the encounters route may need to re-compile after param change, so be generous.
@@ -220,10 +233,10 @@ test.describe("Encounters Module", () => {
     await navigateToView(page, "Encounters");
     await page.waitForTimeout(2000);
     // Apply a search filter
-    const searchInput = page.locator('input[aria-label="Search encounters"]');
+    const searchInput = page.locator('input[placeholder*="Search by encounter"]');
     await searchInput.fill("TEST");
     await page.waitForTimeout(500);
-    // Clear button should appear
+    // Clear button should appear (the filter-clear button, not the search X)
     const clearBtn = page.locator('button:has-text("Clear")');
     await expect(clearBtn.first()).toBeVisible({ timeout: 5000 });
     // Click it
