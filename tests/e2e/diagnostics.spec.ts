@@ -155,11 +155,45 @@ test.describe("Diagnostics Module", () => {
     await expect(page.locator("text=can is not defined")).not.toBeVisible({ timeout: 3000 });
   });
 
+  test("6b: Lab Orders page has KPI cards", async ({ page }) => {
+    await navigateToView(page, "Lab Orders");
+    await expect(page.locator("text=Lab Order Statistics").first()).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(3000);
+    // KPI labels should be visible
+    await expect(page.locator("text=Total Orders").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Pending Collection").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Critical Results").first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test("6c: Lab Orders page has search bar", async ({ page }) => {
+    await navigateToView(page, "Lab Orders");
+    await expect(page.locator("text=Search Lab Orders").first()).toBeVisible({ timeout: 10000 });
+    const searchInput = page.locator('input[placeholder*="Search by order number"]').first();
+    await expect(searchInput).toBeVisible({ timeout: 5000 });
+    await searchInput.fill("ZZZZNOTFOUND");
+    await page.waitForTimeout(800);
+  });
+
   test("7: Lab Results page still loads", async ({ page }) => {
     await navigateToView(page, "Lab Results");
     await page.waitForTimeout(2000);
     // No 'can is not defined' error
     await expect(page.locator("text=can is not defined")).not.toBeVisible({ timeout: 3000 });
+  });
+
+  test("7b: Lab Results page has KPI cards", async ({ page }) => {
+    await navigateToView(page, "Lab Results");
+    await expect(page.locator("text=Lab Results Statistics").first()).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(3000);
+    await expect(page.locator("text=Total Results").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Pending Verification").first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test("7c: Lab Results page has search bar", async ({ page }) => {
+    await navigateToView(page, "Lab Results");
+    await expect(page.locator("text=Search Lab Results").first()).toBeVisible({ timeout: 10000 });
+    const searchInput = page.locator('input[placeholder*="Search by order number"]').first();
+    await expect(searchInput).toBeVisible({ timeout: 5000 });
   });
 
   test("8: Imaging page still loads", async ({ page }) => {
@@ -169,11 +203,41 @@ test.describe("Diagnostics Module", () => {
     await expect(page.locator("text=can is not defined")).not.toBeVisible({ timeout: 3000 });
   });
 
+  test("8b: Imaging page has KPI cards", async ({ page }) => {
+    await navigateToView(page, "Imaging");
+    await expect(page.locator("text=Imaging Statistics").first()).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(3000);
+    await expect(page.locator("text=Total Studies").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Reporting Pending").first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test("8c: Imaging page has search bar", async ({ page }) => {
+    await navigateToView(page, "Imaging");
+    await expect(page.locator("text=Search Imaging Orders").first()).toBeVisible({ timeout: 10000 });
+    const searchInput = page.locator('input[placeholder*="Search by procedure name"]').first();
+    await expect(searchInput).toBeVisible({ timeout: 5000 });
+  });
+
   test("9: Procedures page still loads", async ({ page }) => {
     await navigateToView(page, "Procedures");
     await page.waitForTimeout(2000);
     // No 'can is not defined' error
     await expect(page.locator("text=can is not defined")).not.toBeVisible({ timeout: 3000 });
+  });
+
+  test("9b: Procedures page has KPI cards", async ({ page }) => {
+    await navigateToView(page, "Procedures");
+    await expect(page.locator("text=Procedure Statistics").first()).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(3000);
+    await expect(page.locator("text=Total Procedures").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("text=Documentation Pending").first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test("9c: Procedures page has search bar", async ({ page }) => {
+    await navigateToView(page, "Procedures");
+    await expect(page.locator("text=Search Procedures").first()).toBeVisible({ timeout: 10000 });
+    const searchInput = page.locator('input[placeholder*="Search by procedure name"]').first();
+    await expect(searchInput).toBeVisible({ timeout: 5000 });
   });
 
   test("10: Patient 360 Imaging tab exists", async ({ page }) => {

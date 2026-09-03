@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,9 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Scissors, Search, Save, X } from "lucide-react";
+import { Plus, Scissors, Search, Save, X, Gauge, RefreshCw, Clock, XCircle, CheckCircle2, CalendarDays, FileText, Activity } from "lucide-react";
 import { toast } from "sonner";
-import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch} from "@/components/ui-helpers"
+import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, MiniStatCard} from "@/components/ui-helpers"
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -21,6 +21,23 @@ async function fetchJson(url: string) {
   if (!res.ok) throw new Error(`Failed: ${res.status}`);
   return safeJson(res);
 }
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All Statuses" },
+  { value: "requested", label: "Requested" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+const RANGE_OPTIONS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "this_week", label: "This Week" },
+  { value: "this_month", label: "This Month" },
+  { value: "custom", label: "Custom Range" },
+];
 
 export function ProceduresView() {
   const { data: session } = useSession();
@@ -32,18 +49,48 @@ export function ProceduresView() {
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [viewProc, setViewProc] = useState<any | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  // KPI range state
+  const [kpiRange, setKpiRange] = useState("today");
+  const [kpiCustomStart, setKpiCustomStart] = useState("");
+  const [kpiCustomEnd, setKpiCustomEnd] = useState("");
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
+  if (statusFilter !== "all") params.set("status", statusFilter);
+  if (search.trim()) params.set("search", search.trim());
   const qs = params.toString() ? `?${params.toString()}` : "";
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["procedures", activeFacilityId],
+    queryKey: ["procedures", activeFacilityId, statusFilter, search],
     queryFn: () => fetchJson(`/api/procedures${qs}`),
     enabled: !!activeFacilityId,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["procedures"] });
+  // KPI query (server-side aggregate)
+  const kpiQuery = useQuery({
+    queryKey: ["procedures-stats", activeFacilityId, kpiRange, kpiCustomStart, kpiCustomEnd],
+    queryFn: () => {
+      const p = new URLSearchParams();
+      if (activeFacilityId) p.set("facilityId", activeFacilityId);
+      p.set("range", kpiRange);
+      if (kpiRange === "custom" && kpiCustomStart && kpiCustomEnd) {
+        p.set("startDate", kpiCustomStart);
+        p.set("endDate", kpiCustomEnd);
+      }
+      return fetchJson(`/api/procedures/stats?${p.toString()}`);
+    },
+    enabled: !!activeFacilityId,
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["procedures"] });
+    qc.invalidateQueries({ queryKey: ["procedures-stats"] });
+  };
+
+  const k = kpiQuery.data?.kpis;
 
   const extractConsent = (notes?: string | null) => {
     if (!notes) return null;
@@ -68,6 +115,97 @@ export function ProceduresView() {
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view procedures.</CardContent></Card>
+      )}
+
+      {/* KPI / Statistics Dashboard */}
+      {activeFacilityId && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-teal-600" /> Procedure Statistics
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Live KPIs from the database for the selected date range.
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label className="text-xs text-slate-500">Range:</Label>
+                <Select value={kpiRange} onValueChange={setKpiRange}>
+                  <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {RANGE_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {kpiRange === "custom" && (
+                  <div className="flex items-center gap-1">
+                    <Input type="date" value={kpiCustomStart} onChange={(e) => setKpiCustomStart(e.target.value)} className="h-8 w-36 text-xs" />
+                    <span className="text-xs text-slate-400">to</span>
+                    <Input type="date" value={kpiCustomEnd} onChange={(e) => setKpiCustomEnd(e.target.value)} className="h-8 w-36 text-xs" />
+                  </div>
+                )}
+                <Button variant="ghost" size="sm" disabled={kpiQuery.isFetching} onClick={() => kpiQuery.refetch()} className="h-8 px-2" title="Refresh KPIs">
+                  <RefreshCw className={`w-3.5 h-3.5 ${kpiQuery.isFetching ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {kpiQuery.isError ? (
+              <ErrorState message="Failed to load KPIs" onRetry={() => kpiQuery.refetch()} />
+            ) : kpiQuery.isLoading || !k ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" aria-hidden="true" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <MiniStatCard label="Total Procedures" value={k.totalProcedures?.value ?? 0} icon={Scissors} gradient="from-teal-500 to-teal-600" />
+                <MiniStatCard label="Today's Procedures" value={k.todayProcedures?.value ?? 0} icon={CalendarDays} gradient="from-cyan-500 to-cyan-600" />
+                <MiniStatCard label="Requested" value={k.requested?.value ?? 0} icon={FileText} gradient="from-amber-500 to-amber-600" />
+                <MiniStatCard label="Scheduled" value={k.scheduled?.value ?? 0} icon={Clock} gradient="from-blue-500 to-blue-600" />
+                <MiniStatCard label="In Progress" value={k.inProgress?.value ?? 0} icon={Activity} gradient="from-violet-500 to-violet-600" />
+                <MiniStatCard label="Completed" value={k.completed?.value ?? 0} icon={CheckCircle2} gradient="from-emerald-500 to-emerald-600" />
+                <MiniStatCard label="Cancelled" value={k.cancelled?.value ?? 0} icon={XCircle} gradient="from-slate-500 to-slate-600" />
+                <MiniStatCard label="Documentation Pending" value={k.documentationPending?.value ?? 0} icon={FileText} gradient="from-orange-500 to-orange-600" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search + Filter controls */}
+      {activeFacilityId && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700 mb-1 block">Search Procedures</Label>
+              <ClearableSearch
+                value={search}
+                onChange={setSearch}
+                placeholder="Search by procedure name, code, patient name, or MRN…"
+                inputClassName="text-sm"
+                className="max-w-3xl"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Server-side search across procedure name, procedure code, and patient fields.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Select value={statusFilter || undefined} onValueChange={setStatusFilter}>
+                <SelectTrigger className="md:w-48 h-8 text-xs"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {(statusFilter !== "all" || search) && (
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setStatusFilter("all"); setSearch(""); }}>
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {isLoading ? (

@@ -470,3 +470,47 @@ Stage Summary:
 - 28/28 total Playwright tests pass (11 diagnostics + 17 encounters regression).
 - Build passes.
 - No schema changes, no destructive operations, no duplicate code.
+
+---
+Task ID: 23 (Diagnostics — Per-View KPIs & Search)
+Agent: main
+Task: Add KPI cards + search to each individual diagnostic view (Lab Orders, Lab Results, Imaging, Procedures) — synchronized with Encounters/Discharges/Nursing pattern
+
+Work Log:
+- User feedback: dashboards/improvements should have been made to each individual module/section, synchronized appropriately as implemented in other sections.
+- Created 4 new per-section stats API routes:
+  - /api/lab-orders/stats — 10 KPIs (total, today, pending collection, processing, pending results, verification pending, critical results, completed, cancelled, avg TAT) with date range + comparison deltas
+  - /api/lab-results/stats — 7 KPIs (total, today, abnormal, critical, pending verification, released, amended)
+  - /api/imaging/stats — 9 KPIs (total, today, pending, performed, reporting pending, verification pending, completed, cancelled, avg TAT)
+  - /api/procedures/stats — 8 KPIs (total, today, requested, scheduled, in progress, completed, cancelled, documentation pending)
+- All 4 stats routes use the same pattern as /api/encounters/stats:
+  - Date range scope: today/yesterday/this_week/this_month/custom
+  - Org/facility isolation (facility.organizationId check)
+  - Server-side Prisma count() + database-side SQL AVG for TAT
+  - No PHI leakage (only counts and averages)
+- Upgraded all 4 individual views with:
+  - KPI / Statistics Dashboard card (with range selector + comparison % + refresh button)
+  - MiniStatCard grid using the existing HMIS design system (gradient backgrounds, watermark icons)
+  - ClearableSearch bar for the main list (server-side search)
+  - Status filter + Clear filters button
+  - Skeleton loading state for KPIs
+- All KPI cards use the same gradient pattern as Discharges/Nursing/Encounters:
+  - Lab Orders: purple/cyan/amber/blue/orange/red/emerald/slate/teal
+  - Lab Results: cyan/blue/amber/red/orange/emerald/violet
+  - Imaging: blue-indigo/cyan/amber/blue/orange/violet/emerald/slate/teal
+  - Procedures: teal/cyan/amber/blue/violet/emerald/slate/orange
+- Extended Playwright suite from 11 to 19 tests:
+  - 6b/6c: Lab Orders KPI cards + search bar
+  - 7b/7c: Lab Results KPI cards + search bar
+  - 8b/8c: Imaging KPI cards + search bar
+  - 9b/9c: Procedures KPI cards + search bar
+- Build: ✓ Compiled successfully in 63s
+- Playwright Diagnostics: 19/19 PASS (8 new per-section + 11 base)
+
+Stage Summary:
+- Each individual diagnostic section now has its own KPI dashboard (synchronized with Encounters/Discharges pattern).
+- Each individual diagnostic section now has its own server-side search.
+- All KPIs computed from real database data (no fabricated values).
+- All KPIs respect org/facility isolation.
+- No schema changes, no destructive operations.
+- 19/19 Playwright tests pass.
