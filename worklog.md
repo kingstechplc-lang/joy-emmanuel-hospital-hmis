@@ -565,3 +565,154 @@ Tests:
   - Lab Orders 6/6b PASS (page loads + KPI cards verified)
   - Lab Results 7/7b PASS (page loads + KPI cards verified)
   - Dashboard 1 PASS (nav order verified)
+
+---
+Task ID: 25 (Lab Results — Targeted Restructure & Bug Fix)
+Agent: main
+Task: Fix 3 issues on Lab Results module only — bug root cause analysis
+
+ROOT CAUSE — BUG #2 (Main-table Amend targets first result):
+
+Line 333 of src/components/views/lab/lab-results-view.tsx:
+    onClick={(e) => { e.stopPropagation(); setAmendResult(first); }}
+
+Where `first = results[0]` (line 251).
+
+The grouped row represents an entire LabOrder (LAB-001) with multiple
+results (RESULT-001, RESULT-002, RESULT-003). When the user clicks the
+"Amend" button on the main row, the code passes `first` — which is the
+FIRST result in the group (RESULT-001 by array order) — to setAmendResult.
+
+This is a closure-variable bug: `first` is captured at group-construction
+time as `results[0]`, regardless of which result the user actually wants
+to amend.
+
+The dialog (AmendResultDialog at line 489) receives the result object and
+submits with `amendedFromId: result.id` (line 510). So the API is correct
+(it uses the result ID) — but the WRONG result is being selected upstream.
+
+ROOT CAUSE — BUG #3 (Print Lab Report prints all tests):
+
+Lines 442-455: The PrintButton's renderContent maps over `results.map(...)`
+and renders ALL tests in the expanded order as one table. There is no
+per-result print option.
+
+ROOT CAUSE — BUG #1 (Expanded sub-table clustered with main):
+
+Lines 341-470: The expanded section is rendered in a `<tr className="bg-slate-50">`
+with `colSpan={8}`. While it has a subtle background, it visually flows
+directly under the parent row without clear separation, indentation,
+or a distinct "Laboratory Results" panel feel.
+
+DATA MODEL (confirmed):
+- LabOrder.id (the order, e.g. "LAB-001")
+- LabOrderItem.id (the ordered test line, links LabOrder → LaboratoryTest)
+- LabResult.id (the actual result — what gets amended/printed)
+- LabResult.labOrderItemId → LabOrderItem → LabOrder
+- Amend API: POST /api/lab-results with amendedFromId = LabResult.id
+- Amend API correctly uses the result ID (no API bug — UI bug only)
+
+FIX STRATEGY:
+1. Replace main-row "Amend" with "More" → opens a result-selection dialog
+   showing all amendable results in the order. User explicitly picks one.
+2. Redesign expanded section as a distinct nested clinical panel with
+   clear visual hierarchy (indentation, card, "Laboratory Results" heading).
+3. Add per-result "Print Test" button in the expanded section that prints
+   only that result. Keep the existing "Print Full Report" for the order.
+
+---
+Task ID: 26 (Lab Results — Implementation)
+Agent: main
+Task: Implement 3 fixes on Lab Results module only
+
+FIX 1: Expanded sub-table redesign (visually distinct nested panel)
+- Replaced the flat `bg-slate-50` row with a clear nested clinical panel:
+    - Indented with border-l-4 border-emerald-300 ml-3 my-2
+    - White background with shadow-sm and rounded-r-lg
+    - "Laboratory Results" heading with TestTube icon
+    - Patient + encounter context shown as small sub-heading (NOT repeated in each row)
+    - "Print Full Report" action at the panel level (top-right)
+    - Individual results in a compact bordered table inside the panel
+- Critical result summary banner moved into the nested panel
+- The panel is visually subordinate to the parent row — user immediately
+  understands "this is the result detail belonging to the Lab Order above".
+
+FIX 2: Main-table Amend no longer silently selects the first result
+- Root cause: line 333 of the previous version used `setAmendResult(first)`
+  where `first = results[0]` — the first result in the group, regardless of
+  which result the user wanted to amend.
+- Fix:
+    - If the order has exactly ONE amendable result: main-row Amend opens
+      the AmendResultDialog directly (no selection needed — there's only
+      one valid target, no ambiguity).
+    - If the order has MULTIPLE amendable results: main-row shows "Amend…"
+      (with ellipsis) and opens a new Result-Selection Dialog. The user
+      explicitly picks the result to amend. Each result button shows
+      test name + current value + critical badge + status badge, so the
+      user knows exactly which result they're selecting.
+    - The selected result is identified by its real LabResult.id (r.id)
+      — passed directly to setAmendResult, never derived from array
+      position.
+- The AmendResultDialog now displays the target Result ID prominently
+  ("Result ID: <id>") so the user can verify the correct result is being
+  amended before submitting.
+- The API already used the correct result ID (amendedFromId: result.id
+  in POST /api/lab-results) — no API change was needed. The fix is
+  entirely in the UI's result selection.
+
+FIX 3: Individual test printing + full-order printing
+- Per-result "Print Test" button added to each row in the nested results
+  table. Clicking it prints ONLY that single result.
+- The individual test report includes:
+    - Facility name (from PrintLayout)
+    - Patient name, MRN, age/sex (from PrintLayout)
+    - Lab Order number
+    - Encounter number
+    - Test name
+    - Specimen type
+    - Result (with critical flag if applicable)
+    - Unit
+    - Reference range
+    - Flag (Normal/Abnormal/Critical)
+    - Result status
+    - Result entered timestamp
+    - Verified timestamp
+    - Released timestamp
+    - Notes (if any)
+- "Print Full Report" remains at the panel level — prints ALL tests in
+  the order (existing behavior preserved).
+- Both print actions use the existing PrintButton + PrintLayout components
+  — no new print infrastructure created.
+
+DATA INTEGRITY:
+- Each result is identified by its real LabResult.id (r.id from Prisma).
+- The amend API receives amendedFromId = result.id (correct).
+- The Print Test action renders ONLY the selected result's data (uses
+  closure-captured `r` from the per-result map, not `results[0]`).
+- The Print Full Report action renders ALL results in the group (uses
+  `results.map(...)` — correct).
+- No array-index-based selection anywhere in the new code.
+
+SECURITY (unchanged):
+- Amend API already enforces authentication (getSession), RBAC
+  (LAB_AMEND permission), and audit logging (LAB_RESULT_AMENDED action
+  with old/new values).
+- Print is client-side (window.open + renderToStaticMarkup) — no server
+  route, no IDOR surface. The result data is already authorized via
+  the list API (LAB_VIEW permission + facility scope).
+- No new server routes added.
+
+VERIFICATION:
+- Build: ✓ Compiled successfully in 59s
+- New tests/e2e/lab-results-targeted.spec.ts: 6/6 PASS
+    Test 1: Lab Results page loads with KPI cards and search — PASS
+    Test 2: Expanded results are in a visually distinct nested panel — PASS
+    Test 3: Main-row Amend never silently selects the first result — PASS
+    Test 4: Per-result Print Test action exists in the expanded results — PASS
+    Test 5: Lab Results page still loads without 'can is not defined' error — PASS
+    Test 6: Result-selection dialog shows individual result names — PASS
+- Regression: existing diagnostics tests 7 and 7b (Lab Results) still PASS.
+
+NO SCHEMA CHANGES
+NO API CHANGES (the amend API already used the correct result ID)
+NO BREAKING CHANGES to Lab Orders, Diagnostics Dashboard, Imaging, Procedures, NHIS, Finance, or Claims

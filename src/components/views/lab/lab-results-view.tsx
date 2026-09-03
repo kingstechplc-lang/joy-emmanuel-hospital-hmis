@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, AlertTriangle, History, TestTube, CheckCircle2, Gauge, RefreshCw, FlaskConical, Send, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, History, TestTube, CheckCircle2, Gauge, RefreshCw, FlaskConical, Send, Clock, MoreHorizontal, Printer, FileText } from "lucide-react";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, MiniStatCard} from "@/components/ui-helpers";
@@ -60,6 +60,9 @@ export function LabResultsView() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [amendResult, setAmendResult] = useState<any | null>(null);
+  // State for the result-selection dialog (shown when main-row Amend is clicked
+  // and the order has multiple amendable results — prevents silent first-result selection)
+  const [amendSelectGroup, setAmendSelectGroup] = useState<any[] | null>(null);
 
   // KPI range state
   const [kpiRange, setKpiRange] = useState("today");
@@ -238,8 +241,11 @@ export function LabResultsView() {
                 </thead>
                 <tbody>
                   {(() => {
-                    // Group results by labOrder.id so the same patient+encounter is shown only once
-                    // (each group expands to reveal the individual test results)
+                    // Group results by labOrder.id so the same patient+encounter is shown only once.
+                    // Each group expands to reveal the individual test results in a NESTED panel.
+                    // CRITICAL: We retain each result's real LabResult ID (r.id) so per-result
+                    // Amend and Print Test actions always target the correct result — never the
+                    // first result by array order.
                     const groups: Record<string, any[]> = {};
                     for (const r of data.items as any[]) {
                       const orderId = r.labOrderItem?.labOrder?.id || "unknown";
@@ -248,10 +254,14 @@ export function LabResultsView() {
                     }
 
                     return Object.entries(groups).map(([orderId, results]) => {
+                      // Note: `first` is only used for shared display context (patient, order
+                      // number, encounter) — NEVER for amend/print identification.
                       const first = results[0];
                       const patient = first.labOrderItem?.labOrder?.patient;
                       const orderNumber = first.labOrderItem?.labOrder?.orderNumber;
                       const encounter = first.labOrderItem?.labOrder?.encounter;
+                      const facility = first.labOrderItem?.labOrder?.facility;
+                      const orderingClinician = first.labOrderItem?.labOrder?.orderingClinician;
                       const testCount = results.length;
                       const testNames = results.map((r: any) => r.labOrderItem?.laboratoryTest?.name || "Test");
 
@@ -276,8 +286,12 @@ export function LabResultsView() {
                       const groupKey = orderId;
                       const expanded = expandedId === groupKey;
 
+                      // Determine amendable results in this group (for the main-row Amend action)
+                      const amendableResults = results.filter((r: any) => (r.status === "verified" || r.status === "released") && can("lab.amend"));
+
                       return (
                         <Fragment key={groupKey}>
+                          {/* === PARENT ROW: Lab Order === */}
                           <tr
                             className={`border-b hover:bg-emerald-50/40 cursor-pointer ${hasCritical ? "bg-rose-50/40" : hasAbnormal ? "bg-amber-50/30" : ""}`}
                             onClick={() => setExpandedId(expanded ? null : groupKey)}
@@ -324,28 +338,104 @@ export function LabResultsView() {
                               {latestEntered ? formatDate(new Date(latestEntered), true) : "—"}
                             </td>
                             <td className="p-3"><StatusBadge status={aggregateStatus} /></td>
-                            <td className="p-3 text-right">
-                              {/* Show Amend button if any result in the group is verified/released */}
-                              {results.some((r: any) => (r.status === "verified" || r.status === "released") && can("lab.amend")) && (
+                            <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                              {/* Main-row Amend: open result-selection dialog instead of
+                                  silently picking the first result. */}
+                              {amendableResults.length === 1 && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={(e) => { e.stopPropagation(); setAmendResult(first); }}
+                                  onClick={() => setAmendResult(amendableResults[0])}
                                   className="gap-1 h-7 text-xs"
+                                  title={`Amend ${amendableResults[0].labOrderItem?.laboratoryTest?.name || "result"}`}
                                 >
                                   <History className="w-3 h-3" /> Amend
                                 </Button>
                               )}
+                              {amendableResults.length > 1 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setAmendSelectGroup(amendableResults)}
+                                  className="gap-1 h-7 text-xs"
+                                  title="Select which result to amend"
+                                >
+                                  <History className="w-3 h-3" /> Amend…
+                                </Button>
+                              )}
                             </td>
                           </tr>
+
+                          {/* === NESTED RESULTS PANEL (visually distinct from main table) === */}
                           {expanded && (
-                            <tr className="bg-slate-50">
-                              <td colSpan={8} className="p-0">
-                                {/* Nested table showing each individual test result */}
-                                <div className="p-4 space-y-2">
-                                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
-                                    {testCount} test result{testCount > 1 ? "s" : ""} for {patient?.firstName} {patient?.lastName} • Order {orderNumber}
-                                  </p>
+                            <tr>
+                              <td colSpan={8} className="p-0 bg-slate-100/60">
+                                <div className="px-6 py-4 border-l-4 border-emerald-300 ml-3 my-2 bg-white rounded-r-lg shadow-sm">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                      <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                        <TestTube className="w-4 h-4 text-emerald-600" />
+                                        Laboratory Results
+                                        <span className="text-xs font-normal text-slate-500">
+                                          ({testCount} test{testCount > 1 ? "s" : ""} for order {orderNumber})
+                                        </span>
+                                      </h4>
+                                      <p className="text-[10px] text-slate-500 mt-0.5">
+                                        Patient: {patient?.firstName} {patient?.lastName} • Encounter: {encounter?.encounterNumber || "—"}
+                                      </p>
+                                    </div>
+                                    {/* Full-order print action — prints ALL tests in this order */}
+                                    {results.some((r: any) => r.status === "released" || r.status === "verified") && (
+                                      <PrintButton
+                                        label="Print Full Report"
+                                        className="text-xs h-8"
+                                        renderContent={() => (
+                                          <PrintLayout
+                                            title="Laboratory Test Report"
+                                            subtitle={orderNumber}
+                                            documentNumber={orderNumber}
+                                            facility={facility}
+                                            patient={patient}
+                                            signatory={orderingClinician ? `Dr. ${orderingClinician.firstName} ${orderingClinician.lastName}` : undefined}
+                                            signatoryRole="Ordering Physician"
+                                          >
+                                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                              <thead>
+                                                <tr style={{ background: "#f1f5f9" }}>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Test</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Result</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Unit</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Ref Range</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Flag</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {results.map((r: any) => (
+                                                  <tr key={r.id}>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 500 }}>{r.labOrderItem?.laboratoryTest?.name}</td>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 700, color: r.criticalFlag ? "#be123c" : r.abnormalFlag && r.abnormalFlag !== "normal" ? "#d97706" : "#0f172a" }}>
+                                                      {(r.numericValue ?? r.resultValue) || "—"}
+                                                      {r.criticalFlag && " ⚠ CRITICAL"}
+                                                    </td>
+                                                    <td style={{ padding: "6px 8px" }}>{r.unit || "—"}</td>
+                                                    <td style={{ padding: "6px 8px" }}>{r.referenceRange || "—"}</td>
+                                                    <td style={{ padding: "6px 8px" }}>{r.abnormalFlag?.replace(/_/g, " ") || "normal"}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                            <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
+                                              <p><strong>Result entered:</strong> {latestEntered ? new Date(latestEntered).toLocaleString("en-GB") : "—"}</p>
+                                              <p><strong>Order:</strong> {orderNumber}</p>
+                                              <p><strong>Patient:</strong> {patient?.firstName} {patient?.lastName} ({patient?.patientNumber})</p>
+                                            </div>
+                                          </PrintLayout>
+                                        )}
+                                      />
+                                    )}
+                                  </div>
+
+                                  {/* Individual results — clean nested table */}
                                   <div className="overflow-x-auto rounded border border-slate-200">
                                     <table className="w-full text-xs bg-white">
                                       <thead className="bg-slate-100">
@@ -387,11 +477,80 @@ export function LabResultsView() {
                                               </td>
                                               <td className="p-2 text-slate-600">{formatDate(r.enteredAt, true)}</td>
                                               <td className="p-2"><StatusBadge status={r.status} /></td>
-                                              <td className="p-2 text-right">
+                                              <td className="p-2 text-right whitespace-nowrap">
+                                                {/* Per-result Amend — uses r.id directly (no first-result fallback) */}
                                                 {(r.status === "verified" || r.status === "released") && can("lab.amend") && (
-                                                  <Button size="sm" variant="outline" onClick={() => setAmendResult(r)} className="gap-1 h-6 text-[10px]">
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => setAmendResult(r)}
+                                                    className="gap-1 h-6 text-[10px] mr-1"
+                                                    title={`Amend ${r.labOrderItem?.laboratoryTest?.name}`}
+                                                  >
                                                     <History className="w-3 h-3" /> Amend
                                                   </Button>
+                                                )}
+                                                {/* Per-result Print Test — prints ONLY this single result */}
+                                                {(r.status === "verified" || r.status === "released") && (
+                                                  <PrintButton
+                                                    label="Print Test"
+                                                    className="text-[10px] h-6 mr-1"
+                                                    renderContent={() => (
+                                                      <PrintLayout
+                                                        title="Laboratory Test Report"
+                                                        subtitle={r.labOrderItem?.laboratoryTest?.name}
+                                                        documentNumber={orderNumber}
+                                                        facility={facility}
+                                                        patient={patient}
+                                                        signatory={orderingClinician ? `Dr. ${orderingClinician.firstName} ${orderingClinician.lastName}` : undefined}
+                                                        signatoryRole="Ordering Physician"
+                                                      >
+                                                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                                          <tbody>
+                                                            <tr>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600, width: "30%" }}>Test</td>
+                                                              <td style={{ padding: "6px 8px" }}>{r.labOrderItem?.laboratoryTest?.name}</td>
+                                                            </tr>
+                                                            <tr style={{ background: "#f8fafc" }}>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600 }}>Specimen</td>
+                                                              <td style={{ padding: "6px 8px" }}>{r.labOrderItem?.laboratoryTest?.specimenType || "—"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600 }}>Result</td>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 700, color: r.criticalFlag ? "#be123c" : r.abnormalFlag && r.abnormalFlag !== "normal" ? "#d97706" : "#0f172a" }}>
+                                                                {(r.numericValue ?? r.resultValue) || "—"}
+                                                                {r.criticalFlag && " ⚠ CRITICAL"}
+                                                              </td>
+                                                            </tr>
+                                                            <tr style={{ background: "#f8fafc" }}>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600 }}>Unit</td>
+                                                              <td style={{ padding: "6px 8px" }}>{r.unit || "—"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600 }}>Reference Range</td>
+                                                              <td style={{ padding: "6px 8px" }}>{r.referenceRange || "—"}</td>
+                                                            </tr>
+                                                            <tr style={{ background: "#f8fafc" }}>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600 }}>Flag</td>
+                                                              <td style={{ padding: "6px 8px" }}>{r.abnormalFlag?.replace(/_/g, " ") || "normal"}</td>
+                                                            </tr>
+                                                            <tr>
+                                                              <td style={{ padding: "6px 8px", fontWeight: 600 }}>Status</td>
+                                                              <td style={{ padding: "6px 8px" }}>{r.status}</td>
+                                                            </tr>
+                                                          </tbody>
+                                                        </table>
+                                                        <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
+                                                          <p><strong>Lab Order:</strong> {orderNumber}</p>
+                                                          <p><strong>Encounter:</strong> {encounter?.encounterNumber || "—"}</p>
+                                                          <p><strong>Result entered:</strong> {r.enteredAt ? new Date(r.enteredAt).toLocaleString("en-GB") : "—"}</p>
+                                                          <p><strong>Verified:</strong> {r.verifiedAt ? new Date(r.verifiedAt).toLocaleString("en-GB") : "—"}</p>
+                                                          <p><strong>Released:</strong> {r.releasedAt ? new Date(r.releasedAt).toLocaleString("en-GB") : "—"}</p>
+                                                          {r.resultNotes && <p><strong>Notes:</strong> {r.resultNotes}</p>}
+                                                        </div>
+                                                      </PrintLayout>
+                                                    )}
+                                                  />
                                                 )}
                                                 {r.criticalFlag && !r.criticalAcknowledgedAt && (
                                                   <AcknowledgeButton resultId={r.id} onDone={() => refetch()} />
@@ -406,62 +565,11 @@ export function LabResultsView() {
 
                                   {/* Critical result acknowledgement summary if any unacknowledged criticals */}
                                   {results.filter((r: any) => r.criticalFlag && !r.criticalAcknowledgedAt).length > 0 && (
-                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+                                    <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
                                       <AlertTriangle className="w-4 h-4" />
                                       <span>
                                         {results.filter((r: any) => r.criticalFlag && !r.criticalAcknowledgedAt).length} unacknowledged critical result(s) in this order — see Acknowledge buttons above.
                                       </span>
-                                    </div>
-                                  )}
-
-                                  {/* Print Report (for verified/released results) */}
-                                  {results.some((r: any) => r.status === "released" || r.status === "verified") && (
-                                    <div className="pt-2 border-t border-slate-200">
-                                      <PrintButton
-                                        label="Print Lab Report"
-                                        renderContent={() => (
-                                          <PrintLayout
-                                            title="Laboratory Test Report"
-                                            subtitle={orderNumber}
-                                            documentNumber={orderNumber}
-                                            facility={first.labOrderItem?.labOrder?.facility}
-                                            patient={patient}
-                                            signatory={first.labOrderItem?.labOrder?.orderingClinician ? `Dr. ${first.labOrderItem.labOrder.orderingClinician.firstName} ${first.labOrderItem.labOrder.orderingClinician.lastName}` : undefined}
-                                            signatoryRole="Ordering Physician"
-                                          >
-                                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                                              <thead>
-                                                <tr style={{ background: "#f1f5f9" }}>
-                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Test</th>
-                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Result</th>
-                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Unit</th>
-                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Ref Range</th>
-                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Flag</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody>
-                                                {results.map((r: any) => (
-                                                  <tr key={r.id}>
-                                                    <td style={{ padding: "6px 8px", fontWeight: 500 }}>{r.labOrderItem?.laboratoryTest?.name}</td>
-                                                    <td style={{ padding: "6px 8px", fontWeight: 700, color: r.criticalFlag ? "#be123c" : r.abnormalFlag && r.abnormalFlag !== "normal" ? "#d97706" : "#0f172a" }}>
-                                                      {(r.numericValue ?? r.resultValue) || "—"}
-                                                      {r.criticalFlag && " ⚠ CRITICAL"}
-                                                    </td>
-                                                    <td style={{ padding: "6px 8px" }}>{r.unit || "—"}</td>
-                                                    <td style={{ padding: "6px 8px" }}>{r.referenceRange || "—"}</td>
-                                                    <td style={{ padding: "6px 8px" }}>{r.abnormalFlag?.replace(/_/g, " ") || "normal"}</td>
-                                                  </tr>
-                                                ))}
-                                              </tbody>
-                                            </table>
-                                            <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
-                                              <p><strong>Result entered:</strong> {latestEntered ? new Date(latestEntered).toLocaleString("en-GB") : "—"}</p>
-                                              <p><strong>Order:</strong> {orderNumber}</p>
-                                              <p><strong>Patient:</strong> {patient?.firstName} {patient?.lastName} ({patient?.patientNumber})</p>
-                                            </div>
-                                          </PrintLayout>
-                                        )}
-                                      />
                                     </div>
                                   )}
                                 </div>
@@ -477,6 +585,57 @@ export function LabResultsView() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Result-Selection Dialog — shown when the user clicks "Amend…" on a main row
+          with multiple amendable results. Forces explicit selection of the exact
+          LabResult to amend — eliminates the silent first-result bug. */}
+      {amendSelectGroup && (
+        <Dialog open onOpenChange={() => setAmendSelectGroup(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-emerald-600" /> Select Result to Amend
+              </DialogTitle>
+              <DialogDescription>
+                This lab order has multiple amendable results. Choose the specific result you want to amend. The original will be preserved for audit.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              {amendSelectGroup.map((r: any) => (
+                <button
+                  key={r.id}
+                  onClick={() => {
+                    setAmendResult(r);
+                    setAmendSelectGroup(null);
+                  }}
+                  className="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition flex items-center justify-between gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-slate-900 text-sm">
+                      {r.labOrderItem?.laboratoryTest?.name || "Test"}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      Current value: <span className="font-mono">{r.numericValue != null ? r.numericValue : r.resultValue || "—"}</span>
+                      {r.unit && <span className="ml-1">{r.unit}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {r.criticalFlag && (
+                      <Badge variant="destructive" className="gap-1 text-[10px]">
+                        <AlertTriangle className="w-3 h-3" /> Critical
+                      </Badge>
+                    )}
+                    <StatusBadge status={r.status} />
+                  </div>
+                </button>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAmendSelectGroup(null)}>Cancel</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {amendResult && (
@@ -535,7 +694,9 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
           <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{result.labOrderItem?.laboratoryTest?.name}</div>
             <div className="text-xs text-slate-500">Patient: {result.labOrderItem?.labOrder?.patient?.firstName} {result.labOrderItem?.labOrder?.patient?.lastName}</div>
-            <div className="text-xs text-slate-500">Original value: <span className="font-mono">{result.numericValue ?? result.resultValue ?? "—"}</span></div>
+            <div className="text-xs text-slate-500">Order #: <span className="font-mono">{result.labOrderItem?.labOrder?.orderNumber}</span></div>
+            <div className="text-[10px] text-slate-400 font-mono">Result ID: {result.id}</div>
+            <div className="text-xs text-slate-500 mt-1">Original value: <span className="font-mono">{result.numericValue ?? result.resultValue ?? "—"}</span></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
