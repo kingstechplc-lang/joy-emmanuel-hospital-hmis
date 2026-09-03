@@ -17,6 +17,7 @@ import {
   Pill, ClipboardList, BedDouble, Receipt, FileText, ScrollText,
   AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert, Edit, Save,
   RefreshCw, ShieldCheck, FileCode2, ChevronRight,
+  ScanLine, Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
@@ -168,6 +169,8 @@ export function Patient360View() {
             <TabsTrigger value="consultations" className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Consultations</TabsTrigger>
             <TabsTrigger value="vitals" className="gap-1.5"><HeartPulse className="w-3.5 h-3.5" /> Vitals</TabsTrigger>
             <TabsTrigger value="lab" className="gap-1.5"><FlaskConical className="w-3.5 h-3.5" /> Lab</TabsTrigger>
+            <TabsTrigger value="imaging" className="gap-1.5"><ScanLine className="w-3.5 h-3.5" /> Imaging</TabsTrigger>
+            <TabsTrigger value="procedures" className="gap-1.5"><Scissors className="w-3.5 h-3.5" /> Procedures</TabsTrigger>
             <TabsTrigger value="pharmacy" className="gap-1.5"><Pill className="w-3.5 h-3.5" /> Pharmacy</TabsTrigger>
             <TabsTrigger value="diagnoses" className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Diagnoses</TabsTrigger>
             <TabsTrigger value="admissions" className="gap-1.5"><BedDouble className="w-3.5 h-3.5" /> Admissions</TabsTrigger>
@@ -531,6 +534,102 @@ export function Patient360View() {
                               )}
                             </Badge>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Imaging */}
+        <TabsContent value="imaging">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Imaging Studies</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              {(p.imagingOrders || []).length === 0 ? (
+                <div className="p-6"><EmptyState title="No imaging studies" /></div>
+              ) : (
+                <div className="divide-y">
+                  {(p.imagingOrders || []).map((im: any) => (
+                    <div key={im.id} className="p-4 hover:bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-sm text-slate-900">
+                          {im.procedureName}
+                          {im.modality && (
+                            <span className="ml-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                              {im.modality}
+                            </span>
+                          )}
+                          {im.bodySite && (
+                            <span className="ml-2 text-xs text-slate-500">— {im.bodySite}</span>
+                          )}
+                        </div>
+                        <StatusBadge status={im.status} />
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {im.encounter?.facility?.name || "—"} • {formatDate(im.orderedAt, true)}
+                      </div>
+                      {im.reports && im.reports.length > 0 && im.reports[0]?.findings && (
+                        <div className="mt-2 text-xs text-slate-700 bg-slate-50 rounded p-2">
+                          <span className="font-semibold">Findings: </span>
+                          {im.reports[0].findings}
+                        </div>
+                      )}
+                      {im.reports && im.reports.length > 0 && im.reports[0]?.impression && (
+                        <div className="mt-1 text-xs text-slate-700 bg-slate-50 rounded p-2">
+                          <span className="font-semibold">Impression: </span>
+                          {im.reports[0].impression}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Procedures */}
+        <TabsContent value="procedures">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Procedures</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              {(p.procedures || []).length === 0 ? (
+                <div className="p-6"><EmptyState title="No procedures" /></div>
+              ) : (
+                <div className="divide-y">
+                  {(p.procedures || []).map((pr: any) => (
+                    <div key={pr.id} className="p-4 hover:bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-sm text-slate-900">
+                          {pr.procedureName}
+                          {pr.category && (
+                            <span className="ml-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                              {pr.category}
+                            </span>
+                          )}
+                        </div>
+                        <StatusBadge status={pr.status} />
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {formatDate(pr.performedAt || pr.requestedAt || pr.createdAt, true)}
+                        {pr.performedBy && (
+                          <span> • Dr. {pr.performedBy?.firstName} {pr.performedBy?.lastName}</span>
+                        )}
+                      </div>
+                      {pr.findings && (
+                        <div className="mt-2 text-xs text-slate-700 bg-slate-50 rounded p-2">
+                          <span className="font-semibold">Findings: </span>
+                          {pr.findings}
+                        </div>
+                      )}
+                      {pr.outcome && (
+                        <div className="mt-1 text-xs text-slate-700 bg-slate-50 rounded p-2">
+                          <span className="font-semibold">Outcome: </span>
+                          {pr.outcome}
                         </div>
                       )}
                     </div>

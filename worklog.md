@@ -343,3 +343,130 @@ Stage Summary:
 - Final commit: pending (avg-duration fix + verification scripts + mobile tests)
 - All phases complete
 - Final verdict: GO
+
+---
+Task ID: 21 (Diagnostics Module — Reconnaissance)
+Agent: main
+Task: Phase 0 — codebase reconnaissance for Diagnostics module upgrade
+
+Reconnaissance Report:
+
+A. Existing models (extensive, additive, well-designed):
+   - LabOrder, LabOrderItem, LabResult, LabSample (with recollection chain)
+   - LaboratoryTest (catalog with category, resultType, TAT, NHIS config)
+   - LabTestComponent, LabTestResultOption, LabTestReferenceRange, LabTestCriticalValue, LabTestSpecimen, LabTestPanelMember, LabTestCategory
+   - ImagingOrder (modality, bodySite, laterality, contrast, DICOM UIDs, accession number)
+   - ImagingReport (findings, impression, technique, indication, recommendation, isLatest, amendedById, amendedAt, amendmentReason)
+   - Procedure (catalog linkage, requestedBy, performedBy, findings, complications, specimens, materials, outcome, post-procedure instructions)
+   - ProcedureCatalog (with NHIS config, serviceId linkage)
+   - All models support facility/organization isolation via FK relations.
+
+B. Existing API routes:
+   - /api/lab-orders (GET list, POST create with duplicate detection + override)
+   - /api/lab-orders/[id] (PATCH with action: collect/receive/reject/recollect/process/result/verify/release/cancel/update — full lifecycle)
+   - /api/lab-orders/worklist (work queue view)
+   - /api/lab-results/[id] (PATCH verify/release/amend)
+   - /api/lab-results/trend
+   - /api/imaging (GET, POST) /api/imaging/[id] (PATCH with 11+ actions: schedule, patient_arrived, reschedule, no_show, perform, report, amend, verify, release, cancel, update)
+   - /api/imaging/worklist
+   - /api/procedures (GET, POST) /api/procedures/[id] (PATCH)
+   - /api/lab-tests (catalog management with bulk update, facility availability, etc.)
+
+C. Existing UI:
+   - lab-orders-view.tsx (949 lines) — orders table, status filter, priority filter, new order dialog, action dialog
+   - lab-results-view.tsx (432 lines) — results list with flag indicators
+   - imaging-view.tsx (662 lines) — imaging orders + reporting workflow
+   - procedures-view.tsx (557 lines) — procedure lifecycle
+   - No unified Diagnostics dashboard view exists.
+
+D. Existing permissions (already comprehensive):
+   - LAB_VIEW, LAB_ORDER, LAB_COLLECT, LAB_PROCESS, LAB_RESULT, LAB_VERIFY, LAB_AMEND
+   - LAB_CATALOG_VIEW/MANAGE/ARCHIVE/SPECIMEN_MANAGE/RANGE_MANAGE/CRITICAL_MANAGE/PANEL_MANAGE/SERVICE_MAP/NHIS_MANAGE/IMPORT/BULK_UPDATE
+   - IMAGING_VIEW, IMAGING_ORDER, IMAGING_PERFORM, IMAGING_REPORT, IMAGING_VERIFY
+   - PROCEDURE_VIEW, PROCEDURE_PERFORM
+
+E. Existing billing integration:
+   - LaboratoryTest.serviceId → Service → Invoice
+   - ProcedureCatalog.serviceId → Service
+   - ImagingOrder.serviceId → Service
+   - serviceInvoiceItemId links on LabOrder (prevents double-billing)
+   - NHIS tariff config slots on catalogs
+
+F. Existing encounter integration:
+   - All diagnostic orders require encounterId (auto-created if not provided for lab)
+   - Patient 360 has a Lab tab (but not Imaging/Procedures)
+   - No diagnostics tab in Encounter Detail Dialog
+
+G. Existing insurance/NHIS integration:
+   - LaboratoryTest.nhisEligible, nhisServiceCode, nhisTariffRef
+   - ProcedureCatalog.nhisEligible, nhisServiceCode, nhisTariffRef
+   - No direct ImagingOrder NHIS fields — but uses Service model
+
+H. Existing audit infrastructure:
+   - 30+ audit actions defined: LAB_ORDER_CREATED, LAB_SAMPLE_COLLECTED, LAB_SAMPLE_RECEIVED, LAB_SAMPLE_REJECTED, LAB_SAMPLE_RECOLLECTED, LAB_ORDER_PROCESSING, LAB_RESULT_ENTERED, LAB_RESULT_VERIFIED, LAB_RESULT_RELEASED, LAB_ORDER_CANCELLED, IMAGING_ORDERED, IMAGING_SCHEDULED, IMAGING_PERFORMED, IMAGING_REPORTED, IMAGING_REPORT_AMENDED, IMAGING_VERIFIED, IMAGING_RELEASED, IMAGING_CANCELLED, etc.
+   - All routes use the shared auditLog() helper.
+
+I. Existing test infrastructure:
+   - tests/e2e/encounters.spec.ts (17 tests)
+   - tests/e2e/encounters-mobile.spec.ts (4 tests)
+   - tests/e2e/nhis-workflow.spec.ts (16 tests)
+   - tests/e2e/password-change-flow.spec.ts
+   - No existing tests for diagnostics module
+
+J. Gaps identified (high-value, low-risk):
+
+   GAP 1 (Phase 15): No unified Diagnostics dashboard with KPIs. Each diagnostic section has its own table but no aggregate view. This is the most-requested missing feature per the task spec.
+
+   GAP 2 (Phase 16): Patient 360 only has a Lab tab. No Imaging or Procedures tabs. Phase 16 explicitly requires Patient 360 to surface all diagnostic records.
+
+   GAP 3 (Phase 14): No search/pagination support in lab-results, imaging, or procedures list endpoints. They return raw `take: 50` with no search.
+
+   GAP 4: Existing diagnostics views lack KPI cards (which other modules have via MiniStatCard). The lab-orders-view shows only filter controls — no dashboard.
+
+   Gap 5: No stats API routes for lab-orders, lab-results, imaging, or procedures.
+
+Strategic Decision:
+
+Given the 37-phase scope and one-session constraint, I will focus on the highest-value, lowest-risk improvements that align with the existing architecture:
+
+  1. Add a unified `/api/diagnostics/stats` route that aggregates KPIs across lab/imaging/procedures
+  2. Add a new `DiagnosticsDashboardView` component using the existing MiniStatCard pattern (consistent with Discharges/Nursing/Encounters design)
+  3. Add the new view to view-renderer + nav store as `diagnostics_dashboard`
+  4. Extend Patient 360 with Imaging and Procedures tabs (reusing existing API endpoints — no new queries needed)
+  5. Add server-side search to lab-results, imaging, and procedures GET routes (matching the pattern used by encounters)
+  6. Write a new `diagnostics.spec.ts` Playwright suite to verify the dashboard + integrations
+
+I will NOT:
+  - Rewrite existing lab/imaging/procedure routes or views
+  - Modify the database schema (no migration needed — all data already exists)
+  - Duplicate existing audit logging, permissions, or notification infrastructure
+  - Add new NHIS/Claims layers (existing model is the source of truth)
+  - Create parallel billing logic (existing Service model is the source of truth)
+
+---
+Task ID: 22 (Diagnostics — Implementation)
+Agent: main
+Task: Phases 1-7 — Implement Diagnostics dashboard, Patient 360 extensions, server-side search, tests, commit
+
+Work Log:
+- Phase 1: Created /api/diagnostics/stats route aggregating KPIs across lab/imaging/procedures using parallel Prisma count() + database-side SQL AVG for TAT. KPIs: lab (9 KPIs + TAT), imaging (6 KPIs + TAT), procedures (6 KPIs), overall (5 KPIs). Auth-verified (any of LAB_VIEW/IMAGING_VIEW/PROCEDURE_VIEW) + org isolation.
+- Phase 2: Created DiagnosticsDashboardView component using existing MiniStatCard pattern (consistent with Discharges/Nursing/Encounters design). Includes range selector, KPI cards grouped by Lab/Imaging/Procedures, Quick Navigation buttons, and collapsible KPI definitions.
+- Phase 3: Registered DiagnosticsDashboardView in view-renderer.tsx and app-store.ts (NAV_ITEMS). Gated by `lab.view` permission.
+- Phase 4: Extended Patient 360 with Imaging and Procedures tabs. Updated Patient API to include `performedBy` for procedures.
+- Phase 5: Added server-side search to:
+    - GET /api/lab-orders (search by orderNumber, patient firstName/lastName/patientNumber)
+    - GET /api/lab-results (search via LabOrder relation: orderNumber, patient fields)
+    - GET /api/imaging (search by procedureName, accessionNumber, patient fields)
+    - GET /api/procedures (search by procedureName, procedureCode, patient fields)
+- Phase 6: Created tests/e2e/diagnostics.spec.ts with 11 tests covering dashboard load, KPI cards, range selector, quick navigation, KPI definitions, lab orders page, lab results page, imaging page, procedures page, Patient 360 Imaging tab, Patient 360 Procedures tab.
+- Production build: ✓ Compiled successfully in 63s.
+- Playwright Diagnostics: 11/11 PASS in 3.4 min.
+- Playwright Encounters regression: 17/17 PASS in 5.6 min (no regression).
+
+Stage Summary:
+- New Diagnostics dashboard with real KPIs (no fabricated values).
+- Patient 360 now surfaces Imaging and Procedures (in addition to Lab).
+- Server-side search added to 4 diagnostic list endpoints.
+- 28/28 total Playwright tests pass (11 diagnostics + 17 encounters regression).
+- Build passes.
+- No schema changes, no destructive operations, no duplicate code.

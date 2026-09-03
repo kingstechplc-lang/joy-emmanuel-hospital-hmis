@@ -26,6 +26,7 @@ export async function GET(req: Request) {
   const status = url.searchParams.get("status");
   const patientId = url.searchParams.get("patientId");
   const abnormalOnly = url.searchParams.get("abnormalOnly") === "1";
+  const search = (url.searchParams.get("search") || "").trim();
   const limit = parseInt(url.searchParams.get("limit") || "100");
 
   // Build where clause on the LabResult, but join up to LabOrder for facility/patient filters
@@ -38,10 +39,18 @@ export async function GET(req: Request) {
     ];
   }
 
-  // LabOrder filter via relation
+  // LabOrder filter via relation (includes search by orderNumber/patient name/number)
   const orderWhere: any = {};
   if (facilityId) orderWhere.facilityId = facilityId;
   if (patientId) orderWhere.patientId = patientId;
+  if (search) {
+    orderWhere.OR = [
+      { orderNumber: { contains: search, mode: "insensitive" } },
+      { patient: { firstName: { contains: search, mode: "insensitive" } } },
+      { patient: { lastName: { contains: search, mode: "insensitive" } } },
+      { patient: { patientNumber: { contains: search, mode: "insensitive" } } },
+    ];
+  }
   if (Object.keys(orderWhere).length > 0) {
     where.labOrderItem = { labOrder: orderWhere };
   }

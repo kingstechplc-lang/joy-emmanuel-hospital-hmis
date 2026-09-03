@@ -28,6 +28,7 @@ export async function GET(req: Request) {
   const status = url.searchParams.get("status");
   const priority = url.searchParams.get("priority");
   const patientId = url.searchParams.get("patientId");
+  const search = (url.searchParams.get("search") || "").trim();
   const limit = parseInt(url.searchParams.get("limit") || "50");
 
   const where: any = {};
@@ -35,6 +36,14 @@ export async function GET(req: Request) {
   if (status) where.status = status;
   if (priority) where.priority = priority;
   if (patientId) where.patientId = patientId;
+  if (search) {
+    where.OR = [
+      { orderNumber: { contains: search, mode: "insensitive" } },
+      { patient: { firstName: { contains: search, mode: "insensitive" } } },
+      { patient: { lastName: { contains: search, mode: "insensitive" } } },
+      { patient: { patientNumber: { contains: search, mode: "insensitive" } } },
+    ];
+  }
 
   const orders = await db.labOrder.findMany({
     where,

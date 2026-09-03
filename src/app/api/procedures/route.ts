@@ -27,6 +27,7 @@ export async function GET(req: Request) {
   const patientId = url.searchParams.get("patientId");
   const status = url.searchParams.get("status");
   const category = url.searchParams.get("category");
+  const search = (url.searchParams.get("search") || "").trim();
   const limit = parseInt(url.searchParams.get("limit") || "50");
 
   const where: any = {};
@@ -34,6 +35,15 @@ export async function GET(req: Request) {
   if (patientId) where.patientId = patientId;
   if (status) where.status = status;
   if (category) where.category = category;
+  if (search) {
+    where.OR = [
+      { procedureName: { contains: search, mode: "insensitive" } },
+      { procedureCode: { contains: search, mode: "insensitive" } },
+      { patient: { firstName: { contains: search, mode: "insensitive" } } },
+      { patient: { lastName: { contains: search, mode: "insensitive" } } },
+      { patient: { patientNumber: { contains: search, mode: "insensitive" } } },
+    ];
+  }
 
   const procedures = await db.procedure.findMany({
     where,

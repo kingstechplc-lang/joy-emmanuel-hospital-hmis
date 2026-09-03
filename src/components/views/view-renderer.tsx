@@ -23,6 +23,7 @@ import { LabOrdersView } from "@/components/views/lab/lab-orders-view";
 import { LabResultsView } from "@/components/views/lab/lab-results-view";
 import { ImagingView } from "@/components/views/imaging/imaging-view";
 import { ProceduresView } from "@/components/views/procedures/procedures-view";
+import { DiagnosticsDashboardView } from "@/components/views/diagnostics/diagnostics-dashboard-view";
 import { AdmissionsView } from "@/components/views/inpatient/admissions-view";
 import { BedsView } from "@/components/views/inpatient/beds-view";
 import { NursingView } from "@/components/views/inpatient/nursing-view";
@@ -108,6 +109,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   lab_results: LabResultsView,
   imaging: ImagingView,
   procedures: ProceduresView,
+  diagnostics_dashboard: DiagnosticsDashboardView,
   admissions: AdmissionsView,
   beds: BedsView,
   nursing: NursingView,
@@ -199,6 +201,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   lab_results: "lab.view",
   imaging: "imaging.view",
   procedures: "procedure.view",
+  diagnostics_dashboard: "lab.view",
   admissions: "admission.view",
   beds: "bed.manage",
   nursing: "clinical.view",

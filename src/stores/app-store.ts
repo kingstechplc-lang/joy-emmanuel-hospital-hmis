@@ -20,6 +20,7 @@ export type ViewKey =
   | "lab_results"
   | "imaging"
   | "procedures"
+  | "diagnostics_dashboard"
   | "admissions"
   | "beds"
   | "nursing"
@@ -167,6 +168,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "lab_results", label: "Lab Results", icon: "TestTube", permission: "lab.view", category: "Diagnostics" },
   { key: "imaging", label: "Imaging", icon: "ScanLine", permission: "imaging.view", category: "Diagnostics" },
   { key: "procedures", label: "Procedures", icon: "Scissors", permission: "procedure.view", category: "Diagnostics" },
+  { key: "diagnostics_dashboard", label: "Diagnostics Dashboard", icon: "Gauge", permission: "lab.view", category: "Diagnostics" },
 
   { key: "admissions", label: "Admissions", icon: "BedDouble", permission: "admission.view", category: "Inpatient" },
   { key: "beds", label: "Bed Management", icon: "Grid3x3", permission: "bed.manage", category: "Inpatient" },

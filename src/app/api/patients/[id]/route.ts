@@ -66,7 +66,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         include: { reports: true, encounter: { include: { facility: true } } },
         take: 20,
       },
-      procedures: { orderBy: { performedAt: "desc" }, take: 20 },
+      procedures: { orderBy: { performedAt: "desc" }, include: { performedBy: { select: { id: true, firstName: true, lastName: true } } }, take: 20 },
       admissions: {
         orderBy: { admittedAt: "desc" },
         include: { facility: true, bedAssignments: { include: { bed: true, ward: true } } },
