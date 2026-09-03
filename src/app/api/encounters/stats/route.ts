@@ -27,6 +27,7 @@
 // where a meaningful comparison is possible.
 // =====================================================================
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getSession, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -193,30 +194,35 @@ async function computeKpis(scopeWhere: any, dateRange: { start: Date; end: Date 
     }),
   ]);
 
-  // Average duration in minutes — only for encounters with BOTH timestamps.
-  // We compute in JS since Prisma's aggregate _avg only works on numeric columns
-  // and we don't have a duration column.
-  // Note: `startAt` is non-nullable in the schema (DateTime @default(now())),
-  // so the date range filter in `dateScoped` already implies startAt is set.
-  // For `endAt` (nullable), we use `NOT: [{ endAt: null }]` to avoid the
-  // `not: null` syntax which Prisma 6.x rejects on nullable field types.
-  const durationRecords = await db.encounter.findMany({
-    where: {
-      ...dateScoped,
-      NOT: [{ endAt: null }],
-    },
-    select: { startAt: true, endAt: true },
-    take: 5000, // safety cap — avoids unbounded scans on huge tables
-  });
-
-  let avgDurationMinutes: number | null = null;
-  if (durationRecords.length > 0) {
-    const totalMs = durationRecords.reduce((sum, r) => {
-      const ms = new Date(r.endAt!).getTime() - new Date(r.startAt!).getTime();
-      return sum + (ms > 0 ? ms : 0);
-    }, 0);
-    avgDurationMinutes = totalMs / durationRecords.length / 60000;
-  }
+  // Average duration in minutes — computed via database-side aggregate
+  // (raw SQL AVG) for O(1) memory and exact results regardless of table
+  // size. Previously this used findMany({ take: 5000 }) + JS reduce, which
+  // would silently become a non-random sample once the table exceeded 5000
+  // qualifying rows. The DB-side approach is always exact.
+  //
+  // Only encounters with valid startAt AND endAt are included.
+  // Negative durations (endAt < startAt) are excluded via the
+  // "endAt" > "startAt" filter.
+  //
+  // The date range and facility scope are applied via the same `dateScoped`
+  // conditions used by the other KPI queries — authorization is preserved.
+  // `scopeWhere` may include facilityId; dateScoped adds startAt range.
+  const durationResult = await db.$queryRaw<{ avg_minutes: number | null; n: bigint }[]>`
+    SELECT
+      AVG(EXTRACT(EPOCH FROM ("endAt" - "startAt")) / 60.0) AS avg_minutes,
+      COUNT(*) AS n
+    FROM "Encounter"
+    WHERE "endAt" IS NOT NULL
+      AND "endAt" > "startAt"
+      ${scopeWhere.facilityId ? Prisma.sql`AND "facilityId" = ${scopeWhere.facilityId}` : Prisma.empty}
+      AND "startAt" >= ${dateRange.start}
+      AND "startAt" <= ${dateRange.end}
+  `;
+  const avgDurationMinutes: number | null =
+    durationResult[0]?.avg_minutes !== null && durationResult[0]?.avg_minutes !== undefined
+      ? Number(durationResult[0].avg_minutes)
+      : null;
+  const avgDurationSampleSize = Number(durationResult[0]?.n ?? 0);
 
   return {
     total,
@@ -230,7 +236,7 @@ async function computeKpis(scopeWhere: any, dateRange: { start: Date; end: Date 
     insured: insuredCount,
     selfPay: selfPayCount,
     avgDurationMinutes,
-    avgDurationSampleSize: durationRecords.length,
+    avgDurationSampleSize,
   };
 }
 
