@@ -12,6 +12,31 @@ import { updateEncounterSchema, isValidTransition, isTerminalStatus, cancelEncou
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
+// ---------------------------------------------------------------------
+// Facility / organization isolation helper (defense-in-depth against IDOR)
+// Returns true if the requesting user is authorized to operate on the
+// encounter.  Returns false if the encounter belongs to a different org
+// or a different facility (for non-super-admins).
+// ---------------------------------------------------------------------
+async function canAccessEncounter(enc: { facilityId: string } | null, session: any): Promise<boolean> {
+  if (!enc) return false;
+  // Look up the facility's org
+  const facility = await db.facility.findUnique({
+    where: { id: enc.facilityId },
+    select: { organizationId: true },
+  });
+  if (!facility) return false;
+  if (facility.organizationId !== session.user.organizationId) return false;
+  if (
+    !session.user.roles?.includes("super_admin") &&
+    session.user.facilityId &&
+    enc.facilityId !== session.user.facilityId
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,6 +69,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   });
 
   if (!encounter) return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+
+  // Facility / organization isolation (defense-in-depth against IDOR)
+  if (!(await canAccessEncounter(encounter, session))) {
+    return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ item: encounter });
 }
@@ -80,6 +110,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const existing = await db.encounter.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+
+  // Facility / organization isolation
+  if (!(await canAccessEncounter(existing, session))) {
+    return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+  }
 
   // Check if encounter is already in terminal state
   if (isTerminalStatus(existing.status) && parsed.data.status && parsed.data.status !== existing.status) {
@@ -150,6 +185,11 @@ async function handleCancel(id: string, body: any, session: any) {
 
   const existing = await db.encounter.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+
+  // Facility / organization isolation
+  if (!(await canAccessEncounter(existing, session))) {
+    return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+  }
 
   if (isTerminalStatus(existing.status)) {
     return NextResponse.json({ error: `Cannot cancel an already ${existing.status} encounter` }, { status: 422 });

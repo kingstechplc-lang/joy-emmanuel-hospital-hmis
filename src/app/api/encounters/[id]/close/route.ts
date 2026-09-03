@@ -12,6 +12,25 @@ import { isTerminalStatus, isValidTransition } from "@/lib/encounter-validation"
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
+// Facility / org isolation helper (matches the one in [id]/route.ts)
+async function canAccessEncounter(enc: { facilityId: string } | null, session: any): Promise<boolean> {
+  if (!enc) return false;
+  const facility = await db.facility.findUnique({
+    where: { id: enc.facilityId },
+    select: { organizationId: true },
+  });
+  if (!facility) return false;
+  if (facility.organizationId !== session.user.organizationId) return false;
+  if (
+    !session.user.roles?.includes("super_admin") &&
+    session.user.facilityId &&
+    enc.facilityId !== session.user.facilityId
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,6 +48,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const existing = await db.encounter.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+
+  // Facility / organization isolation
+  if (!(await canAccessEncounter(existing, session))) {
+    return NextResponse.json({ error: "Encounter not found" }, { status: 404 });
+  }
 
   if (isTerminalStatus(existing.status)) {
     return NextResponse.json({ error: `Encounter is already ${existing.status} (terminal)` }, { status: 422 });
