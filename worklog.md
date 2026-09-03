@@ -105,3 +105,45 @@ Stage Summary:
 - Both Prisma bugs found and fixed.
 - Test suite expanded from 6 baseline tests to 17 tests covering KPIs, search, advanced filters, pagination reset, timeline, quick actions, and responsive behavior.
 - All Encounters functionality verified end-to-end in the browser.
+
+---
+Task ID: 12-16
+Agent: main
+Task: Phases 12-16 — concurrency considerations, database verification, regression, final audit, commit
+
+Work Log:
+- Phase 12 (Concurrency): Encounter number generation uses a 10-attempt retry loop in `nextEncounterNumber()` (src/lib/session.ts) with a `@@unique([facilityId, encounterNumber])` DB constraint as the safety net. If all 10 attempts collide, it falls back to a timestamp-based suffix for guaranteed uniqueness. The POST handler catches `P2002` (unique constraint violation) and returns 409 with a "please retry" message. This is the same atomic-numbering pattern that was already in place from commit 27c67e7 — no changes made.
+- Phase 13 (Database): No schema changes were required for this work. All 11 KPI dimensions map to existing columns (Encounter.status, encounterType, priority, source, startAt, endAt, EncounterCoverage.payerType). All existing indexes are reused: `@@index([patientId, facilityId])`, `@@index([facilityId, status, startAt])`, `@@index([facilityId, source, startAt])`, `@@unique([facilityId, encounterNumber])`. No destructive operations performed. No `prisma db push` run.
+- Phase 14 (Regression):
+    - TypeScript: build passed ("Compiled successfully in 60s")
+    - Production build: PASSED (no errors)
+    - Unit/integration tests: not run — no test runner is configured in package.json (only Playwright)
+    - NHIS E2E: 16 tests listed (file intact, no syntax breakage)
+    - Encounters Playwright: 17/17 PASSED (5.6 min total)
+    - Prisma validation: implicit (build passes, runtime queries succeed, KPI endpoint returns real numbers verified via Playwright test 7)
+- Phase 15 (Final Audit):
+    - No hardcoded KPI values — all KPIs computed server-side via Prisma count/aggregate
+    - No client-side full-dataset filtering — search/filters all server-side via Prisma where clauses
+    - No duplicate permission helpers — reuses `hasPermission` from `src/lib/session.ts`
+    - No duplicate API routes — only one new route added (`/api/encounters/stats`)
+    - No PHI leakage — KPI response contains only counts and the average-duration average; no patient names, MRNs, phone numbers, or member identifiers in the response
+    - No missing useSession — EncountersView uses `useSession()` and computes `can()` from `user.permissions + user.roles`
+    - No missing usePermissions — `hasPermission(session, PERMISSIONS.ENCOUNTER_VIEW)` is checked at the top of every GET / POST / PATCH / close handler
+    - No missing organization checks — `canAccessEncounter()` helper applied to GET/PATCH/Cancel/Close; `facility.organizationId === session.user.organizationId` verified in stats and list routes
+    - No missing facility checks — facility isolation via `session.user.facilityId` fallback + explicit query param verification
+    - No unsafe Prisma queries — all `where` clauses built from typed inputs, no raw SQL injection risk
+    - No N+1 queries — KPIs use parallel `Promise.all` of `count()` calls; list uses a single `findMany` with `include` relations; detail uses a single `findUnique` with all relations included
+    - No unsafe state transitions — `isValidTransition()` and `isTerminalStatus()` from `src/lib/encounter-validation.ts` applied consistently
+    - No fabricated timeline events — `buildTimeline()` in encounter-detail-dialog.tsx only emits events from real DB relations (triageRecords, consultations, diagnoses, prescriptions, labOrders, procedures, invoices, endAt, cancelledAt)
+- Phase 16 (Build & Commit):
+    - Production build: ✓ Compiled successfully in 60s
+    - Local commit: f1424ca (committed; push requires interactive credentials not available in this environment — user can push manually)
+    - Branch: main
+    - Worktree: clean (after commit)
+
+Stage Summary:
+- Final commit: f1424ca
+- Final build: PASS
+- Final Playwright: 17/17 PASS
+- No schema changes, no destructive operations, no duplicate code
+- Push pending user credentials
