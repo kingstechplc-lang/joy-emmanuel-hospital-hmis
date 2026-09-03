@@ -514,3 +514,54 @@ Stage Summary:
 - All KPIs respect org/facility isolation.
 - No schema changes, no destructive operations.
 - 19/19 Playwright tests pass.
+
+---
+Task ID: 24 (Diagnostics — UX fixes)
+Agent: main
+Task: Fix 3 user-reported issues on Diagnostics module
+
+Issue 1: Lab Orders action column empty for terminal-state orders
+- Existing table only showed action buttons for non-terminal statuses
+  (Collect/Receive/Process/Verify/Release/Cancel). For "released",
+  "cancelled", "completed" statuses, no button rendered → column appeared empty.
+- Fix: Added a "View" button that always shows for terminal-status orders.
+  Clicking it opens a new OrderDetailsDialog (read-only) that displays the
+  full order details: order #, patient, priority, ordering clinician,
+  encounter, clinical indication, notes, tests with statuses, samples,
+  and cancellation info if applicable.
+- Updated ActionDialog to fall through to OrderDetailsDialog for any
+  status not handled by the dedicated action dialogs.
+
+Issue 2: Diagnostics Dashboard must be first item in side panel
+- Reordered NAV_ITEMS in src/stores/app-store.ts so
+  diagnostics_dashboard appears first under the "Diagnostics" category,
+  followed by Lab Orders, Lab Results, Imaging, Procedures.
+
+Issue 3: Lab Results table showed same patient in multiple rows
+- Existing table rendered one row per LabResult (one per test within an
+  order). For an order with 5 tests, the same patient appeared in 5
+  separate rows, each showing a single test's result. Repetitive and
+  hard to scan.
+- Fix: Grouped results by labOrder.id so each patient+encounter+order
+  shows as ONE row in the table. The grouped row shows:
+    - Patient name + patientNumber + encounter number
+    - Order # (mono)
+    - Tests (test name chips, up to 3 + "+N more")
+    - Flag Summary (Critical/Abnormal/All Normal)
+    - Latest entered timestamp
+    - Aggregate status (most advanced status across all results)
+    - Amend action (if any result is verified/released)
+- Clicking the row expands to reveal a nested table with each individual
+  test result (Test, Result, Ref Range, Flag, Entered, Status, Actions).
+- Each row in the nested table has its own Amend button + Acknowledge
+  button (for unacknowledged criticals).
+- Print Report button moved to the expanded section, so users can print
+  the full order with all test results (replaces the old per-row PrintButton).
+- Critical result acknowledgement summary banner shown if any
+  unacknowledged criticals exist in the order.
+
+Build: ✓ Compiled successfully in 57s
+Tests:
+  - Lab Orders 6/6b PASS (page loads + KPI cards verified)
+  - Lab Results 7/7b PASS (page loads + KPI cards verified)
+  - Dashboard 1 PASS (nav order verified)

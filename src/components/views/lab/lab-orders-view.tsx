@@ -295,7 +295,7 @@ export function LabOrdersView() {
                       <td className="p-3"><StatusBadge status={o.status} /></td>
                       <td className="p-3 text-xs text-slate-600">{formatDate(o.orderedAt, true)}</td>
                       <td className="p-3 text-right">
-                        <div className="flex flex-wrap gap-1 justify-end">
+                        <div className="flex flex-wrap gap-1 justify-end items-center">
                           {o.status === "ordered" && can("lab.collect") && (
                             <Button size="sm" variant="outline" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs">
                               <TestTube className="w-3 h-3" /> Collect
@@ -327,8 +327,21 @@ export function LabOrdersView() {
                             </Button>
                           )}
                           {o.status === "ordered" && can("lab.order") && (
-                            <Button size="sm" variant="ghost" onClick={() => doAction(o.id, "cancel", "Order cancelled", invalidate)} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700">
+                            <Button size="sm" variant="ghost" onClick={() => doAction(o.id, "cancel", "Order cancelled", invalidate)} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700" title="Cancel order">
                               <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                          {/* Always show a "View" button so the action column is never empty,
+                              even for terminal statuses (completed/released/cancelled) */}
+                          {!["ordered", "collected", "received", "processing", "resulted", "verified"].includes(o.status) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setActionOrder(o)}
+                              className="gap-1 h-7 text-xs"
+                              title="View order details"
+                            >
+                              <Search className="w-3 h-3" /> View
                             </Button>
                           )}
                         </div>
@@ -622,7 +635,105 @@ function ActionDialog({ order, onClose, onChanged }: { order: any; onClose: () =
       </div>
     );
   }
-  return null;
+  // Fallback for any other status (verified, released, cancelled, completed, etc.)
+  return <OrderDetailsDialog order={order} onClose={onClose} />;
+}
+
+// Read-only details dialog shown for terminal-state orders (verified, released, cancelled, completed)
+function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FlaskConical className="w-5 h-5 text-purple-600" /> Lab Order {order.orderNumber}
+            <StatusBadge status={order.status} />
+          </DialogTitle>
+          <DialogDescription>
+            {order.patient ? `${order.patient.firstName} ${order.patient.lastName} (${order.patient.patientNumber})` : "—"} • {formatDate(order.orderedAt, true)}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Order #</p>
+              <p className="font-mono text-slate-900">{order.orderNumber}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Priority</p>
+              <p className="text-slate-900 capitalize">{order.priority}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Ordering Clinician</p>
+              <p className="text-slate-900">
+                {order.orderingClinician ? `Dr. ${order.orderingClinician.firstName} ${order.orderingClinician.lastName}` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Encounter #</p>
+              <p className="font-mono text-slate-900">{order.encounter?.encounterNumber || "—"}</p>
+            </div>
+            {order.clinicalIndication && (
+              <div className="col-span-2">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Clinical Indication</p>
+                <p className="text-slate-900">{order.clinicalIndication}</p>
+              </div>
+            )}
+            {order.notes && (
+              <div className="col-span-2">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Notes</p>
+                <p className="text-slate-900 whitespace-pre-wrap">{order.notes}</p>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Tests</p>
+            <div className="space-y-1">
+              {(order.items || []).map((it: any) => (
+                <div key={it.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                  <div>
+                    <p className="font-medium text-slate-900">{it.laboratoryTest?.name}</p>
+                    <p className="text-xs text-slate-500">{it.laboratoryTest?.code}</p>
+                  </div>
+                  <StatusBadge status={it.status} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {(order.samples || []).length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Samples</p>
+              <div className="space-y-1">
+                {order.samples.map((s: any) => (
+                  <div key={s.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                    <div>
+                      <p className="font-mono text-slate-900">{s.sampleNumber}</p>
+                      <p className="text-xs text-slate-500">
+                        {s.specimenType || "—"} {s.collectedAt && `• Collected ${formatDate(s.collectedAt, true)}`}
+                      </p>
+                    </div>
+                    <StatusBadge status={s.status} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {order.cancelledAt && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700">
+              <p><span className="font-semibold">Cancelled:</span> {formatDate(order.cancelledAt, true)}</p>
+              {order.cancellationReason && <p><span className="font-semibold">Reason:</span> {order.cancellationReason}</p>}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClose: () => void; onChanged: () => void }) {

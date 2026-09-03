@@ -228,162 +228,250 @@ export function LabResultsView() {
                   <tr>
                     <th className="text-left p-3 font-semibold text-slate-700 w-6"></th>
                     <th className="text-left p-3 font-semibold text-slate-700">Patient</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Test</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Result</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Ref Range</th>
-                    <th className="text-left p-3 font-semibold text-slate-700">Flag</th>
+                    <th className="text-left p-3 font-semibold text-slate-700">Order #</th>
+                    <th className="text-left p-3 font-semibold text-slate-700">Tests</th>
+                    <th className="text-left p-3 font-semibold text-slate-700">Flag Summary</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Entered</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Status</th>
                     <th className="text-right p-3 font-semibold text-slate-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((r: any) => {
-                    const isAbnormal = r.abnormalFlag && r.abnormalFlag !== "normal";
-                    const isCritical = r.criticalFlag || (r.abnormalFlag === "critical_low" || r.abnormalFlag === "critical_high");
-                    const expanded = expandedId === r.id;
-                    return (
-                      <Fragment key={r.id}>
-                        <tr className={`border-b hover:bg-emerald-50/40 cursor-pointer ${isCritical ? "bg-rose-50/40" : ""}`} onClick={() => setExpandedId(expanded ? null : r.id)}>
-                          <td className="p-3 text-slate-400">
-                            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </td>
-                          <td className="p-3">
-                            <div className="font-medium text-slate-900">{r.labOrderItem?.labOrder?.patient?.firstName} {r.labOrderItem?.labOrder?.patient?.lastName}</div>
-                            <div className="text-xs text-slate-500">{r.labOrderItem?.labOrder?.patient?.patientNumber}</div>
-                          </td>
-                          <td className="p-3">
-                            <div className="font-medium text-slate-900">{r.labOrderItem?.laboratoryTest?.name}</div>
-                            <div className="text-xs text-slate-500">{r.labOrderItem?.laboratoryTest?.code}</div>
-                          </td>
-                          <td className="p-3">
-                            <span className={`font-mono font-semibold ${isCritical ? "text-rose-700" : isAbnormal ? "text-amber-700" : "text-slate-900"}`}>
-                              {r.numericValue != null ? r.numericValue : r.resultValue || "—"}
-                              {r.unit && <span className="text-xs text-slate-500 ml-1">{r.unit}</span>}
-                            </span>
-                          </td>
-                          <td className="p-3 text-xs text-slate-600">{r.referenceRange || "—"}</td>
-                          <td className="p-3">
-                            {isCritical ? (
-                              <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" /> {r.abnormalFlag?.replace("_", " ")}</Badge>
-                            ) : isAbnormal ? (
-                              <Badge className={`${ABNORMAL_FLAG_COLORS[r.abnormalFlag]} border`}>{r.abnormalFlag}</Badge>
-                            ) : (
-                              <span className="text-xs text-slate-500">Normal</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-xs text-slate-600">{formatDate(r.enteredAt, true)}</td>
-                          <td className="p-3"><StatusBadge status={r.status} /></td>
-                          <td className="p-3 text-right">
-                            {(r.status === "verified" || r.status === "released") && can("lab.amend") && (
-                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setAmendResult(r); }} className="gap-1 h-7 text-xs">
-                                <History className="w-3 h-3" /> Amend
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                        {expanded && (
-                          <tr className="bg-slate-50">
-                            <td colSpan={9} className="p-4">
-                              <div className="grid md:grid-cols-2 gap-4 text-sm">
-                                <div className="space-y-1">
-                                  <div><span className="text-slate-500">Result:</span> <span className="font-medium">{r.resultValue || "—"}</span></div>
-                                  <div><span className="text-slate-500">Numeric:</span> <span className="font-medium">{r.numericValue ?? "—"}</span> {r.unit}</div>
-                                  <div><span className="text-slate-500">Reference range:</span> <span className="font-medium">{r.referenceRange || "—"}</span></div>
-                                  <div><span className="text-slate-500">Abnormal flag:</span> <span className="font-medium capitalize">{r.abnormalFlag?.replace("_", " ") || "—"}</span></div>
-                                  <div><span className="text-slate-500">Critical:</span> <span className="font-medium">{r.criticalFlag ? "Yes" : "No"}</span></div>
-                                  {r.isCritical && (
-                                    <div className="bg-rose-50 border border-rose-200 rounded p-2 mt-2 text-xs">
-                                      <div className="font-semibold text-rose-800 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Critical Result</div>
-                                      {r.criticalAcknowledgedAt ? (
-                                        <div className="text-rose-700 mt-1">
-                                          Acknowledged by {r.criticalAcknowledgedById || "—"} on {formatDate(r.criticalAcknowledgedAt, true)}
-                                          {r.criticalAckMethod && <span className="ml-1">via {r.criticalAckMethod}</span>}
-                                        </div>
-                                      ) : (
-                                        <div className="mt-2">
-                                          <AcknowledgeButton resultId={r.id} onDone={() => refetch()} />
-                                        </div>
-                                      )}
-                                      {r.flagSource && r.flagSource !== "manual" && (
-                                        <div className="text-rose-600 mt-1">Flag source: {r.flagSource}</div>
-                                      )}
-                                      {r.flagRangeApplied && (
-                                        <div className="text-rose-600">Range applied: {r.flagRangeApplied}</div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {r.resultNotes && <div><span className="text-slate-500">Notes:</span> <span className="font-medium">{r.resultNotes}</span></div>}
-                                </div>
-                                <div className="space-y-1">
-                                  <div><span className="text-slate-500">Order #:</span> <span className="font-mono text-xs">{r.labOrderItem?.labOrder?.orderNumber}</span></div>
-                                  <div><span className="text-slate-500">Entered at:</span> <span className="font-medium">{formatDate(r.enteredAt, true)}</span></div>
-                                  <div><span className="text-slate-500">Verified at:</span> <span className="font-medium">{formatDate(r.verifiedAt, true)}</span></div>
-                                  {r.amendedFromId && (
-                                    <Badge variant="outline" className="gap-1 mt-2"><History className="w-3 h-3" /> Amended from previous result</Badge>
-                                  )}
-                                </div>
+                  {(() => {
+                    // Group results by labOrder.id so the same patient+encounter is shown only once
+                    // (each group expands to reveal the individual test results)
+                    const groups: Record<string, any[]> = {};
+                    for (const r of data.items as any[]) {
+                      const orderId = r.labOrderItem?.labOrder?.id || "unknown";
+                      if (!groups[orderId]) groups[orderId] = [];
+                      groups[orderId].push(r);
+                    }
+
+                    return Object.entries(groups).map(([orderId, results]) => {
+                      const first = results[0];
+                      const patient = first.labOrderItem?.labOrder?.patient;
+                      const orderNumber = first.labOrderItem?.labOrder?.orderNumber;
+                      const encounter = first.labOrderItem?.labOrder?.encounter;
+                      const testCount = results.length;
+                      const testNames = results.map((r: any) => r.labOrderItem?.laboratoryTest?.name || "Test");
+
+                      // Aggregate flag info
+                      const hasCritical = results.some((r: any) => r.criticalFlag || r.abnormalFlag === "critical_low" || r.abnormalFlag === "critical_high");
+                      const hasAbnormal = results.some((r: any) => r.abnormalFlag && r.abnormalFlag !== "normal" && !r.criticalFlag && r.abnormalFlag !== "critical_low" && r.abnormalFlag !== "critical_high");
+                      const allNormal = results.every((r: any) => !r.abnormalFlag || r.abnormalFlag === "normal");
+
+                      // Aggregate status — use the most "advanced" status
+                      const statusPriority: Record<string, number> = { released: 5, verified: 4, resulted: 3, amended: 3, entered: 2 };
+                      const aggregateStatus = results.reduce((acc: string, r: any) => {
+                        const rP = statusPriority[r.status] || 0;
+                        const accP = statusPriority[acc] || 0;
+                        return rP > accP ? r.status : acc;
+                      }, "entered");
+
+                      // Latest enteredAt
+                      const latestEntered = results
+                        .map((r: any) => r.enteredAt ? new Date(r.enteredAt).getTime() : 0)
+                        .reduce((max: number, t: number) => Math.max(max, t), 0);
+
+                      const groupKey = orderId;
+                      const expanded = expandedId === groupKey;
+
+                      return (
+                        <Fragment key={groupKey}>
+                          <tr
+                            className={`border-b hover:bg-emerald-50/40 cursor-pointer ${hasCritical ? "bg-rose-50/40" : hasAbnormal ? "bg-amber-50/30" : ""}`}
+                            onClick={() => setExpandedId(expanded ? null : groupKey)}
+                          >
+                            <td className="p-3 text-slate-400">
+                              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </td>
+                            <td className="p-3">
+                              <div className="font-medium text-slate-900">{patient?.firstName} {patient?.lastName}</div>
+                              <div className="text-xs text-slate-500">{patient?.patientNumber}</div>
+                              {encounter?.encounterNumber && (
+                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">Enc: {encounter.encounterNumber}</div>
+                              )}
+                            </td>
+                            <td className="p-3 font-mono text-xs text-slate-700">{orderNumber}</td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1">
+                                {testNames.slice(0, 3).map((name: any, i: number) => (
+                                  <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-medium">
+                                    {name}
+                                  </span>
+                                ))}
+                                {testCount > 3 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-medium">
+                                    +{testCount - 3} more
+                                  </span>
+                                )}
                               </div>
-                              {r.status === "released" || r.status === "verified" ? (
-                                <div className="mt-3 pt-3 border-t border-slate-200">
-                                  <PrintButton
-                                    label="Print Lab Report"
-                                    renderContent={() => (
-                                      <PrintLayout
-                                        title="Laboratory Test Report"
-                                        subtitle={r.labOrderItem?.laboratoryTest?.name || "Laboratory Test"}
-                                        documentNumber={r.labOrderItem?.labOrder?.orderNumber}
-                                        facility={r.labOrderItem?.labOrder?.facility}
-                                        patient={r.labOrderItem?.labOrder?.patient}
-                                        signatory={r.labOrderItem?.labOrder?.orderingClinician ? `Dr. ${r.labOrderItem.labOrder.orderingClinician.firstName} ${r.labOrderItem.labOrder.orderingClinician.lastName}` : undefined}
-                                        signatoryRole="Ordering Physician"
-                                      >
-                                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                                          <thead>
-                                            <tr style={{ background: "#f1f5f9" }}>
-                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Test</th>
-                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Result</th>
-                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Unit</th>
-                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Ref Range</th>
-                                              <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Flag</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody>
-                                            <tr>
-                                              <td style={{ padding: "6px 8px", fontWeight: 500 }}>{r.labOrderItem?.laboratoryTest?.name}</td>
-                                              <td style={{ padding: "6px 8px", fontWeight: 700, color: r.criticalFlag ? "#be123c" : r.abnormalFlag && r.abnormalFlag !== "normal" ? "#d97706" : "#0f172a" }}>
-                                                {(r.numericValue ?? r.resultValue) || "—"}
-                                                {r.criticalFlag && " ⚠ CRITICAL"}
-                                              </td>
-                                              <td style={{ padding: "6px 8px" }}>{r.unit || "—"}</td>
-                                              <td style={{ padding: "6px 8px" }}>{r.referenceRange || "—"}</td>
-                                              <td style={{ padding: "6px 8px" }}>{r.abnormalFlag?.replace(/_/g, " ") || "normal"}</td>
-                                            </tr>
-                                          </tbody>
-                                        </table>
-                                        {r.resultNotes && (
-                                          <div style={{ marginTop: "12px", padding: "8px", background: "#f8fafc", borderRadius: "4px", fontSize: "11px" }}>
-                                            <strong>Notes:</strong> {r.resultNotes}
-                                          </div>
-                                        )}
-                                        <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
-                                          <p><strong>Specimen:</strong> {r.labOrderItem?.laboratoryTest?.specimenType || "—"}</p>
-                                          <p><strong>Collected:</strong> {r.labOrderItem?.labOrder?.samples?.[0]?.collectedAt ? new Date(r.labOrderItem.labOrder.samples[0].collectedAt).toLocaleString("en-GB") : "—"}</p>
-                                          <p><strong>Result entered:</strong> {r.enteredAt ? new Date(r.enteredAt).toLocaleString("en-GB") : "—"}</p>
-                                          <p><strong>Verified:</strong> {r.verifiedAt ? new Date(r.verifiedAt).toLocaleString("en-GB") : "—"}</p>
-                                          <p><strong>Status:</strong> {r.status}</p>
-                                        </div>
-                                      </PrintLayout>
-                                    )}
-                                  />
-                                </div>
-                              ) : null}
+                            </td>
+                            <td className="p-3">
+                              {hasCritical ? (
+                                <Badge variant="destructive" className="gap-1">
+                                  <AlertTriangle className="w-3 h-3" /> Critical
+                                </Badge>
+                              ) : hasAbnormal ? (
+                                <Badge className="bg-amber-100 text-amber-700 border border-amber-200">Abnormal</Badge>
+                              ) : allNormal ? (
+                                <span className="text-xs text-slate-500">All Normal</span>
+                              ) : (
+                                <span className="text-xs text-slate-500">—</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-xs text-slate-600">
+                              {latestEntered ? formatDate(new Date(latestEntered), true) : "—"}
+                            </td>
+                            <td className="p-3"><StatusBadge status={aggregateStatus} /></td>
+                            <td className="p-3 text-right">
+                              {/* Show Amend button if any result in the group is verified/released */}
+                              {results.some((r: any) => (r.status === "verified" || r.status === "released") && can("lab.amend")) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => { e.stopPropagation(); setAmendResult(first); }}
+                                  className="gap-1 h-7 text-xs"
+                                >
+                                  <History className="w-3 h-3" /> Amend
+                                </Button>
+                              )}
                             </td>
                           </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
+                          {expanded && (
+                            <tr className="bg-slate-50">
+                              <td colSpan={8} className="p-0">
+                                {/* Nested table showing each individual test result */}
+                                <div className="p-4 space-y-2">
+                                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
+                                    {testCount} test result{testCount > 1 ? "s" : ""} for {patient?.firstName} {patient?.lastName} • Order {orderNumber}
+                                  </p>
+                                  <div className="overflow-x-auto rounded border border-slate-200">
+                                    <table className="w-full text-xs bg-white">
+                                      <thead className="bg-slate-100">
+                                        <tr>
+                                          <th className="text-left p-2 font-semibold text-slate-700">Test</th>
+                                          <th className="text-left p-2 font-semibold text-slate-700">Result</th>
+                                          <th className="text-left p-2 font-semibold text-slate-700">Ref Range</th>
+                                          <th className="text-left p-2 font-semibold text-slate-700">Flag</th>
+                                          <th className="text-left p-2 font-semibold text-slate-700">Entered</th>
+                                          <th className="text-left p-2 font-semibold text-slate-700">Status</th>
+                                          <th className="text-right p-2 font-semibold text-slate-700">Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {results.map((r: any) => {
+                                          const isAbnormal = r.abnormalFlag && r.abnormalFlag !== "normal";
+                                          const isCritical = r.criticalFlag || r.abnormalFlag === "critical_low" || r.abnormalFlag === "critical_high";
+                                          return (
+                                            <tr key={r.id} className={`border-t hover:bg-emerald-50/30 ${isCritical ? "bg-rose-50/30" : ""}`}>
+                                              <td className="p-2">
+                                                <div className="font-medium text-slate-900">{r.labOrderItem?.laboratoryTest?.name}</div>
+                                                <div className="text-[10px] text-slate-500">{r.labOrderItem?.laboratoryTest?.code}</div>
+                                              </td>
+                                              <td className="p-2">
+                                                <span className={`font-mono font-semibold ${isCritical ? "text-rose-700" : isAbnormal ? "text-amber-700" : "text-slate-900"}`}>
+                                                  {r.numericValue != null ? r.numericValue : r.resultValue || "—"}
+                                                  {r.unit && <span className="text-[10px] text-slate-500 ml-1">{r.unit}</span>}
+                                                </span>
+                                              </td>
+                                              <td className="p-2 text-slate-600">{r.referenceRange || "—"}</td>
+                                              <td className="p-2">
+                                                {isCritical ? (
+                                                  <Badge variant="destructive" className="gap-1 text-[10px]"><AlertTriangle className="w-3 h-3" /> {r.abnormalFlag?.replace("_", " ")}</Badge>
+                                                ) : isAbnormal ? (
+                                                  <Badge className={`${ABNORMAL_FLAG_COLORS[r.abnormalFlag]} border text-[10px]`}>{r.abnormalFlag}</Badge>
+                                                ) : (
+                                                  <span className="text-slate-500">Normal</span>
+                                                )}
+                                              </td>
+                                              <td className="p-2 text-slate-600">{formatDate(r.enteredAt, true)}</td>
+                                              <td className="p-2"><StatusBadge status={r.status} /></td>
+                                              <td className="p-2 text-right">
+                                                {(r.status === "verified" || r.status === "released") && can("lab.amend") && (
+                                                  <Button size="sm" variant="outline" onClick={() => setAmendResult(r)} className="gap-1 h-6 text-[10px]">
+                                                    <History className="w-3 h-3" /> Amend
+                                                  </Button>
+                                                )}
+                                                {r.criticalFlag && !r.criticalAcknowledgedAt && (
+                                                  <AcknowledgeButton resultId={r.id} onDone={() => refetch()} />
+                                                )}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  {/* Critical result acknowledgement summary if any unacknowledged criticals */}
+                                  {results.filter((r: any) => r.criticalFlag && !r.criticalAcknowledgedAt).length > 0 && (
+                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
+                                      <AlertTriangle className="w-4 h-4" />
+                                      <span>
+                                        {results.filter((r: any) => r.criticalFlag && !r.criticalAcknowledgedAt).length} unacknowledged critical result(s) in this order — see Acknowledge buttons above.
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {/* Print Report (for verified/released results) */}
+                                  {results.some((r: any) => r.status === "released" || r.status === "verified") && (
+                                    <div className="pt-2 border-t border-slate-200">
+                                      <PrintButton
+                                        label="Print Lab Report"
+                                        renderContent={() => (
+                                          <PrintLayout
+                                            title="Laboratory Test Report"
+                                            subtitle={orderNumber}
+                                            documentNumber={orderNumber}
+                                            facility={first.labOrderItem?.labOrder?.facility}
+                                            patient={patient}
+                                            signatory={first.labOrderItem?.labOrder?.orderingClinician ? `Dr. ${first.labOrderItem.labOrder.orderingClinician.firstName} ${first.labOrderItem.labOrder.orderingClinician.lastName}` : undefined}
+                                            signatoryRole="Ordering Physician"
+                                          >
+                                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                              <thead>
+                                                <tr style={{ background: "#f1f5f9" }}>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Test</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Result</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Unit</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Ref Range</th>
+                                                  <th style={{ padding: "6px 8px", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Flag</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {results.map((r: any) => (
+                                                  <tr key={r.id}>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 500 }}>{r.labOrderItem?.laboratoryTest?.name}</td>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 700, color: r.criticalFlag ? "#be123c" : r.abnormalFlag && r.abnormalFlag !== "normal" ? "#d97706" : "#0f172a" }}>
+                                                      {(r.numericValue ?? r.resultValue) || "—"}
+                                                      {r.criticalFlag && " ⚠ CRITICAL"}
+                                                    </td>
+                                                    <td style={{ padding: "6px 8px" }}>{r.unit || "—"}</td>
+                                                    <td style={{ padding: "6px 8px" }}>{r.referenceRange || "—"}</td>
+                                                    <td style={{ padding: "6px 8px" }}>{r.abnormalFlag?.replace(/_/g, " ") || "normal"}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                            <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
+                                              <p><strong>Result entered:</strong> {latestEntered ? new Date(latestEntered).toLocaleString("en-GB") : "—"}</p>
+                                              <p><strong>Order:</strong> {orderNumber}</p>
+                                              <p><strong>Patient:</strong> {patient?.firstName} {patient?.lastName} ({patient?.patientNumber})</p>
+                                            </div>
+                                          </PrintLayout>
+                                        )}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
