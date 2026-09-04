@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ScanLine, Search, CalendarClock, Stethoscope, FileText, CheckCircle2, Send, X, Gauge, RefreshCw, Clock, XCircle, CalendarDays, Timer } from "lucide-react";
+import { Plus, ScanLine, Search, CalendarClock, Stethoscope, FileText, CheckCircle2, Send, X, Gauge, RefreshCw, Clock, XCircle, CalendarDays, Timer, ChevronDown, ChevronUp, History, Printer, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, MiniStatCard} from "@/components/ui-helpers"
+import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 
 import { FieldLabel } from "@/components/ui/required-label";
 async function fetchJson(url: string) {
@@ -70,6 +71,12 @@ export function ImagingView() {
   const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [actionOrder, setActionOrder] = useState<any | null>(null);
+  // Expandable row state — one expanded order at a time (by order.id)
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Amend dialog state — holds the order whose report should be amended.
+  // The amend always targets order.report.id (the latest report version),
+  // never a first-by-array fallback.
+  const [amendOrder, setAmendOrder] = useState<any | null>(null);
 
   // KPI range state
   const [kpiRange, setKpiRange] = useState("today");
@@ -243,6 +250,7 @@ export function ImagingView() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-slate-50">
                   <tr>
+                    <th className="text-left p-3 font-semibold text-slate-700 w-6"></th>
                     <th className="text-left p-3 font-semibold text-slate-700">Patient</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Procedure</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Priority</th>
@@ -253,64 +261,281 @@ export function ImagingView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((o: any) => (
-                    <tr key={o.id} className="border-b hover:bg-emerald-50/40">
-                      <td className="p-3">
-                        <div className="font-medium text-slate-900">{o.patient?.firstName} {o.patient?.lastName}</div>
-                        <div className="text-xs text-slate-500">{o.patient?.patientNumber}</div>
-                      </td>
-                      <td className="p-3">
-                        <div className="font-medium text-slate-900">{o.procedureName}</div>
-                        {o.procedureCode && <div className="text-xs text-slate-500 font-mono">{o.procedureCode}</div>}
-                      </td>
-                      <td className="p-3">
-                        {o.priority === "stat" ? (
-                          <Badge variant="destructive" className="text-[10px]">STAT</Badge>
-                        ) : o.priority === "urgent" ? (
-                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">URGENT</Badge>
-                        ) : (
-                          <span className="text-xs text-slate-500 capitalize">{o.priority}</span>
+                  {data.items.map((o: any) => {
+                    const expanded = expandedId === o.id;
+                    const report = o.report; // latest report (already flattened by API)
+                    const canAmend = (o.status === "verified" || o.status === "released") && report && can("imaging.verify");
+                    return (
+                      <>
+                        <tr key={o.id} className={`border-b hover:bg-emerald-50/40 ${expanded ? "bg-emerald-50/30" : ""}`}>
+                          <td className="p-3 text-slate-400 cursor-pointer" onClick={() => setExpandedId(expanded ? null : o.id)}>
+                            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </td>
+                          <td className="p-3">
+                            <div className="font-medium text-slate-900">{o.patient?.firstName} {o.patient?.lastName}</div>
+                            <div className="text-xs text-slate-500">{o.patient?.patientNumber}</div>
+                          </td>
+                          <td className="p-3">
+                            <div className="font-medium text-slate-900">{o.procedureName}</div>
+                            {o.procedureCode && <div className="text-xs text-slate-500 font-mono">{o.procedureCode}</div>}
+                            {o.modality && (
+                              <div className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider">{o.modality}{o.bodySite ? ` • ${o.bodySite}` : ""}</div>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            {o.priority === "stat" ? (
+                              <Badge variant="destructive" className="text-[10px]">STAT</Badge>
+                            ) : o.priority === "urgent" ? (
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">URGENT</Badge>
+                            ) : (
+                              <span className="text-xs text-slate-500 capitalize">{o.priority}</span>
+                            )}
+                          </td>
+                          <td className="p-3"><StatusBadge status={o.status} /></td>
+                          <td className="p-3 text-xs text-slate-600">{formatDate(o.orderedAt, true)}</td>
+                          <td className="p-3 text-xs text-slate-600">{formatDate(o.scheduledAt, true)}</td>
+                          <td className="p-3 text-right">
+                            <div className="flex flex-wrap gap-1 justify-end">
+                              {o.status === "ordered" && can("imaging.perform") && (
+                                <Button size="sm" variant="outline" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs">
+                                  <CalendarClock className="w-3 h-3" /> Schedule
+                                </Button>
+                              )}
+                              {o.status === "scheduled" && can("imaging.perform") && (
+                                <Button size="sm" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
+                                  <Stethoscope className="w-3 h-3" /> Perform
+                                </Button>
+                              )}
+                              {o.status === "in_progress" && can("imaging.report") && (
+                                <Button size="sm" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
+                                  <FileText className="w-3 h-3" /> Enter Report
+                                </Button>
+                              )}
+                              {o.status === "completed" && can("imaging.verify") && (
+                                <Button size="sm" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
+                                  <CheckCircle2 className="w-3 h-3" /> Verify
+                                </Button>
+                              )}
+                              {o.status === "verified" && can("imaging.verify") && (
+                                <Button size="sm" onClick={() => doAction(o.id, "release", "Report released", invalidate)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
+                                  <Send className="w-3 h-3" /> Release
+                                </Button>
+                              )}
+                              {(o.status === "ordered" || o.status === "scheduled") && can("imaging.order") && (
+                                <Button size="sm" variant="ghost" onClick={() => doAction(o.id, "cancel", "Order cancelled", invalidate)} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700">
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                              {/* Always show a "View" button so the action column is never empty
+                                  for terminal-state orders (verified/released/cancelled). */}
+                              {!["ordered", "scheduled", "in_progress", "completed", "verified"].includes(o.status) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setExpandedId(expanded ? null : o.id)}
+                                  className="gap-1 h-7 text-xs"
+                                  title="View order details"
+                                >
+                                  <ScanLine className="w-3 h-3" /> View
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* === NESTED REPORT PANEL (visually distinct from main table) === */}
+                        {expanded && (
+                          <tr>
+                            <td colSpan={8} className="p-0 bg-slate-100/60">
+                              <div className="px-6 py-4 border-l-4 border-blue-300 ml-3 my-2 bg-white rounded-r-lg shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                      <FileText className="w-4 h-4 text-blue-600" />
+                                      Imaging Report
+                                      {report && (
+                                        <span className="text-xs font-normal text-slate-500">
+                                          (Order {o.orderNumber || o.id.slice(-6)} • Version {report.version || 1})
+                                        </span>
+                                      )}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">
+                                      Patient: {o.patient?.firstName} {o.patient?.lastName} • Encounter: {o.encounter?.encounterNumber || "—"}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {/* Print Report — prints the CURRENT (latest) report only */}
+                                    {report && (report.status === "verified" || report.status === "released") && (
+                                      <PrintButton
+                                        label="Print Report"
+                                        className="text-xs h-8"
+                                        renderContent={() => (
+                                          <PrintLayout
+                                            title="Imaging Report"
+                                            subtitle={o.procedureName}
+                                            documentNumber={o.orderNumber || o.id}
+                                            facility={o.facility}
+                                            patient={o.patient}
+                                            signatory={report.reportedBy ? `Dr. ${report.reportedBy.firstName} ${report.reportedBy.lastName}` : undefined}
+                                            signatoryRole="Reporting Radiologist"
+                                          >
+                                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                              <tbody>
+                                                <tr>
+                                                  <td style={{ padding: "6px 8px", fontWeight: 600, width: "30%" }}>Procedure</td>
+                                                  <td style={{ padding: "6px 8px" }}>{o.procedureName}</td>
+                                                </tr>
+                                                {o.modality && (
+                                                  <tr style={{ background: "#f8fafc" }}>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 600 }}>Modality</td>
+                                                    <td style={{ padding: "6px 8px" }}>{o.modality}</td>
+                                                  </tr>
+                                                )}
+                                                {o.bodySite && (
+                                                  <tr>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 600 }}>Body Site</td>
+                                                    <td style={{ padding: "6px 8px" }}>{o.bodySite}{o.laterality && o.laterality !== "na" ? ` (${o.laterality})` : ""}</td>
+                                                  </tr>
+                                                )}
+                                                {report.technique && (
+                                                  <tr style={{ background: "#f8fafc" }}>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 600, verticalAlign: "top" }}>Technique</td>
+                                                    <td style={{ padding: "6px 8px", whiteSpace: "pre-wrap" }}>{report.technique}</td>
+                                                  </tr>
+                                                )}
+                                                <tr>
+                                                  <td style={{ padding: "6px 8px", fontWeight: 600, verticalAlign: "top" }}>Findings</td>
+                                                  <td style={{ padding: "6px 8px", whiteSpace: "pre-wrap" }}>{report.findings || "—"}</td>
+                                                </tr>
+                                                <tr style={{ background: "#f8fafc" }}>
+                                                  <td style={{ padding: "6px 8px", fontWeight: 600, verticalAlign: "top" }}>Impression</td>
+                                                  <td style={{ padding: "6px 8px", whiteSpace: "pre-wrap" }}>{report.impression || "—"}</td>
+                                                </tr>
+                                                {report.recommendations && (
+                                                  <tr>
+                                                    <td style={{ padding: "6px 8px", fontWeight: 600, verticalAlign: "top" }}>Recommendations</td>
+                                                    <td style={{ padding: "6px 8px", whiteSpace: "pre-wrap" }}>{report.recommendations}</td>
+                                                  </tr>
+                                                )}
+                                                <tr style={{ background: "#f8fafc" }}>
+                                                  <td style={{ padding: "6px 8px", fontWeight: 600 }}>Status</td>
+                                                  <td style={{ padding: "6px 8px" }}>{report.status}</td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <div style={{ marginTop: "16px", fontSize: "11px", color: "#64748b" }}>
+                                              <p><strong>Order:</strong> {o.orderNumber || o.id}</p>
+                                              <p><strong>Encounter:</strong> {o.encounter?.encounterNumber || "—"}</p>
+                                              <p><strong>Reported:</strong> {report.reportedAt ? new Date(report.reportedAt).toLocaleString("en-GB") : "—"}</p>
+                                              <p><strong>Verified:</strong> {report.verifiedAt ? new Date(report.verifiedAt).toLocaleString("en-GB") : "—"}</p>
+                                              <p><strong>Released:</strong> {report.releasedAt ? new Date(report.releasedAt).toLocaleString("en-GB") : "—"}</p>
+                                              {report.amendmentReason && <p><strong>Amendment reason:</strong> {report.amendmentReason}</p>}
+                                            </div>
+                                          </PrintLayout>
+                                        )}
+                                      />
+                                    )}
+                                    {/* Amend action — uses the real report.id */}
+                                    {canAmend && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setAmendOrder(o)}
+                                        className="gap-1 h-8 text-xs"
+                                        title="Amend this report (creates a new version; original is preserved)"
+                                      >
+                                        <History className="w-3.5 h-3.5" /> Amend
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {report ? (
+                                  <div className="space-y-3 text-sm">
+                                    {/* Report ID shown for transparency (mirrors the Lab Results pattern) */}
+                                    <div className="text-[10px] text-slate-400 font-mono">Report ID: {report.id}</div>
+
+                                    {report.clinicalIndication && (
+                                      <div>
+                                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Clinical Indication</p>
+                                        <p className="text-slate-900 whitespace-pre-wrap">{report.clinicalIndication}</p>
+                                      </div>
+                                    )}
+                                    {report.technique && (
+                                      <div>
+                                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Technique</p>
+                                        <p className="text-slate-900 whitespace-pre-wrap">{report.technique}</p>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Findings</p>
+                                      <p className="text-slate-900 whitespace-pre-wrap">{report.findings || "—"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Impression</p>
+                                      <p className="text-slate-900 whitespace-pre-wrap">{report.impression || "—"}</p>
+                                    </div>
+                                    {report.recommendations && (
+                                      <div>
+                                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Recommendations</p>
+                                        <p className="text-slate-900 whitespace-pre-wrap">{report.recommendations}</p>
+                                      </div>
+                                    )}
+                                    {report.differentialDiagnosis && (
+                                      <div>
+                                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Differential Diagnosis</p>
+                                        <p className="text-slate-900 whitespace-pre-wrap">{report.differentialDiagnosis}</p>
+                                      </div>
+                                    )}
+                                    {report.followUpRecommendation && (
+                                      <div>
+                                        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-0.5">Follow-up Recommendation</p>
+                                        <p className="text-slate-900 whitespace-pre-wrap">{report.followUpRecommendation}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Amendment chain notice if this is an amended version */}
+                                    {report.amendedFromId && (
+                                      <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800 flex items-center gap-2">
+                                        <History className="w-3.5 h-3.5" />
+                                        <span>
+                                          Amended report (Version {report.version}). Reason: {report.amendmentReason || "—"}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {/* Report metadata footer */}
+                                    <div className="pt-2 border-t border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-slate-600">
+                                      <div>
+                                        <span className="text-slate-500">Reported:</span>{" "}
+                                        {report.reportedAt ? formatDate(report.reportedAt, true) : "—"}
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500">Verified:</span>{" "}
+                                        {report.verifiedAt ? formatDate(report.verifiedAt, true) : "—"}
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500">Released:</span>{" "}
+                                        {report.releasedAt ? formatDate(report.releasedAt, true) : "—"}
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500">Status:</span>{" "}
+                                        <StatusBadge status={report.status} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-slate-500 italic py-4 text-center">
+                                    No report has been entered for this order yet.
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="p-3"><StatusBadge status={o.status} /></td>
-                      <td className="p-3 text-xs text-slate-600">{formatDate(o.orderedAt, true)}</td>
-                      <td className="p-3 text-xs text-slate-600">{formatDate(o.scheduledAt, true)}</td>
-                      <td className="p-3 text-right">
-                        <div className="flex flex-wrap gap-1 justify-end">
-                          {o.status === "ordered" && can("imaging.perform") && (
-                            <Button size="sm" variant="outline" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs">
-                              <CalendarClock className="w-3 h-3" /> Schedule
-                            </Button>
-                          )}
-                          {o.status === "scheduled" && can("imaging.perform") && (
-                            <Button size="sm" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
-                              <Stethoscope className="w-3 h-3" /> Perform
-                            </Button>
-                          )}
-                          {o.status === "in_progress" && can("imaging.report") && (
-                            <Button size="sm" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
-                              <FileText className="w-3 h-3" /> Enter Report
-                            </Button>
-                          )}
-                          {o.status === "completed" && can("imaging.verify") && (
-                            <Button size="sm" onClick={() => setActionOrder(o)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
-                              <CheckCircle2 className="w-3 h-3" /> Verify
-                            </Button>
-                          )}
-                          {o.status === "verified" && can("imaging.verify") && (
-                            <Button size="sm" onClick={() => doAction(o.id, "release", "Report released", invalidate)} className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700">
-                              <Send className="w-3 h-3" /> Release
-                            </Button>
-                          )}
-                          {(o.status === "ordered" || o.status === "scheduled") && can("imaging.order") && (
-                            <Button size="sm" variant="ghost" onClick={() => doAction(o.id, "cancel", "Order cancelled", invalidate)} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700">
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -330,6 +555,17 @@ export function ImagingView() {
           order={actionOrder}
           onClose={() => setActionOrder(null)}
           onChanged={() => { setActionOrder(null); invalidate(); }}
+        />
+      )}
+
+      {/* Amend Report Dialog — targets the order's latest report by order.id.
+          The amend API uses the existing latest report (isLatest=true) as the
+          original; the order.id is the correct identifier at this level. */}
+      {amendOrder && (
+        <AmendReportDialog
+          order={amendOrder}
+          onClose={() => setAmendOrder(null)}
+          onAmended={() => { setAmendOrder(null); invalidate(); }}
         />
       )}
     </div>
@@ -781,6 +1017,119 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Verifying..." : "Verify"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// AmendReportDialog — for amending an imaging report.
+// Mirrors the Lab Results AmendResultDialog pattern: shows the target
+// report's real ID for transparency, requires an amendment reason, and
+// submits to PATCH /api/imaging/{orderId} with action="amend".
+// The API uses the order's existing latest report (isLatest=true) as the
+// original — the order.id is the correct identifier at this level (there
+// is only ONE current report per imaging order, unlike lab where each
+// test has its own result).
+// =====================================================================
+function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose: () => void; onAmended: () => void }) {
+  const report = order.report;
+  const [form, setForm] = useState({
+    findings: report?.findings || "",
+    impression: report?.impression || "",
+    technique: report?.technique || "",
+    recommendations: report?.recommendations || "",
+    amendmentReason: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
+
+  const submit = async () => {
+    if (!form.amendmentReason.trim()) {
+      toast.error("Amendment reason is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/imaging/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "amend",
+          findings: form.findings,
+          impression: form.impression,
+          technique: form.technique,
+          recommendations: form.recommendations,
+          amendmentReason: form.amendmentReason,
+        }),
+      });
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err.error || "Failed");
+      }
+      toast.success("Report amended (original preserved)");
+      onAmended();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="w-5 h-5 text-blue-600" /> Amend Imaging Report
+          </DialogTitle>
+          <DialogDescription>
+            A new amended report version will be created. The original is preserved for audit.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
+            <div className="font-medium text-slate-900">{order.procedureName}</div>
+            <div className="text-xs text-slate-500">Patient: {order.patient?.firstName} {order.patient?.lastName}</div>
+            <div className="text-xs text-slate-500">Order #: <span className="font-mono">{order.orderNumber || order.id}</span></div>
+            {report && (
+              <div className="text-[10px] text-slate-400 font-mono">Report ID: {report.id} (Version {report.version || 1})</div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <Label className="text-xs">Technique</Label>
+              <Textarea value={form.technique} onChange={(e) => setField("technique", e.target.value)} rows={2} />
+            </div>
+            <div>
+              <Label className="text-xs">Findings</Label>
+              <Textarea value={form.findings} onChange={(e) => setField("findings", e.target.value)} rows={4} />
+            </div>
+            <div>
+              <Label className="text-xs">Impression</Label>
+              <Textarea value={form.impression} onChange={(e) => setField("impression", e.target.value)} rows={3} />
+            </div>
+            <div>
+              <Label className="text-xs">Recommendations</Label>
+              <Textarea value={form.recommendations} onChange={(e) => setField("recommendations", e.target.value)} rows={2} />
+            </div>
+            <div>
+              <Label className="text-xs text-rose-600">Amendment Reason (required)</Label>
+              <Input
+                value={form.amendmentReason}
+                onChange={(e) => setField("amendmentReason", e.target.value)}
+                placeholder="e.g., Corrected findings, additional observation, transcription error"
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving || !form.amendmentReason.trim()} className="gap-2 bg-blue-600 hover:bg-blue-700">
+            {saving ? "Amending..." : "Amend Report"}
           </Button>
         </DialogFooter>
       </DialogContent>

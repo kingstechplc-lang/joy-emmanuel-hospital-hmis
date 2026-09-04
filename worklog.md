@@ -716,3 +716,75 @@ VERIFICATION:
 NO SCHEMA CHANGES
 NO API CHANGES (the amend API already used the correct result ID)
 NO BREAKING CHANGES to Lab Orders, Diagnostics Dashboard, Imaging, Procedures, NHIS, Finance, or Claims
+
+---
+Task ID: 27 (Imaging — Comply with Lab Results pattern)
+Agent: main
+Task: Apply the same Lab Results pattern to the Imaging module
+
+User feedback: "ENSURE IMAGING RESULTS TOO COMPLY WITH THIS. IVE NOT YET ADDED ANY DATA. BUT ENSURE IT WORKS AS THE LAB RESULTS OR ITS OWN SPECIAL WAY POSSIBLE."
+
+DATA MODEL DIFFERENCE (Imaging vs Lab):
+- Lab: One LabOrder → MANY LabOrderItems (tests) → MANY LabResults (one per test).
+  Each test result has its own LabResult.id. Amend/Print is per-result.
+- Imaging: One ImagingOrder → ONE current ImagingReport (isLatest=true) + amendment
+  chain (historical versions preserved). There is only ONE current report per
+  order, so there's no "first result" selection bug possible.
+- The amend API uses PATCH /api/imaging/{orderId} with action="amend". The
+  order.id is the correct identifier at this level — the API looks up the
+  latest report internally and creates a new version.
+
+FIX 1: Expandable rows with visually distinct nested report panel
+- Added a chevron column to the main imaging orders table.
+- Clicking the chevron expands to show the report details in a nested panel:
+    - Indented with border-l-4 border-blue-300 ml-3 my-2
+    - White background with shadow-sm and rounded-r-lg
+    - "Imaging Report" heading with FileText icon + version number
+    - Patient + encounter context shown as small sub-heading (NOT repeated)
+    - Report ID shown for transparency (mirrors Lab Results pattern)
+    - Full report details: clinical indication, technique, findings,
+      impression, recommendations, differential diagnosis, follow-up
+    - Amendment chain notice if this is an amended version
+    - Report metadata footer (reported/verified/released timestamps + status)
+- Empty state: "No report has been entered for this order yet." if no report
+
+FIX 2: Per-report Amend action (uses real report via order.id)
+- Added an "Amend" button in the expanded panel (visible only if the order
+  is in 'verified' or 'released' status and user has imaging.verify permission).
+- The Amend button opens a new AmendReportDialog that:
+    - Shows the target Report ID + Version for transparency
+    - Requires an amendment reason (mandatory field)
+    - Captures new findings, impression, technique, recommendations
+    - Submits to PATCH /api/imaging/{order.id} with action="amend"
+- The API creates a new report version (isLatest=true), marks the old as
+  amended (isLatest=false), and audit-logs IMAGING_REPORT_AMENDED with
+  old/new values.
+
+FIX 3: Print Report action (per-order, prints the current/latest report)
+- Added a "Print Report" button at the panel level (next to Amend).
+- The print layout includes: procedure name, modality, body site, technique,
+  findings, impression, recommendations, status, order #, encounter #,
+  reported/verified/released timestamps, amendment reason if applicable.
+- Uses the existing PrintButton + PrintLayout components (no new print
+  infrastructure).
+- Only visible when the report is verified/released.
+
+FIX 4: Action column never empty for terminal-state orders
+- Added a "View" button that appears for any status NOT covered by the
+  workflow actions (Schedule/Perform/Enter Report/Verify/Release/Cancel).
+- Clicking "View" expands the row to show the nested report panel.
+
+VERIFICATION:
+- Build: ✓ Compiled successfully in 59s
+- New tests/e2e/imaging-targeted.spec.ts: 6/6 PASS (2.0 min)
+    1: Imaging page loads with KPI cards and search — PASS
+    2: Expanded imaging order shows a visually distinct nested report panel — PASS
+    3: Action column is never empty for terminal-state orders — PASS
+    4: Amend dialog requires amendment reason (data-integrity safeguard) — PASS
+    5: Print Report action exists in the expanded panel — PASS
+    6: Imaging page still loads without 'can is not defined' error — PASS
+- Regression: diagnostics tests 8, 8b, 8c (Imaging) still PASS — no regression
+
+NO SCHEMA CHANGES
+NO API CHANGES (existing amend API already used the correct order.id)
+NO BREAKING CHANGES to other modules
