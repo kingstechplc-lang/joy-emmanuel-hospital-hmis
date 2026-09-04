@@ -1152,7 +1152,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Edit className="w-5 h-5" />
@@ -1165,7 +1165,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Personal Information */}
           <div className="border-l-4 border-l-emerald-300 rounded-lg p-3 shadow-sm">
             <h4 className="text-sm font-semibold text-slate-700 mb-2">Personal Information</h4>
@@ -1407,7 +1407,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={save} disabled={saving || !form.firstName || !form.lastName} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Saving..." : "Save Changes"}
