@@ -543,8 +543,8 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b bg-indigo-50">
-          <DialogTitle className="flex items-center gap-2"><LogOut className="w-5 h-5 text-indigo-600" /> Request Discharge</DialogTitle>
-          <DialogDescription>Initiate a discharge request. The admission remains active until the discharge is finalized.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5 text-indigo-600" /> Request Discharge</DialogTitle>
+          <DialogDescription className="text-white/80">Initiate a discharge request. The admission remains active until the discharge is finalized.</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
@@ -759,7 +759,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
             <Badge className={`text-[10px] ${STATUS_COLORS[d.status] || "bg-slate-100 text-slate-700"}`}>{d.status.replace(/_/g, " ")}</Badge>
             {d.dischargeNumber && <Badge variant="outline" className="text-[10px] font-mono">{d.dischargeNumber}</Badge>}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {d.admission?.admissionNumber} • {ba?.ward?.name || "—"} / Bed {ba?.bed?.bedNumber || "—"}
             {" • "}Admitted {formatDate(d.admission?.admittedAt, true)}
             {isFinalized && ` • Discharged ${formatDate(d.dischargedAt, true)}`}
@@ -1142,7 +1142,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Add Discharge Medication</DialogTitle></DialogHeader>
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Discharge Medication</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2"><FieldLabel required>Medication Name</FieldLabel><Input value={newMed.medicationName} onChange={(e) => setNewMed({ ...newMed, medicationName: e.target.value })} placeholder="e.g., Amoxicillin" /></div>
               <div><Label>Strength</Label><Input value={newMed.strength} onChange={(e) => setNewMed({ ...newMed, strength: e.target.value })} placeholder="500mg" /></div>

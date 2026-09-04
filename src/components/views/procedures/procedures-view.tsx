@@ -394,8 +394,8 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2"><Scissors className="w-5 h-5 text-emerald-600" /> New Procedure</DialogTitle>
-          <DialogDescription>Request or record a procedure for a patient.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5 text-emerald-600" /> New Procedure</DialogTitle>
+          <DialogDescription className="text-white/80">Request or record a procedure for a patient.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div>
@@ -632,9 +632,9 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Scissors className="w-5 h-5 text-emerald-600" /> Procedure Record <StatusBadge status={editable.status} /></DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5 text-emerald-600" /> Procedure Record <StatusBadge status={editable.status} /></DialogTitle>
+          <DialogDescription className="text-white/80">
             {procedure.patient?.firstName} {procedure.patient?.lastName} • {procedure.encounter?.encounterNumber || "—"} • Performed {formatDate(procedure.performedAt, true)}
           </DialogDescription>
         </DialogHeader>

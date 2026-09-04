@@ -593,11 +593,11 @@ export function LabResultsView() {
       {amendSelectGroup && (
         <Dialog open onOpenChange={() => setAmendSelectGroup(null)}>
           <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
+              <DialogTitle className="flex items-center gap-2 text-white">
                 <History className="w-5 h-5 text-emerald-600" /> Select Result to Amend
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/80">
                 This lab order has multiple amendable results. Choose the specific result you want to amend. The original will be preserved for audit.
               </DialogDescription>
             </DialogHeader>
@@ -684,9 +684,9 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><History className="w-5 h-5 text-emerald-600" /> Amend Result</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5 text-emerald-600" /> Amend Result</DialogTitle>
+          <DialogDescription className="text-white/80">
             A new amended result will be created. The original is preserved for audit.
           </DialogDescription>
         </DialogHeader>

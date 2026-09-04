@@ -760,11 +760,11 @@ function NewPrescriptionDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-amber-600" /> New Prescription
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Create a new prescription. Allergies and duplicate active prescriptions are checked automatically.
           </DialogDescription>
         </DialogHeader>
@@ -1157,11 +1157,11 @@ function ViewPrescriptionDialog({
     <>
       <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
         <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <FileText className="w-4 h-4 text-amber-600" /> Prescription {full?.prescriptionNumber}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               Prescribed {formatDate(full?.prescribedAt, true)} by{" "}
               {full?.prescriber ? `${full.prescriber.firstName} ${full.prescriber.lastName}` : "—"}
             </DialogDescription>
@@ -1339,15 +1339,15 @@ function ViewPrescriptionDialog({
       {/* Discontinue / Cancel reason dialog */}
       <Dialog open={!!actionDialog} onOpenChange={(o) => { if (!o) setActionDialog(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               {actionDialog?.type === "discontinue" ? (
                 <><StopCircle className="w-4 h-4 text-orange-600" /> Discontinue Prescription</>
               ) : (
                 <><Ban className="w-4 h-4 text-rose-600" /> Cancel Prescription</>
               )}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               {actionDialog?.type === "discontinue"
                 ? "Discontinuing will stop this prescription. Please provide a reason (required)."
                 : "Cancelling will mark this prescription as cancelled. A reason is optional."}
@@ -1550,11 +1550,11 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Pill className="w-4 h-4 text-amber-600" /> Dispense: {full?.prescriptionNumber}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Patient: {full?.patient?.firstName} {full?.patient?.lastName} ({full?.patient?.patientNumber})
           </DialogDescription>
         </DialogHeader>

@@ -833,11 +833,11 @@ function LifecycleMenu({ supplier, onDone }: { supplier: any; onDone: () => void
 
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="flex items-center gap-2 text-rose-700">
               <Ban className="w-4 h-4" /> Suspend Supplier
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               Suspend <span className="font-medium text-slate-900">{supplier.name}</span>? They will be
               blocked from new purchase orders until reactivated.
             </DialogDescription>
@@ -1476,11 +1476,11 @@ function DetailFooter({ supplier, onChanged }: { supplier: any; onChanged: () =>
 
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="flex items-center gap-2 text-rose-700">
               <Ban className="w-4 h-4" /> Suspend Supplier
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               Suspend <span className="font-medium text-slate-900">{supplier.name}</span>?
             </DialogDescription>
           </DialogHeader>

@@ -453,8 +453,8 @@ function ApproveDialog({ admission, onClose, onDone }: { admission: any; onClose
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Approve Admission Request</DialogTitle>
-        <DialogDescription>{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Approve Admission Request</DialogTitle>
+        <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
           <div>
             <FieldLabel required>Decision</FieldLabel>
@@ -510,8 +510,8 @@ function AssignBedDialog({ admission, onClose, onDone }: { admission: any; onClo
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Assign Bed</DialogTitle>
-        <DialogDescription>{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Assign Bed</DialogTitle>
+        <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
           <div><FieldLabel required>Ward</FieldLabel>
             <Select value={wardId || undefined} onValueChange={(v) => { setWardId(v); setBedId(""); }}>
@@ -561,8 +561,8 @@ function ConfirmDialog({ admission, onClose, onDone }: { admission: any; onClose
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Confirm Patient Arrival</DialogTitle>
-        <DialogDescription>{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Confirm Patient Arrival</DialogTitle>
+        <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
           <div><Label>Condition on Arrival / Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Patient's condition on arrival..." /></div>
           <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
@@ -602,8 +602,8 @@ function DischargePlanDialog({ admission, onClose, onDone }: { admission: any; o
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Plan Discharge</DialogTitle>
-        <DialogDescription>{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Plan Discharge</DialogTitle>
+        <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Expected Discharge Date</Label><Input type="date" value={expectedDischargeDate} onChange={(e) => setExpectedDischargeDate(e.target.value)} /></div>
@@ -650,7 +650,7 @@ function ProgressNoteDialog({ admission, onClose, onDone }: { admission: any; on
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle>Doctor Progress Note (SOAP)</DialogTitle>
-          <DialogDescription>{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription>
+          <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div><Label>S — Subjective</Label><Textarea value={subjective} onChange={(e) => setSubjective(e.target.value)} rows={2} placeholder="Patient's complaint, history..." /></div>
@@ -755,9 +755,9 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><BedDouble className="w-5 h-5 text-emerald-600" /> New Admission</DialogTitle>
-          <DialogDescription>Admit a patient and assign a bed. The admission and bed assignment are created atomically — if the bed is unavailable, the operation is rolled back.</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5 text-emerald-600" /> New Admission</DialogTitle>
+          <DialogDescription className="text-white/80">Admit a patient and assign a bed. The admission and bed assignment are created atomically — if the bed is unavailable, the operation is rolled back.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -907,9 +907,9 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><LogOut className="w-5 h-5 text-rose-600" /> Discharge Patient</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5 text-rose-600" /> Discharge Patient</DialogTitle>
+          <DialogDescription className="text-white/80">
             {admission.patient?.firstName} {admission.patient?.lastName} ({admission.patient?.patientNumber}) •
             Admission {admission.admissionNumber}
             {ba ? ` • Bed ${ba.bed?.bedNumber} (${ba.ward?.name})` : ""}
@@ -987,12 +987,12 @@ function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; ca
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Stethoscope className="w-5 h-5 text-indigo-600" />
             Diagnoses — {admission.patient?.firstName} {admission.patient?.lastName}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Admission {admission.admissionNumber} • {admission.encounter?.encounterNumber || "Encounter linked"}
             {admission.admissionDiagnosis && ` • Admission Dx: ${admission.admissionDiagnosis}`}
           </DialogDescription>

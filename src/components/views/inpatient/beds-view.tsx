@@ -403,12 +403,12 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <BedDouble className="w-5 h-5 text-emerald-600" />
             Bed {bed.bedNumber}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {bed.ward?.name} {bed.room ? `• Room ${bed.room.roomNumber}` : ""} • {bed.bedType || "Regular bed"}
           </DialogDescription>
         </DialogHeader>
@@ -785,7 +785,7 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle>{isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>{isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div><Label>Ward Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
@@ -871,7 +871,7 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle>{isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>{isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div>
           <Label>Ward</Label>

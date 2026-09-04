@@ -477,7 +477,7 @@ function RequestsTab() {
       {showForm && (
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="flex items-center gap-2"><FolderOpen className="w-5 h-5 text-indigo-600" /> New Record Request</DialogTitle></DialogHeader>
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FolderOpen className="w-5 h-5 text-indigo-600" /> New Record Request</DialogTitle></DialogHeader>
             <RequestForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
         </Dialog>
@@ -486,9 +486,9 @@ function RequestsTab() {
       {viewItem && (
         <Dialog open onOpenChange={() => setViewItem(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">{viewItem.requestNumber} — {viewItem.patientName}</DialogTitle>
-              <DialogDescription>Requested {formatDate(viewItem.requestedAt, true)}</DialogDescription>
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+              <DialogTitle className="flex items-center gap-2 text-white">{viewItem.requestNumber} — {viewItem.patientName}</DialogTitle>
+              <DialogDescription className="text-white/80">Requested {formatDate(viewItem.requestedAt, true)}</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
               <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={viewItem.priority} /></div></div>
@@ -675,7 +675,7 @@ function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
       {showForm && (
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="flex items-center gap-2"><FileEdit className="w-5 h-5" /> Request Record Amendment</DialogTitle></DialogHeader>
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FileEdit className="w-5 h-5" /> Request Record Amendment</DialogTitle></DialogHeader>
             <AmendmentForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
         </Dialog>

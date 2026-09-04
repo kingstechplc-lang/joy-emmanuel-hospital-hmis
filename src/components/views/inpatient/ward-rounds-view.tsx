@@ -262,8 +262,8 @@ function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCre
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="w-5 h-5 text-emerald-600" /> Schedule Ward Round</DialogTitle>
-          <DialogDescription>Schedule a round with type, priority, consultant, and patient list.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2 text-white"><ClipboardCheck className="w-5 h-5 text-emerald-600" /> Schedule Ward Round</DialogTitle>
+          <DialogDescription className="text-white/80">Schedule a round with type, priority, consultant, and patient list.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -332,7 +332,7 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
             <Badge variant="outline" className="capitalize">{r.roundType?.replace(/_/g, " ")}</Badge>
             <Badge variant="outline">{r.priority}</Badge>
           </DialogTitle>
-          <DialogDescription>{formatDate(r.roundDate, true)} • Consultant: {r.consultant ? `${r.consultant.firstName} ${r.consultant.lastName}` : "—"}</DialogDescription>
+          <DialogDescription className="text-white/80">{formatDate(r.roundDate, true)} • Consultant: {r.consultant ? `${r.consultant.firstName} ${r.consultant.lastName}` : "—"}</DialogDescription>
         </DialogHeader>
 
         {/* Lifecycle buttons */}
@@ -507,7 +507,7 @@ function ActionDialog({ roundId, patients, onClose, onCreated }: any) {
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle>Add Action Item</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Action Item</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div><Label>Action Type</Label><Select value={form.actionType} onValueChange={(v) => setForm({ ...form, actionType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ACTION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
         <div><FieldLabel required>Title</FieldLabel><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Review CT scan result" /></div>
@@ -542,7 +542,7 @@ function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
       <ClearableSearch value={search} onChange={setSearch} placeholder="Search admitted patients..." className="mb-2" />
       <div className="max-h-60 overflow-y-auto border rounded">
         {admissions.length === 0 ? <div className="p-3 text-center text-sm text-slate-500">No patients found</div> : admissions.map((a: any) => (

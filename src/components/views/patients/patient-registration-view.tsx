@@ -1007,11 +1007,11 @@ export function PatientRegistrationView() {
       {/* Duplicate detection modal */}
       <Dialog open={!!duplicates} onOpenChange={(o) => !o && setDuplicates(null)}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-700">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <AlertTriangle className="w-5 h-5" /> Possible Duplicate Patient Found
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               We found one or more existing patients that may match this entry. Please review and choose to either use an existing record or create a new one anyway.
             </DialogDescription>
           </DialogHeader>

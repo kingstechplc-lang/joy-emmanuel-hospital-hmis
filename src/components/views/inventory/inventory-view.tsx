@@ -1480,11 +1480,11 @@ function ItemDetailDialog({
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Package className="w-5 h-5 text-teal-600" /> Item Detail
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {isLoading ? "Loading…" : item ? `${item.name} · ${item.sku}` : ""}
           </DialogDescription>
         </DialogHeader>
@@ -1787,11 +1787,11 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-teal-600" /> New Inventory Item
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Create a new catalog item. Stock levels are tracked per facility.
           </DialogDescription>
         </DialogHeader>
@@ -2075,11 +2075,11 @@ function StockMovementDialog({
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <TitleIcon className="w-5 h-5 text-teal-600" /> {title}: {item.name}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             SKU: {item.sku} · Current stock: {currentQty} {item.unit || ""}
           </DialogDescription>
         </DialogHeader>
@@ -2231,11 +2231,11 @@ function HistoryDialog({ item, facilityId, onClose }: { item: any; facilityId?: 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <History className="w-5 h-5 text-teal-600" /> Transaction History
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {item.name} ({item.sku}) · Current stock: {item.currentQuantity} {item.unit || ""}
           </DialogDescription>
         </DialogHeader>

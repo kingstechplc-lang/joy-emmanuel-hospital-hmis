@@ -938,11 +938,11 @@ function ReasonActionButton({
       </Button>
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setReason(""); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 capitalize">
               <Icon className="w-4 h-4" /> {label} Refund
             </DialogTitle>
-            <DialogDescription>Provide a reason. This will be audit-logged.</DialogDescription>
+            <DialogDescription className="text-white/80">Provide a reason. This will be audit-logged.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <FieldLabel required>{reasonLabel}</FieldLabel>
@@ -1027,11 +1027,11 @@ function ProcessActionButton({
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <RotateCcw className="w-4 h-4 text-emerald-600" /> Process Refund
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               Confirm the funds have been returned to the patient. This will mark the refund as completed and update the invoice balance.
             </DialogDescription>
           </DialogHeader>
@@ -1464,11 +1464,11 @@ function ApproveActionButton({
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Approve Refund
             </DialogTitle>
-            <DialogDescription>Confirm the approved refund amount (cannot exceed the requested amount).</DialogDescription>
+            <DialogDescription className="text-white/80">Confirm the approved refund amount (cannot exceed the requested amount).</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
@@ -1959,11 +1959,11 @@ function NewRefundDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <RotateCcw className="w-5 h-5 text-orange-600" /> Request Refund
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Find a completed payment and request a refund against it. The original payment record is preserved — the refund creates its own audit trail.
           </DialogDescription>
         </DialogHeader>

@@ -447,8 +447,8 @@ function NewNursingNoteDialog({ onClose, onCreated }: { onClose: () => void; onC
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2"><NotebookPen className="w-5 h-5 text-emerald-600" /> New Nursing Note</DialogTitle>
-          <DialogDescription>Note is created as DRAFT. Sign it to make it part of the clinical record.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2 text-white"><NotebookPen className="w-5 h-5 text-emerald-600" /> New Nursing Note</DialogTitle>
+          <DialogDescription className="text-white/80">Note is created as DRAFT. Sign it to make it part of the clinical record.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} setAdmissionId={setAdmissionId} />
@@ -506,7 +506,7 @@ function NewCarePlanDialog({ onClose, onCreated }: { onClose: () => void; onCrea
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2"><ClipboardList className="w-5 h-5 text-emerald-600" /> New Care Plan</DialogTitle></DialogHeader>
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2 text-white"><ClipboardList className="w-5 h-5 text-emerald-600" /> New Care Plan</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
           <div><FieldLabel required>Problem</FieldLabel><Textarea value={problem} onChange={(e) => setProblem(e.target.value)} rows={2} placeholder="e.g., Acute pain related to surgical incision" /></div>
@@ -549,7 +549,7 @@ function HandoverDialog({ onClose, onCreated }: { onClose: () => void; onCreated
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-      <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-emerald-600" /> Nursing Handover</DialogTitle><DialogDescription>SBAR-format patient handover</DialogDescription></DialogHeader>
+      <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5 text-emerald-600" /> Nursing Handover</DialogTitle><DialogDescription className="text-white/80">SBAR-format patient handover</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div><Label>Shift</Label><Select value={shiftType} onValueChange={setShiftType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SHIFTS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></div>
@@ -588,7 +588,7 @@ function EscalationDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-600" /> Escalate Concern</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><AlertTriangle className="w-5 h-5 text-amber-600" /> Escalate Concern</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">
@@ -626,7 +626,7 @@ function TaskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> New Nursing Task</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> New Nursing Task</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">
@@ -672,7 +672,7 @@ function WoundDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-      <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2"><Bandage className="w-5 h-5 text-emerald-600" /> Wound Assessment</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2 text-white"><Bandage className="w-5 h-5 text-emerald-600" /> Wound Assessment</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">
@@ -725,7 +725,7 @@ function RiskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
   };
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
-      <DialogHeader><DialogTitle className="flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-amber-600" /> Risk Assessment</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><ShieldAlert className="w-5 h-5 text-amber-600" /> Risk Assessment</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">

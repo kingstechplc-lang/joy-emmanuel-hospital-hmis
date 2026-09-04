@@ -433,13 +433,13 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5 text-cyan-600" />
             Appointment Details
           </DialogTitle>
           {appt && (
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               {appt.appointmentNumber} • {formatDate(appt.scheduledStart, true)}
             </DialogDescription>
           )}
@@ -616,9 +616,9 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><CalendarPlus className="w-5 h-5 text-cyan-600" /> Book New Appointment</DialogTitle>
-          <DialogDescription>Schedule a patient appointment. The system checks for double-booking automatically.</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5 text-cyan-600" /> Book New Appointment</DialogTitle>
+          <DialogDescription className="text-white/80">Schedule a patient appointment. The system checks for double-booking automatically.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -738,9 +738,9 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
   return (
     <Dialog open={!!id} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><CalendarPlus className="w-5 h-5 text-cyan-600" /> Reschedule Appointment</DialogTitle>
-          <DialogDescription>Choose a new date and time. The original slot will be preserved in history.</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5 text-cyan-600" /> Reschedule Appointment</DialogTitle>
+          <DialogDescription className="text-white/80">Choose a new date and time. The original slot will be preserved in history.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

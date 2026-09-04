@@ -1443,7 +1443,7 @@ function ViewInvoiceDialog({
                   <InvoiceStatusBadge status={inv.status} />
                   {inv.isOverdue && <OverdueBadge />}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-white/80">
                   <span className="font-medium text-slate-700">
                     {inv.patient?.firstName} {inv.patient?.lastName}
                   </span>{" "}
@@ -2033,11 +2033,11 @@ function LifecycleActionDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Icon className={`w-5 h-5 ${c.iconColor}`} /> {c.title}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Balance {formatCurrency(invoice.balance)}
           </DialogDescription>
         </DialogHeader>
@@ -2315,10 +2315,10 @@ function NewInvoiceDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Receipt className="w-5 h-5 text-rose-600" /> New Invoice
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Selecting a service auto-fills the unit price from the facility price list. The invoice is created as
             <span className="font-semibold text-slate-700"> Draft</span> — submit it for review to begin the lifecycle.
           </DialogDescription>
@@ -2675,11 +2675,11 @@ function PaymentDialog({
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <CreditCard className="w-5 h-5 text-emerald-600" /> Record Payment
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Outstanding {formatCurrency(invoice.balance)}
             </DialogDescription>
           </DialogHeader>
@@ -2795,11 +2795,11 @@ function AddItemDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-emerald-600" /> Add Item to {invoice.invoiceNumber}
           </DialogTitle>
-          <DialogDescription>Totals will be recomputed automatically.</DialogDescription>
+          <DialogDescription className="text-white/80">Totals will be recomputed automatically.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>

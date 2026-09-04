@@ -235,9 +235,9 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Cpu className="w-4 h-4" /> {isEdit ? "Edit Equipment" : "New Equipment"}</DialogTitle>
-          <DialogDescription>{isEdit ? "Update equipment information" : "Register a new equipment asset"}</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><Cpu className="w-4 h-4" /> {isEdit ? "Edit Equipment" : "New Equipment"}</DialogTitle>
+          <DialogDescription className="text-white/80">{isEdit ? "Update equipment information" : "Register a new equipment asset"}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -336,9 +336,9 @@ function MaintenanceDialog({ equipment, onClose }: { equipment: any; onClose: ()
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><History className="w-4 h-4" /> Maintenance History</DialogTitle>
-          <DialogDescription>{equipment.name} ({equipment.assetNumber})</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><History className="w-4 h-4" /> Maintenance History</DialogTitle>
+          <DialogDescription className="text-white/80">{equipment.name} ({equipment.assetNumber})</DialogDescription>
         </DialogHeader>
         {isLoading ? (
           <LoadingState rows={3} />
@@ -418,9 +418,9 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Wrench className="w-4 h-4" /> Schedule Maintenance</DialogTitle>
-          <DialogDescription>{equipment.name} ({equipment.assetNumber})</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><Wrench className="w-4 h-4" /> Schedule Maintenance</DialogTitle>
+          <DialogDescription className="text-white/80">{equipment.name} ({equipment.assetNumber})</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>

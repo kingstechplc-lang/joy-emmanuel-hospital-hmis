@@ -434,9 +434,9 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Consultation Note</DialogTitle>
-          <DialogDescription>Will be saved as draft. Sign after completion.</DialogDescription>
+          <DialogDescription className="text-white/80">Will be saved as draft. Sign after completion.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -667,7 +667,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
             <DialogTitle className="flex items-center gap-2 flex-wrap">
               <ClipboardList className="w-5 h-5" /> Consultation Note
               <StatusBadge status={editable.status} />
@@ -677,7 +677,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
                 </span>
               )}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               {c.patient?.firstName} {c.patient?.lastName}
               {c.patient?.dateOfBirth && ` · ${calculateAge(c.patient.dateOfBirth)}y${c.patient.sex ? ` · ${c.patient.sex}` : ""}`}
               {" • "}Encounter {c.encounter?.encounterNumber}
@@ -886,11 +886,11 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
       {/* Nested Add Addendum dialog */}
       <Dialog open={showAddendum} onOpenChange={(o) => !o && setShowAddendum(false)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <StickyNote className="w-4 h-4 text-amber-600" /> Add Addendum
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/80">
               The original signed note will be preserved. The addendum will be appended with your name and timestamp.
             </DialogDescription>
           </DialogHeader>

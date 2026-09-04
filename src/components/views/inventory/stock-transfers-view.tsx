@@ -1340,11 +1340,11 @@ function NewTransferDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <ArrowLeftRight className="w-4 h-4" /> New Stock Transfer
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Move inventory between facilities/departments. Starts as Draft — submit for approval when ready.
           </DialogDescription>
         </DialogHeader>
@@ -1607,7 +1607,7 @@ function ViewTransferDialog({
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <DialogTitle className="flex items-center gap-2 text-xl">
@@ -1991,11 +1991,11 @@ function ReceiveDialog({
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <PackageCheck className="w-4 h-4" /> Receive Goods: {data?.transferNumber}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {data?.fromFacility?.name} → {data?.toFacility?.name}
             {data?.carrierName && ` · Carrier: ${data.carrierName}`}
             {data?.trackingNumber && ` · Tracking: ${data.trackingNumber}`}

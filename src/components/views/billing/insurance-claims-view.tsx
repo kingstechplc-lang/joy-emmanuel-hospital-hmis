@@ -585,11 +585,11 @@ function ValidateResultDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <ShieldCheck className="w-5 h-5 text-emerald-600" /> Claim Validation
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Claim <span className="font-mono font-semibold text-slate-700">{claim.claimNumber}</span> — automated NHIS / payer compliance check
           </DialogDescription>
         </DialogHeader>
@@ -756,14 +756,14 @@ function ClaimDetailDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
             Claim Detail
             {claim && <span className="font-mono text-sm text-slate-500">— {claim.claimNumber}</span>}
             {claim && <StatusBadge status={claim.status} />}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Full claim record — overview, diagnoses, line items, timeline, queries, and payments.
           </DialogDescription>
         </DialogHeader>
@@ -1556,9 +1556,9 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-600" /> New Insurance Claim</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><ShieldCheck className="w-5 h-5 text-emerald-600" /> New Insurance Claim</DialogTitle>
+          <DialogDescription className="text-white/80">
             File a claim against an outstanding invoice. NHIS claims require ICD-10 diagnosis codes and NHIS membership number per Ghana NHIS policy.
           </DialogDescription>
         </DialogHeader>
@@ -1735,9 +1735,9 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-600" /> Partial Approval</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><DollarSign className="w-5 h-5 text-emerald-600" /> Partial Approval</DialogTitle>
+          <DialogDescription className="text-white/80">
             Claim {claim.claimNumber} • Original claim amount: {formatCurrency(claim.claimAmount)}
           </DialogDescription>
         </DialogHeader>
@@ -1872,12 +1872,12 @@ function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: stri
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white">
             <Layers className="w-5 h-5 text-emerald-600" />
             Bulk NHIS Claim Generation
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Select multiple outstanding invoices and generate NHIS claims in a single batch.
             All claims will be created as drafts with the same provider and diagnosis.
           </DialogDescription>

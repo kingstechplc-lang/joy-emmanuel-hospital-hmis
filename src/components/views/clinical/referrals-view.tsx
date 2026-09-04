@@ -788,9 +788,9 @@ function NewReferralDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Patient Referral</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Refer a patient to another facility or specialist. A unique referral
             number (REF-YYYY-000001) will be generated automatically.
           </DialogDescription>
@@ -1201,7 +1201,7 @@ function ReferralDetailDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {r.referralNumber && (
               <span className="font-mono text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">
@@ -1214,7 +1214,7 @@ function ReferralDetailDialog({
               {r.urgency}
             </Badge>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Created {formatDate(r.referredAt, true)} by{" "}
             {r.referredBy
               ? `${r.referredBy.firstName} ${r.referredBy.lastName}`
