@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -55,10 +55,35 @@ export function PatientRegistrationView() {
   const [duplicates, setDuplicates] = useState<DuplicateMatch[] | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState("identification");
+
+  // Track which section is currently visible using scroll position
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const handleScroll = () => {
+      const scrollTop = main.scrollTop;
+      // Find the section whose top is closest to (but above) the scroll position + offset
+      let current = "identification";
+      for (const s of SECTIONS) {
+        const el = document.getElementById(`section-${s.id}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const mainRect = main.getBoundingClientRect();
+        // If the section's top is above the viewport top + 120px offset, it's active
+        if (rect.top - mainRect.top < 120) {
+          current = s.id;
+        }
+      }
+      setActiveSection(current);
+    };
+    main.addEventListener("scroll", handleScroll);
+    return () => main.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const [form, setForm] = useState({
     firstName: "", middleName: "", lastName: "", previousName: "",
-    dateOfBirth: "", sex: "", maritalStatus: "", nationality: "Ghanaian",
+    dateOfBirth: "", sex: "", gender: "", maritalStatus: "", nationality: "Ghanaian",
     occupation: "", phone: "", alternativePhone: "", email: "",
     address: "", city: "", region: "", district: "", preferredLanguage: "en", bloodGroup: "",
     ghanaCard: "", passport: "",
@@ -356,7 +381,11 @@ export function PatientRegistrationView() {
                   key={s.id}
                   type="button"
                   onClick={() => scrollToSection(s.id)}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition text-left"
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs transition text-left ${
+                    activeSection === s.id
+                      ? "bg-emerald-100 text-emerald-700 font-semibold border-l-2 border-emerald-500"
+                      : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+                  }`}
                 >
                   <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-semibold shrink-0">
                     {i + 1}
@@ -389,7 +418,7 @@ export function PatientRegistrationView() {
         {/* Main form content — scrolls naturally with the page */}
         <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
           {/* SECTION 1 — Identification */}
-          <Card id="section-identification" className="scroll-mt-4">
+          <Card id="section-identification" className="scroll-mt-4 border-l-4 border-l-blue-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Shield className="w-4 h-4 text-blue-600" /> Patient Identification
@@ -416,7 +445,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 2 — Personal Information */}
-          <Card id="section-personal" className="scroll-mt-4">
+          <Card id="section-personal" className="scroll-mt-4 border-l-4 border-l-emerald-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <User className="w-4 h-4 text-emerald-600" /> Personal Information
@@ -473,7 +502,7 @@ export function PatientRegistrationView() {
                 <p className="text-[10px] text-slate-500 mt-1">Calculated from Date of Birth</p>
               </div>
               <div>
-                <Label>Sex</Label>
+                <Label>Sex (Biological)</Label>
                 <Select value={form.sex || undefined} onValueChange={(v) => setField("sex", v)}>
                   <SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger>
                   <SelectContent>
@@ -483,6 +512,22 @@ export function PatientRegistrationView() {
                     <SelectItem value="unknown">Unknown</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-slate-400 mt-0.5">Biological sex assigned at birth</p>
+              </div>
+              <div>
+                <Label>Gender Identity</Label>
+                <Select value={form.gender || undefined} onValueChange={(v) => setField("gender", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="non_binary">Non-binary</SelectItem>
+                    <SelectItem value="transgender">Transgender</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-slate-400 mt-0.5">Gender identity (may differ from biological sex)</p>
               </div>
               <div>
                 <Label>Marital Status</Label>
@@ -516,7 +561,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 3 — Contact Information */}
-          <Card id="section-contact" className="scroll-mt-4">
+          <Card id="section-contact" className="scroll-mt-4 border-l-4 border-l-cyan-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Phone className="w-4 h-4 text-cyan-600" /> Contact Information
@@ -572,7 +617,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 4 — Residential Address (Region + District cascading) */}
-          <Card id="section-address" className="scroll-mt-4">
+          <Card id="section-address" className="scroll-mt-4 border-l-4 border-l-amber-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-amber-600" /> Residential Address
@@ -636,7 +681,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 5 — Emergency Contact (with relationship dropdown) */}
-          <Card id="section-emergency" className="scroll-mt-4">
+          <Card id="section-emergency" className="scroll-mt-4 border-l-4 border-l-rose-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-rose-600" /> Emergency Contact
@@ -705,7 +750,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 6 — Next of Kin (with "Same as Emergency Contact" + relationship dropdown) */}
-          <Card id="section-kin" className="scroll-mt-4">
+          <Card id="section-kin" className="scroll-mt-4 border-l-4 border-l-violet-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Heart className="w-4 h-4 text-violet-600" /> Next of Kin
@@ -793,7 +838,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 7 — Insurance */}
-          <Card id="section-insurance" className="scroll-mt-4 overflow-visible">
+          <Card id="section-insurance" className="scroll-mt-4 overflow-visible border-l-4 border-l-indigo-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Users className="w-4 h-4 text-indigo-600" /> Insurance Information
@@ -934,7 +979,7 @@ export function PatientRegistrationView() {
           </Card>
 
           {/* SECTION 8 — Additional Information */}
-          <Card id="section-additional" className="scroll-mt-4">
+          <Card id="section-additional" className="scroll-mt-4 border-l-4 border-l-slate-300 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="w-4 h-4 text-slate-600" /> Additional Information

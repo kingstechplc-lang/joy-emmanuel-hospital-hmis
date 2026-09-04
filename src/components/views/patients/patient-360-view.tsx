@@ -17,12 +17,13 @@ import {
   Pill, ClipboardList, BedDouble, Receipt, FileText, ScrollText,
   AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert, Edit, Save,
   RefreshCw, ShieldCheck, FileCode2, ChevronRight,
-  ScanLine, Scissors,
+  ScanLine, Scissors, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
   formatDate, formatCurrency, calculateAge, safeJson} from "@/components/ui-helpers";
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
+import { InsuranceProviderSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 
 async function fetchJson(url: string) {
@@ -36,6 +37,7 @@ export function Patient360View() {
   const user = session?.user as any;
   const perms: string[] = user?.permissions || [];
   const canEdit = user?.roles?.includes("super_admin") || perms.includes("patient.edit");
+  const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const selectedPatientId = useAppStore((s) => s.selectedPatientId);
   const setView = useAppStore((s) => s.setView);
@@ -44,6 +46,7 @@ export function Patient360View() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("overview");
   const [showEdit, setShowEdit] = useState(false);
+  const [showAddInsurance, setShowAddInsurance] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["patient-360", selectedPatientId],
@@ -312,7 +315,19 @@ export function Patient360View() {
 
               <Separator className="my-6" />
 
-              <h4 className="font-semibold text-slate-900 mb-2">Insurance</h4>
+              <h4 className="font-semibold text-slate-900 mb-2 flex items-center justify-between">
+                Insurance
+                {can("patient.edit") && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowAddInsurance(true)}
+                    className="gap-1 h-7 text-xs"
+                  >
+                    <Plus className="w-3 h-3" /> Add Insurance
+                  </Button>
+                )}
+              </h4>
               {(p.insurance || []).length === 0 ? (
                 <p className="text-sm text-slate-500">No insurance on file.</p>
               ) : (
@@ -919,6 +934,18 @@ export function Patient360View() {
           }}
         />
       )}
+
+      {showAddInsurance && can("patient.edit") && (
+        <AddInsuranceDialog
+          patientId={p.id}
+          onClose={() => setShowAddInsurance(false)}
+          onAdded={() => {
+            setShowAddInsurance(false);
+            qc.invalidateQueries({ queryKey: ["patient-360", selectedPatientId] });
+            toast.success("Insurance coverage added");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1238,6 +1265,133 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={save} disabled={saving || !form.firstName || !form.lastName} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</> : <><Save className="w-4 h-4" /> Save Changes</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// AddInsuranceDialog — add a new insurance coverage to an existing patient.
+// Uses POST /api/encounter-coverage or directly creates via patient API.
+// =====================================================================
+function AddInsuranceDialog({ patientId, onClose, onAdded }: { patientId: string; onClose: () => void; onAdded: () => void }) {
+  const [providerId, setProviderId] = useState("");
+  const [providerName, setProviderName] = useState("");
+  const [membershipNumber, setMembershipNumber] = useState("");
+  const [policyNumber, setPolicyNumber] = useState("");
+  const [principalMember, setPrincipalMember] = useState("");
+  const [relationshipToPrincipal, setRelationshipToPrincipal] = useState("self");
+  const [coverageStart, setCoverageStart] = useState("");
+  const [coverageEnd, setCoverageEnd] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!providerId) {
+      toast.error("Please select an insurance provider");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/encounter-coverage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId,
+          insuranceProviderId: providerId,
+          membershipNumber,
+          policyNumber,
+          principalMember: principalMember || "Self",
+          relationshipToPrincipal,
+          coverageStart: coverageStart || new Date().toISOString(),
+          coverageEnd: coverageEnd || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        // Fallback: use patient PATCH to add insurance
+        const res2 = await fetch(`/api/patients/${patientId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_insurance",
+            insuranceProviderId: providerId,
+            membershipNumber,
+            policyNumber,
+            principalMember: principalMember || "Self",
+            relationshipToPrincipal,
+            coverageStart,
+            coverageEnd,
+          }),
+        });
+        if (!res2.ok) {
+          const err = await safeJson(res2);
+          throw new Error(err.error || "Failed to add insurance");
+        }
+      }
+      onAdded();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add Insurance Coverage</DialogTitle>
+          <DialogDescription>Add a new insurance provider/coverage for this patient.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Insurance Provider</Label>
+            <InsuranceProviderSelect
+              value={providerId ? { id: providerId, label: providerName } as EntitySelectValue : null}
+              onChange={(v) => { setProviderId(v?.id || ""); setProviderName(v?.label || ""); }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Membership Number</Label>
+              <Input value={membershipNumber} onChange={(e) => setMembershipNumber(e.target.value)} disabled={!providerId} placeholder="e.g. NHIS1234567890" />
+            </div>
+            <div>
+              <Label>Policy Number</Label>
+              <Input value={policyNumber} onChange={(e) => setPolicyNumber(e.target.value)} disabled={!providerId} />
+            </div>
+            <div>
+              <Label>Principal Member</Label>
+              <Input value={principalMember} onChange={(e) => setPrincipalMember(e.target.value)} disabled={!providerId} placeholder="Self or name" />
+            </div>
+            <div>
+              <Label>Relationship to Principal</Label>
+              <Select value={relationshipToPrincipal || undefined} onValueChange={setRelationshipToPrincipal} disabled={!providerId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="self">Self</SelectItem>
+                  <SelectItem value="spouse">Spouse</SelectItem>
+                  <SelectItem value="child">Child</SelectItem>
+                  <SelectItem value="parent">Parent</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Coverage Start</Label>
+              <Input type="date" value={coverageStart} onChange={(e) => setCoverageStart(e.target.value)} disabled={!providerId} />
+            </div>
+            <div>
+              <Label>Coverage End</Label>
+              <Input type="date" value={coverageEnd} onChange={(e) => setCoverageEnd(e.target.value)} disabled={!providerId} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} disabled={saving || !providerId} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            {saving ? "Adding..." : "Add Coverage"}
           </Button>
         </DialogFooter>
       </DialogContent>
