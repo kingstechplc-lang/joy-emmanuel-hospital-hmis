@@ -319,7 +319,7 @@ export function PatientRegistrationView() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-8">
       {/* Header with Back button */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => setView("patients")} className="gap-1">
@@ -334,6 +334,7 @@ export function PatientRegistrationView() {
         </p>
       </div>
 
+      {/* Layout: section navigator (left, sticky) + form (right, fills width) */}
       <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
         {/* Section Navigator — sticky inside the main scroll container.
             Uses top-2 to account for the <main> padding.
