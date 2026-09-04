@@ -938,7 +938,7 @@ function ReasonActionButton({
       </Button>
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setReason(""); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 capitalize">
               <Icon className="w-4 h-4" /> {label} Refund
             </DialogTitle>
@@ -1027,7 +1027,7 @@ function ProcessActionButton({
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <RotateCcw className="w-4 h-4 text-emerald-600" /> Process Refund
             </DialogTitle>
@@ -1464,7 +1464,7 @@ function ApproveActionButton({
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Approve Refund
             </DialogTitle>
@@ -1959,7 +1959,7 @@ function NewRefundDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <RotateCcw className="w-5 h-5 text-orange-600" /> Request Refund
           </DialogTitle>

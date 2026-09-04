@@ -632,7 +632,7 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5 text-emerald-600" /> Procedure Record <StatusBadge status={editable.status} /></DialogTitle>
           <DialogDescription className="text-white/80">
             {procedure.patient?.firstName} {procedure.patient?.lastName} • {procedure.encounter?.encounterNumber || "—"} • Performed {formatDate(procedure.performedAt, true)}
