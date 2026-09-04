@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, AlertTriangle, Check, Save, User, MapPin, Phone, Shield, Heart, Users, FileText, Camera } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Check, Save, User, MapPin, Phone, Shield, Heart, Users, FileText, Camera, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { FieldLabel } from "@/components/ui/required-label";
@@ -62,16 +62,73 @@ export function PatientRegistrationView() {
     occupation: "", phone: "", alternativePhone: "", email: "",
     address: "", city: "", region: "", district: "", preferredLanguage: "en", bloodGroup: "",
     ghanaCard: "", passport: "",
-    insuranceProviderId: "", insuranceProviderName: "",
-    membershipNumber: "", policyNumber: "",
-    principalMember: "", relationshipToPrincipal: "self",
-    coverageStart: "", coverageEnd: "",
     emergencyContactName: "", emergencyContactRelationship: "", emergencyContactRelationshipOther: "",
     emergencyContactPhone: "", emergencyContactAltPhone: "", emergencyContactAddress: "",
     nextOfKinName: "", nextOfKinRelationship: "", nextOfKinRelationshipOther: "",
     nextOfKinPhone: "", nextOfKinAltPhone: "", nextOfKinAddress: "",
     nokSameAsEmergency: false,
   });
+
+  // Multiple insurance coverages — array of coverage objects.
+  // The first one with isPrimary=true is the primary coverage.
+  // Additional ones are secondary/tertiary.
+  const [insuranceCoverages, setInsuranceCoverages] = useState<Array<{
+    insuranceProviderId: string;
+    insuranceProviderName: string;
+    membershipNumber: string;
+    policyNumber: string;
+    principalMember: string;
+    relationshipToPrincipal: string;
+    coverageStart: string;
+    coverageEnd: string;
+    isPrimary: boolean;
+  }>>([]);
+
+  const addInsuranceCoverage = () => {
+    setInsuranceCoverages((prev) => {
+      // First coverage is automatically primary
+      const isFirst = prev.length === 0;
+      return [
+        ...prev,
+        {
+          insuranceProviderId: "",
+          insuranceProviderName: "",
+          membershipNumber: "",
+          policyNumber: "",
+          principalMember: "",
+          relationshipToPrincipal: "self",
+          coverageStart: "",
+          coverageEnd: "",
+          isPrimary: isFirst, // first one is primary by default
+        },
+      ];
+    });
+  };
+
+  const removeInsuranceCoverage = (index: number) => {
+    setInsuranceCoverages((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      // If we removed the primary, make the first remaining one primary
+      if (next.length > 0 && !next.some((c) => c.isPrimary)) {
+        next[0].isPrimary = true;
+      }
+      return next;
+    });
+  };
+
+  const setInsuranceField = (index: number, field: string, value: string | boolean) => {
+    setInsuranceCoverages((prev) => {
+      const next = [...prev];
+      (next[index] as any)[field] = value;
+      // If setting isPrimary=true, unmark all others
+      if (field === "isPrimary" && value === true) {
+        next.forEach((c, i) => {
+          if (i !== index) c.isPrimary = false;
+        });
+      }
+      return next;
+    });
+  };
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -200,6 +257,8 @@ export function PatientRegistrationView() {
       ghanaCard: normalizedGhanaCard,
       region: form.region, // store region name (the API stores this in Patient.region)
       district: form.district, // store district name (API stores this in Patient.city for now — backward compatible)
+      // Multiple insurance coverages
+      insuranceCoverages: insuranceCoverages.filter((c) => c.insuranceProviderId),
       registeredAtFacilityId: activeFacilityId,
       force,
     };
@@ -276,9 +335,12 @@ export function PatientRegistrationView() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 max-w-6xl mx-auto">
-        {/* Section Navigator (sticky on desktop, horizontal scroll on mobile) */}
+        {/* Section Navigator — sticky inside the main scroll container.
+            NO nested overflow-y-auto or max-h — those caused the competing
+            scroll context. The navigator simply sticks at the top of <main>
+            and scrolls with the content naturally. */}
         <nav className="lg:w-56 shrink-0">
-          <div className="lg:sticky lg:top-2 lg:max-h-[calc(100vh-1rem)] lg:overflow-y-auto">
+          <div className="lg:sticky lg:top-0">
             <div className="hidden lg:flex flex-col gap-1 p-3 rounded-lg bg-slate-50 border border-slate-200">
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 px-2">
                 Registration Sections
@@ -731,58 +793,137 @@ export function PatientRegistrationView() {
                 <Users className="w-4 h-4 text-indigo-600" /> Insurance Information
               </CardTitle>
               <CardDescription>
-                Select an insurance provider to enable NHIS/insurance membership capture. Leave blank for self-pay patients.
+                Add one or more insurance coverages. Designate one as Primary. Leave empty for self-pay patients.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-3">
-                <Label>Insurance Provider</Label>
-                <InsuranceProviderSelect
-                  value={form.insuranceProviderId ? { id: form.insuranceProviderId, label: form.insuranceProviderName || "" } as EntitySelectValue : null}
-                  onChange={(v) => {
-                    setField("insuranceProviderId", v?.id || "");
-                    setField("insuranceProviderName", v?.label || "");
-                  }}
-                />
-                {!form.insuranceProviderId && (
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    No provider selected — patient will be registered as self-pay. You can add insurance later from the patient record.
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label>Membership / Insurance Number</Label>
-                <Input value={form.membershipNumber} onChange={(e) => setField("membershipNumber", e.target.value)} disabled={!form.insuranceProviderId} placeholder={form.insuranceProviderId ? "e.g. NHIS1234567890" : "Select provider first"} />
-              </div>
-              <div>
-                <Label>Policy Number</Label>
-                <Input value={form.policyNumber} onChange={(e) => setField("policyNumber", e.target.value)} disabled={!form.insuranceProviderId} />
-              </div>
-              <div>
-                <Label>Principal Member</Label>
-                <Input value={form.principalMember} onChange={(e) => setField("principalMember", e.target.value)} disabled={!form.insuranceProviderId} placeholder="Self or name of principal" />
-              </div>
-              <div>
-                <Label>Relationship to Principal</Label>
-                <Select value={form.relationshipToPrincipal || undefined} onValueChange={(v) => setField("relationshipToPrincipal", v)} disabled={!form.insuranceProviderId}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="self">Self</SelectItem>
-                    <SelectItem value="spouse">Spouse</SelectItem>
-                    <SelectItem value="child">Child</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Coverage Start</Label>
-                <Input type="date" value={form.coverageStart} onChange={(e) => setField("coverageStart", e.target.value)} disabled={!form.insuranceProviderId} />
-              </div>
-              <div>
-                <Label>Coverage End</Label>
-                <Input type="date" value={form.coverageEnd} onChange={(e) => setField("coverageEnd", e.target.value)} disabled={!form.insuranceProviderId} />
-              </div>
+            <CardContent className="space-y-4">
+              {insuranceCoverages.length === 0 && (
+                <div className="text-sm text-slate-500 italic py-4 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                  No insurance coverage added. Patient will be registered as self-pay.
+                </div>
+              )}
+
+              {insuranceCoverages.map((coverage, idx) => (
+                <div key={idx} className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-700">
+                        Coverage {idx + 1}
+                        {coverage.isPrimary && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-700 border border-emerald-200">
+                            PRIMARY
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!coverage.isPrimary && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setInsuranceField(idx, "isPrimary", true)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Check className="w-3 h-3" /> Set as Primary
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeInsuranceCoverage(idx)}
+                        className="h-7 text-xs text-rose-600 hover:text-rose-700 gap-1"
+                      >
+                        <X className="w-3 h-3" /> Remove
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-3">
+                      <Label>Insurance Provider</Label>
+                      <InsuranceProviderSelect
+                        value={coverage.insuranceProviderId ? { id: coverage.insuranceProviderId, label: coverage.insuranceProviderName || "" } as EntitySelectValue : null}
+                        onChange={(v) => {
+                          setInsuranceField(idx, "insuranceProviderId", v?.id || "");
+                          setInsuranceField(idx, "insuranceProviderName", v?.label || "");
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label>Membership / Insurance Number</Label>
+                      <Input
+                        value={coverage.membershipNumber}
+                        onChange={(e) => setInsuranceField(idx, "membershipNumber", e.target.value)}
+                        disabled={!coverage.insuranceProviderId}
+                        placeholder={coverage.insuranceProviderId ? "e.g. NHIS1234567890" : "Select provider first"}
+                      />
+                    </div>
+                    <div>
+                      <Label>Policy Number</Label>
+                      <Input
+                        value={coverage.policyNumber}
+                        onChange={(e) => setInsuranceField(idx, "policyNumber", e.target.value)}
+                        disabled={!coverage.insuranceProviderId}
+                      />
+                    </div>
+                    <div>
+                      <Label>Principal Member</Label>
+                      <Input
+                        value={coverage.principalMember}
+                        onChange={(e) => setInsuranceField(idx, "principalMember", e.target.value)}
+                        disabled={!coverage.insuranceProviderId}
+                        placeholder="Self or name of principal"
+                      />
+                    </div>
+                    <div>
+                      <Label>Relationship to Principal</Label>
+                      <Select
+                        value={coverage.relationshipToPrincipal || undefined}
+                        onValueChange={(v) => setInsuranceField(idx, "relationshipToPrincipal", v)}
+                        disabled={!coverage.insuranceProviderId}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="self">Self</SelectItem>
+                          <SelectItem value="spouse">Spouse</SelectItem>
+                          <SelectItem value="child">Child</SelectItem>
+                          <SelectItem value="parent">Parent</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Coverage Start</Label>
+                      <Input
+                        type="date"
+                        value={coverage.coverageStart}
+                        onChange={(e) => setInsuranceField(idx, "coverageStart", e.target.value)}
+                        disabled={!coverage.insuranceProviderId}
+                      />
+                    </div>
+                    <div>
+                      <Label>Coverage End</Label>
+                      <Input
+                        type="date"
+                        value={coverage.coverageEnd}
+                        onChange={(e) => setInsuranceField(idx, "coverageEnd", e.target.value)}
+                        disabled={!coverage.insuranceProviderId}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addInsuranceCoverage}
+                className="gap-2 text-xs"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Insurance Coverage
+              </Button>
             </CardContent>
           </Card>
 

@@ -88,8 +88,14 @@ export async function POST(req: Request) {
     phone, alternativePhone, email, address, city, region, district, country,
     preferredLanguage, bloodGroup,
     // Identifiers
-    ghanaCard, passport, insuranceNumber, insuranceProviderId, membershipNumber, policyNumber,
+    ghanaCard, passport, insuranceNumber,
+    // Insurance — backward compatible: accepts EITHER a single insurance
+    // (legacy: insuranceProviderId + membershipNumber + ...) OR an array
+    // of coverages (new: insuranceCoverages). If both are provided, the
+    // array takes precedence.
+    insuranceProviderId, membershipNumber, policyNumber,
     principalMember, relationshipToPrincipal, coverageStart, coverageEnd,
+    insuranceCoverages, // NEW: array of coverage objects
     // Contacts — Emergency Contact
     emergencyContactName, emergencyContactRelationship, emergencyContactRelationshipOther,
     emergencyContactPhone, emergencyContactAltPhone, emergencyContactAddress,
@@ -277,18 +283,53 @@ export async function POST(req: Request) {
     });
   }
 
-  // Insurance
-  if (insuranceProviderId && (normalizedMembershipNumber || policyNumber)) {
+  // Insurance — support multiple coverages
+  // If insuranceCoverages array is provided, use it. Otherwise fall back to
+  // the legacy single-insurance fields for backward compatibility.
+  const coverages = Array.isArray(insuranceCoverages) && insuranceCoverages.length > 0
+    ? insuranceCoverages
+    : (insuranceProviderId
+      ? [{
+          insuranceProviderId,
+          membershipNumber: normalizedMembershipNumber,
+          policyNumber: policyNumber || null,
+          principalMember: principalMember || `${firstName} ${lastName}`,
+          relationshipToPrincipal: relationshipToPrincipal || "self",
+          coverageStart: coverageStart || null,
+          coverageEnd: coverageEnd || null,
+          isPrimary: true, // legacy single-insurance is always primary
+        }]
+      : []);
+
+  // Ensure exactly one primary coverage (if any coverages exist)
+  if (coverages.length > 0) {
+    const primaryCount = coverages.filter((c: any) => c.isPrimary).length;
+    if (primaryCount === 0) {
+      coverages[0].isPrimary = true; // default to first
+    } else if (primaryCount > 1) {
+      // Only the first primary remains primary; others are demoted
+      let foundFirst = false;
+      coverages.forEach((c: any) => {
+        if (c.isPrimary) {
+          if (foundFirst) c.isPrimary = false;
+          foundFirst = true;
+        }
+      });
+    }
+  }
+
+  for (const cov of coverages) {
+    if (!cov.insuranceProviderId) continue;
     await db.patientInsurance.create({
       data: {
         patientId: patient.id,
-        insuranceProviderId,
-        membershipNumber: normalizedMembershipNumber,
-        policyNumber: policyNumber || null,
-        principalMember: principalMember || `${firstName} ${lastName}`,
-        relationshipToPrincipal: relationshipToPrincipal || "self",
-        coverageStart: coverageStart ? new Date(coverageStart) : new Date(),
-        coverageEnd: coverageEnd ? new Date(coverageEnd) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        insuranceProviderId: cov.insuranceProviderId,
+        membershipNumber: cov.membershipNumber?.trim() || null,
+        policyNumber: cov.policyNumber || null,
+        principalMember: cov.principalMember || `${firstName} ${lastName}`,
+        relationshipToPrincipal: cov.relationshipToPrincipal || "self",
+        coverageStart: cov.coverageStart ? new Date(cov.coverageStart) : new Date(),
+        coverageEnd: cov.coverageEnd ? new Date(cov.coverageEnd) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         verificationStatus: "pending",
         status: "active",
       },
