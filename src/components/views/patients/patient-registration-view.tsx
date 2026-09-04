@@ -335,14 +335,14 @@ export function PatientRegistrationView() {
       </div>
 
       {/* Layout: section navigator (left, sticky) + form (right, fills width) */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+      <div className="flex flex-col md:flex-row gap-4 md:items-start">
         {/* Section Navigator — sticky inside the main scroll container.
             Uses top-2 to account for the <main> padding.
             items-start on the parent prevents the nav from stretching to
             match the form's height (which would prevent sticky from working). */}
-        <nav className="lg:w-52 shrink-0">
-          <div className="lg:sticky lg:top-2 z-10">
-            <div className="hidden lg:flex flex-col gap-1 p-3 rounded-lg bg-slate-50 border border-slate-200">
+        <nav className="md:w-52 shrink-0">
+          <div className="md:sticky md:top-2 z-10">
+            <div className="hidden md:flex flex-col gap-1 p-3 rounded-lg bg-slate-50 border border-slate-200">
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 px-2">
                 Registration Sections
               </p>
@@ -362,7 +362,7 @@ export function PatientRegistrationView() {
               ))}
             </div>
             {/* Mobile: horizontal scroll */}
-            <div className="lg:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1">
+            <div className="md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1">
               {SECTIONS.map((s, i) => (
                 <button
                   key={s.id}
