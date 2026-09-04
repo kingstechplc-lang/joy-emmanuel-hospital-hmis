@@ -334,12 +334,11 @@ export function PatientRegistrationView() {
         </p>
       </div>
 
-      {/* Layout: section navigator (left, sticky) + form (right, fills width) */}
-      <div className="flex flex-col md:flex-row gap-4 md:items-start">
-        {/* Section Navigator — sticky inside the main scroll container.
-            Uses top-2 to account for the <main> padding.
-            items-start on the parent prevents the nav from stretching to
-            match the form's height (which would prevent sticky from working). */}
+      {/* Layout: section navigator (left, sticky) + form (right, fills width)
+          The nav has md:self-start so it doesn't stretch the navigator CONTENT,
+          but the nav element itself stretches to full height (default flex behavior)
+          so the sticky element inside has room to stick. */}
+      <div className="flex flex-col md:flex-row gap-4">
         <nav className="md:w-52 shrink-0">
           <div className="md:sticky md:top-2 z-10">
             <div className="hidden md:flex flex-col gap-1 p-3 rounded-lg bg-slate-50 border border-slate-200">
