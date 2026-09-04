@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, nextPatientNumber, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { validateGhanaCard, validateGhanaPhone } from "@/lib/ghana-validation";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -84,20 +85,61 @@ export async function POST(req: Request) {
   const {
     firstName, middleName, lastName, previousName,
     dateOfBirth, sex, gender, maritalStatus, nationality, occupation,
-    phone, alternativePhone, email, address, city, region, country,
+    phone, alternativePhone, email, address, city, region, district, country,
     preferredLanguage, bloodGroup,
     // Identifiers
     ghanaCard, passport, insuranceNumber, insuranceProviderId, membershipNumber, policyNumber,
     principalMember, relationshipToPrincipal, coverageStart, coverageEnd,
-    // Contacts
-    emergencyContactName, emergencyContactRelationship, emergencyContactPhone,
-    nextOfKinName, nextOfKinRelationship, nextOfKinPhone,
+    // Contacts — Emergency Contact
+    emergencyContactName, emergencyContactRelationship, emergencyContactRelationshipOther,
+    emergencyContactPhone, emergencyContactAltPhone, emergencyContactAddress,
+    // Contacts — Next of Kin
+    nextOfKinName, nextOfKinRelationship, nextOfKinRelationshipOther,
+    nextOfKinPhone, nextOfKinAltPhone, nextOfKinAddress,
     registeredAtFacilityId,
+    force,
   } = body;
 
   if (!firstName || !lastName) {
     return NextResponse.json({ error: "First name and last name are required" }, { status: 400 });
   }
+
+  // === SERVER-SIDE VALIDATION (defense-in-depth) ===
+  // Validate Ghana Card format if provided
+  if (ghanaCard) {
+    const ghResult = validateGhanaCard(ghanaCard);
+    if (!ghResult.valid) {
+      return NextResponse.json({ error: ghResult.error || "Invalid Ghana Card format" }, { status: 400 });
+    }
+  }
+
+  // Validate DOB is not in the future
+  if (dateOfBirth) {
+    const dob = new Date(dateOfBirth);
+    if (dob > new Date()) {
+      return NextResponse.json({ error: "Date of birth cannot be in the future" }, { status: 400 });
+    }
+  }
+
+  // Validate email format if provided
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+  }
+
+  // === NORMALIZE PHONE NUMBERS ===
+  const normalizedPhone = phone ? validateGhanaPhone(phone).normalized : null;
+  const normalizedAltPhone = alternativePhone ? validateGhanaPhone(alternativePhone).normalized : null;
+  const normalizedEmergencyPhone = emergencyContactPhone ? validateGhanaPhone(emergencyContactPhone).normalized : null;
+  const normalizedEmergencyAltPhone = emergencyContactAltPhone ? validateGhanaPhone(emergencyContactAltPhone).normalized : null;
+  const normalizedNokPhone = nextOfKinPhone ? validateGhanaPhone(nextOfKinPhone).normalized : null;
+  const normalizedNokAltPhone = nextOfKinAltPhone ? validateGhanaPhone(nextOfKinAltPhone).normalized : null;
+  const normalizedGhanaCard = ghanaCard ? validateGhanaCard(ghanaCard).normalized : null;
+
+  // Use normalized values in duplicate detection + creation
+  const normalizedMembershipNumber = membershipNumber?.trim() || null;
 
   const orgId = session.user.organizationId;
   const facilityId = registeredAtFacilityId || session.user.facilityId;
@@ -106,9 +148,9 @@ export async function POST(req: Request) {
   // Check by Ghana Card, phone, name+DOB, and insurance number
   const matches: any[] = [];
 
-  if (ghanaCard) {
+  if (normalizedGhanaCard && !force) {
     const m = await db.patientIdentifier.findFirst({
-      where: { identifierType: "ghana_card", identifierValue: ghanaCard },
+      where: { identifierType: "ghana_card", identifierValue: normalizedGhanaCard },
       include: { patient: true },
     });
     if (m && m.patient.organizationId === orgId && m.patient.status === "active") {
@@ -116,14 +158,14 @@ export async function POST(req: Request) {
     }
   }
 
-  if (phone) {
+  if (normalizedPhone && !force) {
     const m = await db.patient.findFirst({
-      where: { organizationId: orgId, phone, status: "active" },
+      where: { organizationId: orgId, phone: normalizedPhone, status: "active" },
     });
     if (m) matches.push({ matchType: "Phone", patient: m });
   }
 
-  if (firstName && lastName && dateOfBirth) {
+  if (firstName && lastName && dateOfBirth && !force) {
     const dobDate = new Date(dateOfBirth);
     const m = await db.patient.findFirst({
       where: {
@@ -137,9 +179,9 @@ export async function POST(req: Request) {
     if (m) matches.push({ matchType: "Name + DOB", patient: m });
   }
 
-  if (insuranceNumber) {
+  if (normalizedMembershipNumber && !force) {
     const m = await db.patientInsurance.findFirst({
-      where: { membershipNumber: insuranceNumber },
+      where: { membershipNumber: normalizedMembershipNumber },
       include: { patient: true },
     });
     if (m && m.patient.organizationId === orgId && m.patient.status === "active") {
@@ -169,6 +211,18 @@ export async function POST(req: Request) {
   // === CREATE PATIENT ===
   const patientNumber = await nextPatientNumber(orgId);
 
+  // Compose the relationship strings (include "Other" description if applicable)
+  const finalEmergencyRelationship = emergencyContactRelationship === "Other"
+    ? (emergencyContactRelationshipOther || "Other")
+    : (emergencyContactRelationship || null);
+  const finalNokRelationship = nextOfKinRelationship === "Other"
+    ? (nextOfKinRelationshipOther || "Other")
+    : (nextOfKinRelationship || null);
+
+  // Compose the address line (include district if provided)
+  const finalAddress = address || null;
+  const finalCity = city || district || null; // use district as city if city is empty
+
   const patient = await db.patient.create({
     data: {
       organizationId: orgId,
@@ -183,11 +237,11 @@ export async function POST(req: Request) {
       maritalStatus: maritalStatus || null,
       nationality: nationality || "Ghanaian",
       occupation: occupation || null,
-      phone: phone || null,
-      alternativePhone: alternativePhone || null,
+      phone: normalizedPhone,
+      alternativePhone: normalizedAltPhone,
       email: email || null,
-      address: address || null,
-      city: city || null,
+      address: finalAddress,
+      city: finalCity,
       region: region || null,
       country: country || "Ghana",
       preferredLanguage: preferredLanguage || "en",
@@ -200,12 +254,12 @@ export async function POST(req: Request) {
   });
 
   // Identifiers
-  if (ghanaCard) {
+  if (normalizedGhanaCard) {
     await db.patientIdentifier.create({
       data: {
         patientId: patient.id,
         identifierType: "ghana_card",
-        identifierValue: ghanaCard,
+        identifierValue: normalizedGhanaCard,
         isPrimary: true,
         verified: true,
         verifiedAt: new Date(),
@@ -218,19 +272,19 @@ export async function POST(req: Request) {
         patientId: patient.id,
         identifierType: "passport",
         identifierValue: passport,
-        isPrimary: !ghanaCard,
+        isPrimary: !normalizedGhanaCard,
       },
     });
   }
 
   // Insurance
-  if (insuranceProviderId && (membershipNumber || policyNumber)) {
+  if (insuranceProviderId && (normalizedMembershipNumber || policyNumber)) {
     await db.patientInsurance.create({
       data: {
         patientId: patient.id,
         insuranceProviderId,
-        membershipNumber,
-        policyNumber,
+        membershipNumber: normalizedMembershipNumber,
+        policyNumber: policyNumber || null,
         principalMember: principalMember || `${firstName} ${lastName}`,
         relationshipToPrincipal: relationshipToPrincipal || "self",
         coverageStart: coverageStart ? new Date(coverageStart) : new Date(),
@@ -241,27 +295,31 @@ export async function POST(req: Request) {
     });
   }
 
-  // Emergency contact
+  // Emergency contact (with expanded fields)
   if (emergencyContactName) {
     await db.emergencyContact.create({
       data: {
         patientId: patient.id,
         name: emergencyContactName,
-        relationship: emergencyContactRelationship || null,
-        phone: emergencyContactPhone || null,
+        relationship: finalEmergencyRelationship,
+        phone: normalizedEmergencyPhone,
+        alternativePhone: normalizedEmergencyAltPhone,
+        address: emergencyContactAddress || null,
         isPrimary: true,
       },
     });
   }
 
-  // Next of kin
+  // Next of kin (with expanded fields)
   if (nextOfKinName) {
     await db.nextOfKin.create({
       data: {
         patientId: patient.id,
         name: nextOfKinName,
-        relationship: nextOfKinRelationship || null,
-        phone: nextOfKinPhone || null,
+        relationship: finalNokRelationship,
+        phone: normalizedNokPhone,
+        alternativePhone: normalizedNokAltPhone,
+        address: nextOfKinAddress || null,
         isPrimary: true,
       },
     });
@@ -274,7 +332,7 @@ export async function POST(req: Request) {
     action: "PATIENT_CREATED",
     resourceType: "patient",
     resourceId: patient.id,
-    newValues: { patientNumber, firstName, lastName, sex, phone },
+    newValues: { patientNumber, firstName, lastName, sex, phone: normalizedPhone },
   });
 
   return NextResponse.json({ patient }, { status: 201 });

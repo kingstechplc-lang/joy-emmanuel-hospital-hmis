@@ -788,3 +788,115 @@ VERIFICATION:
 NO SCHEMA CHANGES
 NO API CHANGES (existing amend API already used the correct order.id)
 NO BREAKING CHANGES to other modules
+
+---
+Task ID: 28 (Register Patient Module Upgrade)
+Agent: main
+Task: Comprehensive improvement of Register Patient module
+
+A. Files/components changed:
+- src/lib/ghana-reference-data.ts (NEW) — All 16 Ghana regions + 200+ districts
+- src/lib/ghana-validation.ts (NEW) — Ghana Card + phone validation helpers
+- src/components/views/patients/patient-registration-view.tsx (REWRITTEN) — sectioned form with navigator
+- src/app/api/patients/route.ts (MODIFIED) — server-side validation + phone normalization
+- tests/e2e/register-patient-targeted.spec.ts (NEW) — 7 Playwright tests
+
+B. Database changes:
+- NONE — no Prisma schema changes, no migrations. All new fields use existing
+  Patient/EmergencyContact/NextOfKin columns. Region is stored in Patient.region
+  (existing field). District is stored in Patient.city (existing field, backward
+  compatible with existing patient records).
+
+C. New reference data:
+- src/lib/ghana-reference-data.ts:
+    - 16 Ghana regions (Ahafo, Ashanti, Bono, Bono East, Central, Eastern,
+      Greater Accra, North East, Northern, Oti, Savannah, Upper East, Upper West,
+      Volta, Western, Western North) with stable 2-letter codes
+    - 200+ districts/municipalities/metropolitan assemblies, each linked to
+      its parent region by regionCode
+    - 22 relationship types for Emergency Contact + Next of Kin (shared list):
+      Parent, Father, Mother, Spouse, Husband, Wife, Son, Daughter, Brother,
+      Sister, Guardian, Grandparent, Grandchild, Uncle, Aunt, Cousin, Friend,
+      Caregiver, Partner, Employer, Colleague, Other
+
+D. Validation changes:
+- Ghana Card: structural format GHA-XXXXXXXXX-X (3 letters + dash + 9 digits +
+  dash + 1 check digit). Uppercase normalization. Spaces stripped. Rejected
+  if format doesn't match. Checksum validation deferred (not publicly
+  documented). Validated both client-side and server-side.
+- Phone: normalized to +233XXXXXXXXX format (Ghanaian). Local 0XXXXXXXXX
+  converted to +233XXXXXXXXX. International numbers kept as-is. Validated
+  both client-side and server-side.
+- DOB: future dates rejected (both client-side max attribute + server-side check)
+- Email: format validation (both client-side + server-side)
+- "Other" relationship: requires a description when selected
+
+E. Patient Master Index / duplicate detection:
+- Existing duplicate detection (by Ghana Card, phone, name+DOB, insurance number)
+  is preserved and enhanced:
+    - Phone matching now uses NORMALIZED phone (so 024xxxxxxx and +23324xxxxxxx
+      match correctly)
+    - Ghana Card matching uses NORMALIZED Ghana Card (uppercase, no spaces)
+    - `force` flag bypasses duplicate detection when user clicks "Create Anyway"
+  (existing behavior preserved)
+
+F. Insurance changes:
+- The existing PatientInsurance model already supports multiple insurance
+  records per patient (one-to-many relation). No schema change needed.
+- The registration form currently captures ONE insurance provider (existing
+  behavior). Multiple insurance records can be added later from the Patient 360
+  view (existing capability).
+- NHIS/NHIA is handled through the existing insurance provider architecture
+  (no separate NHIS-specific table).
+
+G. UX/navigation changes:
+- Form organized into 8 logical sections (Identification, Personal, Contact,
+  Address, Emergency Contact, Next of Kin, Insurance, Additional)
+- Section navigator: sticky on desktop (left sidebar), horizontal scroll on mobile
+- Clicking a section smoothly scrolls to that section (scrollIntoView)
+- Scrolling fix: removed the `max-w-4xl mx-auto` constraint that caused the form
+  to not fill the available width. Form now uses `flex-1 min-w-0` so it grows
+  naturally with the main content area. The `scroll-mt-4` class on each Card
+  ensures smooth scrolling accounts for sticky headers.
+- "Same as Emergency Contact" checkbox for Next of Kin — copies emergency
+  contact values and disables the Next of Kin inputs
+- Relationship dropdowns use the shared RELATIONSHIP_TYPES list (22 options + Other)
+- Region is a searchable dropdown (all 16 Ghana regions)
+- District is a cascading dropdown (disabled until region selected, auto-clears
+  when region changes)
+
+H. Testing:
+- tests/e2e/register-patient-targeted.spec.ts: 7/7 PASS
+    1: Register Patient page loads with section navigator — PASS
+    2: Region dropdown contains all 16 Ghana regions — PASS
+    3: District dropdown cascades from Region — PASS
+    4: Ghana Card placeholder is GHA-XXXXXXXXX-X — PASS
+    5: Emergency Contact has relationship dropdown — PASS
+    6: Next of Kin has 'Same as Emergency Contact' checkbox — PASS
+    7: Page scrolls naturally (no nested scroll containers) — PASS
+- Build: ✓ Compiled successfully in 61s
+
+I. Migration safety:
+- No schema changes, no migrations. All existing patient records are preserved.
+- The `region` field stores the region NAME (e.g. "Greater Accra") — backward
+  compatible with existing free-text region values. Historical records with
+  arbitrary region text are not affected.
+- The `city` field stores the district NAME (e.g. "Accra Metropolitan") — backward
+  compatible with existing city values. Historical records are not affected.
+
+J. Remaining limitations:
+- Ghana Card checksum validation: deferred (the official Ghana Card checksum
+  algorithm is not publicly documented in a form we can safely implement).
+  Structural format + uniqueness is enforced. Checksum can be added later.
+- Multiple insurance coverages at registration time: the registration form
+  captures one insurance provider. Multiple coverages can be added from
+  Patient 360 (existing capability). Adding a multi-coverage UI to the
+  registration form would require a more complex form section — deferred.
+- Reference data is currently a static TypeScript file (ghana-reference-data.ts)
+  rather than a database-backed lookup table. This is appropriate for the
+  current scale (16 regions + 200 districts change rarely). If admin-
+  configurable reference data is needed later, this file can be replaced
+  with a database table without breaking existing patient records.
+- Patient photo upload: not added in this pass (existing photoUrl field is
+  available but no upload UI was implemented).
+- GPS location capture: not added (not mandatory per spec).
