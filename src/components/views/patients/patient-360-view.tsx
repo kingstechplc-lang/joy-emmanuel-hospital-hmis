@@ -17,7 +17,7 @@ import {
   Pill, ClipboardList, BedDouble, Receipt, FileText, ScrollText,
   AlertTriangle, Phone, MapPin, Calendar, Droplet, ShieldAlert, Edit, Save,
   RefreshCw, ShieldCheck, FileCode2, ChevronRight,
-  ScanLine, Scissors, Plus,
+  ScanLine, Scissors, Plus, Check, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge,
