@@ -310,12 +310,18 @@ export function PatientRegistrationView() {
     toast.success("Opening existing patient record");
   };
 
-  // Scroll to a section when clicking the navigator
+  // Scroll to a section when clicking the navigator.
+  // Uses main.scrollTop instead of scrollIntoView to avoid the sticky
+  // navigator fighting the smooth scroll (which causes the page to jump back).
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(`section-${sectionId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    const main = document.querySelector("main");
+    if (!el || !main) return;
+    // Calculate the target scroll position relative to <main>
+    const mainRect = main.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const scrollOffset = elRect.top - mainRect.top + main.scrollTop - 8; // 8px = top-2 sticky offset
+    main.scrollTo({ top: scrollOffset, behavior: "smooth" });
   };
 
   return (
