@@ -971,9 +971,74 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
   // Extract existing sub-records
   const existingEC = patient.emergencyContacts?.[0] || {};
   const existingNOK = patient.nextOfKin?.[0] || {};
-  const existingIns = patient.insurance?.[0] || {};
   const existingGhanaCard = patient.identifiers?.find((i: any) => i.identifierType === "ghana_card")?.identifierValue || "";
   const existingPassport = patient.identifiers?.find((i: any) => i.identifierType === "passport")?.identifierValue || "";
+
+  // Multiple insurance coverages — initialize from existing patient insurance records
+  const [insuranceCoverages, setInsuranceCoverages] = useState<Array<{
+    id?: string; // existing record id (if editing existing coverage)
+    insuranceProviderId: string;
+    insuranceProviderName: string;
+    membershipNumber: string;
+    policyNumber: string;
+    principalMember: string;
+    relationshipToPrincipal: string;
+    coverageStart: string;
+    coverageEnd: string;
+    isPrimary: boolean;
+  }>>((patient.insurance || []).map((ins: any, idx: number) => ({
+    id: ins.id,
+    insuranceProviderId: ins.insuranceProviderId || "",
+    insuranceProviderName: ins.insuranceProvider?.name || "",
+    membershipNumber: ins.membershipNumber || "",
+    policyNumber: ins.policyNumber || "",
+    principalMember: ins.principalMember || "",
+    relationshipToPrincipal: ins.relationshipToPrincipal || "self",
+    coverageStart: ins.coverageStart ? new Date(ins.coverageStart).toISOString().slice(0, 10) : "",
+    coverageEnd: ins.coverageEnd ? new Date(ins.coverageEnd).toISOString().slice(0, 10) : "",
+    isPrimary: idx === 0, // first existing coverage is primary by default
+  })));
+
+  const addInsuranceCoverage = () => {
+    setInsuranceCoverages((prev) => {
+      const isFirst = prev.length === 0;
+      return [
+        ...prev,
+        {
+          insuranceProviderId: "",
+          insuranceProviderName: "",
+          membershipNumber: "",
+          policyNumber: "",
+          principalMember: "",
+          relationshipToPrincipal: "self",
+          coverageStart: "",
+          coverageEnd: "",
+          isPrimary: isFirst,
+        },
+      ];
+    });
+  };
+
+  const removeInsuranceCoverage = (index: number) => {
+    setInsuranceCoverages((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length > 0 && !next.some((c) => c.isPrimary)) {
+        next[0].isPrimary = true;
+      }
+      return next;
+    });
+  };
+
+  const setInsuranceField = (index: number, field: string, value: string | boolean) => {
+    setInsuranceCoverages((prev) => {
+      const next = [...prev];
+      (next[index] as any)[field] = value;
+      if (field === "isPrimary" && value === true) {
+        next.forEach((c, i) => { if (i !== index) c.isPrimary = false; });
+      }
+      return next;
+    });
+  };
 
   const [form, setForm] = useState({
     // Personal
@@ -1010,15 +1075,6 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
     nextOfKinPhone: existingNOK.phone || "",
     nextOfKinAltPhone: existingNOK.alternativePhone || "",
     nextOfKinAddress: existingNOK.address || "",
-    // Insurance
-    insuranceProviderId: existingIns.insuranceProviderId || "",
-    insuranceProviderName: existingIns.insuranceProvider?.name || "",
-    membershipNumber: existingIns.membershipNumber || "",
-    policyNumber: existingIns.policyNumber || "",
-    principalMember: existingIns.principalMember || "",
-    relationshipToPrincipal: existingIns.relationshipToPrincipal || "self",
-    coverageStart: existingIns.coverageStart ? new Date(existingIns.coverageStart).toISOString().slice(0, 10) : "",
-    coverageEnd: existingIns.coverageEnd ? new Date(existingIns.coverageEnd).toISOString().slice(0, 10) : "",
     // Identifiers
     ghanaCard: existingGhanaCard,
     passport: existingPassport,
@@ -1068,17 +1124,8 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
         nextOfKin: form.nextOfKinName
           ? { name: form.nextOfKinName, relationship: form.nextOfKinRelationship, phone: form.nextOfKinPhone, alternativePhone: form.nextOfKinAltPhone, address: form.nextOfKinAddress }
           : null,
-        insurance: (form.insuranceProviderId && (form.membershipNumber || form.policyNumber))
-          ? {
-              insuranceProviderId: form.insuranceProviderId,
-              membershipNumber: form.membershipNumber,
-              policyNumber: form.policyNumber,
-              principalMember: form.principalMember,
-              relationshipToPrincipal: form.relationshipToPrincipal,
-              coverageStart: form.coverageStart || null,
-              coverageEnd: form.coverageEnd || null,
-            }
-          : null,
+        insurance: null, // Legacy single insurance — not used when insuranceCoverages array is provided
+        insuranceCoverages: insuranceCoverages.filter((c) => c.insuranceProviderId),
         identifier: {
           ghanaCard: form.ghanaCard,
           passport: form.passport,
@@ -1284,33 +1331,69 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
             </div>
           </div>
 
-          {/* Insurance */}
+          {/* Insurance — multiple coverages with primary/secondary */}
           <div className="border-l-4 border-l-indigo-300 rounded-lg p-3 shadow-sm overflow-visible">
             <h4 className="text-sm font-semibold text-slate-700 mb-2">Insurance Information</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="col-span-2 md:col-span-3">
-                <Label>Insurance Provider</Label>
-                <InsuranceProviderSelect
-                  value={form.insuranceProviderId ? { id: form.insuranceProviderId, label: form.insuranceProviderName || "" } as EntitySelectValue : null}
-                  onChange={(v) => { set("insuranceProviderId", v?.id || ""); set("insuranceProviderName", v?.label || ""); }}
-                />
-              </div>
-              <div><Label>Membership Number</Label><Input value={form.membershipNumber} onChange={(e) => set("membershipNumber", e.target.value)} disabled={!form.insuranceProviderId} /></div>
-              <div><Label>Policy Number</Label><Input value={form.policyNumber} onChange={(e) => set("policyNumber", e.target.value)} disabled={!form.insuranceProviderId} /></div>
-              <div><Label>Principal Member</Label><Input value={form.principalMember} onChange={(e) => set("principalMember", e.target.value)} disabled={!form.insuranceProviderId} /></div>
-              <div>
-                <Label>Relationship to Principal</Label>
-                <Select value={form.relationshipToPrincipal || undefined} onValueChange={(v) => set("relationshipToPrincipal", v)} disabled={!form.insuranceProviderId}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="self">Self</SelectItem><SelectItem value="spouse">Spouse</SelectItem>
-                    <SelectItem value="child">Child</SelectItem><SelectItem value="parent">Parent</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div><Label>Coverage Start</Label><Input type="date" value={form.coverageStart} onChange={(e) => set("coverageStart", e.target.value)} disabled={!form.insuranceProviderId} /></div>
-              <div><Label>Coverage End</Label><Input type="date" value={form.coverageEnd} onChange={(e) => set("coverageEnd", e.target.value)} disabled={!form.insuranceProviderId} /></div>
+            <div className="space-y-3">
+              {insuranceCoverages.length === 0 && (
+                <div className="text-sm text-slate-500 italic py-2 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                  No insurance coverage. Patient is self-pay.
+                </div>
+              )}
+
+              {insuranceCoverages.map((coverage, idx) => (
+                <div key={idx} className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700">
+                      Coverage {idx + 1}
+                      {coverage.isPrimary && (
+                        <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          PRIMARY
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {!coverage.isPrimary && (
+                        <Button type="button" size="sm" variant="outline" onClick={() => setInsuranceField(idx, "isPrimary", true)} className="h-7 text-xs gap-1">
+                          <Check className="w-3 h-3" /> Set Primary
+                        </Button>
+                      )}
+                      <Button type="button" size="sm" variant="ghost" onClick={() => removeInsuranceCoverage(idx)} className="h-7 text-xs text-rose-600 gap-1">
+                        <X className="w-3 h-3" /> Remove
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="col-span-2 md:col-span-3">
+                      <Label>Insurance Provider</Label>
+                      <InsuranceProviderSelect
+                        value={coverage.insuranceProviderId ? { id: coverage.insuranceProviderId, label: coverage.insuranceProviderName || "" } as EntitySelectValue : null}
+                        onChange={(v) => { setInsuranceField(idx, "insuranceProviderId", v?.id || ""); setInsuranceField(idx, "insuranceProviderName", v?.label || ""); }}
+                      />
+                    </div>
+                    <div><Label>Membership Number</Label><Input value={coverage.membershipNumber} onChange={(e) => setInsuranceField(idx, "membershipNumber", e.target.value)} disabled={!coverage.insuranceProviderId} /></div>
+                    <div><Label>Policy Number</Label><Input value={coverage.policyNumber} onChange={(e) => setInsuranceField(idx, "policyNumber", e.target.value)} disabled={!coverage.insuranceProviderId} /></div>
+                    <div><Label>Principal Member</Label><Input value={coverage.principalMember} onChange={(e) => setInsuranceField(idx, "principalMember", e.target.value)} disabled={!coverage.insuranceProviderId} /></div>
+                    <div>
+                      <Label>Relationship to Principal</Label>
+                      <Select value={coverage.relationshipToPrincipal || undefined} onValueChange={(v) => setInsuranceField(idx, "relationshipToPrincipal", v)} disabled={!coverage.insuranceProviderId}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="self">Self</SelectItem><SelectItem value="spouse">Spouse</SelectItem>
+                          <SelectItem value="child">Child</SelectItem><SelectItem value="parent">Parent</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>Coverage Start</Label><Input type="date" value={coverage.coverageStart} onChange={(e) => setInsuranceField(idx, "coverageStart", e.target.value)} disabled={!coverage.insuranceProviderId} /></div>
+                    <div><Label>Coverage End</Label><Input type="date" value={coverage.coverageEnd} onChange={(e) => setInsuranceField(idx, "coverageEnd", e.target.value)} disabled={!coverage.insuranceProviderId} /></div>
+                  </div>
+                </div>
+              ))}
+
+              <Button type="button" variant="outline" onClick={addInsuranceCoverage} className="gap-2 text-xs">
+                <Plus className="w-3.5 h-3.5" /> Add Insurance Coverage
+              </Button>
             </div>
           </div>
 

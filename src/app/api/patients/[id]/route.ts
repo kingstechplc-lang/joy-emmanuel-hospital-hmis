@@ -174,6 +174,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     emergencyContact: emergencyContactData,
     nextOfKin: nextOfKinData,
     insurance: insuranceData,
+    insuranceCoverages, // NEW: array of coverage objects for multi-insurance
     identifier: identifierData,
     ...updateData
   } = body;
@@ -305,6 +306,48 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           },
         });
       }
+    }
+  }
+
+  // ---- Handle multiple insurance coverages (new multi-insurance support) ----
+  // If insuranceCoverages array is provided, replace ALL existing insurance records
+  // with the new set. This supports add/remove/primary-switching.
+  if (Array.isArray(insuranceCoverages)) {
+    // Delete all existing insurance records for this patient
+    await db.patientInsurance.deleteMany({ where: { patientId: id } });
+
+    // Ensure exactly one primary coverage
+    const coverages = insuranceCoverages.filter((c: any) => c.insuranceProviderId);
+    if (coverages.length > 0) {
+      const primaryCount = coverages.filter((c: any) => c.isPrimary).length;
+      if (primaryCount === 0) {
+        coverages[0].isPrimary = true;
+      } else if (primaryCount > 1) {
+        let foundFirst = false;
+        coverages.forEach((c: any) => {
+          if (c.isPrimary) {
+            if (foundFirst) c.isPrimary = false;
+            foundFirst = true;
+          }
+        });
+      }
+    }
+
+    // Create new insurance records
+    for (const cov of coverages) {
+      await db.patientInsurance.create({
+        data: {
+          patientId: id,
+          insuranceProviderId: cov.insuranceProviderId,
+          membershipNumber: cov.membershipNumber?.trim() || null,
+          policyNumber: cov.policyNumber || null,
+          principalMember: cov.principalMember || null,
+          relationshipToPrincipal: cov.relationshipToPrincipal || "self",
+          coverageStart: cov.coverageStart ? new Date(cov.coverageStart) : new Date(),
+          coverageEnd: cov.coverageEnd ? new Date(cov.coverageEnd) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          status: "active",
+        },
+      });
     }
   }
 
