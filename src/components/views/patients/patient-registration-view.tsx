@@ -54,19 +54,14 @@ export function PatientRegistrationView() {
 
   const [duplicates, setDuplicates] = useState<DuplicateMatch[] | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
-  const forceCreateRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState("identification");
 
   // Track which section is currently visible using scroll position
-  const lastScrollTime = useRef(0);
   useEffect(() => {
     const main = document.querySelector("main");
     if (!main) return;
     const handleScroll = () => {
-      const now = Date.now();
-      if (now - lastScrollTime.current <= 100) return;
-      lastScrollTime.current = now;
       const scrollTop = main.scrollTop;
       // Find the section whose top is closest to (but above) the scroll position + offset
       let current = "identification";
@@ -313,7 +308,6 @@ export function PatientRegistrationView() {
       if (result.status === 409) {
         setDuplicates(result.duplicates);
         setForceCreate(false);
-        forceCreateRef.current = false;
         toast.info("Possible duplicates found — please review");
         return;
       }
@@ -332,7 +326,7 @@ export function PatientRegistrationView() {
     e.preventDefault();
     if (!validateForm()) return;
     setSaving(true);
-    mutation.mutate(forceCreateRef.current);
+    mutation.mutate(forceCreate);
   };
 
   const handleUseExistingPatient = (id: string) => {
@@ -1011,7 +1005,7 @@ export function PatientRegistrationView() {
       </div>
 
       {/* Duplicate detection modal */}
-      <Dialog open={!!duplicates} onOpenChange={(o) => { if (!o) { setDuplicates(null); forceCreateRef.current = false; } }}>
+      <Dialog open={!!duplicates} onOpenChange={(o) => !o && setDuplicates(null)}>
         <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="large">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
@@ -1054,7 +1048,6 @@ export function PatientRegistrationView() {
               onClick={() => {
                 setDuplicates(null);
                 setForceCreate(true);
-                forceCreateRef.current = true;
                 setTimeout(() => {
                   const formEl = document.querySelector("form") as HTMLFormElement | null;
                   formEl?.requestSubmit();
