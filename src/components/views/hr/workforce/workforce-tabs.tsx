@@ -616,7 +616,7 @@ function AssignCoverageDialog({ coverage, onClose }: { coverage: any; onClose: (
         ) : candidates.length === 0 ? (
           <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="No suitable candidates" description="No available staff match the criteria. Try broadening the requirements." icon={UserCheck} /></div>
         ) : (
-          <div className="space-y-2 flex-1 overflow-y-auto p-6 min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-2">
             {candidates.map((c: any) => (
               <div key={c.staffId} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                 <div className="flex-1">

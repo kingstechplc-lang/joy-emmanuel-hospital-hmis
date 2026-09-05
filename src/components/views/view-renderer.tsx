@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
@@ -67,6 +68,32 @@ import { DiagnosisEngineView } from "@/components/views/admin/diagnosis-engine-v
 import { InsuranceProvidersAdminView } from "@/components/views/admin/insurance-providers-admin-view";
 import { SystemSettingsView } from "@/components/views/admin/system-settings-view";
 import type { ViewKey } from "@/stores/app-store";
+
+class ViewErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-red-500" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Something went wrong</h3>
+            <p className="text-sm text-slate-500">
+              An error occurred while rendering this view. Please try refreshing the page.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Extended module views
 import { MortuaryView } from "@/components/views/extended/mortuary-view";
@@ -306,5 +333,9 @@ export function ViewRenderer({ view }: { view: ViewKey }) {
   if (isSpecialtyClinicsView) {
     return <SpecialtyClinicsView initialTab={view} />;
   }
-  return <ViewComponent />;
+  return (
+    <ViewErrorBoundary>
+      <ViewComponent />
+    </ViewErrorBoundary>
+  );
 }

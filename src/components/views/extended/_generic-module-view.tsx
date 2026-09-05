@@ -918,7 +918,7 @@ function WorkflowDialog({
             )}
           </DialogDescription>
         </DialogHeader>
-        <div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <Label>Notes {target.action.requireNote && <span className="text-rose-500">*</span>}</Label>
           <Textarea
             value={notes}

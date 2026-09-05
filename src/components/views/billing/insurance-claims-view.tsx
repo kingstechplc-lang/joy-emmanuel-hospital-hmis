@@ -775,7 +775,8 @@ function ClaimDetailDialog({
         ) : !claim ? (
           <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="Claim not found" /></div>
         ) : (
-          <div className="flex-1 overflow-y-auto min-h-0 p-6"><Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-slate-100 flex-wrap h-auto">
               <TabsTrigger value="overview" className="gap-1.5 data-[state=active]:bg-white"><FileText className="w-3.5 h-3.5" /> Overview</TabsTrigger>
               <TabsTrigger value="diagnoses" className="gap-1.5 data-[state=active]:bg-white"><StethoscopeIcon className="w-3.5 h-3.5" /> Diagnoses {claim.claimDiagnoses?.length > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1">{claim.claimDiagnoses.length}</Badge>}</TabsTrigger>
@@ -983,7 +984,8 @@ function ClaimDetailDialog({
             <TabsContent value="payments">
               <PaymentsTab claim={claim} canEdit={canEdit} onChanged={refresh} />
             </TabsContent>
-          </Tabs></div>
+          </Tabs>
+          </div>
         )}
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

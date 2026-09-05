@@ -1159,9 +1159,9 @@ model InsurancePlan {
   planType              String            @default("individual") // individual | family | corporate | employer | government | nhis | managed_care | other
   // Coverage configuration
   coveragePercentage    Float? // e.g., 80 means payer covers 80%
-  fixedCopayment        Float? // fixed copayment amount
-  deductible            Float? // deductible amount
-  annualLimit           Float? // annual monetary limit
+  fixedCopayment        Decimal? // fixed copayment amount
+  deductible            Decimal? // deductible amount
+  annualLimit           Decimal? // annual monetary limit
   visitLimit            Int? // number of visits per period
   // Authorization / referral rules
   authorizationRequired Boolean           @default(false)
@@ -1199,10 +1199,10 @@ model PlanServiceCoverage {
   serviceId             String? // FK → Service (optional; null = rule applies to all services)
   coverageType          String        @default("covered") // covered | partially_covered | not_covered | authorization_required | referral_required
   coveragePercentage    Float? // override plan-level percentage for this service
-  fixedCopayment        Float? // service-specific copayment
+  fixedCopayment        Decimal? // service-specific copayment
   patientResponsibility Float? // percentage patient pays
   quantityLimit         Int? // max quantity per period
-  monetaryLimit         Float? // max amount per period
+  monetaryLimit         Decimal? // max amount per period
   notes                 String?
   status                String        @default("active")
   createdAt             DateTime      @default(now())
@@ -1223,7 +1223,7 @@ model PlanBenefit {
   benefitCategory    String // outpatient | inpatient | pharmacy | laboratory | imaging | procedures | maternity | dental | optical | emergency | other
   covered            Boolean       @default(true)
   coveragePercentage Float?
-  annualLimit        Float?
+  annualLimit        Decimal?
   visitLimit         Int?
   notes              String?
   status             String        @default("active")
@@ -1299,8 +1299,8 @@ model InsuranceAuthorization {
   expiryDate          DateTime?
   approvedService     String?
   approvedQuantity    Int?
-  approvedAmount      Float?
-  status              String         @default("pending") // pending | approved | rejected | expired | cancelled
+   approvedAmount      Decimal?
+   status              String         @default("pending") // pending | approved | rejected | expired | cancelled
   notes               String?
   authorizedById      String?
   patientInsuranceId  String?
@@ -1777,7 +1777,7 @@ model DiagnosisCatalog {
   // Ghana NHIS compliance fields
   nhisGdrgCode     String? // Ghana Diagnostic Related Groupings code (e.g., "GD-701")
   nhisGdrgName     String? // G-DRG description
-  nhisTariff       Float? // NHIS tariff amount (GHS) for this diagnosis group
+   nhisTariff       Decimal? // NHIS tariff amount (GHS) for this diagnosis group
   isNhisClaimable  Boolean  @default(true) // whether this diagnosis is covered by NHIS
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -1931,7 +1931,7 @@ model Medication {
   barcode              String? // GTIN/EAN/UPC barcode
   productCode          String? // Internal product code / SKU
   nhisCode             String? // NHIS tariff code (e.g. ACETAZTA1)
-  nhisTariffAmount     Float? // NHIS reimbursable price in GHS
+   nhisTariffAmount     Decimal? // NHIS reimbursable price in GHS
   nhisPrescribingLevel String? // NHIS prescribing level (A | B1 | B2 | C | D | M)
   nhisUnitOfPricing    String? // NHIS unit of pricing (e.g. Tablet, Vial, Ampoule)
   // Manufacturer
@@ -2115,7 +2115,7 @@ model LaboratoryTest {
   specimenType     String? // primary specimen (legacy field — kept for back-compat with lab-orders/results)
   unit             String? // primary unit (legacy field — kept for back-compat)
   referenceRange   String? // primary reference range text (legacy field — kept for back-compat)
-  price            Float        @default(0) // legacy default price (kept for back-compat; authoritative pricing via serviceId)
+   price            Decimal        @default(0) // legacy default price (kept for back-compat; authoritative pricing via serviceId)
   status           String       @default("active") // active | inactive | retired | archived | temporarily_unavailable | referral_out
   priority         String       @default("routine") // routine | urgent | stat
   isPanel          Boolean      @default(false)
@@ -3085,7 +3085,7 @@ model DischargeRecord {
   followUpClinic            String?
   followUpClinicianId       String?
   allergiesAtDischarge      String? // JSON array
-  billedAmount              Float?
+   billedAmount              Decimal?
   insuranceProviderId       String?
   dischargeType             String? // routine | transfer_to_facility | transfer_to_ward | ama | absconded | deceased | other
   // Clearances
@@ -4552,10 +4552,10 @@ model Service {
   unit            Unit?        @relation(fields: [unitId], references: [id])
   description     String?
   // Pricing
-  defaultPrice    Float        @default(0)
-  nhisPrice       Float? // NHIS-insured price/tariff
-  insurancePrice  Float? // Private insurance price
-  cashPrice       Float? // Cash price (if different from default)
+   defaultPrice    Decimal        @default(0)
+   nhisPrice       Decimal? // NHIS-insured price/tariff
+   insurancePrice  Decimal? // Private insurance price
+   cashPrice       Decimal? // Cash price (if different from default)
   // Billing flags
   isBillable      Boolean      @default(true)
   isTaxable       Boolean      @default(false)
@@ -4592,9 +4592,9 @@ model FacilityServicePrice {
   facilityId    String
   facility      Facility  @relation(fields: [facilityId], references: [id])
   serviceId     String
-  service       Service   @relation(fields: [serviceId], references: [id])
-  price         Float
-  nhisPrice     Float? // Facility-specific NHIS price override
+   service       Service   @relation(fields: [serviceId], references: [id])
+   price         Decimal
+   nhisPrice     Decimal? // Facility-specific NHIS price override
   effectiveFrom DateTime  @default(now())
   effectiveTo   DateTime?
   status        String    @default("active")
@@ -4645,8 +4645,8 @@ model ServicePackage {
   code           String // e.g. MAT-PKG-001, ANC-PKG-001
   description    String?
   // Pricing
-  packagePrice   Float        @default(0)
-  nhisPrice      Float? // NHIS tariff for the package
+   packagePrice   Decimal        @default(0)
+   nhisPrice      Decimal? // NHIS tariff for the package
   // Validity
   effectiveFrom  DateTime     @default(now())
   effectiveTo    DateTime?
@@ -4677,7 +4677,7 @@ model ServicePackageItem {
   quantity      Int            @default(1)
   // Optional: override the component's price within this package
   // (null = use package price; set = charge this amount for this component)
-  overridePrice Float?
+   overridePrice Decimal?
   isMandatory   Boolean        @default(true) // If false, can be optionally included
   sortOrder     Int            @default(0)
   createdAt     DateTime       @default(now())
@@ -4707,7 +4707,7 @@ model Invoice {
   tax                     Float      @default(0)
   taxRate                 Float      @default(0)
   total                   Float      @default(0)
-  amountPaid              Float      @default(0)
+   amountPaid              Decimal      @default(0)
   amountRefunded          Float      @default(0)
   amountCredited          Float      @default(0)
   balance                 Float      @default(0)

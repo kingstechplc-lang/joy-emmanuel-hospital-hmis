@@ -1203,7 +1203,7 @@ function AddToQueueDialog({
           <DialogTitle className="text-white">Add Patient to Queue</DialogTitle>
           <DialogDescription className="text-white/80">Add a patient to today&apos;s queue.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3 flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <Input

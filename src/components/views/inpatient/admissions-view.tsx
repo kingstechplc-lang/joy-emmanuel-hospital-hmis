@@ -81,16 +81,6 @@ const DISCHARGE_READINESS = [
   { value: "cleared", label: "Cleared" },
 ];
 
-function statusColor(s?: string): string {
-  const map: Record<string, string> = {
-    requested: "blue", pending_approval: "amber", approved: "emerald",
-    awaiting_bed: "amber", bed_assigned: "blue", admitted: "emerald",
-    discharge_planned: "violet", discharged: "slate", transferred: "blue",
-    cancelled: "rose", declined: "rose", ama: "amber", deceased: "rose",
-  };
-  return map[s || ""] || "slate";
-}
-
 function calcLOS(admittedAt?: string | Date | null, dischargedAt?: string | Date | null): string {
   if (!admittedAt) return "—";
   const end = dischargedAt ? new Date(dischargedAt) : new Date();
@@ -235,7 +225,22 @@ export function AdmissionsView() {
                           <div className="text-[10px] text-slate-400">{formatRelative(a.admittedAt)}</div>
                         </td>
                         <td className="p-3">
-                          <Badge className={`bg-${statusColor(a.status)}-100 text-${statusColor(a.status)}-700`}>{a.status.replace(/_/g, " ")}</Badge>
+                          <Badge className={
+  a.status === "requested" ? "bg-blue-100 text-blue-700" :
+  a.status === "pending_approval" ? "bg-amber-100 text-amber-700" :
+  a.status === "approved" ? "bg-emerald-100 text-emerald-700" :
+  a.status === "awaiting_bed" ? "bg-amber-100 text-amber-700" :
+  a.status === "bed_assigned" ? "bg-blue-100 text-blue-700" :
+  a.status === "admitted" ? "bg-emerald-100 text-emerald-700" :
+  a.status === "discharge_planned" ? "bg-violet-100 text-violet-700" :
+  a.status === "discharged" ? "bg-slate-100 text-slate-700" :
+  a.status === "transferred" ? "bg-blue-100 text-blue-700" :
+  a.status === "cancelled" ? "bg-rose-100 text-rose-700" :
+  a.status === "declined" ? "bg-rose-100 text-rose-700" :
+  a.status === "ama" ? "bg-amber-100 text-amber-700" :
+  a.status === "deceased" ? "bg-rose-100 text-rose-700" :
+  "bg-slate-100 text-slate-700"
+}>{a.status.replace(/_/g, " ")}</Badge>
                         </td>
                         <td className="p-3 text-xs text-slate-600">{calcLOS(a.admittedAt, a.dischargedAt)}</td>
                         <td className="p-3 text-right">

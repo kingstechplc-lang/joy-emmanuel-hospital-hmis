@@ -572,7 +572,9 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><BookOpen className="w-5 h-5" /> New Knowledge Base Article</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto min-h-0 p-6"><KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+              <KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -714,7 +716,9 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Monitor className="w-5 h-5" /> Register IT Asset</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto min-h-0 p-6"><AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+              <AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            </div>
           </DialogContent>
         </Dialog>
       )}

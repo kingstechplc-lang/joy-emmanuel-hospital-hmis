@@ -1170,7 +1170,7 @@ function ViewPrescriptionDialog({
           {isLoading ? (
             <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={3} /></div>
           ) : (
-            <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
                   <div className="text-xs text-slate-500">Patient</div>

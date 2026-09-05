@@ -1213,7 +1213,7 @@ function PaymentDetailDialog({
         ) : !payment ? (
           <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Payment not found" /></div>
         ) : (
-          <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-4">
             {/* Amount + status hero */}
             <div className="flex items-center justify-between bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
               <div>

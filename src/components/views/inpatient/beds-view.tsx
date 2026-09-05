@@ -711,7 +711,7 @@ function ManageTab(props: any) {
                   <td className="p-2 text-center text-slate-500">{w.capacity || 0}</td>
                   <td className="p-2 text-center font-medium text-slate-900">{w.bedStats?.total || 0}</td>
                   <td className="p-2 text-center text-rose-700 font-medium">{w.bedStats?.occupied || 0}</td>
-                  <td className="p-2"><Badge className={`bg-${w.status === "active" ? "emerald" : "slate"}-100 text-${w.status === "active" ? "emerald" : "slate"}-700`}>{w.status}</Badge></td>
+                  <td className="p-2"><Badge className={w.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}>{w.status}</Badge></td>
                   <td className="p-2 text-right"><div className="flex justify-end gap-1">
                     {canEdit && <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onEditWard(w)}><Wrench className="w-3.5 h-3.5" /></Button>}
                     {canRetire && <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-rose-600" onClick={() => deleteWard(w.id)}><X className="w-3.5 h-3.5" /></Button>}

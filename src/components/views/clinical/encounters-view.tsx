@@ -1006,7 +1006,7 @@ export function EncountersView() {
                 — {cancelEncounter.patient?.firstName} {cancelEncounter.patient?.lastName}
               </DialogDescription>
             </DialogHeader>
-            <div className="p-6 space-y-3 flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
               <Label>Reason for Cancellation *</Label>
               <Textarea
                 value={cancelReason}
@@ -1306,7 +1306,7 @@ function NewEncounterDialog({
             Open a new clinical encounter for a patient at this facility.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3 flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <Input

@@ -273,7 +273,7 @@ function ViewRosterDialog({ roster, onClose }: { roster: any; onClose: () => voi
         ) : shifts.length === 0 ? (
           <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="No shifts assigned yet" description="Use the Shifts tab to assign shifts to this roster." icon={Plus} /></div>
         ) : (
-          <div className="space-y-3 flex-1 overflow-y-auto p-6 min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
             {Object.entries(byDate).sort().map(([date, dayShifts]) => (
               <div key={date}>
                 <div className="text-xs font-semibold text-slate-700 mb-1 sticky top-0 bg-white py-1">

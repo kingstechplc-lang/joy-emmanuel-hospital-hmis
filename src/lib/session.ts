@@ -89,9 +89,17 @@ export async function auditLog(params: {
 // NUMBERING HELPERS (JEM-0000001, ENC-2026-000001, etc.)
 // =====================================================================
 export async function nextPatientNumber(orgId: string): Promise<string> {
-  const count = await db.patient.count({ where: { organizationId: orgId } });
-  const next = count + 1;
-  return `JEM-${String(next).padStart(7, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.patient.count({ where: { organizationId: orgId } });
+    const candidate = `JEM-${String(count + 1 + attempt).padStart(7, "0")}`;
+    const existing = await db.patient.findFirst({
+      where: { organizationId: orgId, patientNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `JEM-${timestamp}`;
 }
 
 export async function nextEncounterNumber(facilityId: string): Promise<string> {
@@ -115,48 +123,120 @@ export async function nextEncounterNumber(facilityId: string): Promise<string> {
 
 export async function nextInvoiceNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.invoice.count({ where: { facilityId } });
-  return `INV-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.invoice.count({ where: { facilityId } });
+    const candidate = `INV-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.invoice.findFirst({
+      where: { facilityId, invoiceNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `INV-${year}-${timestamp}`;
 }
 
 export async function nextPaymentNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.payment.count({ where: { facilityId } });
-  return `PAY-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.payment.count({ where: { facilityId } });
+    const candidate = `PAY-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.payment.findFirst({
+      where: { facilityId, paymentNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `PAY-${year}-${timestamp}`;
 }
 
 export async function nextPrescriptionNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.prescription.count({ where: { facilityId } });
-  return `RX-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.prescription.count({ where: { facilityId } });
+    const candidate = `RX-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.prescription.findFirst({
+      where: { facilityId, prescriptionNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `RX-${year}-${timestamp}`;
 }
 
 export async function nextLabOrderNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.labOrder.count({ where: { facilityId } });
-  return `LAB-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.labOrder.count({ where: { facilityId } });
+    const candidate = `LAB-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.labOrder.findFirst({
+      where: { facilityId, labOrderNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `LAB-${year}-${timestamp}`;
 }
 
 export async function nextAdmissionNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.admission.count({ where: { facilityId } });
-  return `ADM-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.admission.count({ where: { facilityId } });
+    const candidate = `ADM-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.admission.findFirst({
+      where: { facilityId, admissionNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `ADM-${year}-${timestamp}`;
 }
 
 export async function nextAppointmentNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.appointment.count({ where: { facilityId } });
-  return `APT-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.appointment.count({ where: { facilityId } });
+    const candidate = `APT-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.appointment.findFirst({
+      where: { facilityId, appointmentNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `APT-${year}-${timestamp}`;
 }
 
 export async function nextPurchaseOrderNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.purchaseOrder.count({ where: { facilityId } });
-  return `PO-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.purchaseOrder.count({ where: { facilityId } });
+    const candidate = `PO-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.purchaseOrder.findFirst({
+      where: { facilityId, purchaseOrderNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `PO-${year}-${timestamp}`;
 }
 
 export async function nextClaimNumber(facilityId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.insuranceClaim.count({ where: { facilityId } });
-  return `CLM-${year}-${String(count + 1).padStart(6, "0")}`;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await db.insuranceClaim.count({ where: { facilityId } });
+    const candidate = `CLM-${year}-${String(count + 1 + attempt).padStart(6, "0")}`;
+    const existing = await db.insuranceClaim.findFirst({
+      where: { facilityId, claimNumber: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+  }
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-6);
+  return `CLM-${year}-${timestamp}`;
 }

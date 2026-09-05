@@ -5,12 +5,9 @@ const nextConfig: NextConfig = {
   // (standalone is for Docker / Node.js server deployments only)
   // output: "standalone",
 
-  reactStrictMode: false,
+  reactStrictMode: true,
   typescript: {
-    // We've already verified zero TS errors via `bunx tsc --noEmit`.
-    // ignoreBuildErrors is set to true so Vercel builds don't fail on
-    // type-only issues in example/skills folders that aren't part of the app.
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   // Note: `eslint: { ignoreDuringBuilds: true }` was removed in Next.js 16.
   // Next.js 16 no longer runs ESLint during `next build` by default.

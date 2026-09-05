@@ -140,6 +140,9 @@ export const authOptions: NextAuthOptions = {
           const timeoutSeconds = await getSessionMaxAge();
           const tokenAgeSeconds = Math.floor((Date.now() - (token.permsRefreshedAt as number || 0)) / 1000);
           // If the token's last activity exceeds the configured timeout, expire it
+          if (tokenAgeSeconds > timeoutSeconds) {
+            return {} as any; // forces logout
+          }
           // Note: permsRefreshedAt is updated on every refresh, so this acts as last-activity time
           // The initial sign-in sets it, and each refresh updates it — effectively an idle timeout
           
@@ -211,6 +214,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/",
   },
-  // Use explicit secret from env var — never fall back to a default in production.
-  secret: process.env.NEXTAUTH_SECRET || "joy-emmanuel-hospital-dev-secret-change-in-production",
+  secret: process.env.NEXTAUTH_SECRET,
 };

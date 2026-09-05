@@ -1086,10 +1086,40 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
           <div className="flex items-center gap-2">
             <selectedSpecialty.icon className="w-5 h-5" />
             <span className="font-bold">{selectedSpecialty.label}</span>
+=======
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <PatientPicker
+            label="Patient"
+            required
+            value={patient}
+            onChange={setPatient}
+            onRegisterNew={() => {
+              onClose();
+              setView("patient_new");
+            }}
+          />
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div><FieldLabel>Specialty</FieldLabel><Select value={form.departmentCode} onValueChange={(v) => set("departmentCode", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Appointment Date</Label><Input type="date" value={form.appointmentDate} onChange={(e) => set("appointmentDate", e.target.value)} /></div>
+            <div><Label>Start Time</Label><Input type="time" value={form.startTime} onChange={(e) => set("startTime", e.target.value)} /></div>
+            <div><Label>End Time</Label><Input type="time" value={form.endTime} onChange={(e) => set("endTime", e.target.value)} /></div>
+            <div><Label>Type</Label><Select value={form.type} onValueChange={(v) => set("type", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="new">New</SelectItem><SelectItem value="follow_up">Follow-up</SelectItem><SelectItem value="review">Review</SelectItem><SelectItem value="procedure">Procedure</SelectItem></SelectContent></Select></div>
+            <div><Label>Source</Label><Select value={form.source} onValueChange={(v) => set("source", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="walk_in">Walk-in</SelectItem><SelectItem value="phone">Phone</SelectItem><SelectItem value="referral">Referral</SelectItem><SelectItem value="online">Online</SelectItem></SelectContent></Select></div>
+            <div><Label>Clinician</Label><Input value={form.clinicianName} onChange={(e) => set("clinicianName", e.target.value)} placeholder="Optional" /></div>
+            <div className="col-span-2 md:col-span-3"><FieldLabel>Reason for Visit</FieldLabel><Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={2} /></div>
           </div>
-          <p className="text-xs text-white/80 mt-1">
-            Patient will be scheduled for {form.appointmentDate} at {form.startTime || "the selected time"}.
-          </p>
+
+          <div className={`p-3 rounded-xl bg-gradient-to-r ${selectedSpecialty.gradient} text-white`}>
+            <div className="flex items-center gap-2">
+              <selectedSpecialty.icon className="w-5 h-5" />
+              <span className="font-bold">{selectedSpecialty.label}</span>
+            </div>
+            <p className="text-xs text-white/80 mt-1">
+              Patient will be scheduled for {form.appointmentDate} at {form.startTime || "the selected time"}.
+            </p>
+>>>>>>> efc3dbc (fix: critical security, UI dialogs, and code quality improvements)
+          </div>
         </div>
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
@@ -1525,25 +1555,50 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
               onChange={setFromDept}
               allowManual
             />
-          </div>
-          <div><Label>Referring Clinician</Label><Input value={form.fromClinicianName} onChange={(e) => set("fromClinicianName", e.target.value)} /></div>
-          <div>
-            <FieldLabel>To Specialty</FieldLabel>
-            <Select value={form.toDepartmentCode} onValueChange={(v) => set("toDepartmentCode", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Receiving Clinician (optional)</Label><Input value={form.toClinicianName} onChange={(e) => set("toClinicianName", e.target.value)} /></div>
-          <div className="col-span-2 md:col-span-3"><FieldLabel>Reason for Referral</FieldLabel><Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={2} placeholder="Brief reason for referral..." /></div>
-          <div className="col-span-2 md:col-span-3"><Label>Clinical Summary</Label><Textarea value={form.clinicalSummary} onChange={(e) => set("clinicalSummary", e.target.value)} rows={3} placeholder="Relevant history, findings, current medications..." /></div>
-        </div>
+=======
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <PatientPicker
+            label="Patient"
+            required
+            value={patient}
+            onChange={setPatient}
+            onRegisterNew={() => {
+              onClose();
+              setView("patient_new");
+            }}
+          />
 
-        <div className={`p-3 rounded-xl bg-gradient-to-r ${selectedSpecialty.gradient} text-white`}>
-          <div className="flex items-center gap-2">
-            <selectedSpecialty.icon className="w-5 h-5" />
-            <span className="font-bold">Refer to {selectedSpecialty.label}</span>
-            {form.urgency !== "routine" && <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full uppercase">{form.urgency}</span>}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div><Label>Urgency</Label><Select value={form.urgency} onValueChange={(v) => set("urgency", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="emergency">Emergency</SelectItem></SelectContent></Select></div>
+            <div className="col-span-2">
+              <DepartmentSelect
+                label="From Department"
+                required
+                value={fromDept}
+                onChange={setFromDept}
+                allowManual
+              />
+            </div>
+            <div><Label>Referring Clinician</Label><Input value={form.fromClinicianName} onChange={(e) => set("fromClinicianName", e.target.value)} /></div>
+            <div>
+              <FieldLabel>To Specialty</FieldLabel>
+              <Select value={form.toDepartmentCode} onValueChange={(v) => set("toDepartmentCode", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Receiving Clinician (optional)</Label><Input value={form.toClinicianName} onChange={(e) => set("toClinicianName", e.target.value)} /></div>
+            <div className="col-span-2 md:col-span-3"><FieldLabel>Reason for Referral</FieldLabel><Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={2} placeholder="Brief reason for referral..." /></div>
+            <div className="col-span-2 md:col-span-3"><Label>Clinical Summary</Label><Textarea value={form.clinicalSummary} onChange={(e) => set("clinicalSummary", e.target.value)} rows={3} placeholder="Relevant history, findings, current medications..." /></div>
+>>>>>>> efc3dbc (fix: critical security, UI dialogs, and code quality improvements)
+          </div>
+
+          <div className={`p-3 rounded-xl bg-gradient-to-r ${selectedSpecialty.gradient} text-white`}>
+            <div className="flex items-center gap-2">
+              <selectedSpecialty.icon className="w-5 h-5" />
+              <span className="font-bold">Refer to {selectedSpecialty.label}</span>
+              {form.urgency !== "routine" && <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full uppercase">{form.urgency}</span>}
+            </div>
           </div>
         </div>
 

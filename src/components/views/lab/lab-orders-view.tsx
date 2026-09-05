@@ -1017,7 +1017,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
 
   // initialize state from items
   const items = order.items || [];
-  const initIfNeeded = () => {
+  useEffect(() => {
     items.forEach((it: any) => {
       if (!results[it.id]) {
         setResults((p) => ({
@@ -1034,8 +1034,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
         }));
       }
     });
-  };
-  initIfNeeded();
+  }, [items]);
 
   const setField = (itemId: string, key: string, value: any) =>
     setResults((p) => ({ ...p, [itemId]: { ...(p[itemId] || {}), [key]: value } }));

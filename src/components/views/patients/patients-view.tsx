@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,14 +20,17 @@ export function PatientsView() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   // Debounce search input
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleSearch = (v: string) => {
     setQuery(v);
-    if (window) {
-      const w = window as any;
-      if (w.__patientSearchTimer) clearTimeout(w.__patientSearchTimer);
-      w.__patientSearchTimer = setTimeout(() => setDebouncedQuery(v), 350);
-    }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setDebouncedQuery(v), 350);
   };
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   const searchParam = debouncedQuery ? `?q=${encodeURIComponent(debouncedQuery)}` : "";
   const { data, isLoading, isError, refetch } = useQuery({

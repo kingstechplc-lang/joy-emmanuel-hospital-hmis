@@ -35,8 +35,8 @@ export function LoginView() {
 
   const quickFill = (u: string) => {
     setUsername(u);
-    setPassword("Password@2026");
-    toast.info(`Credentials filled for "${u}" — click Sign in`);
+    setPassword("");
+    toast.info(`Username filled for "${u}" — enter your password and click Sign in`);
   };
 
   return (

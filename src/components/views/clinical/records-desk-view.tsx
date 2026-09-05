@@ -478,7 +478,9 @@ function RequestsTab() {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FolderOpen className="w-5 h-5" /> New Record Request</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto min-h-0 p-6"><RequestForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+              <RequestForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -676,7 +678,9 @@ function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FileEdit className="w-5 h-5" /> Request Record Amendment</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto min-h-0 p-6"><AmendmentForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+              <AmendmentForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            </div>
           </DialogContent>
         </Dialog>
       )}

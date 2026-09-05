@@ -347,7 +347,7 @@ function MaintenanceDialog({ equipment, onClose }: { equipment: any; onClose: ()
         ) : (data?.items || []).length === 0 ? (
           <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="No maintenance records" description="Schedule maintenance to begin tracking service history." /></div>
         ) : (
-          <div className="space-y-2 flex-1 overflow-y-auto p-6 min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-2">
             {data.items.map((m: any) => (
               <Card key={m.id}>
                 <CardContent className="p-3">

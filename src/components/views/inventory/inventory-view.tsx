@@ -1285,7 +1285,7 @@ function MovementReport({ facilityId }: { facilityId: string }) {
 
   useEffect(() => {
     if (items.length > 0) loadMovements();
-  }, [data]);
+  }, [data, items]);
 
   if (isLoading) return <LoadingState rows={6} />;
   if (isError) return <ErrorState message="Failed to load movement report" onRetry={() => refetch()} />;
@@ -1380,7 +1380,7 @@ function DeadStockReport({ facilityId }: { facilityId: string }) {
 
   useEffect(() => {
     if (items.length > 0) loadDead();
-  }, [data]);
+  }, [data, items]);
 
   if (isLoading) return <LoadingState rows={6} />;
   if (isError) return <ErrorState message="Failed to load dead stock report" onRetry={() => refetch()} />;
@@ -1496,7 +1496,7 @@ function ItemDetailDialog({
         ) : !item ? (
           <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="Item not found" description="The item you're looking for does not exist." /></div>
         ) : (
-          <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-4">
             {/* Item info */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-lg">
               <Info label="Name" value={item.name} />

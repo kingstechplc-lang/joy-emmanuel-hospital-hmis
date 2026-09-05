@@ -545,7 +545,9 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Wrench className="w-5 h-5" /> Schedule Maintenance</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto min-h-0 p-6"><MaintenanceForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+              <MaintenanceForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -692,7 +694,9 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> New Facility Inspection</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto min-h-0 p-6"><InspectionForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+              <InspectionForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            </div>
           </DialogContent>
         </Dialog>
       )}
