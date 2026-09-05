@@ -937,14 +937,14 @@ function ReasonActionButton({
         <Icon className="w-3 h-3" /> {label}
       </Button>
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setReason(""); }}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="text-white flex items-center gap-2 capitalize">
               <Icon className="w-4 h-4" /> {label} Refund
             </DialogTitle>
             <DialogDescription className="text-white/80">Provide a reason. This will be audit-logged.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
+          <div className="p-6 space-y-2">
             <FieldLabel required>{reasonLabel}</FieldLabel>
             <Textarea
               value={reason}
@@ -1026,7 +1026,7 @@ function ProcessActionButton({
         <RotateCcw className="w-3 h-3" /> Process
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <RotateCcw className="w-4 h-4 text-emerald-600" /> Process Refund
@@ -1035,7 +1035,7 @@ function ProcessActionButton({
               Confirm the funds have been returned to the patient. This will mark the refund as completed and update the invoice balance.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="p-6 space-y-3">
             <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Refund #</span><span className="font-mono font-semibold">{refund.refundNumber || refund.id.slice(-8).toUpperCase()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Approved Amount</span><span className="font-mono font-semibold">{formatCurrency(defaultAmount)}</span></div>
@@ -1463,14 +1463,14 @@ function ApproveActionButton({
         <Check className="w-3.5 h-3.5" /> Approve
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Approve Refund
             </DialogTitle>
             <DialogDescription className="text-white/80">Confirm the approved refund amount (cannot exceed the requested amount).</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="p-6 space-y-3">
             <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Refund #</span><span className="font-mono font-semibold">{refund.refundNumber || refund.id.slice(-8).toUpperCase()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Requested Amount</span><span className="font-mono font-semibold">{formatCurrency(refund.amount)}</span></div>
@@ -1958,7 +1958,7 @@ function NewRefundDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <RotateCcw className="w-5 h-5 text-orange-600" /> Request Refund

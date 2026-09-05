@@ -1152,7 +1152,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Edit className="w-5 h-5" />
@@ -1481,14 +1481,14 @@ function AddInsuranceDialog({ patientId, onClose, onAdded }: { patientId: string
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5" /> Add Insurance Coverage
           </DialogTitle>
           <DialogDescription className="text-white/80">Add a new insurance provider/coverage for this patient.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <Label>Insurance Provider</Label>
             <InsuranceProviderSelect

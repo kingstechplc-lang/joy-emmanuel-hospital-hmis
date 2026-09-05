@@ -348,11 +348,11 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> New Ambulance Request</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           {/* Patient search (optional for emergencies) */}
           <div>
             <Label>Patient (optional — leave blank for unregistered emergency)</Label>
@@ -519,7 +519,7 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Badge className="bg-red-100 text-red-700 border-red-200 font-mono text-[10px]">{t.tripNumber}</Badge>
@@ -758,9 +758,9 @@ function NewVehicleDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> Add Ambulance</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><FieldLabel required>Fleet Number</FieldLabel><Input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="AMB-001" className="h-8 text-sm font-mono" /></div>
             <div><FieldLabel required>Registration</FieldLabel><Input value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="GR-1234-24" className="h-8 text-sm" /></div>

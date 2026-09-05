@@ -1154,7 +1154,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle>Amend Entry</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1162,7 +1162,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
             <br />The original value will be preserved in <span className="font-medium">originalAmount</span> and the audit log.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel required>New Amount ({entry.unit || "ml"})</FieldLabel>
             <Input type="number" min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -1298,10 +1298,10 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className={`px-6 pt-6 pb-3 shrink-0 border-b ${isIntake ? "bg-emerald-50" : "bg-amber-50"}`}>
           <DialogTitle className="flex items-center gap-2 text-white">
-            {isIntake ? <TrendingUp className="w-5 h-5 text-emerald-600" /> : <TrendingDown className="w-5 h-5 text-amber-600" />}
+            {isIntake ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
             Record {isIntake ? "Intake" : "Output"} Entry
           </DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1456,7 +1456,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}
@@ -1544,9 +1544,9 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5 text-cyan-600" /> Monitoring Period</DialogTitle>
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> Monitoring Period</DialogTitle>
           <DialogDescription className="text-white/80">Start, end, or update fluid-balance monitoring for this patient.</DialogDescription>
         </DialogHeader>
 
@@ -1647,7 +1647,7 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
           {activePeriod ? (
             <Button onClick={() => endMutation.mutate()} disabled={endMutation.isPending} className="gap-2 bg-rose-600 hover:bg-rose-700">
@@ -1902,12 +1902,12 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
   const [notes, setNotes] = useState("");
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle>Acknowledge Alert</DialogTitle>
           <DialogDescription className="text-white/80">{alert.title}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <Label>Action Taken</Label>
             <Input value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} placeholder="e.g., Notified Dr. Mensah; reviewed I&O chart" />
@@ -2702,9 +2702,9 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5 text-cyan-600" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div>
@@ -2815,7 +2815,7 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
             <br /><span className="text-[10px]">⚠ The system never diagnoses — alerts only state "Configured threshold reached" with the actual documented value.</span>
           </div>
         </div>
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} className="bg-cyan-600 hover:bg-cyan-700">{isEdit ? "Update Config" : "Create Config"}</Button>
         </DialogFooter>

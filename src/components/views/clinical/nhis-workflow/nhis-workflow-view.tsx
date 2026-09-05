@@ -1155,9 +1155,9 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><CreditCard className="w-5 h-5 text-violet-600" /> Encounter Coverage</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-white"><CreditCard className="w-5 h-5" /> Encounter Coverage</DialogTitle>
           <DialogDescription className="text-white/80">Select the payer for this encounter.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -1379,9 +1379,9 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><ShieldCheck className="w-5 h-5 text-amber-600" /> Eligibility Verification</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-white"><ShieldCheck className="w-5 h-5" /> Eligibility Verification</DialogTitle>
           <DialogDescription className="text-white/80">Record an eligibility check for this encounter.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -1536,9 +1536,9 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><Fingerprint className="w-5 h-5 text-cyan-600" /> Attendance Verification</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-white"><Fingerprint className="w-5 h-5" /> Attendance Verification</DialogTitle>
           <DialogDescription className="text-white/80">Capture the attendance code for this encounter.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
@@ -1665,7 +1665,7 @@ function AuthorizationDialog({ patientId, encounterId, onClose, onSaved }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><FileText className="w-5 h-5 text-orange-600" /> New Pre-Authorization</DialogTitle>
           <DialogDescription className="text-white/80">Request or record an insurance pre-authorization.</DialogDescription>

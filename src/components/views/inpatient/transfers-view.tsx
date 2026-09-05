@@ -528,9 +528,9 @@ function NewTransferDialog({ facilityId, onClose, onCreated }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5 text-cyan-600" /> New Patient Transfer</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5" /> New Patient Transfer</DialogTitle>
           <DialogDescription className="text-white/80">Request a patient transfer. The patient stays in their current location until the transfer is approved and executed.</DialogDescription>
         </DialogHeader>
 
@@ -711,7 +711,7 @@ function NewTransferDialog({ facilityId, onClose, onCreated }: any) {
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !admissionId} className="gap-2 bg-cyan-600 hover:bg-cyan-700">
             {saving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />} Create Transfer Request
@@ -747,16 +747,16 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
   };
 
   if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-4xl"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!t) return <Dialog open onOpenChange={onClose}><DialogContent><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (!t) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
 
   const isFinalized = t.isFinalized;
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
-            <ArrowRightLeft className="w-5 h-5 text-cyan-600" />
+            <ArrowRightLeft className="w-5 h-5" />
             <span>{t.patient?.firstName} {t.patient?.lastName}</span>
             <span className="text-xs text-slate-500">{t.patient?.patientNumber}</span>
             <Badge className={`text-[10px] ${STATUS_COLORS[t.status] || "bg-slate-100 text-slate-700"}`}>{t.status.replace(/_/g, " ")}</Badge>
@@ -1138,9 +1138,9 @@ function CommunicationsPanel({ transferId, communications, onChanged }: any) {
 
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
-          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Log Communication</DialogTitle></DialogHeader>
-            <div className="space-y-2">
+            <div className="p-6 space-y-2">
               <div><FieldLabel required>Recipient Name</FieldLabel><Input value={newComm.recipientName} onChange={(e) => setNewComm({ ...newComm, recipientName: e.target.value })} placeholder="e.g., Dr. Mensah" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Department</Label><Input value={newComm.recipientDepartment} onChange={(e) => setNewComm({ ...newComm, recipientDepartment: e.target.value })} /></div>

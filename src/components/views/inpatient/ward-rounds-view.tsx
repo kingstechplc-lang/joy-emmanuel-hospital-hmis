@@ -260,9 +260,9 @@ function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2 text-white"><ClipboardCheck className="w-5 h-5 text-emerald-600" /> Schedule Ward Round</DialogTitle>
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="flex items-center gap-2 text-white"><ClipboardCheck className="w-5 h-5" /> Schedule Ward Round</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a round with type, priority, consultant, and patient list.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
@@ -291,7 +291,7 @@ function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCre
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
           <div><Label>Plan Changes</Label><Textarea value={form.planChanges} onChange={(e) => setForm({ ...form, planChanges: e.target.value })} rows={2} /></div>
         </div>
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || selectedPatientIds.length === 0} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{mutation.isPending ? "Saving..." : "Schedule Round"}</Button>
         </DialogFooter>
@@ -310,7 +310,7 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
   const [showAddPatient, setShowAddPatient] = useState(false);
 
   if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-4xl"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!r) return <Dialog open onOpenChange={onClose}><DialogContent><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (!r) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
 
   const lifecycleAction = async (action: string) => {
     try {
@@ -323,10 +323,10 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
-            <ClipboardCheck className="w-5 h-5 text-indigo-600" />
+            <ClipboardCheck className="w-5 h-5" />
             <span>{r.ward?.name || "General Round"}</span>
             <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-700"}`}>{r.status?.replace(/_/g, " ")}</Badge>
             <Badge variant="outline" className="capitalize">{r.roundType?.replace(/_/g, " ")}</Badge>
@@ -476,8 +476,8 @@ function NoteDialog({ roundId, onClose, onCreated }: any) {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-      <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>SOAP Round Note</DialogTitle></DialogHeader>
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>SOAP Round Note</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <div><FieldLabel required>Patient</FieldLabel><Input value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })} placeholder="Patient ID" /></div>
         <div><Label>S — Subjective</Label><Textarea value={form.subjective} onChange={(e) => setForm({ ...form, subjective: e.target.value })} rows={2} placeholder="Patient complaints, overnight events..." /></div>
@@ -487,7 +487,7 @@ function NoteDialog({ roundId, onClose, onCreated }: any) {
         <div><Label>Progress Status</Label><Select value={form.progressStatus || "_none"} onValueChange={(v) => setForm({ ...form, progressStatus: v === "_none" ? "" : v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="_none">— None —</SelectItem>{PROGRESS_STATUSES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
         <div><Label>Additional Notes</Label><Textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} /></div>
       </div>
-      <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Save as Draft"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Save as Draft"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -506,9 +506,9 @@ function ActionDialog({ roundId, patients, onClose, onCreated }: any) {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Action Item</DialogTitle></DialogHeader>
-      <div className="space-y-3">
+      <div className="p-6 space-y-3">
         <div><Label>Action Type</Label><Select value={form.actionType} onValueChange={(v) => setForm({ ...form, actionType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ACTION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
         <div><FieldLabel required>Title</FieldLabel><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Review CT scan result" /></div>
         <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></div>
@@ -541,7 +541,7 @@ function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
       <ClearableSearch value={search} onChange={setSearch} placeholder="Search admitted patients..." className="mb-2" />
       <div className="max-h-60 overflow-y-auto border rounded">

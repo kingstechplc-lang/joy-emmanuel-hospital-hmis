@@ -77,7 +77,7 @@ export function ProviderDialog({ provider, onClose }: { provider?: any; onClose:
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Insurance Provider" : "Add Insurance Provider"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update provider details. Use the details dialog for plans, contacts, and coverage." : "Add a new insurance provider to the master directory."}</DialogDescription>
@@ -144,7 +144,7 @@ export function ProviderDialog({ provider, onClose }: { provider?: any; onClose:
           </div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
         </div>
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.name || !form.code} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             <Save className="w-4 h-4" /> {mutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Provider"}

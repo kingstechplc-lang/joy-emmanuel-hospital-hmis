@@ -922,7 +922,7 @@ function TransferDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         {/* Keyed body — fresh form state per entry, no effect needed */}
         {entry && (
           <TransferDialogBody
@@ -974,7 +974,7 @@ function TransferDialogBody({
           (#{entry?.queueNumber}) to another queue. A new queue number will be assigned.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-3">
+      <div className="p-6 space-y-3">
         <div>
           <FieldLabel required>Target Queue</FieldLabel>
           <Select value={targetQueueId} onValueChange={setTargetQueueId}>
@@ -1034,7 +1034,7 @@ function SkipDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         {/* Keyed body — fresh form state per entry, no effect needed */}
         {entry && (
           <SkipDialogBody
@@ -1084,7 +1084,7 @@ function SkipDialogBody({
           (#{entry?.queueNumber}) is being {isNoShow ? "marked as no-show (cancelled)" : "skipped"}.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-3">
+      <div className="p-6 space-y-3">
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -1198,12 +1198,12 @@ function AddToQueueDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white">Add Patient to Queue</DialogTitle>
           <DialogDescription className="text-white/80">Add a patient to today&apos;s queue.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <Input

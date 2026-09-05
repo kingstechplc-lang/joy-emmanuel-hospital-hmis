@@ -479,7 +479,7 @@ function BulkUpdateDialog({ testIds, onClose, onDone }: { testIds: string[]; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white">Bulk Update {testIds.length} Test(s)</DialogTitle>
           <DialogDescription className="text-white/80">Set fields to update across all selected tests. Empty fields are ignored. A preview runs first.</DialogDescription>

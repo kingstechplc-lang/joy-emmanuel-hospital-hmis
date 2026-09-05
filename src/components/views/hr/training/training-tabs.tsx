@@ -159,7 +159,7 @@ function NewProgramDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create Training Program</DialogTitle>
           <DialogDescription className="text-white/80">Configure a new training program for your organization.</DialogDescription>
@@ -387,7 +387,7 @@ function NewSessionDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Schedule Training Session</DialogTitle>
           <DialogDescription className="text-white/80">Create a new session for a training program.</DialogDescription>
@@ -594,7 +594,7 @@ function NewEnrollmentDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Enroll Staff in Training</DialogTitle>
           <DialogDescription className="text-white/80">Select staff and training program/session.</DialogDescription>
@@ -808,7 +808,7 @@ function NewCertificateDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Issue Training Certificate</DialogTitle>
           <DialogDescription className="text-white/80">A unique certificate number and verification code will be auto-generated.</DialogDescription>
@@ -996,7 +996,7 @@ function NewRequestDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Submit Training Request</DialogTitle>
           <DialogDescription className="text-white/80">Request training for your department.</DialogDescription>
@@ -1161,7 +1161,7 @@ function NewProviderDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Training Provider</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
@@ -1210,7 +1210,7 @@ function NewTrainerDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Trainer</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>

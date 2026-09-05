@@ -541,9 +541,9 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b bg-indigo-50">
-          <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5 text-indigo-600" /> Request Discharge</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5" /> Request Discharge</DialogTitle>
           <DialogDescription className="text-white/80">Initiate a discharge request. The admission remains active until the discharge is finalized.</DialogDescription>
         </DialogHeader>
 
@@ -707,7 +707,7 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !admissionId} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
             {saving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />} Request Discharge
@@ -743,17 +743,17 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
   };
 
   if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-4xl"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!d) return <Dialog open onOpenChange={onClose}><DialogContent><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (!d) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
 
   const isFinalized = d.isFinalized;
   const ba = d.admission?.bedAssignments?.[0];
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
-            <LogOut className="w-5 h-5 text-indigo-600" />
+            <LogOut className="w-5 h-5" />
             <span>{d.patient?.firstName} {d.patient?.lastName}</span>
             <span className="text-xs text-slate-500">{d.patient?.patientNumber}</span>
             <Badge className={`text-[10px] ${STATUS_COLORS[d.status] || "bg-slate-100 text-slate-700"}`}>{d.status.replace(/_/g, " ")}</Badge>
@@ -1141,7 +1141,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
 
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
-          <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Discharge Medication</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2"><FieldLabel required>Medication Name</FieldLabel><Input value={newMed.medicationName} onChange={(e) => setNewMed({ ...newMed, medicationName: e.target.value })} placeholder="e.g., Amoxicillin" /></div>
@@ -1205,7 +1205,7 @@ function ClearancePanel({ discharge, canEdit, onChanged }: any) {
     <div className="space-y-3">
       <Card><CardContent className={`p-3 ${allCleared ? "bg-emerald-50" : "bg-amber-50"}`}>
         <div className="flex items-center gap-2 text-sm">
-          {allCleared ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-amber-600" />}
+          {allCleared ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className={`font-medium ${allCleared ? "text-emerald-700" : "text-amber-700"}`}>
             {allCleared ? "All clearances complete — ready for discharge finalization" : "Clearances pending — complete all required clearances before finalization"}
           </span>
@@ -1230,7 +1230,7 @@ function ClearancePanel({ discharge, canEdit, onChanged }: any) {
                       )}
                     </div>
                   </div>
-                  {c.done && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+                  {c.done && <CheckCircle2 className="w-5 h-5" />}
                 </div>
                 {canEdit && (
                   <Button size="sm" variant={c.done ? "outline" : "default"} className={`w-full h-7 text-xs ${c.done ? "" : "bg-emerald-600 hover:bg-emerald-700"}`} onClick={() => toggleClearance(c.key, c.done)}>

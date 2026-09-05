@@ -992,7 +992,7 @@ export function EncountersView() {
 
       {cancelEncounter && (
         <Dialog open onOpenChange={() => setCancelEncounter(null)}>
-          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
               <DialogTitle className="text-white flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-rose-600" /> Cancel Encounter
@@ -1299,14 +1299,14 @@ function NewEncounterDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-xl p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white">New Encounter</DialogTitle>
           <DialogDescription className="text-white/80">
             Open a new clinical encounter for a patient at this facility.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <Input

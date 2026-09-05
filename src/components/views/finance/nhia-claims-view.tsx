@@ -694,7 +694,7 @@ function ValidateDialog({ data, onClose, onGenerate, canGenerate, isValidating }
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Eye className="w-5 h-5" /> Validation Preview
@@ -906,7 +906,7 @@ function XmlPreviewDialog({ data, onClose, onDownload, canDownload }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileCode2 className="w-5 h-5" /> XML Generation Result
@@ -1012,7 +1012,7 @@ function DetailDialog({ record, onClose, onDownload }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileCheck2 className="w-5 h-5" /> {record.claimNumber}

@@ -44,14 +44,14 @@ export function ProviderDetailsDialog({ providerId, onClose }: { providerId: str
 
   if (isLoading) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <div className="p-8 text-center text-slate-500">Loading provider details…</div>
       </DialogContent>
     </Dialog>
   );
   if (isError || !p) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl p-0 gap-0 flex flex-col overflow-hidden">
         <div className="p-8 text-center text-rose-600">Failed to load provider details.</div>
         <div className="flex justify-center pb-4"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
       </DialogContent>
@@ -60,7 +60,7 @@ export function ProviderDetailsDialog({ providerId, onClose }: { providerId: str
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <Building2 className="w-5 h-5 text-emerald-600" />

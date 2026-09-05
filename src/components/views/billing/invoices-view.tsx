@@ -1431,7 +1431,7 @@ function ViewInvoiceDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden">
           {isLoading || !inv ? (
             <div className="p-4"><LoadingState rows={4} /></div>
           ) : (
@@ -2032,7 +2032,7 @@ function LifecycleActionDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Icon className={`w-5 h-5 ${c.iconColor}`} /> {c.title}
@@ -2041,7 +2041,7 @@ function LifecycleActionDialog({
             Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Balance {formatCurrency(invoice.balance)}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           {c.requireAmount && (
             <div>
               <FieldLabel required>Amount (GHS)</FieldLabel>
@@ -2313,7 +2313,7 @@ function NewInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Receipt className="w-5 h-5 text-rose-600" /> New Invoice
@@ -2674,7 +2674,7 @@ function PaymentDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <CreditCard className="w-5 h-5 text-emerald-600" /> Record Payment
@@ -2683,7 +2683,7 @@ function PaymentDialog({
               Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Outstanding {formatCurrency(invoice.balance)}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="p-6 space-y-3">
             <div>
               <FieldLabel required>Amount (GHS)</FieldLabel>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
@@ -2794,14 +2794,14 @@ function AddItemDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-emerald-600" /> Add Item to {invoice.invoiceNumber}
           </DialogTitle>
           <DialogDescription className="text-white/80">Totals will be recomputed automatically.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel>Service (optional)</FieldLabel>
             <Select value={serviceId || "_none"} onValueChange={(v) => v !== "_none" && selectService(v)}>

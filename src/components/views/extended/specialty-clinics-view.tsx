@@ -411,10 +411,10 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
-            <selectedSpecialty.icon className="w-5 h-5 text-purple-600" />
+            <selectedSpecialty.icon className="w-5 h-5" />
             New Specialty Encounter
           </DialogTitle>
           <DialogDescription className="text-white/80">Create a clinical encounter for a specialty consultation, procedure, or follow-up.</DialogDescription>
@@ -580,10 +580,10 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
-            <sp.icon className="w-5 h-5 text-purple-600" />
+            <sp.icon className="w-5 h-5" />
             {encounter.encounterNumber} — {encounter.patientName}
           </DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1051,10 +1051,10 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
-            <CalendarPlus className="w-5 h-5 text-blue-600" />
+            <CalendarPlus className="w-5 h-5" />
             New Specialty Appointment
           </DialogTitle>
           <DialogDescription className="text-white/80">Schedule a patient for a specialty consultation, follow-up, or procedure.</DialogDescription>
@@ -1264,9 +1264,9 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
-          <DialogTitle className="text-white flex items-center gap-2"><Building2 className="w-5 h-5 text-emerald-600" /> {item ? "Edit Clinic" : "New Clinic Configuration"}</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2"><Building2 className="w-5 h-5" /> {item ? "Edit Clinic" : "New Clinic Configuration"}</DialogTitle>
           <DialogDescription className="text-white/80">Configure the operating days, time slots, and lead clinician for a specialty clinic.</DialogDescription>
         </DialogHeader>
 
@@ -1495,10 +1495,10 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-amber-600" />
+            <Share2 className="w-5 h-5" />
             New Specialty Referral
           </DialogTitle>
           <DialogDescription className="text-white/80">Refer a patient to a specialty clinic for consultation or procedure.</DialogDescription>

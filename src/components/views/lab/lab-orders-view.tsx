@@ -474,7 +474,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> New Lab Order</DialogTitle>
           <DialogDescription className="text-white/80">Select patient, choose tests from the catalog, and set priority.</DialogDescription>
@@ -590,7 +590,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Additional notes / instructions for lab..." />
           </div>
         </div>
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Creating..." : "Create Order"}
@@ -643,7 +643,7 @@ function ActionDialog({ order, onClose, onChanged }: { order: any; onClose: () =
 function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white">
             <FlaskConical className="w-5 h-5 text-purple-600" /> Lab Order {order.orderNumber}
@@ -769,12 +769,12 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Collect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel required>Sample Number</FieldLabel>
             <Input value={sampleNumber} onChange={(e) => setSampleNumber(e.target.value)} />
@@ -840,12 +840,12 @@ function RejectSampleDialog({ order, onClose, onChanged }: { order: any; onClose
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-rose-700"><AlertTriangle className="w-5 h-5" /> Reject Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel required>Sample</FieldLabel>
             <Select value={sampleId} onValueChange={setSampleId}>
@@ -922,12 +922,12 @@ function RecollectSampleDialog({ order, onClose, onChanged }: { order: any; onCl
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Recollect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div>
             <FieldLabel required>Rejected sample to replace</FieldLabel>
             <Select value={sampleId} onValueChange={(v) => { setSampleId(v); const s = rejectedSamples.find((x: any) => x.id === v); if (s) setSpecimenType(s.specimenType || ""); }}>
@@ -990,7 +990,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><Beaker className="w-5 h-5" /> Receive Sample</DialogTitle>
           <DialogDescription className="text-white/80">Confirm sample received at the lab. Order {order.orderNumber}</DialogDescription>
@@ -1067,12 +1067,12 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> Enter Results</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           {items.map((it: any) => {
             const r = results[it.id] || {};
             return (
@@ -1166,7 +1166,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> Verify Results</DialogTitle>
           <DialogDescription className="text-white/80">You are about to verify all results on order {order.orderNumber}. This will mark them ready for release.</DialogDescription>

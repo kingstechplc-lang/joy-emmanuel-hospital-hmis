@@ -251,8 +251,8 @@ function DonorForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5 text-rose-600" /> Register Blood Donor</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5" /> Register Blood Donor</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2"><FieldLabel>Full Name</FieldLabel><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} /></div>
           <div><Label>Age</Label><Input type="number" value={form.age} onChange={(e) => set("age", e.target.value)} /></div>
@@ -280,9 +280,9 @@ function DonorDetail({ donor, onClose }: { donor: any; onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
-          <DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5 text-rose-600" /> {donor.fullName}</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5" /> {donor.fullName}</DialogTitle>
           <DialogDescription className="text-white/80">{donor.donorNumber}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
@@ -421,9 +421,9 @@ function UnitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; on
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Droplet className="w-5 h-5 text-rose-600" /> Register Blood Unit</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Droplet className="w-5 h-5" /> Register Blood Unit</DialogTitle></DialogHeader>
+        <div className="p-6 space-y-3">
           <div><FieldLabel>Donor ID</FieldLabel><Input value={form.donorId} onChange={(e) => set("donorId", e.target.value)} placeholder="Donor ID from donor registry" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Blood Group</Label><Select value={form.bloodGroup} onValueChange={(v) => set("bloodGroup", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}</SelectContent></Select></div>
@@ -602,9 +602,9 @@ function CrossmatchForm({ open, onOpenChange, onSubmit, loading }: { open: boole
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Beaker className="w-5 h-5 text-rose-600" /> New Crossmatch Test</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Beaker className="w-5 h-5" /> New Crossmatch Test</DialogTitle></DialogHeader>
+        <div className="p-6 space-y-3">
           <PatientPicker
             label="Patient (recipient)"
             required

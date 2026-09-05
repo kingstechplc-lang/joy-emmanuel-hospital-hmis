@@ -592,10 +592,10 @@ export function LabResultsView() {
           LabResult to amend — eliminates the silent first-result bug. */}
       {amendSelectGroup && (
         <Dialog open onOpenChange={() => setAmendSelectGroup(null)}>
-          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
               <DialogTitle className="flex items-center gap-2 text-white">
-                <History className="w-5 h-5 text-emerald-600" /> Select Result to Amend
+                <History className="w-5 h-5" /> Select Result to Amend
               </DialogTitle>
               <DialogDescription className="text-white/80">
                 This lab order has multiple amendable results. Choose the specific result you want to amend. The original will be preserved for audit.
@@ -683,14 +683,14 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5 text-emerald-600" /> Amend Result</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5" /> Amend Result</DialogTitle>
           <DialogDescription className="text-white/80">
             A new amended result will be created. The original is preserved for audit.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="p-6 space-y-3">
           <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{result.labOrderItem?.laboratoryTest?.name}</div>
             <div className="text-xs text-slate-500">Patient: {result.labOrderItem?.labOrder?.patient?.firstName} {result.labOrderItem?.labOrder?.patient?.lastName}</div>

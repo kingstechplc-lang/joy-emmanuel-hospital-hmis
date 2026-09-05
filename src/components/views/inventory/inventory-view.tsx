@@ -1479,7 +1479,7 @@ function ItemDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Package className="w-5 h-5 text-teal-600" /> Item Detail
@@ -1786,7 +1786,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-teal-600" /> New Inventory Item
@@ -2074,7 +2074,7 @@ function StockMovementDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <TitleIcon className="w-5 h-5 text-teal-600" /> {title}: {item.name}
@@ -2230,7 +2230,7 @@ function HistoryDialog({ item, facilityId, onClose }: { item: any; facilityId?: 
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <History className="w-5 h-5 text-teal-600" /> Transaction History

@@ -118,7 +118,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Lab Test" : "Add Lab Test"}</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -319,7 +319,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
             </div>
           )}
         </div>
-        <DialogFooter className="px-6 py-4 shrink-0 border-t bg-white">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}

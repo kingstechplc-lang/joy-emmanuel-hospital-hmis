@@ -512,7 +512,7 @@ function NewPregnancyDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Baby className="w-5 h-5 text-pink-600" />
@@ -679,7 +679,7 @@ function PregnancyDetailDialog({
   if (isLoading) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-4xl flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <LoadingState rows={5} />
         </DialogContent>
       </Dialog>
@@ -689,7 +689,7 @@ function PregnancyDetailDialog({
   if (isError || !data?.item) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-4xl flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <ErrorState message="Failed to load maternity record" onRetry={() => refetch()} />
         </DialogContent>
       </Dialog>
@@ -700,7 +700,7 @@ function PregnancyDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Baby className="w-5 h-5 text-pink-600" />

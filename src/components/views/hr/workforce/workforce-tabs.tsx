@@ -228,7 +228,7 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Request Shift Swap</DialogTitle>
           <DialogDescription className="text-white/80">Select your shift and the target staff/shift to swap with. Conflicts will be validated.</DialogDescription>
@@ -474,7 +474,7 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">New Coverage Request</DialogTitle>
           <DialogDescription className="text-white/80">Use this when staff cannot make a shift and a replacement is needed.</DialogDescription>
@@ -604,7 +604,7 @@ function AssignCoverageDialog({ coverage, onClose }: { coverage: any; onClose: (
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Find Replacement</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -815,7 +815,7 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">New On-Call Assignment</DialogTitle>
           <DialogDescription className="text-white/80">Assign staff to be on-call for a specified period.</DialogDescription>
@@ -1236,7 +1236,7 @@ function NewShiftTypeDialog({ onClose, facilityId }: { onClose: () => void; faci
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create New Shift Type</DialogTitle>
           <DialogDescription className="text-white/80">Configure a custom shift type for your facility.</DialogDescription>
@@ -1430,7 +1430,7 @@ function NewLeaveTypeDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create New Leave Type</DialogTitle>
           <DialogDescription className="text-white/80">Configure a custom leave type with policy rules.</DialogDescription>
@@ -1602,7 +1602,7 @@ function NewHolidayDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create New Public Holiday</DialogTitle>
           <DialogDescription className="text-white/80">Add a custom public holiday for your organization.</DialogDescription>
@@ -1747,7 +1747,7 @@ function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Staffing Requirement</DialogTitle><DialogDescription className="text-white/80">Define minimum staffing levels for a department/shift/day type.</DialogDescription></DialogHeader>
         <div className="grid grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
@@ -1895,7 +1895,7 @@ function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Leave Policy</DialogTitle><DialogDescription className="text-white/80">Define accrual, carry-forward, and negative balance rules for a leave type.</DialogDescription></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave Policy 2026" /></div>
@@ -2106,7 +2106,7 @@ function NewAvailabilityDialog({ onClose, date }: { onClose: () => void; date: s
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Set Staff Availability</DialogTitle>
           <DialogDescription className="text-white/80">Override a staff member&apos;s default availability for a specific date.</DialogDescription>

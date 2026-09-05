@@ -857,10 +857,10 @@ function StaffDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-600" /> Staff Detail
+            <Users className="w-5 h-5" /> Staff Detail
           </DialogTitle>
           <DialogDescription className="text-white/80">Comprehensive view of a staff member's record, history and compliance.</DialogDescription>
         </DialogHeader>
@@ -1713,7 +1713,7 @@ function StaffDialog({ mode, staff, onClose }: { mode: "create" | "edit"; staff?
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Staff Member" : "Add New Staff Member"}</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -2462,9 +2462,9 @@ function LifecycleActionDialog({ staff, type, onClose }: { staff: any; type: str
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
-          <DialogTitle className="text-white flex items-center gap-2"><Icon className="w-5 h-5 text-blue-600" /> {meta.title}</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2"><Icon className="w-5 h-5" /> {meta.title}</DialogTitle>
           <DialogDescription className="text-white/80">{meta.description}</DialogDescription>
         </DialogHeader>
 
