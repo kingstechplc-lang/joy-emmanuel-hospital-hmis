@@ -445,14 +445,14 @@ function NewNursingNoteDialog({ onClose, onCreated }: { onClose: () => void; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><NotebookPen className="w-5 h-5" /> New Nursing Note</DialogTitle>
           <DialogDescription className="text-white/80">Note is created as DRAFT. Sign it to make it part of the clinical record.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} setAdmissionId={setAdmissionId} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
             <div><Label>Note Type</Label>
               <Select value={noteType} onValueChange={setNoteType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{NOTE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select>
             </div>
@@ -505,7 +505,7 @@ function NewCarePlanDialog({ onClose, onCreated }: { onClose: () => void; onCrea
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><ClipboardList className="w-5 h-5" /> New Care Plan</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -548,7 +548,7 @@ function HandoverDialog({ onClose, onCreated }: { onClose: () => void; onCreated
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5" /> Nursing Handover</DialogTitle><DialogDescription className="text-white/80">SBAR-format patient handover</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -591,7 +591,7 @@ function EscalationDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><AlertTriangle className="w-5 h-5" /> Escalate Concern</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div><Label>Priority</Label><Select value={priority} onValueChange={setPriority}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="critical">Critical</SelectItem></SelectContent></Select></div>
           <div><Label>Escalate To</Label><Select value={escalatedTo} onValueChange={setEscalatedTo}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="doctor">Doctor</SelectItem><SelectItem value="specialist">Specialist</SelectItem><SelectItem value="nurse_in_charge">Nurse-in-Charge</SelectItem><SelectItem value="emergency_team">Emergency Team</SelectItem></SelectContent></Select></div>
         </div>
@@ -629,7 +629,7 @@ function TaskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> New Nursing Task</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div><Label>Task Type</Label><Select value={taskType} onValueChange={setTaskType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TASK_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
           <div><Label>Frequency</Label><Select value={frequency} onValueChange={setFrequency}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="once">Once</SelectItem><SelectItem value="every_4h">Every 4h</SelectItem><SelectItem value="every_8h">Every 8h</SelectItem><SelectItem value="daily">Daily</SelectItem><SelectItem value="prn">PRN</SelectItem></SelectContent></Select></div>
         </div>
@@ -671,11 +671,11 @@ function WoundDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Bandage className="w-5 h-5" /> Wound Assessment</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div><FieldLabel required>Location</FieldLabel><Input value={woundLocation} onChange={(e) => setWoundLocation(e.target.value)} placeholder="e.g., Right heel" /></div>
           <div><Label>Wound Type</Label><Select value={woundType} onValueChange={setWoundType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{WOUND_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
         </div>
@@ -728,7 +728,7 @@ function RiskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><ShieldAlert className="w-5 h-5" /> Risk Assessment</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div><Label>Assessment Type</Label><Select value={assessmentType} onValueChange={setAssessmentType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{RISK_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
           <div><Label>Risk Level</Label><Select value={riskLevel} onValueChange={setRiskLevel}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="low">Low</SelectItem><SelectItem value="moderate">Moderate</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="severe">Severe</SelectItem></SelectContent></Select></div>
         </div>

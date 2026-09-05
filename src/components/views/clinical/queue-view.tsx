@@ -1085,7 +1085,7 @@ function SkipDialogBody({
         </DialogDescription>
       </DialogHeader>
       <div className="p-6 space-y-3">
-        <div className="flex gap-2">
+        <div className="flex-1 overflow-y-auto p-6 flex gap-2">
           <Button
             size="sm"
             variant={!isNoShow ? "default" : "outline"}

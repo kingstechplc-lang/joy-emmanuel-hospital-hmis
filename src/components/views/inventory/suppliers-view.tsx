@@ -895,7 +895,7 @@ function SupplierDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b bg-gradient-to-r from-blue-500 to-indigo-600 text-white shrink-0">
           <div className="flex items-start justify-between gap-3">
@@ -1870,7 +1870,7 @@ function SupplierDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-5 py-4 border-b bg-gradient-to-r from-blue-500 to-indigo-600 text-white shrink-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Truck className="w-5 h-5" /> {isEdit ? "Edit Supplier" : "New Supplier"}
@@ -1880,7 +1880,7 @@ function SupplierDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Identity */}
           <section>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Identity & Classification</h4>

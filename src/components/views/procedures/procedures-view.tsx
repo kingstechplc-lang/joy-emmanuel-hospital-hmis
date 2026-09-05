@@ -392,7 +392,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5" /> New Procedure</DialogTitle>
           <DialogDescription className="text-white/80">Request or record a procedure for a patient.</DialogDescription>
@@ -631,7 +631,7 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5" /> Procedure Record <StatusBadge status={editable.status} /></DialogTitle>
           <DialogDescription className="text-white/80">
@@ -639,7 +639,7 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Procedure Name</Label>
               <Input value={editable.procedureName || ""} onChange={(e) => setField("procedureName", e.target.value)} />

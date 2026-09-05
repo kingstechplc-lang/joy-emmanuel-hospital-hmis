@@ -1454,7 +1454,7 @@ function ViewInvoiceDialog({
               </DialogHeader>
 
               {/* Lifecycle action bar */}
-              <div className="shrink-0 flex flex-wrap gap-2 pb-2 border-b">
+              <div className="flex-1 overflow-y-auto p-6 shrink-0 flex flex-wrap gap-2 pb-2 border-b">
                 {inv.status === "draft" && canCreate && (
                   <Button size="sm" variant="outline" onClick={() => runAction("review")} disabled={lifecycleMutation.isPending} className="gap-1.5 h-7 text-xs">
                     <ClipboardCheck className="w-3.5 h-3.5" /> Submit for Review
@@ -2324,7 +2324,7 @@ function NewInvoiceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3 overflow-y-auto flex-1 pr-1">
           {/* Patient + encounter + dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>

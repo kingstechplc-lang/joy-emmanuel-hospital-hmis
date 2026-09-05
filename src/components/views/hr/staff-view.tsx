@@ -857,7 +857,7 @@ function StaffDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Users className="w-5 h-5" /> Staff Detail
@@ -1713,7 +1713,7 @@ function StaffDialog({ mode, staff, onClose }: { mode: "create" | "edit"; staff?
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Staff Member" : "Add New Staff Member"}</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1723,7 +1723,7 @@ function StaffDialog({ mode, staff, onClose }: { mode: "create" | "edit"; staff?
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* User account */}
           {!isEdit && (
             <div>
@@ -2462,13 +2462,13 @@ function LifecycleActionDialog({ staff, type, onClose }: { staff: any; type: str
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Icon className="w-5 h-5" /> {meta.title}</DialogTitle>
           <DialogDescription className="text-white/80">{meta.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="py-2 flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+        <div className="flex-1 overflow-y-auto p-6 py-2 flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
           <Avatar className="w-8 h-8 bg-blue-100">
             <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{`${staff?.firstName?.[0] || ""}${staff?.lastName?.[0] || ""}`.toUpperCase()}</AvatarFallback>
           </Avatar>

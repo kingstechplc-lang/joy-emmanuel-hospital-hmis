@@ -787,7 +787,7 @@ function NewReferralDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Patient Referral</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1200,7 +1200,7 @@ function ReferralDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             {r.referralNumber && (
@@ -1223,7 +1223,7 @@ function ReferralDetailDialog({
         </DialogHeader>
 
         {/* Section tabs */}
-        <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-wrap gap-1 border-b border-slate-200 pb-2">
           {[
             { id: "overview", label: "Overview", icon: FileText },
             { id: "timeline", label: `Timeline (${events.length})`, icon: Activity },

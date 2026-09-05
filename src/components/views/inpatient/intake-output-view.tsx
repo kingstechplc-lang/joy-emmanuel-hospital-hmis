@@ -1298,7 +1298,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className={`px-6 pt-6 pb-3 shrink-0 border-b ${isIntake ? "bg-emerald-50" : "bg-amber-50"}`}>
           <DialogTitle className="flex items-center gap-2 text-white">
             {isIntake ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
@@ -1544,7 +1544,7 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> Monitoring Period</DialogTitle>
           <DialogDescription className="text-white/80">Start, end, or update fluid-balance monitoring for this patient.</DialogDescription>
@@ -2702,7 +2702,7 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
         </DialogHeader>

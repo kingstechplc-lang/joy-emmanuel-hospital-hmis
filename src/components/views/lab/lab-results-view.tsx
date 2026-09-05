@@ -683,7 +683,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5" /> Amend Result</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -691,7 +691,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{result.labOrderItem?.laboratoryTest?.name}</div>
             <div className="text-xs text-slate-500">Patient: {result.labOrderItem?.labOrder?.patient?.firstName} {result.labOrderItem?.labOrder?.patient?.lastName}</div>
             <div className="text-xs text-slate-500">Order #: <span className="font-mono">{result.labOrderItem?.labOrder?.orderNumber}</span></div>

@@ -1036,7 +1036,7 @@ function ProcessActionButton({
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-3">
-            <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
+            <div className="flex-1 overflow-y-auto p-6 text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Refund #</span><span className="font-mono font-semibold">{refund.refundNumber || refund.id.slice(-8).toUpperCase()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Approved Amount</span><span className="font-mono font-semibold">{formatCurrency(defaultAmount)}</span></div>
             </div>
@@ -1471,7 +1471,7 @@ function ApproveActionButton({
             <DialogDescription className="text-white/80">Confirm the approved refund amount (cannot exceed the requested amount).</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-3">
-            <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
+            <div className="flex-1 overflow-y-auto p-6 text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Refund #</span><span className="font-mono font-semibold">{refund.refundNumber || refund.id.slice(-8).toUpperCase()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Requested Amount</span><span className="font-mono font-semibold">{formatCurrency(refund.amount)}</span></div>
             </div>
@@ -1958,7 +1958,7 @@ function NewRefundDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <RotateCcw className="w-5 h-5 text-orange-600" /> Request Refund
@@ -1968,7 +1968,7 @@ function NewRefundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Payment search */}
           <div>
             <FieldLabel required>Search Payment</FieldLabel>

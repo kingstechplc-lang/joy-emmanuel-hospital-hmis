@@ -653,7 +653,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ScanLine className="w-5 h-5" /> New Imaging Order</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a radiology study for a patient.</DialogDescription>
@@ -940,14 +940,14 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><FileText className="w-5 h-5" /> Imaging Report</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {order.report?.findings?.startsWith("Indication:") && (
-            <div className="bg-slate-50 p-3 rounded text-sm">
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm">
               <span className="text-slate-500">Indication: </span>
               <span className="font-medium text-slate-900">{order.report.findings.replace(/^Indication:\s*/, "").trim()}</span>
             </div>
@@ -1002,7 +1002,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
           <DialogDescription className="text-white/80">Confirm the imaging report is verified. {order.procedureName}</DialogDescription>
         </DialogHeader>
         {order.report && (
-          <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">Findings:</div>
             <div className="text-xs text-slate-700 whitespace-pre-wrap">{order.report.findings || "—"}</div>
             {order.report.impression && (
@@ -1081,7 +1081,7 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <History className="w-5 h-5" /> Amend Imaging Report
@@ -1091,7 +1091,7 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{order.procedureName}</div>
             <div className="text-xs text-slate-500">Patient: {order.patient?.firstName} {order.patient?.lastName}</div>
             <div className="text-xs text-slate-500">Order #: <span className="font-mono">{order.orderNumber || order.id}</span></div>

@@ -329,7 +329,7 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Sparkles className="w-5 h-5" /> New Service Request</DialogTitle>
           <DialogDescription className="text-white/80">Request a support service for your department or facility.</DialogDescription>
@@ -405,7 +405,7 @@ function RequestDetail({ item, canManage, onClose }: { item: any; canManage: boo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <TypeIcon className="w-5 h-5" />
@@ -414,7 +414,7 @@ function RequestDetail({ item, canManage, onClose }: { item: any; canManage: boo
           <DialogDescription className="text-white/80">Created {formatDate(item.createdAt, true)}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
-          <div><Label className="text-slate-500">Service Type</Label><div className="font-semibold">{typeInfo.label}</div></div>
+          <div><Label className="flex-1 overflow-y-auto p-6 text-slate-500">Service Type</Label><div className="font-semibold">{typeInfo.label}</div></div>
           <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={item.priority} /></div></div>
           <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={item.status} /></div></div>
           <div><Label className="text-slate-500">Location</Label><div>{item.location || "—"}</div></div>
@@ -543,7 +543,7 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Wrench className="w-5 h-5" /> Schedule Maintenance</DialogTitle></DialogHeader>
             <MaintenanceForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -690,7 +690,7 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> New Facility Inspection</DialogTitle></DialogHeader>
             <InspectionForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>

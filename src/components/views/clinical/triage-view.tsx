@@ -1245,7 +1245,7 @@ function TriageDetailDialog({ record, onClose }: { record: any; onClose: () => v
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Category banner */}
           {cat && (
             <div className={`rounded-lg p-3 text-white bg-gradient-to-r ${cat.gradient}`}>

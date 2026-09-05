@@ -301,7 +301,7 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-indigo-600" />
@@ -310,7 +310,7 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
           <DialogDescription className="text-white/80">Standardized diagnosis with code (ICD-10/ICD-11/SNOMED), synonyms, and category.</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <FieldLabel>Code *</FieldLabel>
             <Input value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="e.g., I10, E11.9" disabled={!!item} />

@@ -1386,7 +1386,7 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
         </DialogHeader>
         <div className="p-6 space-y-3">
           {/* NHIA direct API availability notice (truthful, not dismissive) */}
-          <div className="p-2.5 bg-blue-50 border border-blue-200 rounded text-xs flex items-start gap-2">
+          <div className="flex-1 overflow-y-auto p-6 p-2.5 bg-blue-50 border border-blue-200 rounded text-xs flex items-start gap-2">
             <Info className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-slate-700">
               <p className="font-semibold">Direct NHIA API: Not configured</p>
@@ -1543,7 +1543,7 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
         </DialogHeader>
         <div className="p-6 space-y-3">
           {/* Security notice */}
-          <div className="p-2 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 flex items-center gap-2">
+          <div className="flex-1 overflow-y-auto p-6 p-2 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 flex items-center gap-2">
             <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span>Codes are hashed (SHA-256) on the server. OTAC codes cannot be reused across encounters.</span>
           </div>

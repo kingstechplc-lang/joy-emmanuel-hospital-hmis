@@ -234,13 +234,13 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Cpu className="w-4 h-4" /> {isEdit ? "Edit Equipment" : "New Equipment"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update equipment information" : "Register a new equipment asset"}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Asset #</FieldLabel>
               <Input value={assetNumber} onChange={(e) => setAssetNumber(e.target.value)} placeholder="AST-001" disabled={isEdit} />
@@ -335,7 +335,7 @@ function MaintenanceDialog({ equipment, onClose }: { equipment: any; onClose: ()
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><History className="w-4 h-4" /> Maintenance History</DialogTitle>
           <DialogDescription className="text-white/80">{equipment.name} ({equipment.assetNumber})</DialogDescription>

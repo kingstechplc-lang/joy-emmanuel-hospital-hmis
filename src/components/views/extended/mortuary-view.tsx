@@ -295,7 +295,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> Admit Deceased Person</DialogTitle>
           <DialogDescription className="text-white/80">Record a deceased person — works for both facility deaths and bodies brought in from outside.</DialogDescription>
@@ -406,14 +406,14 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> {item.deceasedName}</DialogTitle>
           <DialogDescription className="text-white/80">Mortuary Admission — {item.admissionNumber}</DialogDescription>
         </DialogHeader>
 
         {/* Case info grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
           <div><Label className="text-slate-500">Body Tag</Label><div className="font-mono font-semibold">{item.bodyTag || "—"}</div></div>
           <div><Label className="text-slate-500">Age / Sex</Label><div>{item.deceasedAge ? `${item.deceasedAge}y` : "—"} / {item.deceasedSex || "—"}</div></div>
           <div><Label className="text-slate-500">Date of Death</Label><div>{formatDate(item.dateOfDeath, true)}</div></div>
@@ -530,7 +530,7 @@ function ReleaseForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><DoorOpen className="w-5 h-5" /> Release Body</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Released To (Name)</FieldLabel><Input value={form.releasedTo} onChange={(e) => set("releasedTo", e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
             <div><Label>Phone</Label><Input value={form.releasedToPhone} onChange={(e) => set("releasedToPhone", e.target.value)} /></div>
             <div><Label>ID Type</Label><Select value={form.releasedToIdType} onValueChange={(v) => set("releasedToIdType", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="national_id">National ID</SelectItem><SelectItem value="driving">Driving License</SelectItem><SelectItem value="passport">Passport</SelectItem><SelectItem value="voter">Voter Card</SelectItem></SelectContent></Select></div>
           </div>
@@ -553,7 +553,7 @@ function ViewingForm({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCh
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Calendar className="w-5 h-5" /> Schedule Viewing</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Viewer Name</FieldLabel><Input value={form.viewerName} onChange={(e) => set("viewerName", e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
             <div><Label>Relationship</Label><Input value={form.viewerRelation} onChange={(e) => set("viewerRelation", e.target.value)} placeholder="Spouse / Son" /></div>
             <div><Label>Phone</Label><Input value={form.viewerPhone} onChange={(e) => set("viewerPhone", e.target.value)} /></div>
           </div>

@@ -432,7 +432,7 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5" />
@@ -446,7 +446,7 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
         </DialogHeader>
 
         {isLoading ? <LoadingState rows={4} /> : appt ? (
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* Patient + Status */}
             <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
               <div><Label className="text-slate-500">Patient</Label><div className="font-semibold">{appt.patient?.firstName} {appt.patient?.lastName}</div></div>
@@ -615,7 +615,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5" /> Book New Appointment</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a patient appointment. The system checks for double-booking automatically.</DialogDescription>
@@ -743,7 +743,7 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
           <DialogDescription className="text-white/80">Choose a new date and time. The original slot will be preserved in history.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>New Date</FieldLabel>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

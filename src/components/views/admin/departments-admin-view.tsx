@@ -573,13 +573,13 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Department" : "Add Department"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update department details." : "Create a new department within a facility."}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Emergency Department" />
@@ -710,7 +710,7 @@ function UnitDialog({ departmentId, unit, onClose, onSaved }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Unit" : "Add Unit"}</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -718,7 +718,7 @@ function UnitDialog({ departmentId, unit, onClose, onSaved }: {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., ICU" />
           </div>

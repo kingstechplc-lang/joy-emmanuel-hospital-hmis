@@ -1198,7 +1198,7 @@ function PaymentDetailDialog({
 
   return (
     <Dialog open={!!paymentId} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <CreditCard className="w-5 h-5" /> Payment Detail
@@ -1406,7 +1406,7 @@ function RefundRequestDialog({
 
   return (
     <Dialog open={!!payment} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><RotateCcw className="w-5 h-5" /> Request Refund</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1414,7 +1414,7 @@ function RefundRequestDialog({
           </DialogDescription>
         </DialogHeader>
         {payment && (
-          <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto p-6 space-y-3">
             <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Payment #</span><span className="font-mono font-semibold">{payment.paymentNumber}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Patient</span><span className="font-medium">{payment.patient?.firstName} {payment.patient?.lastName}</span></div>
@@ -1597,7 +1597,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CreditCard className="w-5 h-5" /> Record Payment</DialogTitle>
           <DialogDescription className="text-white/80">Select an invoice with an outstanding balance. The payment will update the invoice's amount paid, balance, and status atomically.</DialogDescription>

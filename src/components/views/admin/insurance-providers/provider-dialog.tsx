@@ -77,14 +77,14 @@ export function ProviderDialog({ provider, onClose }: { provider?: any; onClose:
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Insurance Provider" : "Add Insurance Provider"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update provider details. Use the details dialog for plans, contacts, and coverage." : "Add a new insurance provider to the master directory."}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
-            <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto p-6 border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
                 <AlertTriangle className="w-4 h-4" /> Possible duplicate provider detected
               </div>

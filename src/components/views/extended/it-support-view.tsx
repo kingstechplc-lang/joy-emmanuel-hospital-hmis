@@ -287,7 +287,7 @@ function TicketForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Server className="w-5 h-5" /> New IT Support Ticket</DialogTitle>
           <DialogDescription className="text-white/80">Report a technical issue or request IT assistance.</DialogDescription>
@@ -397,7 +397,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <TypeIcon className="w-5 h-5" />
@@ -409,7 +409,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
         </DialogHeader>
 
         {/* Ticket info */}
-        <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
           <div><Label className="text-slate-500">Type</Label><div className="font-semibold text-slate-800">{typeInfo.label}</div></div>
           <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={ticket.priority} /></div></div>
           <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={ticket.status} /></div></div>
@@ -570,7 +570,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><BookOpen className="w-5 h-5" /> New Knowledge Base Article</DialogTitle></DialogHeader>
             <KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -579,10 +579,10 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
 
       {viewArticle && (
         <Dialog open onOpenChange={() => setViewArticle(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewArticle.title}</DialogTitle></DialogHeader>
             <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{viewArticle.content}</div>
-            <div className="flex items-center gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
+            <div className="flex-1 overflow-y-auto p-6 flex items-center gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
               <span>Category: <strong>{viewArticle.category}</strong></span>
               <span>Views: {viewArticle.viewCount}</span>
               <span>By: {viewArticle.authorName || "IT Team"}</span>
@@ -712,7 +712,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Monitor className="w-5 h-5" /> Register IT Asset</DialogTitle></DialogHeader>
             <AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -721,10 +721,10 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
 
       {viewAsset && (
         <Dialog open onOpenChange={() => setViewAsset(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewAsset.assetTag} — {viewAsset.manufacturer} {viewAsset.model}</DialogTitle></DialogHeader>
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3 text-xs">
-              <div><Label className="text-slate-500">Type</Label><div className="font-semibold uppercase">{viewAsset.assetType}</div></div>
+              <div><Label className="flex-1 overflow-y-auto p-6 text-slate-500">Type</Label><div className="font-semibold uppercase">{viewAsset.assetType}</div></div>
               <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={viewAsset.status} /></div></div>
               <div><Label className="text-slate-500">Serial Number</Label><div className="font-mono">{viewAsset.serialNumber || "—"}</div></div>
               <div><Label className="text-slate-500">Location</Label><div>{viewAsset.location || "—"}</div></div>

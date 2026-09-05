@@ -271,7 +271,7 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white" className="flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-emerald-600" /> New Shift Handover
@@ -281,7 +281,7 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Facility</FieldLabel>
             <Input value={form.facilityId} disabled placeholder="Active facility" />
@@ -449,7 +449,7 @@ function HandoverDetail({ handover, onClose }: { handover: any; onClose: () => v
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white" className="flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-emerald-600" />
@@ -460,7 +460,7 @@ function HandoverDetail({ handover, onClose }: { handover: any; onClose: () => v
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className={`capitalize ${SHIFT_BADGE[handover.shiftType] || ""}`}>
               {handover.shiftType} shift

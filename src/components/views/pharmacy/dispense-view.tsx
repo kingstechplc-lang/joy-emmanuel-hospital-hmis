@@ -1391,7 +1391,7 @@ export function DispenseView() {
           </DialogHeader>
 
           {/* Summary stat row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
             <PreviewStat
               label="Patients"
               value={previewSummary.patientCount}

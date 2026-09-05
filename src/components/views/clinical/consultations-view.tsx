@@ -433,7 +433,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Consultation Note</DialogTitle>
           <DialogDescription className="text-white/80">Will be saved as draft. Sign after completion.</DialogDescription>
@@ -666,7 +666,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
             <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
               <ClipboardList className="w-5 h-5" /> Consultation Note
@@ -686,7 +686,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto p-6 space-y-3">
             {/* Quick Actions row — cross-module links */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/50 p-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 mr-1 hidden sm:inline">

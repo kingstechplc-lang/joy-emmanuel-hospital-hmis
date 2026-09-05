@@ -1222,13 +1222,13 @@ function NewPODialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ShoppingCart className="w-4 h-4" /> New Purchase Order</DialogTitle>
           <DialogDescription className="text-white/80">Select facility, supplier, commercial terms and line items.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Header fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -1543,7 +1543,7 @@ function ViewPODialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -1569,7 +1569,7 @@ function ViewPODialog({
         </DialogHeader>
 
         {/* Financial summary */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-5 gap-2">
           <div className="border rounded p-2 text-center">
             <div className="text-[10px] text-slate-500 uppercase">PO Total</div>
             <div className="font-bold text-slate-900">{formatCurrency(m.poTotal, data?.currency)}</div>
@@ -1980,13 +1980,13 @@ function ReceiveDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><PackageCheck className="w-4 h-4" /> Receive Goods: {data?.purchaseOrderNumber}</DialogTitle>
           <DialogDescription className="text-white/80">{data?.supplier?.name} · {data?.facility?.name}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel>GRN / Reference Number</FieldLabel>

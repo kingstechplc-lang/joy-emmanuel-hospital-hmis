@@ -228,7 +228,7 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Request Shift Swap</DialogTitle>
           <DialogDescription className="text-white/80">Select your shift and the target staff/shift to swap with. Conflicts will be validated.</DialogDescription>
@@ -474,13 +474,13 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">New Coverage Request</DialogTitle>
           <DialogDescription className="text-white/80">Use this when staff cannot make a shift and a replacement is needed.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="md:col-span-2">
+          <div className="flex-1 overflow-y-auto p-6 md:col-span-2">
             <StaffSearchableSelect
               value={originalStaffId}
               onValueChange={(v) => { setOriginalStaffId(v); setShiftId(""); }}
@@ -604,7 +604,7 @@ function AssignCoverageDialog({ coverage, onClose }: { coverage: any; onClose: (
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Find Replacement</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -815,13 +815,13 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">New On-Call Assignment</DialogTitle>
           <DialogDescription className="text-white/80">Assign staff to be on-call for a specified period.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="md:col-span-2">
+          <div className="flex-1 overflow-y-auto p-6 md:col-span-2">
             <StaffSearchableSelect
               value={staffId}
               onValueChange={setStaffId}
@@ -1236,13 +1236,13 @@ function NewShiftTypeDialog({ onClose, facilityId }: { onClose: () => void; faci
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create New Shift Type</DialogTitle>
           <DialogDescription className="text-white/80">Configure a custom shift type for your facility.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Morning" />
           </div>
@@ -1430,13 +1430,13 @@ function NewLeaveTypeDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create New Leave Type</DialogTitle>
           <DialogDescription className="text-white/80">Configure a custom leave type with policy rules.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave" />
           </div>
@@ -1608,7 +1608,7 @@ function NewHolidayDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">Add a custom public holiday for your organization.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
             <FieldLabel required>Holiday Name</FieldLabel>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Independence Day" />
           </div>
@@ -1750,7 +1750,7 @@ function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
       <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Staffing Requirement</DialogTitle><DialogDescription className="text-white/80">Define minimum staffing levels for a department/shift/day type.</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
-          <div className="space-y-1.5 md:col-span-2">
+          <div className="flex-1 overflow-y-auto p-6 space-y-1.5 md:col-span-2">
             <Label>Department</Label>
             <Select value={departmentId} onValueChange={setDepartmentId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -1895,10 +1895,10 @@ function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Leave Policy</DialogTitle><DialogDescription className="text-white/80">Define accrual, carry-forward, and negative balance rules for a leave type.</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave Policy 2026" /></div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave Policy 2026" /></div>
           <div className="space-y-1.5">
             <FieldLabel required>Leave Type</FieldLabel>
             <Select value={leaveTypeId || "__none__"} onValueChange={setLeaveTypeId}>

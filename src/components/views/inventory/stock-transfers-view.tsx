@@ -1339,7 +1339,7 @@ function NewTransferDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <ArrowLeftRight className="w-4 h-4" /> New Stock Transfer
@@ -1349,7 +1349,7 @@ function NewTransferDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Header fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -1606,7 +1606,7 @@ function ViewTransferDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -1631,7 +1631,7 @@ function ViewTransferDialog({
         </DialogHeader>
 
         {/* Quantity summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
           <SummaryTile label="Requested" value={m.totalRequestedQty} />
           <SummaryTile label="Approved" value={m.totalApprovedQty} color="blue" />
           <SummaryTile label="Dispatched" value={m.totalDispatchedQty} color="cyan" />
@@ -1990,7 +1990,7 @@ function ReceiveDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <PackageCheck className="w-4 h-4" /> Receive Goods: {data?.transferNumber}
@@ -2002,7 +2002,7 @@ function ReceiveDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+        <div className="flex-1 overflow-y-auto p-6 space-y-2 max-h-[60vh] overflow-y-auto pr-1">
           {(data?.items || []).map((it: any) => {
             const cfg = recvMap[it.id] || {};
             const dispatched = Number(it.dispatchedQuantity) || Number(it.requestedQuantity) || 0;

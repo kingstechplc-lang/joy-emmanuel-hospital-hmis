@@ -543,7 +543,7 @@ Artemether/Lumefantrine,Coartem,20/120mg,tablet,oral,antimalarials,Antimalarial,
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Upload className="w-5 h-5 text-indigo-600" />
@@ -555,7 +555,7 @@ Artemether/Lumefantrine,Coartem,20/120mg,tablet,oral,antimalarials,Antimalarial,
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="flex items-center gap-2">
             <Button
               variant="outline" size="sm"
@@ -670,7 +670,7 @@ function MedicationForm({ med, onClose, onSaved }: { med: any | null; onClose: (
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Pill className="w-5 h-5 text-indigo-600" />
@@ -681,7 +681,7 @@ function MedicationForm({ med, onClose, onSaved }: { med: any | null; onClose: (
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Core identification */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
@@ -940,7 +940,7 @@ function MedicationDetailDialog({ medId, onClose, onEdit }: { medId: string; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Pill className="w-5 h-5 text-indigo-600" />
@@ -954,7 +954,7 @@ function MedicationDetailDialog({ medId, onClose, onEdit }: { medId: string; onC
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Details grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
             {m.therapeuticClass && <div><div className="text-[10px] text-slate-400 uppercase">Therapeutic Class</div><div className="font-medium">{m.therapeuticClass}</div></div>}

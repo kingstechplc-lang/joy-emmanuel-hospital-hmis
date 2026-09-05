@@ -474,14 +474,14 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> New Lab Order</DialogTitle>
           <DialogDescription className="text-white/80">Select patient, choose tests from the catalog, and set priority.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
-            <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto p-6 border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
                 <AlertTriangle className="w-4 h-4" /> Duplicate order detected
               </div>
@@ -654,7 +654,7 @@ function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => voi
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3 text-sm">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Order #</p>
               <p className="font-mono text-slate-900">{order.orderNumber}</p>
@@ -996,7 +996,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
           <DialogDescription className="text-white/80">Confirm sample received at the lab. Order {order.orderNumber}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-600 bg-slate-50 p-3 rounded">
-          <div className="font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
+          <div className="flex-1 overflow-y-auto p-6 font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
           <div className="text-xs mt-1">Order has {(order.samples || []).length} sample(s).</div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
@@ -1067,7 +1067,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> Enter Results</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -1172,7 +1172,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
           <DialogDescription className="text-white/80">You are about to verify all results on order {order.orderNumber}. This will mark them ready for release.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-600 bg-slate-50 p-3 rounded">
-          <div className="font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
+          <div className="flex-1 overflow-y-auto p-6 font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
           <div className="text-xs mt-1">{(order.items || []).length} test result(s) to verify.</div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

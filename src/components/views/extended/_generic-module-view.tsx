@@ -791,7 +791,7 @@ function RecordDetailDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-700"}`} />
@@ -805,7 +805,7 @@ function RecordDetailDialog({
         </DialogHeader>
 
         {workflowActions.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
+          <div className="flex-1 overflow-y-auto p-6 bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
             <div className="text-xs font-semibold text-amber-800 mb-2">Workflow Actions:</div>
             <div className="flex gap-2 flex-wrap">
               {workflowActions.map((a) => {
@@ -1002,7 +1002,7 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <config.icon className="w-5 h-5" /> {isEdit ? "Edit" : "New"} {config.title}
@@ -1012,7 +1012,7 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {groupNames.map((g) => (
             <div key={g} className={groupNames.length > 1 ? "border-t pt-3 first:border-t-0 first:pt-0" : ""}>
               {groupNames.length > 1 && (

@@ -268,7 +268,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2 shrink-0 border-y">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0 border-y">
           <div className="space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={role?.isSystemRole} />
@@ -341,7 +341,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           )}
         </div>
 
-        <DialogFooter className="shrink-0 border-t pt-4">
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}

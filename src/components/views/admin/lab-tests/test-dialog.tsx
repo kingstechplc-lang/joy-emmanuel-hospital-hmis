@@ -118,7 +118,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Lab Test" : "Add Lab Test"}</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -127,7 +127,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
-            <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto p-6 border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
                 <AlertTriangle className="w-4 h-4" /> Possible duplicate detected
               </div>

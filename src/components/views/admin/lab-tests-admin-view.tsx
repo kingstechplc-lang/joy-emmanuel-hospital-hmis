@@ -485,7 +485,7 @@ function BulkUpdateDialog({ testIds, onClose, onDone }: { testIds: string[]; onC
           <DialogDescription className="text-white/80">Set fields to update across all selected tests. Empty fields are ignored. A preview runs first.</DialogDescription>
         </DialogHeader>
         <div className="p-6 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Category</Label>
               <Select value={updates.category || "skip"} onValueChange={(v) => setUpdates({ ...updates, category: v === "skip" ? "" : v })}>
