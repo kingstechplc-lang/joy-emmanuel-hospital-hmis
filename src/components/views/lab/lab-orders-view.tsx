@@ -475,8 +475,8 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> New Lab Order</DialogTitle>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> New Lab Order</DialogTitle>
           <DialogDescription className="text-white/80">Select patient, choose tests from the catalog, and set priority.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
@@ -645,7 +645,7 @@ function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => voi
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white">
+          <DialogTitle className="text-white flex items-center gap-2 text-white">
             <FlaskConical className="w-5 h-5 text-purple-600" /> Lab Order {order.orderNumber}
             <StatusBadge status={order.status} />
           </DialogTitle>
@@ -771,7 +771,7 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Collect Sample</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Collect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -842,7 +842,7 @@ function RejectSampleDialog({ order, onClose, onChanged }: { order: any; onClose
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-rose-700"><AlertTriangle className="w-5 h-5" /> Reject Sample</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2 text-rose-700"><AlertTriangle className="w-5 h-5" /> Reject Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -924,7 +924,7 @@ function RecollectSampleDialog({ order, onClose, onChanged }: { order: any; onCl
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Recollect Sample</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Recollect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -992,7 +992,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><Beaker className="w-5 h-5" /> Receive Sample</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2 text-white"><Beaker className="w-5 h-5" /> Receive Sample</DialogTitle>
           <DialogDescription className="text-white/80">Confirm sample received at the lab. Order {order.orderNumber}</DialogDescription>
         </DialogHeader>
         <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded">
@@ -1069,7 +1069,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> Enter Results</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> Enter Results</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -1168,7 +1168,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
-          <DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> Verify Results</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> Verify Results</DialogTitle>
           <DialogDescription className="text-white/80">You are about to verify all results on order {order.orderNumber}. This will mark them ready for release.</DialogDescription>
         </DialogHeader>
         <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded">

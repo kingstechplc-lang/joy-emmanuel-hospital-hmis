@@ -964,9 +964,9 @@ function TransferDialogBody({
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>Transfer Patient</DialogTitle>
-        <DialogDescription>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <DialogTitle className="text-white">Transfer Patient</DialogTitle>
+        <DialogDescription className="text-white/80">
           Move{" "}
           <span className="font-semibold text-slate-900">
             {entry?.patient?.firstName} {entry?.patient?.lastName}
@@ -1071,12 +1071,12 @@ function SkipDialogBody({
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <DialogTitle className="text-white flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-600" />
           {isNoShow ? "Mark as No-Show" : "Skip Patient"}
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="text-white/80">
           Record why{" "}
           <span className="font-semibold text-slate-900">
             {entry?.patient?.firstName} {entry?.patient?.lastName}
@@ -1199,9 +1199,9 @@ function AddToQueueDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Patient to Queue</DialogTitle>
-          <DialogDescription>Add a patient to today&apos;s queue.</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="text-white">Add Patient to Queue</DialogTitle>
+          <DialogDescription className="text-white/80">Add a patient to today&apos;s queue.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>

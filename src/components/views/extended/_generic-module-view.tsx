@@ -484,11 +484,11 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
       {deleteItem && (
         <Dialog open onOpenChange={(o) => !o && setDeleteItem(null)}>
           <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-rose-700">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+              <DialogTitle className="text-white flex items-center gap-2 text-rose-700">
                 <AlertCircle className="w-5 h-5" /> Confirm Delete
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/80">
                 Are you sure you want to delete &quot;{deleteItem[config.fields[0].name]}&quot;? This action cannot be undone and will be recorded in the audit log.
               </DialogDescription>
             </DialogHeader>
@@ -792,12 +792,12 @@ function RecordDetailDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-700"}`} />
             {item[config.fields[0].name]}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {config.numberField && item[config.numberField]
               ? `${config.numberField}: ${item[config.numberField]}`
               : `Record details`}
@@ -905,11 +905,11 @@ function WorkflowDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" /> {target.action.label}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Change status from <strong>{target.action.fromStatus.replace(/_/g, " ")}</strong> to{" "}
             <strong>{target.action.toStatus.replace(/_/g, " ")}</strong> for{" "}
             &quot;{target.item[config.fields[0].name]}&quot;?
@@ -1003,11 +1003,11 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <config.icon className="w-5 h-5" /> {isEdit ? "Edit" : "New"} {config.title}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {isEdit ? "Update the record details below." : "Fill in the details to create a new record. Fields marked with * are required."}
           </DialogDescription>
         </DialogHeader>

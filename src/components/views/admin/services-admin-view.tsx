@@ -446,12 +446,12 @@ function ServiceForm({ service, onClose, onSaved }: { service: any | null; onClo
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-emerald-600" />
             {isEdit ? "Edit Service" : "Add Service"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {isEdit ? "Update the service master record." : "Create a new billable service in the master catalog."}
           </DialogDescription>
         </DialogHeader>
@@ -598,14 +598,14 @@ function ServiceDetailDialog({ serviceId, onClose, onEdit }: { serviceId: string
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <DollarSign className="w-5 h-5 text-emerald-600" />
             <span>{s.name}</span>
             <Badge variant="outline" className="font-mono text-[10px]">{s.code}</Badge>
             <StatusBadge status={s.status} />
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {s.category?.replace(/_/g, " ") || "Uncategorized"}
             {s.serviceType && ` · ${s.serviceType.replace(/_/g, " ")}`}
             {s.unitOfMeasure && ` · per ${s.unitOfMeasure}`}
@@ -871,8 +871,8 @@ function PackageForm({ pkg, onClose, onSaved }: { pkg: any | null; onClose: () =
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-emerald-600" /> {isEdit ? "Edit Package" : "Add Package"}</DialogTitle>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2"><Package className="w-5 h-5 text-emerald-600" /> {isEdit ? "Edit Package" : "Add Package"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -968,7 +968,7 @@ Ultrasound Scan,RAD-001,imaging,diagnostic,150,80,true,test`;
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><Upload className="w-5 h-5 text-emerald-600" /> Import Services (CSV)</DialogTitle></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="text-white flex items-center gap-2"><Upload className="w-5 h-5 text-emerald-600" /> Import Services (CSV)</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Button variant="outline" size="sm" onClick={() => setCsvText(sample)}>Load Sample</Button>
           <Textarea value={csvText} onChange={(e) => setCsvText(e.target.value)} rows={10} className="text-xs font-mono" placeholder="name,code,category,serviceType,defaultPrice,nhisPrice,nhisEligible,unitOfMeasure" />
@@ -1042,7 +1042,7 @@ function BulkUpdateDialog({ onClose, onUpdated }: { onClose: () => void; onUpdat
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Bulk Price Update</DialogTitle></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="text-white flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Bulk Price Update</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div>

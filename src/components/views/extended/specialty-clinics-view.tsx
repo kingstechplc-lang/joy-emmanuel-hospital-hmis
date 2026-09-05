@@ -412,12 +412,12 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <selectedSpecialty.icon className="w-5 h-5 text-purple-600" />
             New Specialty Encounter
           </DialogTitle>
-          <DialogDescription>Create a clinical encounter for a specialty consultation, procedure, or follow-up.</DialogDescription>
+          <DialogDescription className="text-white/80">Create a clinical encounter for a specialty consultation, procedure, or follow-up.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -581,12 +581,12 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <sp.icon className="w-5 h-5 text-purple-600" />
             {encounter.encounterNumber} — {encounter.patientName}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {sp.label} · {(encounter.clinicType || "new").replace(/_/g, " ")} · {formatDate(encounter.startTime, true)}
           </DialogDescription>
         </DialogHeader>
@@ -1052,12 +1052,12 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <CalendarPlus className="w-5 h-5 text-blue-600" />
             New Specialty Appointment
           </DialogTitle>
-          <DialogDescription>Schedule a patient for a specialty consultation, follow-up, or procedure.</DialogDescription>
+          <DialogDescription className="text-white/80">Schedule a patient for a specialty consultation, follow-up, or procedure.</DialogDescription>
         </DialogHeader>
 
         <PatientPicker
@@ -1265,9 +1265,9 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Building2 className="w-5 h-5 text-emerald-600" /> {item ? "Edit Clinic" : "New Clinic Configuration"}</DialogTitle>
-          <DialogDescription>Configure the operating days, time slots, and lead clinician for a specialty clinic.</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2"><Building2 className="w-5 h-5 text-emerald-600" /> {item ? "Edit Clinic" : "New Clinic Configuration"}</DialogTitle>
+          <DialogDescription className="text-white/80">Configure the operating days, time slots, and lead clinician for a specialty clinic.</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1496,12 +1496,12 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Share2 className="w-5 h-5 text-amber-600" />
             New Specialty Referral
           </DialogTitle>
-          <DialogDescription>Refer a patient to a specialty clinic for consultation or procedure.</DialogDescription>
+          <DialogDescription className="text-white/80">Refer a patient to a specialty clinic for consultation or procedure.</DialogDescription>
         </DialogHeader>
 
         <PatientPicker

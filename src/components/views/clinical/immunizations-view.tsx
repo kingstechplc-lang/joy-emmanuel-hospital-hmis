@@ -543,12 +543,12 @@ function AdministerImmunizationDialog({
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Syringe className="w-5 h-5 text-teal-600" />
             Record Immunization
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Administer a vaccine. Select a batch to auto-deduct stock and enforce FEFO + expiry checks.
           </DialogDescription>
         </DialogHeader>
@@ -1242,12 +1242,12 @@ function WastageDialog({
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Trash2 className="w-5 h-5 text-rose-600" />
             Record Vaccine Wastage
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             This will deduct the wasted quantity from the selected batch and create an auditable inventory transaction.
           </DialogDescription>
         </DialogHeader>

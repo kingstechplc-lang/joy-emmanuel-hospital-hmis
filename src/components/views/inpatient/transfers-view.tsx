@@ -529,7 +529,7 @@ function NewTransferDialog({ facilityId, onClose, onCreated }: any) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b bg-cyan-50">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5 text-cyan-600" /> New Patient Transfer</DialogTitle>
           <DialogDescription className="text-white/80">Request a patient transfer. The patient stays in their current location until the transfer is approved and executed.</DialogDescription>
         </DialogHeader>
@@ -754,7 +754,7 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
             <ArrowRightLeft className="w-5 h-5 text-cyan-600" />
             <span>{t.patient?.firstName} {t.patient?.lastName}</span>

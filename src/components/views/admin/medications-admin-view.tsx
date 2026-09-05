@@ -544,12 +544,12 @@ Artemether/Lumefantrine,Coartem,20/120mg,tablet,oral,antimalarials,Antimalarial,
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Upload className="w-5 h-5 text-indigo-600" />
             Import Medications (CSV)
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Paste CSV data with headers in the first row. Required column: <code>genericName</code>.
             Optional: brandName, strength, dosageForm, route, medicationCategory, therapeuticClass, atcCode, barcode, manufacturer, nhisCode.
           </DialogDescription>
@@ -671,12 +671,12 @@ function MedicationForm({ med, onClose, onSaved }: { med: any | null; onClose: (
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Pill className="w-5 h-5 text-indigo-600" />
             {isEdit ? "Edit Medication" : "Add Medication"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {isEdit ? "Update the medication master record." : "Create a new medication in the master catalog."}
           </DialogDescription>
         </DialogHeader>
@@ -941,15 +941,15 @@ function MedicationDetailDialog({ medId, onClose, onEdit }: { medId: string; onC
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Pill className="w-5 h-5 text-indigo-600" />
             <span>{m.genericName}</span>
             {m.brandName && <span className="text-sm text-slate-500">({m.brandName})</span>}
             <StatusBadge status={m.status} />
             {m.isHighAlert && <Badge variant="destructive" className="text-[9px]">High Alert</Badge>}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {m.strength} {m.dosageForm} · {m.route} · {m.medicationCategory?.replace(/_/g, " ") || "Uncategorized"}
           </DialogDescription>
         </DialogHeader>

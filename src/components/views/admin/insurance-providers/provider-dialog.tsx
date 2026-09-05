@@ -78,9 +78,9 @@ export function ProviderDialog({ provider, onClose }: { provider?: any; onClose:
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle>{isEdit ? "Edit Insurance Provider" : "Add Insurance Provider"}</DialogTitle>
-          <DialogDescription>{isEdit ? "Update provider details. Use the details dialog for plans, contacts, and coverage." : "Add a new insurance provider to the master directory."}</DialogDescription>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white">{isEdit ? "Edit Insurance Provider" : "Add Insurance Provider"}</DialogTitle>
+          <DialogDescription className="text-white/80">{isEdit ? "Update provider details. Use the details dialog for plans, contacts, and coverage." : "Add a new insurance provider to the master directory."}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (

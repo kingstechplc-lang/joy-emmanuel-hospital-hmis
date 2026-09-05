@@ -513,12 +513,12 @@ function NewPregnancyDialog({
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Baby className="w-5 h-5 text-pink-600" />
             Register Pregnancy
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Create a new pregnancy episode. EDD is auto-calculated from LMP (LMP + 280 days).
           </DialogDescription>
         </DialogHeader>
@@ -701,8 +701,8 @@ function PregnancyDetailDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Baby className="w-5 h-5 text-pink-600" />
             <span>Pregnancy — {r.patient?.firstName} {r.patient?.lastName}</span>
             <StatusBadge status={r.pregnancyStatus} />
@@ -714,7 +714,7 @@ function PregnancyDetailDialog({
               {r.riskLevel} risk
             </Badge>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             G{r.gravida ?? "?"} P{r.para ?? "?"} · EDD: {r.eddFinal ? formatDate(r.eddFinal) : "—"}
           </DialogDescription>
         </DialogHeader>

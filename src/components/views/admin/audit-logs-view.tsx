@@ -324,12 +324,12 @@ function LogDetailDialog({ log, onClose }: { log: any; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <ScrollText className="w-5 h-5 text-emerald-600" />
             Audit Log Detail
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             <code className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">{log.action}</code> on <code className="bg-slate-100 px-1.5 py-0.5 rounded">{log.resourceType || "—"}</code>
           </DialogDescription>
         </DialogHeader>

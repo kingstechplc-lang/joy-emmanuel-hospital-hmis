@@ -349,8 +349,8 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> New Ambulance Request</DialogTitle>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> New Ambulance Request</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           {/* Patient search (optional for emergencies) */}
@@ -520,14 +520,14 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+          <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Badge className="bg-red-100 text-red-700 border-red-200 font-mono text-[10px]">{t.tripNumber}</Badge>
             <span>{t.patient ? `${t.patient.firstName} ${t.patient.lastName}` : "Unregistered"}</span>
             <Badge variant="outline" className={`text-[9px] capitalize ${priorityColor(t.priority)}`}>{t.priority}</Badge>
             <StatusBadge status={t.status} />
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {t.requestType.replace(/_/g, " ")} · Requested {formatDate(t.requestedAt, true)}
           </DialogDescription>
         </DialogHeader>
@@ -759,7 +759,7 @@ function NewVehicleDialog({ facilityId, onClose, onCreated }: { facilityId: stri
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> Add Ambulance</DialogTitle></DialogHeader>
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> Add Ambulance</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><FieldLabel required>Fleet Number</FieldLabel><Input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="AMB-001" className="h-8 text-sm font-mono" /></div>

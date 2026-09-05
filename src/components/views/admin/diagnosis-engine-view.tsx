@@ -302,12 +302,12 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-indigo-600" />
             {item ? "Edit Diagnosis" : "New Diagnosis Catalog Entry"}
           </DialogTitle>
-          <DialogDescription>Standardized diagnosis with code (ICD-10/ICD-11/SNOMED), synonyms, and category.</DialogDescription>
+          <DialogDescription className="text-white/80">Standardized diagnosis with code (ICD-10/ICD-11/SNOMED), synonyms, and category.</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
