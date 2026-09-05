@@ -875,7 +875,7 @@ function RejectSampleDialog({ order, onClose, onChanged }: { order: any; onClose
           </div>
           <div>
             <Label>Additional reason details (optional)</Label>
-            <Input value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Free-text details" />
+            <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Free-text details" rows={3} />
           </div>
           <div>
             <Label>Notes (optional)</Label>
@@ -1123,7 +1123,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
                     </div>
                     <div className="col-span-2 md:col-span-2">
                       <Label className="text-xs">Notes</Label>
-                      <Input value={r.resultNotes || ""} onChange={(e) => setField(it.id, "resultNotes", e.target.value)} placeholder="Comments..." />
+                      <Textarea value={r.resultNotes || ""} onChange={(e) => setField(it.id, "resultNotes", e.target.value)} placeholder="Comments..." rows={3} />
                     </div>
                   </div>
                 </CardContent>

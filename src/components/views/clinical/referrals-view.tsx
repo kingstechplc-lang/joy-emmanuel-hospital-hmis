@@ -932,11 +932,10 @@ function NewReferralDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Reason for Referral</FieldLabel>
-              <Input
+              <Textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="e.g. needs specialized cardiology consult"
-              />
+                placeholder="e.g. needs specialized cardiology consult" rows={3} />
             </div>
             <div>
               <Label>Reason Category</Label>

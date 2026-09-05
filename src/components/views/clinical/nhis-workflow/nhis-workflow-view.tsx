@@ -27,6 +27,7 @@ import {
 } from "@/components/ui-helpers";
 import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-picker";
 import { InsuranceProviderSelect, type EntitySelectValue } from "@/components/ui/entity-select";
+import { Textarea } from "@/components/ui/textarea";
 
 // =====================================================================
 // Helpers
@@ -1306,7 +1307,7 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
           </div>
           <div>
             <Label className="text-xs font-semibold">Notes (optional)</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. corporate billing arrangement..." />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. corporate billing arrangement..." rows={3} />
           </div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
@@ -1455,7 +1456,7 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
           </div>
           <div>
             <Label className="text-xs font-semibold">Notes</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. called NHIS hotline, confirmed active..." />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. called NHIS hotline, confirmed active..." rows={3} />
           </div>
 
           {error && (
@@ -1600,7 +1601,7 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
           </div>
           <div>
             <Label className="text-xs font-semibold">Notes / Reason</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. failed biometric, used manual fallback..." />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. failed biometric, used manual fallback..." rows={3} />
           </div>
 
           {error && (

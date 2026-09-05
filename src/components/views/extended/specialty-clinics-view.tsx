@@ -1279,7 +1279,7 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
             </Select>
           </div>
           <div className="col-span-2"><FieldLabel>Clinic Name</FieldLabel><Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g., Tuesday Cardiology Clinic" /></div>
-          <div className="col-span-2 md:col-span-3"><Label>Description</Label><Input value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Optional" /></div>
+          <div className="col-span-2 md:col-span-3"><Label>Description</Label><Textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Optional" rows={3} /></div>
           <div><Label>Lead Clinician</Label><Input value={form.leadClinicianName} onChange={(e) => set("leadClinicianName", e.target.value)} /></div>
           <div><Label>Location</Label><Input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="Room / Suite" /></div>
           <div><Label>Slot Duration (min)</Label><Input type="number" value={form.slotDurationMin} onChange={(e) => set("slotDurationMin", parseInt(e.target.value) || 30)} /></div>

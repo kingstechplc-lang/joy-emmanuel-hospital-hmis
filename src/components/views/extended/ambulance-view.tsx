@@ -439,7 +439,7 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
           <div>
             <Label>Reason for Transport</Label>
-            <Input value={reasonForTransport} onChange={(e) => setReasonForTransport(e.target.value)} placeholder="e.g. Inter-facility transfer for specialist care" className="h-8 text-sm" />
+            <Textarea value={reasonForTransport} onChange={(e) => setReasonForTransport(e.target.value)} placeholder="e.g. Inter-facility transfer for specialist care" className="text-sm" rows={3} />
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">

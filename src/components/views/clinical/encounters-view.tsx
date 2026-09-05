@@ -71,6 +71,7 @@ import {
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 import { EncounterDetailDialog } from "@/components/views/clinical/encounter-detail-dialog";
 import { FieldLabel } from "@/components/ui/required-label";
+import { Textarea } from "@/components/ui/textarea";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -1007,11 +1008,10 @@ export function EncountersView() {
             </DialogHeader>
             <div className="p-6 space-y-3">
               <Label>Reason for Cancellation *</Label>
-              <Input
+              <Textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="e.g. Patient left without being seen, duplicate, etc."
-              />
+                placeholder="e.g. Patient left without being seen, duplicate, etc." rows={3} />
               <p className="text-xs text-amber-600">
                 This action cannot be undone. The encounter will be marked as cancelled with an
                 audit record.

@@ -961,8 +961,8 @@ function BedMasterDialog({ bed, facilityId, onClose, onDone }: { bed?: any; faci
             <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.cardiacMonitoring} onCheckedChange={(v) => setForm({ ...form, cardiacMonitoring: !!v })} /> Monitoring</label>
             <label className="flex items-center gap-1.5 text-sm"><Checkbox checked={form.accessibility} onCheckedChange={(v) => setForm({ ...form, accessibility: !!v })} /> Accessible</label>
           </div>
-          <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-          <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>

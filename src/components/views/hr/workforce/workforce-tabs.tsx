@@ -2133,7 +2133,7 @@ function NewAvailabilityDialog({ onClose, date }: { onClose: () => void; date: s
           </div>
           <div className="space-y-1.5">
             <Label>Reason</Label>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Family emergency" />
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Family emergency" rows={3} />
           </div>
           <div className="space-y-1.5">
             <Label>Notes</Label>

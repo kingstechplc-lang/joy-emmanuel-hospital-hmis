@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, safeJson, PageHeader, MiniStatCard, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
+import { Textarea } from "@/components/ui/textarea";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -686,7 +687,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
 
           <div>
             <Label>Reason</Label>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for visit" />
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for visit" rows={3} />
           </div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
@@ -755,7 +756,7 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
           </div>
           <div>
             <Label>Reason for Rescheduling</Label>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Patient request, clinician unavailable" />
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Patient request, clinician unavailable" rows={3} />
           </div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

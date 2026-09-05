@@ -1448,7 +1448,7 @@ function NewTransferDialog({
 
           <div>
             <FieldLabel>Reason</FieldLabel>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this transfer being made?" />
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this transfer being made?" rows={3} />
           </div>
 
           {/* Item picker */}

@@ -2129,7 +2129,7 @@ function StockMovementDialog({
               </div>
               <div>
                 <FieldLabel required className="text-xs">Reason</FieldLabel>
-                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Stock count variance of 5 units" />
+                <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Stock count variance of 5 units" rows={3} />
               </div>
             </>
           ) : (
@@ -2167,7 +2167,7 @@ function StockMovementDialog({
               </div>
               <div>
                 <Label className="text-xs">Reason (optional)</Label>
-                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Ward restock" />
+                <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Ward restock" rows={3} />
               </div>
             </>
           )}

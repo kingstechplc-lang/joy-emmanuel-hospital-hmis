@@ -1015,7 +1015,7 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
         </div>
         <div>
           <Label className="text-[10px]">Symptoms / Complaints</Label>
-          <Input value={symptoms} onChange={(e) => setSymptoms(e.target.value)} className="h-8 text-xs" placeholder="Patient complaints" />
+          <Textarea value={symptoms} onChange={(e) => setSymptoms(e.target.value)} className="text-xs" placeholder="Patient complaints" rows={3} />
         </div>
         <div>
           <Label className="text-[10px]">Clinical Assessment</Label>
@@ -1031,7 +1031,7 @@ function AncVisitForm({ recordId, onClose, onSaved }: { recordId: string; onClos
           </div>
           <div>
             <Label className="text-[10px]">Notes</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="h-8 text-xs" placeholder="Additional notes" />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="text-xs" placeholder="Additional notes" rows={3} />
           </div>
         </div>
         {/* Billing toggle */}

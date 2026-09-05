@@ -515,7 +515,7 @@ function NewCarePlanDialog({ onClose, onCreated }: { onClose: () => void; onCrea
             <div><Label>Nursing Diagnosis</Label><Input value={nursingDiagnosis} onChange={(e) => setNursingDiagnosis(e.target.value)} placeholder="e.g., Acute Pain" /></div>
           </div>
           <div><Label>Goal</Label><Textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={2} /></div>
-          <div><Label>Expected Outcome</Label><Input value={expectedOutcome} onChange={(e) => setExpectedOutcome(e.target.value)} /></div>
+          <div><Label>Expected Outcome</Label><Textarea value={expectedOutcome} onChange={(e) => setExpectedOutcome(e.target.value)} rows={3} /></div>
           <div><Label>Interventions</Label><Textarea value={interventions} onChange={(e) => setInterventions(e.target.value)} rows={3} /></div>
           <div><Label>Evaluation</Label><Textarea value={evaluation} onChange={(e) => setEvaluation(e.target.value)} rows={2} /></div>
         </div>
@@ -596,7 +596,7 @@ function EscalationDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           <div><Label>Escalate To</Label><Select value={escalatedTo} onValueChange={setEscalatedTo}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="doctor">Doctor</SelectItem><SelectItem value="specialist">Specialist</SelectItem><SelectItem value="nurse_in_charge">Nurse-in-Charge</SelectItem><SelectItem value="emergency_team">Emergency Team</SelectItem></SelectContent></Select></div>
         </div>
         <div><FieldLabel required>Concern</FieldLabel><Textarea value={concern} onChange={(e) => setConcern(e.target.value)} rows={3} placeholder="Describe the clinical concern..." /></div>
-        <div><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+        <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>
       </div>
       <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className={`gap-2 ${priority === "critical" ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"}`}>{saving ? "Saving..." : "Escalate"}</Button></DialogFooter>
     </DialogContent></Dialog>
@@ -634,7 +634,7 @@ function TaskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
           <div><Label>Frequency</Label><Select value={frequency} onValueChange={setFrequency}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="once">Once</SelectItem><SelectItem value="every_4h">Every 4h</SelectItem><SelectItem value="every_8h">Every 8h</SelectItem><SelectItem value="daily">Daily</SelectItem><SelectItem value="prn">PRN</SelectItem></SelectContent></Select></div>
         </div>
         <div><FieldLabel required>Title</FieldLabel><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Record vital signs" /></div>
-        <div><Label>Description</Label><Input value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+        <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
         <div><FieldLabel required>Due At</FieldLabel><Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
       </div>
       <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Create Task"}</Button></DialogFooter>
@@ -735,7 +735,7 @@ function RiskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
         <div><Label>Risk Score</Label><Input type="number" value={riskScore} onChange={(e) => setRiskScore(e.target.value)} /></div>
         <div><Label>Risk Factors</Label><Textarea value={riskFactors} onChange={(e) => setRiskFactors(e.target.value)} rows={2} placeholder="Identified risk factors..." /></div>
         <div><Label>Prevention Plan</Label><Textarea value={preventionPlan} onChange={(e) => setPreventionPlan(e.target.value)} rows={2} /></div>
-        <div><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+        <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>
       </div>
       <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="gap-2 bg-amber-600 hover:bg-amber-700">{saving ? "Saving..." : "Save Assessment"}</Button></DialogFooter>
     </DialogContent></Dialog>

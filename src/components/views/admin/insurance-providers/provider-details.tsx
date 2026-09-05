@@ -297,7 +297,7 @@ function PlansTab({ providerId, items, onChanged }: { providerId: string; items:
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={form.authorizationRequired} onCheckedChange={(v) => setForm({ ...form, authorizationRequired: !!v })} /> Authorization Required</label>
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={form.referralRequired} onCheckedChange={(v) => setForm({ ...form, referralRequired: !!v })} /> Referral Required</label>
             </div>
-            <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+            <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
               <Button onClick={add} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2"><Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Plan"}</Button>
@@ -400,7 +400,7 @@ function ContactsTab({ providerId, items, onChanged }: { providerId: string; ite
               <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
               <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             </div>
-            <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+            <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
               <Button onClick={add} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2"><Save className="w-4 h-4" /> Save</Button>
@@ -491,7 +491,7 @@ function FacilitiesTab({ providerId, items, onChanged }: { providerId: string; i
               <div><Label>Effective Date</Label><Input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} /></div>
               <div><Label>End Date</Label><Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></div>
             </div>
-            <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+            <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
               <Button onClick={add} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2"><Save className="w-4 h-4" /> Save</Button>

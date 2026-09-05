@@ -726,7 +726,7 @@ function MasterManager({ endpoint, label, canManage }: { endpoint: string; label
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div><FieldLabel required>{label} Name</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={ex.name} /></div>
               <div><FieldLabel required>{label} Code</FieldLabel><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder={ex.code} /></div>
-              <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={ex.desc} /></div>
+              <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={ex.desc} rows={3} /></div>
               <div><Label>Sort Order</Label><Input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: e.target.value })} placeholder="0" /></div>
             </div>
             <div className="flex justify-end gap-2">

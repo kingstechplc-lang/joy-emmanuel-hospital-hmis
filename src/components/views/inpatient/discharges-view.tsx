@@ -630,7 +630,7 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
                     <Input value={form.transferReceivingDept} onChange={(e) => setForm({ ...form, transferReceivingDept: e.target.value })} placeholder="Receiving department" />
                     <Input value={form.transferContactPerson} onChange={(e) => setForm({ ...form, transferContactPerson: e.target.value })} placeholder="Contact person" />
                     <Input value={form.transferContactPhone} onChange={(e) => setForm({ ...form, transferContactPhone: e.target.value })} placeholder="Contact phone" />
-                    <Input value={form.transferReason} onChange={(e) => setForm({ ...form, transferReason: e.target.value })} placeholder="Transfer reason" />
+                    <Textarea value={form.transferReason} onChange={(e) => setForm({ ...form, transferReason: e.target.value })} placeholder="Transfer reason" rows={3} />
                     <Input value={form.transferTransportMethod} onChange={(e) => setForm({ ...form, transferTransportMethod: e.target.value })} placeholder="Transport method (ambulance, private, etc.)" />
                   </div>
                 </div>
@@ -1151,7 +1151,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
               <div><Label>Frequency</Label><Input value={newMed.frequency} onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })} placeholder="TDS" /></div>
               <div><Label>Duration</Label><Input value={newMed.duration} onChange={(e) => setNewMed({ ...newMed, duration: e.target.value })} placeholder="7 days" /></div>
               <div><Label>Quantity</Label><Input value={newMed.quantity} onChange={(e) => setNewMed({ ...newMed, quantity: e.target.value })} placeholder="21 tabs" /></div>
-              <div className="col-span-2"><Label>Instructions</Label><Input value={newMed.instructions} onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })} placeholder="Take with food" /></div>
+              <div className="col-span-2"><Label>Instructions</Label><Textarea value={newMed.instructions} onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })} placeholder="Take with food" rows={3} /></div>
               <div>
                 <FieldLabel required>Action</FieldLabel>
                 <Select value={newMed.action} onValueChange={(v) => setNewMed({ ...newMed, action: v })}>

@@ -16,6 +16,7 @@ import {EmptyState, LoadingState, ErrorState, safeJson, ClearableSearch, usePagi
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
+import { Textarea } from "@/components/ui/textarea";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -288,7 +289,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
 
         <div className="space-y-1.5 py-2 shrink-0">
           <Label>Description</Label>
-          <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional description of this role" />
+          <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional description of this role" rows={3} />
         </div>
 
         {/* Permissions grid — scrolls independently inside the dialog */}

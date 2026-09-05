@@ -736,7 +736,7 @@ function InspectionForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loa
         <div><Label>Location</Label><Input value={form.location} onChange={(e) => set("location", e.target.value)} /></div>
       </div>
       <div><Label>Findings</Label><Textarea value={form.findings} onChange={(e) => set("findings", e.target.value)} rows={3} placeholder="What was found during the inspection..." /></div>
-      <div><Label>Corrective Action</Label><Input value={form.correctiveAction} onChange={(e) => set("correctiveAction", e.target.value)} placeholder="Action taken or required" /></div>
+      <div><Label>Corrective Action</Label><Textarea value={form.correctiveAction} onChange={(e) => set("correctiveAction", e.target.value)} placeholder="Action taken or required" rows={3} /></div>
       <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={() => onSubmit(form)} disabled={loading || !form.title}>{loading ? "Recording..." : "Record Inspection"}</Button></DialogFooter>
     </div>
   );

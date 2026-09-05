@@ -1118,11 +1118,10 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
             </div>
             <div>
               <Label className="text-xs text-rose-600">Amendment Reason (required)</Label>
-              <Input
+              <Textarea
                 value={form.amendmentReason}
                 onChange={(e) => setField("amendmentReason", e.target.value)}
-                placeholder="e.g., Corrected findings, additional observation, transcription error"
-              />
+                placeholder="e.g., Corrected findings, additional observation, transcription error" rows={3} />
             </div>
           </div>
         </div>

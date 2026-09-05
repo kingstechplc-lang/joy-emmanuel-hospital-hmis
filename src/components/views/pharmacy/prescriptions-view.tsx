@@ -1024,7 +1024,7 @@ function PrescriptionItemEditor({
           </div>
           <div className="md:col-span-2">
             <Label className="text-[10px]">Instructions</Label>
-            <Input value={item.instructions} onChange={(e) => onChange("instructions", e.target.value)} placeholder="After meals" className="h-8 text-xs" />
+            <Textarea value={item.instructions} onChange={(e) => onChange("instructions", e.target.value)} placeholder="After meals" className="text-xs" rows={3} />
           </div>
         </div>
 

@@ -21,6 +21,7 @@ import {EmptyState, LoadingState, ErrorState, StatusBadge, formatCurrency, safeJ
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { FieldLabel } from "@/components/ui/required-label";
+import { Textarea } from "@/components/ui/textarea";
 async function fetchJson(url: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -644,7 +645,7 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Description</Label>
-            <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description of the department" />
+            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description of the department" rows={3} />
           </div>
         </div>
 
@@ -770,7 +771,7 @@ function UnitDialog({ departmentId, unit, onClose, onSaved }: {
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label>Description</Label>
-            <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description" />
+            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description" rows={3} />
           </div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

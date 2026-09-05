@@ -1337,7 +1337,7 @@ function NewPODialog({
             {isEmergency && (
               <div className="mt-2">
                 <FieldLabel required>Emergency Reason</FieldLabel>
-                <Input value={emergencyReason} onChange={(e) => setEmergencyReason(e.target.value)} placeholder="Brief justification for emergency procurement" />
+                <Textarea value={emergencyReason} onChange={(e) => setEmergencyReason(e.target.value)} placeholder="Brief justification for emergency procurement" rows={3} />
               </div>
             )}
           </div>
@@ -1398,12 +1398,11 @@ function NewPODialog({
                                   <div className="text-[10px] text-slate-500">Stock item</div>
                                 </>
                               ) : (
-                                <Input
+                                <Textarea
                                   value={it.description}
                                   onChange={(e) => updateItem(idx, "description", e.target.value)}
                                   placeholder="Description for non-stock item"
-                                  className="h-7 text-xs"
-                                />
+                                  className="text-xs" rows={3} />
                               )}
                             </td>
                             <td className="p-2">
@@ -1994,7 +1993,7 @@ function ReceiveDialog({
             </div>
             <div>
               <FieldLabel>Notes</FieldLabel>
-              <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
             </div>
           </div>
 
