@@ -23,6 +23,8 @@ import {
   PageHeader, MiniStatCard, ClearableSearch,
 } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PrintButton } from "@/components/print/print-layout";
+import { ReportTemplate } from "@/components/print/templates/report-template";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, ReferenceLine,
@@ -1016,9 +1018,46 @@ function EntriesTable({ entries, patientId, canAmend, canSign, onInvalidate }: a
           </Select>
           <ClearableSearch value={search} onChange={setSearch} placeholder="Search source / notes..." className="w-56" inputClassName="h-8 text-xs" />
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => window.print()}>
-              <Printer className="w-3.5 h-3.5" /> Print
-            </Button>
+            <PrintButton
+              label="Print"
+              documentType="intake_output"
+              recordId={patientId}
+              recordSummary={`Patient ${patient?.patientNumber || ""}`}
+              className="h-8 text-xs gap-1.5"
+              renderContent={() => (
+                <ReportTemplate
+                  title="Intake / Output Chart"
+                  patient={patient}
+                  documentNumber={`I/O — ${patient?.patientNumber || ""}`}
+                  paperSize="A4"
+                >
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                    <thead>
+                      <tr>
+                        {["Event Time", "Type", "Category", "Source", "Route", "Amount", "Unit", "Status", "Recorded By"].map((h) => (
+                          <th key={h} style={{ textAlign: "left", padding: "6px 8px", background: "#f1f5f9", borderBottom: "2px solid #cbd5e1", color: "#334155" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((e: any) => (
+                        <tr key={e.id} style={{ breakInside: "avoid" }}>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{formatDate(e.eventAt, true)}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", textTransform: "capitalize" }}>{e.entryType}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", textTransform: "capitalize" }}>{(e.category || e.fluidType || "—").replace(/_/g, " ")}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{e.source || "—"}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{e.route || "—"}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", textAlign: "right" }}>{e.amount}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{e.unit}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", textTransform: "capitalize" }}>{e.status}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{e.recordedBy?.firstName} {e.recordedBy?.lastName}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ReportTemplate>
+              )}
+            />
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => {
               const url = `/api/intake-output/export?patientId=${patientId}&format=csv`;
               window.open(url, "_blank");
@@ -2032,9 +2071,24 @@ function ReportsPanel({ facilityId, patient }: any) {
             </div>
             <div className="flex gap-2">
               {result && !isEmpty(result) && (
-                <Button variant="outline" onClick={() => window.print()} className="gap-2 h-8">
-                  <Printer className="w-4 h-4" /> Print
-                </Button>
+                <PrintButton
+                  label="Print"
+                  documentType="report"
+                  recordSummary={`Intake/Output report — ${hasPatient ? patient?.patientNumber : "facility-wide"}`}
+                  className="gap-2 h-8"
+                  renderContent={() => (
+                    <ReportTemplate
+                      title="Intake / Output Report"
+                      subtitle={hasPatient ? `Patient: ${patient?.firstName} ${patient?.lastName}` : "Facility-wide report"}
+                      documentNumber={`I/O Report — ${new Date().toLocaleDateString("en-GB")}`}
+                      paperSize="A4"
+                    >
+                      <pre style={{ fontSize: "11px", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                        {JSON.stringify(result, null, 2)}
+                      </pre>
+                    </ReportTemplate>
+                  )}
+                />
               )}
               {result && !isEmpty(result) && hasPatient && (
                 <Button variant="outline" onClick={() => window.open(`/api/intake-output/export?patientId=${patient.id}&format=csv`, "_blank")} className="gap-2 h-8">
@@ -2442,8 +2496,6 @@ function HandoverPanel({ facilityId }: { facilityId: string | null }) {
   const items = data?.items || [];
   const summary = data?.summary || {};
 
-  const handlePrint = () => window.print();
-
   return (
     <div className="space-y-3">
       <Card>
@@ -2463,7 +2515,49 @@ function HandoverPanel({ facilityId }: { facilityId: string | null }) {
               {(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" onClick={handlePrint} className="ml-auto gap-1.5 h-8"><Printer className="w-3.5 h-3.5" /> Print Handover</Button>
+          <PrintButton
+            label="Print Handover"
+            documentType="report"
+            recordSummary={`Handover — ${data?.shiftName || "shift"}`}
+            className="ml-auto gap-1.5 h-8"
+            renderContent={() => (
+              <ReportTemplate
+                title="Shift Handover Summary"
+                subtitle={`${data?.shiftName || "Shift"} — ${data?.shiftStart ? new Date(data.shiftStart).toLocaleString("en-GB") : ""} → ${data?.shiftEnd ? new Date(data.shiftEnd).toLocaleString("en-GB") : ""}`}
+                documentNumber={`Handover — ${data?.shiftName || ""}`}
+                paperSize="A4"
+              >
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                  <thead>
+                    <tr>
+                      {["Ward", "Patient", "MRN", "Bed", "Diagnosis", "Plan", "Pending Tasks"].map((h) => (
+                        <th key={h} style={{ textAlign: "left", padding: "6px 8px", background: "#f1f5f9", borderBottom: "2px solid #cbd5e1", color: "#334155" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(items || []).map((it: any, i: number) => (
+                      <tr key={i} style={{ breakInside: "avoid" }}>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{it.wardName || "—"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{it.patientName || "—"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", fontFamily: "monospace" }}>{it.patientNumber || "—"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{it.bedNumber || "—"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{it.diagnosis || "—"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", whiteSpace: "pre-wrap" }}>{it.plan || "—"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", whiteSpace: "pre-wrap" }}>{it.pendingTasks || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {summary && Object.keys(summary).length > 0 && (
+                  <div style={{ marginTop: "16px", fontSize: "11px" }}>
+                    <h3 style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px" }}>Summary</h3>
+                    <pre style={{ fontFamily: "monospace", whiteSpace: "pre-wrap" }}>{JSON.stringify(summary, null, 2)}</pre>
+                  </div>
+                )}
+              </ReportTemplate>
+            )}
+          />
         </CardContent>
       </Card>
 

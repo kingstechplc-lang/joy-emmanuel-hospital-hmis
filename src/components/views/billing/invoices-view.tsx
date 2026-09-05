@@ -1539,6 +1539,10 @@ function ViewInvoiceDialog({
               <DialogFooter className="shrink-0 border-t pt-3 gap-2">
                 <PrintButton
                   label="Print Invoice"
+                  documentType="invoice"
+                  paperSize="A4"
+                  recordId={inv.id}
+                  recordSummary={inv.invoiceNumber}
                   renderContent={() => (
                     <PrintLayout
                       title="Invoice"

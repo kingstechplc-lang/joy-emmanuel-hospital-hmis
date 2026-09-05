@@ -1457,6 +1457,10 @@ function PaymentReceiptButton({ payment }: { payment: any }) {
   return (
     <PrintButton
       label="Receipt"
+      documentType="receipt"
+      paperSize="THERMAL_80"
+      recordId={payment.id}
+      recordSummary={payment.paymentNumber}
       className="h-7 px-2 py-0 text-xs"
       renderContent={() => (
         <PrintLayout

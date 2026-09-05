@@ -32,6 +32,8 @@ import {
   MiniStatCard, ModuleHelp,
 } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PrintButton } from "@/components/print/print-layout";
+import { PurchaseOrderTemplate } from "@/components/print/templates/purchase-order-template";
 
 // =====================================================================
 // Helpers
@@ -1522,9 +1524,7 @@ function ViewPODialog({
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // (Print button moved to inline JSX using PrintButton + PurchaseOrderTemplate)
 
   const m = data?.metrics || {
     totalOrderedQty: 0,
@@ -1668,9 +1668,14 @@ function ViewPODialog({
               <Ban className="w-3.5 h-3.5" /> Cancel
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={handlePrint} className="gap-1.5 h-8 ml-auto">
-            <Printer className="w-3.5 h-3.5" /> Print
-          </Button>
+          <PrintButton
+            label="Print"
+            documentType="purchase_order"
+            recordId={data?.id}
+            recordSummary={data?.poNumber || data?.orderNumber || data?.id}
+            className="gap-1.5 h-8 ml-auto"
+            renderContent={() => <PurchaseOrderTemplate po={data} />}
+          />
         </div>
 
         {/* Inner tabs */}

@@ -2104,6 +2104,10 @@ function RefundReceiptButton({ refund }: { refund: any }) {
   return (
     <PrintButton
       label="Receipt"
+      documentType="refund_receipt"
+      paperSize="THERMAL_80"
+      recordId={refund.id}
+      recordSummary={refund.refundNumber || refund.id}
       className="h-7 px-2 py-0 text-xs"
       renderContent={() => (
         <PrintLayout

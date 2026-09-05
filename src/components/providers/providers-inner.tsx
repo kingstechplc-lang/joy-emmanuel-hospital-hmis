@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { FacilityPrintProvider } from "@/components/print/facility-print-context";
 import type { ReactNode } from "react";
 
 // This is the inner Providers component — only loaded in the browser
@@ -13,7 +14,9 @@ export function ProvidersInner({ children }: { children: ReactNode }) {
     <SessionProvider>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <QueryProvider>
-          {children}
+          <FacilityPrintProvider>
+            {children}
+          </FacilityPrintProvider>
           <Toaster richColors position="top-right" />
         </QueryProvider>
       </ThemeProvider>

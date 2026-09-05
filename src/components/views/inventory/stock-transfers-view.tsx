@@ -45,6 +45,8 @@ import {
   Pagination, MiniStatCard, ModuleHelp,
 } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { PrintButton } from "@/components/print/print-layout";
+import { StockTransferTemplate } from "@/components/print/templates/stock-transfer-template";
 
 // =====================================================================
 // Helpers
@@ -1589,7 +1591,7 @@ function ViewTransferDialog({
     }
   };
 
-  const handlePrint = () => window.print();
+  // (Print button moved to inline JSX using PrintButton + StockTransferTemplate)
 
   const m = data?.metrics || {
     totalRequestedQty: 0,
@@ -1717,9 +1719,14 @@ function ViewTransferDialog({
               <Ban className="w-3.5 h-3.5" /> Cancel
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={handlePrint} className="gap-1.5 h-8 ml-auto">
-            <Printer className="w-3.5 h-3.5" /> Print
-          </Button>
+          <PrintButton
+            label="Print"
+            documentType="stock_transfer"
+            recordId={data?.id}
+            recordSummary={data?.transferNumber || data?.id}
+            className="gap-1.5 h-8 ml-auto"
+            renderContent={() => <StockTransferTemplate t={data} />}
+          />
         </div>
 
         {/* Inner tabs */}

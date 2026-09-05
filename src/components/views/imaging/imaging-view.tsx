@@ -368,6 +368,9 @@ export function ImagingView() {
                                     {report && (report.status === "verified" || report.status === "released") && (
                                       <PrintButton
                                         label="Print Report"
+                                        documentType="imaging_report"
+                                        recordId={o.id}
+                                        recordSummary={o.orderNumber || o.id}
                                         className="text-xs h-8"
                                         renderContent={() => (
                                           <PrintLayout

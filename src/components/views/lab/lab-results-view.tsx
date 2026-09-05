@@ -388,6 +388,9 @@ export function LabResultsView() {
                                     {results.some((r: any) => r.status === "released" || r.status === "verified") && (
                                       <PrintButton
                                         label="Print Full Report"
+                                        documentType="lab_report"
+                                        recordId={orderNumber}
+                                        recordSummary={orderNumber}
                                         className="text-xs h-8"
                                         renderContent={() => (
                                           <PrintLayout
@@ -494,6 +497,9 @@ export function LabResultsView() {
                                                 {(r.status === "verified" || r.status === "released") && (
                                                   <PrintButton
                                                     label="Print Test"
+                                                    documentType="lab_test"
+                                                    recordId={r.id}
+                                                    recordSummary={`${orderNumber} — ${r.testName || r.test?.name || "test"}`}
                                                     className="text-[10px] h-6 mr-1"
                                                     renderContent={() => (
                                                       <PrintLayout

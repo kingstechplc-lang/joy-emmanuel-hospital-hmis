@@ -23,6 +23,8 @@ import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge,
   safeJson, PageHeader, MiniStatCard, ClearableSearch, usePagination, Pagination,
 } from "@/components/ui-helpers";
+import { PrintButton } from "@/components/print/print-layout";
+import { DischargeTemplate } from "@/components/print/templates/discharge-template";
 import { FieldLabel } from "@/components/ui/required-label";
 
 async function fetchJson(url: string) {
@@ -803,7 +805,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
           <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-emerald-50">
             <Badge className="bg-emerald-100 text-emerald-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Finalized</Badge>
             <span className="text-xs text-slate-600">Discharge #{d.dischargeNumber} • Finalized by {d.finalizedBy?.firstName} {d.finalizedBy?.lastName} • {formatDate(d.finalizedAt, true)}</span>
-            <Button size="sm" variant="outline" className="ml-auto h-7 text-xs gap-1.5" onClick={() => window.print()}><Printer className="w-3.5 h-3.5" /> Print Summary</Button>
+            <PrintButton label="Print Summary" documentType="discharge" recordId={d.id} recordSummary={d.dischargeNumber || d.id} className="ml-auto h-7 text-xs gap-1.5" renderContent={() => <DischargeTemplate d={d} />} />
             {canEdit && (
               <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => {
                 const reason = prompt("Amendment reason (required):");
@@ -1261,7 +1263,7 @@ function DischargeSummary({ discharge: d }: any) {
       <Card><CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="text-lg font-bold text-slate-900">Discharge Summary</div>
-          <Button size="sm" variant="outline" onClick={() => window.print()} className="gap-1.5 h-8"><Printer className="w-3.5 h-3.5" /> Print</Button>
+          <PrintButton label="Print" documentType="discharge" recordId={d.id} recordSummary={d.dischargeNumber || d.id} className="gap-1.5 h-8" renderContent={() => <DischargeTemplate d={d} />} />
         </div>
 
         {/* Patient information */}
