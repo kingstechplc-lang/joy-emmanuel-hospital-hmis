@@ -60,7 +60,7 @@ export function EncounterDetailDialog({
             Encounter {enc.encounterNumber}
             <StatusBadge status={enc.status} />
           </DialogTitle>
-          <DialogDescription className="text-blue-100">
+          <DialogDescription className="text-white/80">
             {enc.patient ? `${enc.patient.firstName} ${enc.patient.lastName} (${enc.patient.patientNumber})` : "—"}
             {" • "}
             {enc.facility?.name || "—"}

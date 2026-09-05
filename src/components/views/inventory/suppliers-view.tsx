@@ -834,7 +834,7 @@ function LifecycleMenu({ supplier, onDone }: { supplier: any; onDone: () => void
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
         <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-            <DialogTitle className="flex items-center gap-2 text-rose-700">
+            <DialogTitle className="text-white flex items-center gap-2">
               <Ban className="w-4 h-4" /> Suspend Supplier
             </DialogTitle>
             <DialogDescription className="text-white/80">
@@ -1477,7 +1477,7 @@ function DetailFooter({ supplier, onChanged }: { supplier: any; onChanged: () =>
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
         <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-            <DialogTitle className="flex items-center gap-2 text-rose-700">
+            <DialogTitle className="text-white flex items-center gap-2">
               <Ban className="w-4 h-4" /> Suspend Supplier
             </DialogTitle>
             <DialogDescription className="text-white/80">

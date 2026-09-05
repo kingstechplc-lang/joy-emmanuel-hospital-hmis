@@ -1437,7 +1437,7 @@ function ViewInvoiceDialog({
           ) : (
             <>
               <DialogHeader className="shrink-0">
-                <DialogTitle className="flex items-center gap-2 text-lg">
+                <DialogTitle className="text-white flex items-center gap-2 text-lg">
                   <Receipt className="w-5 h-5 text-rose-600" />
                   <span className="font-mono">{inv.invoiceNumber}</span>
                   <InvoiceStatusBadge status={inv.status} />

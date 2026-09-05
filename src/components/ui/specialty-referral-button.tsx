@@ -163,13 +163,13 @@ export function SpecialtyReferralButton({
 
       {open && (
         <Dialog open onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle className="text-white flex items-center gap-2">
                 <Share2 className="w-5 h-5 text-amber-600" />
                 Refer to Specialty Clinic
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/80">
                 Create a referral to a specialty clinic — the receiving team will be notified automatically.
               </DialogDescription>
             </DialogHeader>
@@ -255,7 +255,7 @@ export function SpecialtyReferralButton({
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button
                 onClick={() => {

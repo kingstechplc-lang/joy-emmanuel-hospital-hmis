@@ -699,7 +699,7 @@ function ValidateDialog({ data, onClose, onGenerate, canGenerate, isValidating }
           <DialogTitle className="flex items-center gap-2 text-white">
             <Eye className="w-5 h-5" /> Validation Preview
           </DialogTitle>
-          <DialogDescription className="text-blue-100">
+          <DialogDescription className="text-white/80">
             {encounter ? `${encounter.encounterNumber} • ${encounter.patientName}` : "Building intermediate claims object..."}
           </DialogDescription>
         </DialogHeader>
@@ -911,7 +911,7 @@ function XmlPreviewDialog({ data, onClose, onDownload, canDownload }: {
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileCode2 className="w-5 h-5" /> XML Generation Result
           </DialogTitle>
-          <DialogDescription className="text-violet-100">
+          <DialogDescription className="text-white/80">
             {item?.claimNumber ? `${item.claimNumber} • ${item.xmlSizeBytes || 0} bytes` : "Generating XML..."}
           </DialogDescription>
         </DialogHeader>
@@ -1017,7 +1017,7 @@ function DetailDialog({ record, onClose, onDownload }: {
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileCheck2 className="w-5 h-5" /> {record.claimNumber}
           </DialogTitle>
-          <DialogDescription className="text-slate-300">
+          <DialogDescription className="text-white/80">
             Generated {formatRelative(record.generatedAt)} by {record.generatedByName || "—"}
           </DialogDescription>
         </DialogHeader>

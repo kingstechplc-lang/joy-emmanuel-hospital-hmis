@@ -752,7 +752,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
+          <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <LogOut className="w-5 h-5 text-indigo-600" />
             <span>{d.patient?.firstName} {d.patient?.lastName}</span>
             <span className="text-xs text-slate-500">{d.patient?.patientNumber}</span>

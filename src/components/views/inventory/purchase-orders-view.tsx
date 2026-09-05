@@ -1547,12 +1547,12 @@ function ViewPODialog({
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <DialogTitle className="flex items-center gap-2 text-xl">
+              <DialogTitle className="text-white flex items-center gap-2 text-xl">
                 <ShoppingCart className="w-5 h-5" />
                 <span className="font-mono">{data?.purchaseOrderNumber}</span>
                 {data?.revisionNumber > 0 && <Badge variant="outline" className="text-amber-700 border-amber-200">rev {data.revisionNumber}</Badge>}
               </DialogTitle>
-              <DialogDescription className="flex items-center gap-2 flex-wrap mt-1">
+              <DialogDescription className="text-white/80 flex items-center gap-2 flex-wrap mt-1">
                 <span>{data?.supplier?.name}</span>
                 <span className="text-slate-400">·</span>
                 <span>{data?.facility?.name}</span>

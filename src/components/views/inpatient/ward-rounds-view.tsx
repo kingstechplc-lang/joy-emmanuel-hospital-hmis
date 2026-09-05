@@ -325,7 +325,7 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
-          <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
+          <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <ClipboardCheck className="w-5 h-5 text-indigo-600" />
             <span>{r.ward?.name || "General Round"}</span>
             <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-700"}`}>{r.status?.replace(/_/g, " ")}</Badge>

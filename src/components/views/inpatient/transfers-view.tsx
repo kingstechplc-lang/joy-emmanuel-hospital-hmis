@@ -755,7 +755,7 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
-          <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
+          <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <ArrowRightLeft className="w-5 h-5 text-cyan-600" />
             <span>{t.patient?.firstName} {t.patient?.lastName}</span>
             <span className="text-xs text-slate-500">{t.patient?.patientNumber}</span>

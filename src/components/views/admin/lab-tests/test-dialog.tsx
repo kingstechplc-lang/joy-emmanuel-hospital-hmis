@@ -118,8 +118,8 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Lab Test" : "Add Lab Test"}</DialogTitle>
           <DialogDescription className="text-white/80">
             {isEdit ? "Update test details. Use the test details dialog for full configuration (specimen, ranges, critical values, panel)." : "Add a new laboratory test to the central catalog. You can configure specimen, reference ranges, critical values, and panels after creation."}

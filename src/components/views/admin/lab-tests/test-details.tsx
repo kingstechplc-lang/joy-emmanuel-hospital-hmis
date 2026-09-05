@@ -48,14 +48,14 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
 
   if (isLoading) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <div className="flex-1 flex items-center justify-center text-slate-500">Loading test details…</div>
       </DialogContent>
     </Dialog>
   );
   if (isError || !t) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <div className="p-8 text-center text-rose-600">Failed to load test details.</div>
         <div className="flex justify-center pb-4"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
       </DialogContent>
@@ -64,8 +64,8 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white" className="flex items-center gap-2 text-xl flex-wrap">
             <FlaskConical className="w-5 h-5 text-emerald-600" />
             <span>{t.name}</span>
@@ -74,7 +74,7 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
             {t.isReferralOut && <Badge className="bg-blue-100 text-blue-700">Referral</Badge>}
             <Badge className={`bg-${statusColor(t.status)}-100 text-${statusColor(t.status)}-700`}>{labelOf(TEST_STATUSES_LOCAL, t.status)}</Badge>
           </DialogTitle>
-          <DialogDescription className="break-words">
+          <DialogDescription className="text-white/80 break-words">
             {t.shortName && <span className="mr-2">Short: {t.shortName}</span>}
             {t.displayName && <span className="mr-2">· Display: {t.displayName}</span>}
             {t.description && <span>· {t.description}</span>}

@@ -1610,11 +1610,11 @@ function ViewTransferDialog({
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <DialogTitle className="flex items-center gap-2 text-xl">
+              <DialogTitle className="text-white flex items-center gap-2 text-xl">
                 <ArrowLeftRight className="w-5 h-5" />
                 <span className="font-mono">{data?.transferNumber}</span>
               </DialogTitle>
-              <DialogDescription className="flex items-center gap-2 flex-wrap mt-1">
+              <DialogDescription className="text-white/80 flex items-center gap-2 flex-wrap mt-1">
                 <span>{data?.fromFacility?.name}</span>
                 <ArrowRight className="w-3 h-3" />
                 <span>{data?.toFacility?.name}</span>

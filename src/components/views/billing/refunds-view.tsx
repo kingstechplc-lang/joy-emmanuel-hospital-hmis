@@ -939,7 +939,7 @@ function ReasonActionButton({
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setReason(""); }}>
         <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
-            <DialogTitle className="flex items-center gap-2 capitalize">
+            <DialogTitle className="text-white flex items-center gap-2 capitalize">
               <Icon className="w-4 h-4" /> {label} Refund
             </DialogTitle>
             <DialogDescription className="text-white/80">Provide a reason. This will be audit-logged.</DialogDescription>

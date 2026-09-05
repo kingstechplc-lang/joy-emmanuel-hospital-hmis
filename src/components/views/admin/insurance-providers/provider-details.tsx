@@ -69,7 +69,7 @@ export function ProviderDetailsDialog({ providerId, onClose }: { providerId: str
             <Badge className={`bg-${statusColor(p.status)}-100 text-${statusColor(p.status)}-700`}>{labelOf(PROVIDER_STATUSES, p.status)}</Badge>
             <Badge className="bg-blue-100 text-blue-700">{labelOf(PROVIDER_TYPES, p.providerType)}</Badge>
           </DialogTitle>
-          <DialogDescription className="break-words">
+          <DialogDescription className="text-white/80 break-words">
             {p.legalName && <span className="mr-2">Legal: {p.legalName}</span>}
             {p.shortName && <span className="mr-2">· Short: {p.shortName}</span>}
             {p.displayName && <span>· Display: {p.displayName}</span>}
