@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 # =====================================================================
-# cleanup-textarea-height.py
+# cleanup-dialog-max-height.py
 #
-# Strips leftover `h-N` (N = 7,8,9,10,11) classes from <Textarea>
-# className strings.  These were not stripped by the initial
-# convert-input-to-textarea.py script because the regex required
-# whitespace before `h-N` but inside `className="h-8 text-xs"` the
-# `h-8` is preceded by `"`.
-#
-# Strategy: find every <Textarea ... className="..." ... /> tag and
-# remove standalone `h-7`/`h-8`/`h-9`/`h-10`/`h-11` tokens from the
-# className string (preserving everything else).
+# Strips leftover `max-h-[NNvh]` from DialogContent className strings
+# after the dialog-size migration.  The size preset now owns the
+# viewport-aware max-height, so the caller's `max-h-[NNvh]` is redundant
+# (and could conflict if the caller picked a smaller value than the
+# preset — e.g. caller said `max-h-[80vh]` but size="2xl" provides
+# `max-h-[94vh]`; Tailwind last-wins ordering is non-deterministic
+# across builds when both have the same specificity, so we strip the
+# caller's value and trust the preset).
 # =====================================================================
 
 import os
@@ -18,20 +17,16 @@ import re
 
 ROOT = "/home/z/my-project/src/components/views"
 
-# Match a className="..." attribute value inside a Textarea tag.
-CLASSNAME_RE = re.compile(r"""(className\s*=\s*")([^"]*)(")""")
 
-
-def find_textarea_tags(src: str):
-    """Yield (start, end, tag_text) for each <Textarea ... /> self-closing tag."""
+def find_dialog_content_tags(src: str):
     n = len(src)
     i = 0
     while i < n:
-        m = re.search(r"<Textarea\b", src[i:])
+        m = re.search(r"<DialogContent\b", src[i:])
         if not m:
             return
         start = i + m.start()
-        j = start + len("<Textarea")
+        j = start + len("<DialogContent")
         brace_depth = 0
         in_string = None
         end_pos = None
@@ -72,35 +67,34 @@ def find_textarea_tags(src: str):
         i = end_pos
 
 
-def strip_height_from_classname(value: str) -> str:
-    """Remove h-7/h-8/h-9/h-10/h-11 tokens from a className string."""
-    # Split on whitespace, drop tokens that are exactly `h-N` for N in our list.
-    tokens = value.split()
-    tokens = [t for t in tokens if not re.match(r"^h-(?:7|8|9|10|11)$", t)]
-    return " ".join(tokens)
-
-
 def process_file(path: str) -> int:
     with open(path, "r", encoding="utf-8") as f:
         src = f.read()
-    tags = list(find_textarea_tags(src))
+    tags = list(find_dialog_content_tags(src))
     if not tags:
         return 0
     new_src = src
     changes = 0
     for start, end, tag_text in reversed(tags):
-        # Find className="..." inside the tag
-        m = CLASSNAME_RE.search(tag_text)
+        # Only process tags that have size=
+        if not re.search(r'\bsize\s*=\s*"', tag_text):
+            continue
+        # Find className="..." in this tag
+        m = re.search(r'''className\s*=\s*("([^"]*)"|'([^']*)')''', tag_text)
         if not m:
             continue
-        old_value = m.group(2)
-        new_value = strip_height_from_classname(old_value)
-        if new_value == old_value:
+        cn_value = m.group(2) if m.group(2) is not None else m.group(3)
+        # Strip max-h-[NNvh] from the className value.
+        # Use lookahead for whitespace or end-of-string since \b doesn't
+        # work after `]` (a non-word character).
+        new_cn = re.sub(r"\s*max-h-\[\d+vh\](?=\s|$)", "", cn_value)
+        new_cn = re.sub(r"\s+", " ", new_cn).strip()
+        if new_cn == cn_value:
             continue
         # Rebuild the className attribute
-        old_attr = m.group(0)
-        new_attr = f'className="{new_value}"'
-        new_tag = tag_text.replace(old_attr, new_attr, 1)
+        q = m.group(1)[0]  # the quote character
+        new_attr = f'className={q}{new_cn}{q}'
+        new_tag = tag_text.replace(m.group(0), new_attr, 1)
         new_src = new_src[:start] + new_tag + new_src[end:]
         changes += 1
     if changes > 0:
@@ -119,8 +113,8 @@ def main():
             n = process_file(path)
             if n > 0:
                 total += n
-                print(f"{os.path.relpath(path, ROOT)}: stripped h-N from {n} Textarea(s)")
-    print(f"\nDone. Cleaned {total} Textarea(s).")
+                print(f"{os.path.relpath(path, ROOT)}: stripped max-h from {n} DialogContent(s)")
+    print(f"\nDone. Cleaned {total} DialogContent(s).")
 
 
 if __name__ == "__main__":

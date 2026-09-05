@@ -474,7 +474,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> New Lab Order</DialogTitle>
           <DialogDescription className="text-white/80">Select patient, choose tests from the catalog, and set priority.</DialogDescription>
@@ -643,7 +643,7 @@ function ActionDialog({ order, onClose, onChanged }: { order: any; onClose: () =
 function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white">
             <FlaskConical className="w-5 h-5 text-purple-600" /> Lab Order {order.orderNumber}
@@ -769,7 +769,7 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Collect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -840,7 +840,7 @@ function RejectSampleDialog({ order, onClose, onChanged }: { order: any; onClose
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-rose-700"><AlertTriangle className="w-5 h-5" /> Reject Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -922,7 +922,7 @@ function RecollectSampleDialog({ order, onClose, onChanged }: { order: any; onCl
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Recollect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -990,7 +990,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><Beaker className="w-5 h-5" /> Receive Sample</DialogTitle>
           <DialogDescription className="text-white/80">Confirm sample received at the lab. Order {order.orderNumber}</DialogDescription>
@@ -1067,7 +1067,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> Enter Results</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -1166,7 +1166,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> Verify Results</DialogTitle>
           <DialogDescription className="text-white/80">You are about to verify all results on order {order.orderNumber}. This will mark them ready for release.</DialogDescription>

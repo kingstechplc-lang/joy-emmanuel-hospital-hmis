@@ -433,7 +433,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Consultation Note</DialogTitle>
           <DialogDescription className="text-white/80">Will be saved as draft. Sign after completion.</DialogDescription>
@@ -666,7 +666,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
             <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
               <ClipboardList className="w-5 h-5" /> Consultation Note
@@ -885,7 +885,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
 
       {/* Nested Add Addendum dialog */}
       <Dialog open={showAddendum} onOpenChange={(o) => !o && setShowAddendum(false)}>
-        <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <StickyNote className="w-4 h-4 text-amber-600" /> Add Addendum

@@ -259,7 +259,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Role & Permissions" : "Add New Role"}</DialogTitle>
           <DialogDescription className="text-white/80">

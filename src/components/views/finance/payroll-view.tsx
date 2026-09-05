@@ -221,7 +221,7 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><CalendarDays className="w-5 h-5" /> Create Payroll Period</DialogTitle><DialogDescription className="text-white/80">Define a new payroll period for processing.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <div className="space-y-1.5"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., August 2026 Payroll" /></div>
@@ -274,7 +274,7 @@ function NewProfileDialog({ onClose }: { onClose: () => void }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Users className="w-5 h-5" /> Staff Payroll Profile</DialogTitle><DialogDescription className="text-white/80">Set up compensation and payment details for a staff member.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="md:col-span-2"><StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required /></div>
@@ -345,7 +345,7 @@ function NewLoanDialog({ onClose, tab }: { onClose: () => void; tab: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Wallet className="w-5 h-5" /> {tab === "loans" ? "New Staff Loan" : "New Salary Advance"}</DialogTitle><DialogDescription className="text-white/80">Record a new {tab === "loans" ? "staff loan" : "salary advance"} for repayment through payroll deductions.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required />
@@ -394,7 +394,7 @@ function SimpleNewDialog({ entity, title, fields, onClose }: { entity: string; t
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Settings className="w-5 h-5" /> New {title.slice(0, -1)}</DialogTitle><DialogDescription className="text-white/80">Create a new {title.slice(0, -1).toLowerCase()} entry for payroll processing.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {fields.map((f) => (

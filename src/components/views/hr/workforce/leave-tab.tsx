@@ -227,7 +227,7 @@ function ReviewDialog({ onClose, onSubmit, action }: { onClose: () => void; onSu
   const [comment, setComment] = useState("");
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white capitalize">{action} Leave Request</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -313,7 +313,7 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Submit Leave Request</DialogTitle>
           <DialogDescription className="text-white/80">The system will check leave balance, conflicts with shifts, and existing leave records.</DialogDescription>

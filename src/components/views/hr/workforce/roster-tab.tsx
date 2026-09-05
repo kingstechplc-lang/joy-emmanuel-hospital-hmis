@@ -191,7 +191,7 @@ function NewRosterDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create New Roster</DialogTitle>
           <DialogDescription className="text-white/80">A roster is a collection of shift assignments for a date range. It starts in draft status.</DialogDescription>
@@ -258,7 +258,7 @@ function ViewRosterDialog({ roster, onClose }: { roster: any; onClose: () => voi
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <FileText className="w-5 h-5" /> {roster.name}

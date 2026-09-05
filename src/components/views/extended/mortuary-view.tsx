@@ -295,7 +295,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> Admit Deceased Person</DialogTitle>
           <DialogDescription className="text-white/80">Record a deceased person — works for both facility deaths and bodies brought in from outside.</DialogDescription>
@@ -406,7 +406,7 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> {item.deceasedName}</DialogTitle>
           <DialogDescription className="text-white/80">Mortuary Admission — {item.admissionNumber}</DialogDescription>
@@ -526,7 +526,7 @@ function ReleaseForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><DoorOpen className="w-5 h-5" /> Release Body</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Released To (Name)</FieldLabel><Input value={form.releasedTo} onChange={(e) => set("releasedTo", e.target.value)} /></div>
@@ -549,7 +549,7 @@ function ViewingForm({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCh
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Calendar className="w-5 h-5" /> Schedule Viewing</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Viewer Name</FieldLabel><Input value={form.viewerName} onChange={(e) => set("viewerName", e.target.value)} /></div>
@@ -681,7 +681,7 @@ function StorageTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Boxes className="w-5 h-5" /> Add Storage Unit</DialogTitle></DialogHeader>
             <StorageForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>

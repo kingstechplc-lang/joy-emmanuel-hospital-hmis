@@ -429,7 +429,7 @@ function AdmissionActionDialog({ admission, actionType, onClose, onDone }: { adm
   if (actionType === "progress_note") return <ProgressNoteDialog admission={admission} onClose={onClose} onDone={onDone} />;
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden"><div className="p-4">{title}</div></DialogContent>
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4">{title}</div></DialogContent>
     </Dialog>
   );
 }
@@ -452,7 +452,7 @@ function ApproveDialog({ admission, onClose, onDone }: { admission: any; onClose
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Approve Admission Request</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
@@ -509,7 +509,7 @@ function AssignBedDialog({ admission, onClose, onDone }: { admission: any; onClo
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Assign Bed</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
@@ -560,7 +560,7 @@ function ConfirmDialog({ admission, onClose, onDone }: { admission: any; onClose
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Confirm Patient Arrival</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
@@ -601,7 +601,7 @@ function DischargePlanDialog({ admission, onClose, onDone }: { admission: any; o
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Plan Discharge</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
@@ -647,7 +647,7 @@ function ProgressNoteDialog({ admission, onClose, onDone }: { admission: any; on
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Stethoscope className="w-5 h-5" /> Doctor Progress Note (SOAP)</DialogTitle>
           <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription>
@@ -754,7 +754,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> New Admission</DialogTitle>
           <DialogDescription className="text-white/80">Admit a patient and assign a bed. The admission and bed assignment are created atomically — if the bed is unavailable, the operation is rolled back.</DialogDescription>
@@ -906,7 +906,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5" /> Discharge Patient</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -986,7 +986,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
 function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; canManage: boolean; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Stethoscope className="w-5 h-5" />

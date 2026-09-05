@@ -832,7 +832,7 @@ function LifecycleMenu({ supplier, onDone }: { supplier: any; onDone: () => void
       </div>
 
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="text-white flex items-center gap-2">
               <Ban className="w-4 h-4" /> Suspend Supplier
@@ -895,7 +895,7 @@ function SupplierDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="2xl">
         {/* Header */}
         <div className="px-5 py-4 border-b bg-gradient-to-r from-blue-500 to-indigo-600 text-white shrink-0">
           <div className="flex items-start justify-between gap-3">
@@ -1475,7 +1475,7 @@ function DetailFooter({ supplier, onChanged }: { supplier: any; onChanged: () =>
       </Button>
 
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="text-white flex items-center gap-2">
               <Ban className="w-4 h-4" /> Suspend Supplier
@@ -1870,7 +1870,7 @@ function SupplierDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-5 py-4 border-b bg-gradient-to-r from-blue-500 to-indigo-600 text-white shrink-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Truck className="w-5 h-5" /> {isEdit ? "Edit Supplier" : "New Supplier"}

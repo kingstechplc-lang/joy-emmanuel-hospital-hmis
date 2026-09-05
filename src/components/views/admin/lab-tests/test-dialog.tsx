@@ -118,7 +118,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="h-[92vh] flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Lab Test" : "Add Lab Test"}</DialogTitle>
           <DialogDescription className="text-white/80">

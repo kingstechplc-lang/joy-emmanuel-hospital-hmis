@@ -1193,7 +1193,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>Amend Entry</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1337,7 +1337,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className={`px-6 pt-5 pb-3 shrink-0 border-b text-white ${isIntake ? "bg-gradient-to-r from-emerald-600 to-teal-700" : "bg-gradient-to-r from-amber-500 to-orange-600"}`}>
           <DialogTitle className="flex items-center gap-2 text-white">
             {isIntake ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
@@ -1583,7 +1583,7 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> Monitoring Period</DialogTitle>
           <DialogDescription className="text-white/80">Start, end, or update fluid-balance monitoring for this patient.</DialogDescription>
@@ -1941,7 +1941,7 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
   const [notes, setNotes] = useState("");
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>Acknowledge Alert</DialogTitle>
           <DialogDescription className="text-white/80">{alert.title}</DialogDescription>
@@ -2796,7 +2796,7 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
         </DialogHeader>

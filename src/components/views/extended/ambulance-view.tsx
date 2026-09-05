@@ -348,7 +348,7 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> New Ambulance Request</DialogTitle>
         </DialogHeader>
@@ -495,7 +495,7 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
   };
 
   if (isLoading) {
-    return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl"><LoadingState rows={3} /></DialogContent></Dialog>;
+    return <Dialog open onOpenChange={onClose}><DialogContent  size="large"><LoadingState rows={3} /></DialogContent></Dialog>;
   }
 
   const t = data?.item;
@@ -519,7 +519,7 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Badge className="bg-red-100 text-red-700 border-red-200 font-mono text-[10px]">{t.tripNumber}</Badge>
@@ -758,7 +758,7 @@ function NewVehicleDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> Add Ambulance</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">

@@ -267,7 +267,7 @@ function NewShiftDialog({ onClose, shiftTypes }: { onClose: () => void; shiftTyp
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Schedule New Shift</DialogTitle>
           <DialogDescription className="text-white/80">Assign a shift to a staff member. The system will validate conflicts and leave status.</DialogDescription>

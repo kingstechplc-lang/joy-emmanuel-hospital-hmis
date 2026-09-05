@@ -239,17 +239,23 @@ tbody td {
   max-width: 100%;
 }
 
+/* Tables inside .overflow-x-auto grow to natural width but don't force
+   a 600px floor — that floor was the root cause of "fix the root cause
+   by widening the dialog" being necessary on narrow dialogs.
+   Tables without .overflow-x-auto wrap to fit their container. */
 .overflow-x-auto > table {
-  min-width: 600px; /* ensure table doesn't shrink below readable width */
+  min-width: min(100%, 600px);
 }
 
-/* Ensure table cells don't shrink too much */
+/* Default: prevent table cells from collapsing too narrow. */
 table th, table td {
   white-space: nowrap;
 }
 
-/* But allow wrapping in cells with long text */
-table td.break-words, table td .break-words {
+/* But allow wrapping in cells with long text or where explicitly requested. */
+table td.break-words, table td .break-words,
+table td.wrap, table td .wrap,
+.wrap-cell, .wrap-cell td {
   white-space: normal;
   word-break: break-word;
 }

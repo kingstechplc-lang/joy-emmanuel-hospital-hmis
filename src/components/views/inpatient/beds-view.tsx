@@ -402,7 +402,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <BedDouble className="w-5 h-5 text-emerald-600" />
@@ -784,7 +784,7 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> {isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
@@ -870,7 +870,7 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> {isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <div>
@@ -934,7 +934,7 @@ function BedMasterDialog({ bed, facilityId, onClose, onDone }: { bed?: any; faci
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> {isEdit ? "Edit Bed" : "Add Bed"}</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">

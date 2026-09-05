@@ -656,7 +656,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ScanLine className="w-5 h-5" /> New Imaging Order</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a radiology study for a patient.</DialogDescription>
@@ -835,7 +835,7 @@ function ScheduleDialog({ order, onClose, onChanged }: { order: any; onClose: ()
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarClock className="w-5 h-5" /> Schedule Imaging</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -884,7 +884,7 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Stethoscope className="w-5 h-5" /> Perform Imaging</DialogTitle>
           <DialogDescription className="text-white/80">Confirm the imaging procedure has begun. {order.procedureName}</DialogDescription>
@@ -943,7 +943,7 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><FileText className="w-5 h-5" /> Imaging Report</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
@@ -999,7 +999,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> Verify Report</DialogTitle>
           <DialogDescription className="text-white/80">Confirm the imaging report is verified. {order.procedureName}</DialogDescription>
@@ -1084,7 +1084,7 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <History className="w-5 h-5" /> Amend Imaging Report

@@ -598,7 +598,7 @@ export function LabResultsView() {
           LabResult to amend — eliminates the silent first-result bug. */}
       {amendSelectGroup && (
         <Dialog open onOpenChange={() => setAmendSelectGroup(null)}>
-          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
               <DialogTitle className="flex items-center gap-2 text-white">
                 <History className="w-5 h-5" /> Select Result to Amend
@@ -689,7 +689,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5" /> Amend Result</DialogTitle>
           <DialogDescription className="text-white/80">

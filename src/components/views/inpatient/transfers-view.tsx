@@ -530,7 +530,7 @@ function NewTransferDialog({ facilityId, onClose, onCreated }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5" /> New Patient Transfer</DialogTitle>
           <DialogDescription className="text-white/80">Request a patient transfer. The patient stays in their current location until the transfer is approved and executed.</DialogDescription>
@@ -748,14 +748,14 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
     } catch (e: any) { toast.error(e.message); }
   };
 
-  if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-4xl"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!t) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent  size="wide"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
+  if (!t) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
 
   const isFinalized = t.isFinalized;
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="h-[92vh] flex flex-col p-0 gap-0 overflow-hidden" size="2xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <ArrowRightLeft className="w-5 h-5" />
@@ -1140,7 +1140,7 @@ function CommunicationsPanel({ transferId, communications, onChanged }: any) {
 
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
-          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Log Communication</DialogTitle></DialogHeader>
             <div className="flex-1 overflow-y-auto p-6 space-y-2">
               <div><FieldLabel required>Recipient Name</FieldLabel><Input value={newComm.recipientName} onChange={(e) => setNewComm({ ...newComm, recipientName: e.target.value })} placeholder="e.g., Dr. Mensah" /></div>

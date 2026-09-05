@@ -759,7 +759,7 @@ function NewPrescriptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="2xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-amber-600" /> New Prescription
@@ -1156,7 +1156,7 @@ function ViewPrescriptionDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-        <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <FileText className="w-4 h-4 text-amber-600" /> Prescription {full?.prescriptionNumber}
@@ -1338,7 +1338,7 @@ function ViewPrescriptionDialog({
 
       {/* Discontinue / Cancel reason dialog */}
       <Dialog open={!!actionDialog} onOpenChange={(o) => { if (!o) setActionDialog(null); }}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               {actionDialog?.type === "discontinue" ? (
@@ -1549,7 +1549,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Pill className="w-4 h-4 text-amber-600" /> Dispense: {full?.prescriptionNumber}

@@ -543,7 +543,7 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5" /> Request Discharge</DialogTitle>
           <DialogDescription className="text-white/80">Initiate a discharge request. The admission remains active until the discharge is finalized.</DialogDescription>
@@ -744,15 +744,15 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
     } catch (e: any) { toast.error(e.message); }
   };
 
-  if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-4xl"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!d) return <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent  size="wide"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
+  if (!d) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
 
   const isFinalized = d.isFinalized;
   const ba = d.admission?.bedAssignments?.[0];
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="h-[92vh] flex flex-col p-0 gap-0 overflow-hidden" size="2xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <LogOut className="w-5 h-5" />
@@ -1143,7 +1143,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
 
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
-          <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle>Add Discharge Medication</DialogTitle></DialogHeader>
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-2">
               <div className="col-span-2"><FieldLabel required>Medication Name</FieldLabel><Input value={newMed.medicationName} onChange={(e) => setNewMed({ ...newMed, medicationName: e.target.value })} placeholder="e.g., Amoxicillin" /></div>

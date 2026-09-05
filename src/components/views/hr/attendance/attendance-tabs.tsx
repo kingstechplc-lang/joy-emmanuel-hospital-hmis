@@ -786,7 +786,7 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white">Create Attendance Period</DialogTitle>
           <DialogDescription className="text-white/80">Define a date range for attendance review and payroll locking.</DialogDescription>
@@ -951,7 +951,7 @@ function NewAttendancePolicyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Attendance Policy</DialogTitle><DialogDescription className="text-white/80">Configure grace periods, thresholds, break rules, and rounding for attendance calculations.</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Default Hospital Policy" /></div>

@@ -1431,7 +1431,7 @@ function ViewInvoiceDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
           {isLoading || !inv ? (
             <div className="p-4"><LoadingState rows={4} /></div>
           ) : (
@@ -2036,7 +2036,7 @@ function LifecycleActionDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Icon className={`w-5 h-5 ${c.iconColor}`} /> {c.title}
@@ -2317,7 +2317,7 @@ function NewInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
         <DialogHeader className="shrink-0 px-6 pt-5 pb-3 border-b bg-gradient-to-r from-rose-600 to-pink-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Receipt className="w-5 h-5" /> New Invoice
@@ -2678,7 +2678,7 @@ function PaymentDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <CreditCard className="w-5 h-5 text-emerald-600" /> Record Payment
@@ -2798,7 +2798,7 @@ function AddItemDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-emerald-600" /> Add Item to {invoice.invoiceNumber}

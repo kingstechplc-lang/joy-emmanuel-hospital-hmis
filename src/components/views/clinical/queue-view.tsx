@@ -922,7 +922,7 @@ function TransferDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         {/* Keyed body — fresh form state per entry, no effect needed */}
         {entry && (
           <TransferDialogBody
@@ -1034,7 +1034,7 @@ function SkipDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         {/* Keyed body — fresh form state per entry, no effect needed */}
         {entry && (
           <SkipDialogBody
@@ -1198,7 +1198,7 @@ function AddToQueueDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white">Add Patient to Queue</DialogTitle>
           <DialogDescription className="text-white/80">Add a patient to today&apos;s queue.</DialogDescription>
