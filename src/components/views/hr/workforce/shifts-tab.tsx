@@ -324,7 +324,7 @@ function NewShiftDialog({ onClose, shiftTypes }: { onClose: () => void; shiftTyp
         </div>
 
         {conflictWarnings.length > 0 && (
-          <Alert variant="destructive">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><Alert variant="destructive">
             <AlertTriangle className="w-4 h-4" />
             <AlertTitle>Conflict Detected</AlertTitle>
             <AlertDescription>
@@ -336,7 +336,7 @@ function NewShiftDialog({ onClose, shiftTypes }: { onClose: () => void; shiftTyp
                 Override conflicts and schedule anyway
               </label>
             </AlertDescription>
-          </Alert>
+          </Alert></div>
         )}
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

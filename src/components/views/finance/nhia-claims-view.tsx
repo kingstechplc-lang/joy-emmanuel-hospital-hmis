@@ -704,7 +704,7 @@ function ValidateDialog({ data, onClose, onGenerate, canGenerate, isValidating }
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
+        <ScrollArea className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -916,7 +916,7 @@ function XmlPreviewDialog({ data, onClose, onDownload, canDownload }: {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
+        <ScrollArea className="flex-1 overflow-y-auto p-6">
           <div className="space-y-3">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -1022,7 +1022,7 @@ function DetailDialog({ record, onClose, onDownload }: {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
+        <ScrollArea className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
             {/* Status row */}
             <div className="flex items-center gap-3">

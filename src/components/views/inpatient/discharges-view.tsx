@@ -745,7 +745,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
   };
 
   if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent  size="wide"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!d) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (!d) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600 flex-1 overflow-y-auto min-h-0">Not found</div></DialogContent></Dialog>;
 
   const isFinalized = d.isFinalized;
   const ba = d.admission?.bedAssignments?.[0];
@@ -770,7 +770,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
 
         {/* Lifecycle action buttons */}
         {!isFinalized && (
-          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-slate-50">
+          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-slate-50 flex-1 overflow-y-auto min-h-0">
             {d.status === "requested" && canEdit && (
               <Button size="sm" onClick={() => lifecycle("approve")} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-8"><CheckCircle2 className="w-3.5 h-3.5" /> Approve</Button>
             )}
@@ -802,7 +802,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
           </div>
         )}
         {isFinalized && (
-          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-emerald-50">
+          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-emerald-50 flex-1 overflow-y-auto min-h-0">
             <Badge className="bg-emerald-100 text-emerald-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Finalized</Badge>
             <span className="text-xs text-slate-600">Discharge #{d.dischargeNumber} • Finalized by {d.finalizedBy?.firstName} {d.finalizedBy?.lastName} • {formatDate(d.finalizedAt, true)}</span>
             <PrintButton label="Print Summary" documentType="discharge" recordId={d.id} recordSummary={d.dischargeNumber || d.id} className="ml-auto h-7 text-xs gap-1.5" renderContent={() => <DischargeTemplate d={d} />} />

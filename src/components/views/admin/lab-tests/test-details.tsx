@@ -56,8 +56,8 @@ export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose
   if (isError || !t) return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="2xl">
-        <div className="p-8 text-center text-rose-600">Failed to load test details.</div>
-        <div className="flex justify-center pb-4"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
+        <div className="p-8 text-center text-rose-600 flex-1 overflow-y-auto p-6 min-h-0">Failed to load test details.</div>
+        <div className="flex justify-center pb-4 flex-1 overflow-y-auto p-6 min-h-0"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
       </DialogContent>
     </Dialog>
   );

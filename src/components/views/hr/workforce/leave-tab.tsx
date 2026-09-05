@@ -396,7 +396,7 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
         </div>
 
         {result?.conflictWarnings?.length > 0 && (
-          <Alert>
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><Alert>
             <AlertTriangle className="w-4 h-4" />
             <AlertTitle>Conflict Warnings</AlertTitle>
             <AlertDescription>
@@ -404,18 +404,18 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
                 {result.conflictWarnings.map((w: any, i: number) => <li key={i}>{w.message}</li>)}
               </ul>
             </AlertDescription>
-          </Alert>
+          </Alert></div>
         )}
 
         {result?.balanceCheck && (
-          <Alert variant={result.balanceCheck.canApprove ? "default" : "destructive"}>
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><Alert variant={result.balanceCheck.canApprove ? "default" : "destructive"}>
             <FileText className="w-4 h-4" />
             <AlertTitle>Balance Check</AlertTitle>
             <AlertDescription>
               Requested: {result.balanceCheck.requestedDays} day(s) • Remaining: {result.balanceCheck.currentRemaining?.toFixed(1)} day(s)
               {!result.balanceCheck.canApprove && <div className="mt-1 font-medium">{result.balanceCheck.reason}</div>}
             </AlertDescription>
-          </Alert>
+          </Alert></div>
         )}
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

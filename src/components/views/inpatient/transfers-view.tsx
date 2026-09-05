@@ -749,7 +749,7 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
   };
 
   if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent  size="wide"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!t) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (!t) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600 flex-1 overflow-y-auto min-h-0">Not found</div></DialogContent></Dialog>;
 
   const isFinalized = t.isFinalized;
 
@@ -774,7 +774,7 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
 
         {/* Lifecycle buttons */}
         {!isFinalized && (
-          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-slate-50">
+          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-slate-50 flex-1 overflow-y-auto min-h-0">
             {t.status === "requested" && canEdit && (
               <Button size="sm" onClick={() => lifecycle("approve")} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-8"><CheckCircle2 className="w-3.5 h-3.5" /> Approve</Button>
             )}
@@ -825,7 +825,7 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
           </div>
         )}
         {isFinalized && (
-          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-emerald-50">
+          <div className="px-6 py-2 border-b flex flex-wrap gap-2 bg-emerald-50 flex-1 overflow-y-auto min-h-0">
             <Badge className="bg-emerald-100 text-emerald-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Finalized</Badge>
             <span className="text-xs text-slate-600">Transfer #{t.transferNumber} • Completed by {t.completedBy?.firstName} {t.completedBy?.lastName} • {formatDate(t.completedAt, true)}</span>
             <PrintButton label="Print Summary" documentType="transfer" recordId={t.id} recordSummary={t.transferNumber || t.id} className="ml-auto h-7 text-xs gap-1.5" renderContent={() => <TransferTemplate t={t} />} />

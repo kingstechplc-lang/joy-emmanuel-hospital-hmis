@@ -1587,7 +1587,7 @@ export function DispenseView() {
           </div>
 
           {/* Bulk invoice toggle helpers + grand total */}
-          <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
+          <div className="flex items-center justify-between text-xs gap-2 flex-wrap flex-1 overflow-y-auto p-6 min-h-0">
             <div className="flex items-center gap-2 text-slate-500">
               <span>Quick toggle:</span>
               <Button

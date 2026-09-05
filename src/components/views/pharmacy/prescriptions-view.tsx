@@ -1168,9 +1168,9 @@ function ViewPrescriptionDialog({
           </DialogHeader>
 
           {isLoading ? (
-            <LoadingState rows={3} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={3} /></div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
                   <div className="text-xs text-slate-500">Patient</div>
@@ -1560,7 +1560,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
         </DialogHeader>
 
         {allergyBanner && (
-          <div className="flex-1 overflow-y-auto p-6 bg-rose-50 border border-rose-300 rounded p-3 flex items-start gap-2">
+          <div className="shrink-0 bg-rose-50 border-b border-rose-300 p-3 flex items-start gap-2">
             <AlertTriangle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
             <div>
               <div className="text-sm font-semibold text-rose-800">Allergy Warning</div>
@@ -1573,9 +1573,9 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
         )}
 
         {loading ? (
-          <LoadingState rows={3} />
+          <div className="flex-1 overflow-y-auto p-6"><LoadingState rows={3} /></div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
             {(full?.items || []).filter((it: any) => it.status !== "dispensed" && it.status !== "cancelled").map((it: any) => {
               const remaining = it.quantity - it.dispensedQuantity;
               const batches = batchesByItem[it.id] || [];

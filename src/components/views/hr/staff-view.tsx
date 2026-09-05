@@ -866,13 +866,13 @@ function StaffDetailDialog({
         </DialogHeader>
 
         {isLoading ? (
-          <LoadingState rows={4} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={4} /></div>
         ) : isError ? (
-          <ErrorState message="Failed to load staff" onRetry={() => refetch()} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load staff" onRetry={() => refetch()} /></div>
         ) : !s ? (
-          <EmptyState title="Staff not found" />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="Staff not found" /></div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
             {/* Header */}
             <div className="flex flex-col md:flex-row gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
               <Avatar className="w-16 h-16 bg-blue-200">

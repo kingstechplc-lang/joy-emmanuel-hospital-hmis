@@ -341,13 +341,13 @@ function MaintenanceDialog({ equipment, onClose }: { equipment: any; onClose: ()
           <DialogDescription className="text-white/80">{equipment.name} ({equipment.assetNumber})</DialogDescription>
         </DialogHeader>
         {isLoading ? (
-          <LoadingState rows={3} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={3} /></div>
         ) : isError ? (
-          <ErrorState message="Failed to load history" />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load history" /></div>
         ) : (data?.items || []).length === 0 ? (
-          <EmptyState title="No maintenance records" description="Schedule maintenance to begin tracking service history." />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="No maintenance records" description="Schedule maintenance to begin tracking service history." /></div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1 overflow-y-auto p-6 min-h-0">
             {data.items.map((m: any) => (
               <Card key={m.id}>
                 <CardContent className="p-3">

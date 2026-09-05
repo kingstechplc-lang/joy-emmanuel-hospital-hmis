@@ -429,7 +429,7 @@ function AdmissionActionDialog({ admission, actionType, onClose, onDone }: { adm
   if (actionType === "progress_note") return <ProgressNoteDialog admission={admission} onClose={onClose} onDone={onDone} />;
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4">{title}</div></DialogContent>
+      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 flex-1 overflow-y-auto min-h-0">{title}</div></DialogContent>
     </Dialog>
   );
 }

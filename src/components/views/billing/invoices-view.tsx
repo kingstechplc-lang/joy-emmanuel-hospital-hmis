@@ -1433,7 +1433,7 @@ function ViewInvoiceDialog({
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
           {isLoading || !inv ? (
-            <div className="p-4"><LoadingState rows={4} /></div>
+            <div className="p-4 flex-1 overflow-y-auto min-h-0"><LoadingState rows={4} /></div>
           ) : (
             <>
               <DialogHeader className="shrink-0 px-6 pt-5 pb-3 border-b bg-gradient-to-r from-rose-600 to-pink-700 text-white">

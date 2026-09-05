@@ -344,7 +344,7 @@ function LogDetailDialog({ log, onClose }: { log: any; onClose: () => void }) {
           {log.reason && <DetailItem label="Reason" value={log.reason} />}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto p-6 min-h-0">
           <div className="space-y-1">
             <Label className="text-xs text-slate-500">Old Values</Label>
             <pre className="bg-rose-50 border border-rose-100 rounded p-3 text-xs overflow-x-auto max-h-72">

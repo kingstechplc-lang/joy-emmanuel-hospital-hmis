@@ -825,7 +825,7 @@ function RecordDetailDialog({
           </div>
         )}
 
-        <Tabs defaultValue={groupNames[0] || "Details"}>
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><Tabs defaultValue={groupNames[0] || "Details"}>
           <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(groupNames.length, 4)}, 1fr)` }}>
             {groupNames.map((g) => (
               <TabsTrigger key={g} value={g} className="text-xs">{g}</TabsTrigger>
@@ -865,7 +865,7 @@ function RecordDetailDialog({
               <DetailRow label="Organization ID" value={item.organizationId || "—"} />
             </div>
           </TabsContent>
-        </Tabs>
+        </Tabs></div>
 
         {onEdit && (
           <DialogFooter className="p-6 pt-4 shrink-0 border-t">

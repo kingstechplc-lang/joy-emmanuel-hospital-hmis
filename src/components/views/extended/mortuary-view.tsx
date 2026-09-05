@@ -430,7 +430,7 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
         {/* Next of Kin */}
         {item.nextOfKinName && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
             <Label className="text-blue-700 font-semibold">Next of Kin</Label>
             <div className="text-xs text-slate-700 mt-1">
               {item.nextOfKinName} ({item.nextOfKinRelation || "—"})
@@ -441,7 +441,7 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
         {/* Release info (if released) */}
         {item.releasedAt && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
             <Label className="text-emerald-700 font-semibold">Released</Label>
             <div className="text-xs text-slate-700 mt-1">
               Released at: {formatDate(item.releasedAt, true)} to {item.releasedTo}
@@ -453,14 +453,14 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
         {/* Actions */}
         {canManage && item.admissionStatus !== "released" && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 flex-1 overflow-y-auto p-6 min-h-0">
             <Button size="sm" variant="outline" onClick={() => setShowViewing(true)}><Calendar className="w-4 h-4 mr-1" /> Schedule Viewing</Button>
             <Button size="sm" className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white" onClick={() => setShowRelease(true)}><DoorOpen className="w-4 h-4 mr-1" /> Release Body</Button>
           </div>
         )}
 
         {/* Timeline */}
-        <div className="border-t pt-3">
+        <div className="border-t pt-3 flex-1 overflow-y-auto p-6 min-h-0">
           <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><Activity className="w-4 h-4" /> Case Timeline ({movements.length})</h4>
           {loadingTimeline ? <LoadingState rows={3} /> : movements.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-4">No movements recorded yet</p>
@@ -494,7 +494,7 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
         {/* Viewings */}
         {viewings.length > 0 && (
-          <div className="border-t pt-3">
+          <div className="border-t pt-3 flex-1 overflow-y-auto p-6 min-h-0">
             <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2"><UsersIcon className="w-4 h-4" /> Viewings ({viewings.length})</h4>
             <div className="space-y-1">
               {viewings.map((v) => (
@@ -512,10 +512,10 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
         )}
 
         {/* Release dialog */}
-        {showRelease && <ReleaseForm open={showRelease} onOpenChange={setShowRelease} onSubmit={(d) => releaseMutation.mutate(d)} loading={releaseMutation.isPending} />}
+        {showRelease && <div className="flex-1 overflow-y-auto min-h-0 p-6"><ReleaseForm open={showRelease} onOpenChange={setShowRelease} onSubmit={(d) => releaseMutation.mutate(d)} loading={releaseMutation.isPending} /></div>}
 
         {/* Viewing dialog */}
-        {showViewing && <ViewingForm open={showViewing} onOpenChange={setShowViewing} onSubmit={scheduleViewing} />}
+        {showViewing && <div className="flex-1 overflow-y-auto min-h-0 p-6"><ViewingForm open={showViewing} onOpenChange={setShowViewing} onSubmit={scheduleViewing} /></div>}
       </DialogContent>
     </Dialog>
   );
@@ -683,7 +683,7 @@ function StorageTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Boxes className="w-5 h-5" /> Add Storage Unit</DialogTitle></DialogHeader>
-            <StorageForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6"><StorageForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
           </DialogContent>
         </Dialog>
       )}

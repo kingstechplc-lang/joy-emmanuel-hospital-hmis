@@ -431,7 +431,7 @@ function RequestDetail({ item, canManage, onClose }: { item: any; canManage: boo
           <div><Label className="text-slate-500">Notes</Label><p className="mt-1 text-sm text-slate-600">{item.notes}</p></div>
         )}
         {canManage && (
-          <div className="flex flex-wrap gap-2 border-t pt-3">
+          <div className="flex flex-wrap gap-2 border-t pt-3 flex-1 overflow-y-auto p-6 min-h-0">
             {item.status === "requested" && <Button size="sm" variant="outline" onClick={() => updateStatus("assigned")}>Assign</Button>}
             {item.status === "assigned" && <Button size="sm" variant="outline" onClick={() => updateStatus("in_progress")}>Start Work</Button>}
             {item.status === "in_progress" && <Button size="sm" variant="outline" className="text-emerald-600" onClick={() => updateStatus("completed")}>Mark Completed</Button>}
@@ -545,7 +545,7 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Wrench className="w-5 h-5" /> Schedule Maintenance</DialogTitle></DialogHeader>
-            <MaintenanceForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6"><MaintenanceForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
           </DialogContent>
         </Dialog>
       )}
@@ -692,7 +692,7 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> New Facility Inspection</DialogTitle></DialogHeader>
-            <InspectionForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6"><InspectionForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
           </DialogContent>
         </Dialog>
       )}

@@ -1595,7 +1595,7 @@ function ViewPODialog({
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 border-y py-2">
+        <div className="flex flex-wrap gap-2 border-y py-2 flex-1 overflow-y-auto p-6 min-h-0">
           <Button size="sm" variant="outline" onClick={() => onReceive(data)} disabled={!canReceive || !["sent_to_supplier", "acknowledged", "partially_received"].includes(data?.status)} className="gap-1.5 h-8">
             <PackageCheck className="w-3.5 h-3.5" /> Receive
           </Button>
@@ -1679,7 +1679,7 @@ function ViewPODialog({
         </div>
 
         {/* Inner tabs */}
-        <Tabs value={innerTab} onValueChange={setInnerTab}>
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><Tabs value={innerTab} onValueChange={setInnerTab}>
           <TabsList>
             <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
             <TabsTrigger value="items" className="text-xs">Line Items</TabsTrigger>
@@ -1829,7 +1829,7 @@ function ViewPODialog({
           <TabsContent value="audit">
             <AuditTimeline po={data} />
           </TabsContent>
-        </Tabs>
+        </Tabs></div>
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>

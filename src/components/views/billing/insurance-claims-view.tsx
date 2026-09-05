@@ -600,7 +600,7 @@ function ValidateResultDialog({
             <p className="text-sm text-slate-600">Running validation checks…</p>
           </div>
         ) : error ? (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-700 flex items-start gap-2">
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-700 flex items-start gap-2 flex-1 overflow-y-auto min-h-0">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold">Validation failed</p>
@@ -608,7 +608,7 @@ function ValidateResultDialog({
             </div>
           </div>
         ) : result ? (
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
             {/* Completeness meter */}
             <div className="p-4 rounded-lg border bg-slate-50">
               <div className="flex items-center justify-between mb-2">
@@ -769,13 +769,13 @@ function ClaimDetailDialog({
         </DialogHeader>
 
         {isLoading ? (
-          <LoadingState rows={5} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={5} /></div>
         ) : isError ? (
-          <ErrorState message="Failed to load claim detail" onRetry={() => refetch()} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load claim detail" onRetry={() => refetch()} /></div>
         ) : !claim ? (
-          <EmptyState title="Claim not found" />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="Claim not found" /></div>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-slate-100 flex-wrap h-auto">
               <TabsTrigger value="overview" className="gap-1.5 data-[state=active]:bg-white"><FileText className="w-3.5 h-3.5" /> Overview</TabsTrigger>
               <TabsTrigger value="diagnoses" className="gap-1.5 data-[state=active]:bg-white"><StethoscopeIcon className="w-3.5 h-3.5" /> Diagnoses {claim.claimDiagnoses?.length > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1">{claim.claimDiagnoses.length}</Badge>}</TabsTrigger>
@@ -983,7 +983,7 @@ function ClaimDetailDialog({
             <TabsContent value="payments">
               <PaymentsTab claim={claim} canEdit={canEdit} onChanged={refresh} />
             </TabsContent>
-          </Tabs>
+          </Tabs></div>
         )}
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

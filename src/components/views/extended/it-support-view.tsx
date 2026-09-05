@@ -426,7 +426,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
 
         {/* Resolution (if resolved) */}
         {ticket.resolution && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
             <Label className="text-emerald-700">Resolution</Label>
             <p className="mt-1 text-sm text-emerald-800">{ticket.resolution}</p>
           </div>
@@ -434,7 +434,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
 
         {/* Status actions */}
         {canManage && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 flex-1 overflow-y-auto p-6 min-h-0">
             {ticket.status !== "assigned" && <Button size="sm" variant="outline" onClick={() => updateStatus("assigned")}>Assign</Button>}
             {ticket.status !== "in_progress" && <Button size="sm" variant="outline" onClick={() => updateStatus("in_progress")}>Start Work</Button>}
             {ticket.status !== "escalated" && <Button size="sm" variant="outline" className="text-purple-600" onClick={() => updateStatus("escalated")}>Escalate</Button>}
@@ -444,7 +444,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
         )}
 
         {/* Comments / Conversation */}
-        <div className="border-t pt-3">
+        <div className="border-t pt-3 flex-1 overflow-y-auto p-6 min-h-0">
           <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
             <MessageSquare className="w-4 h-4" /> Conversation ({comments.length})
           </h4>
@@ -572,7 +572,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><BookOpen className="w-5 h-5" /> New Knowledge Base Article</DialogTitle></DialogHeader>
-            <KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6"><KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
           </DialogContent>
         </Dialog>
       )}
@@ -714,7 +714,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={setShowForm}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Monitor className="w-5 h-5" /> Register IT Asset</DialogTitle></DialogHeader>
-            <AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6"><AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} /></div>
           </DialogContent>
         </Dialog>
       )}

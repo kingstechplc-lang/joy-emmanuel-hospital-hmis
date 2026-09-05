@@ -617,7 +617,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
         </div>
 
         {/* Quick actions — cross-module internal links */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 flex-1 overflow-y-auto p-6 min-h-0">
           {encounter.patientId && (
             <Button size="sm" variant="outline" onClick={() => { selectPatient(encounter.patientId); onClose(); setView("patient_360"); }} className="text-emerald-700">
               <Eye className="w-3.5 h-3.5 mr-1" /> Patient 360
@@ -641,7 +641,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
         </div>
 
         {/* Clinical form */}
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1 overflow-y-auto p-6 min-h-0">
           <div>
             <FieldLabel>Chief Complaint</FieldLabel>
             <Input value={form.chiefComplaint} onChange={(e) => set("chiefComplaint", e.target.value)} disabled={!canManage} />
@@ -694,7 +694,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
         </div>
 
         {/* Procedures section */}
-        <ProceduresSection encounterId={encounter.id} procedures={procedures} canManage={canManage} />
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><ProceduresSection encounterId={encounter.id} procedures={procedures} canManage={canManage} /></div>
 
         {/* Diagnosis section — centralized Diagnosis Engine */}
         {encounter.patientId && (
@@ -717,7 +717,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
         )}
 
         {/* Clinical notes section */}
-        <ClinicalNotesSection encounterId={encounter.id} notes={notes} canManage={canManage} />
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><ClinicalNotesSection encounterId={encounter.id} notes={notes} canManage={canManage} /></div>
 
         {canManage && (
           <DialogFooter className="p-6 pt-4 shrink-0 border-t">
@@ -1060,7 +1060,7 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
           <DialogDescription className="text-white/80">Schedule a patient for a specialty consultation, follow-up, or procedure.</DialogDescription>
         </DialogHeader>
 
-        <PatientPicker
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><PatientPicker
           label="Patient"
           required
           value={patient}
@@ -1069,9 +1069,9 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
             onClose();
             setView("patient_new");
           }}
-        />
+        /></div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 overflow-y-auto p-6 min-h-0">
           <div><FieldLabel>Specialty</FieldLabel><Select value={form.departmentCode} onValueChange={(v) => set("departmentCode", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SPECIALTIES.map((s) => <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>)}</SelectContent></Select></div>
           <div><Label>Appointment Date</Label><Input type="date" value={form.appointmentDate} onChange={(e) => set("appointmentDate", e.target.value)} /></div>
           <div><Label>Start Time</Label><Input type="time" value={form.startTime} onChange={(e) => set("startTime", e.target.value)} /></div>
@@ -1504,7 +1504,7 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
           <DialogDescription className="text-white/80">Refer a patient to a specialty clinic for consultation or procedure.</DialogDescription>
         </DialogHeader>
 
-        <PatientPicker
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><PatientPicker
           label="Patient"
           required
           value={patient}
@@ -1513,9 +1513,9 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
             onClose();
             setView("patient_new");
           }}
-        />
+        /></div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 overflow-y-auto p-6 min-h-0">
           <div><Label>Urgency</Label><Select value={form.urgency} onValueChange={(v) => set("urgency", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="emergency">Emergency</SelectItem></SelectContent></Select></div>
           <div className="col-span-2">
             <DepartmentSelect

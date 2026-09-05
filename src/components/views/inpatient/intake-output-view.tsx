@@ -1022,13 +1022,12 @@ function EntriesTable({ entries, patientId, canAmend, canSign, onInvalidate }: a
               label="Print"
               documentType="intake_output"
               recordId={patientId}
-              recordSummary={`Patient ${patient?.patientNumber || ""}`}
+              recordSummary={`Patient I/O Chart`}
               className="h-8 text-xs gap-1.5"
               renderContent={() => (
                 <ReportTemplate
                   title="Intake / Output Chart"
-                  patient={patient}
-                  documentNumber={`I/O — ${patient?.patientNumber || ""}`}
+                  documentNumber={`I/O Chart — ${patientId}`}
                   paperSize="A4"
                 >
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
@@ -1363,7 +1362,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
 
         {/* IV Rate Calculator (collapsible) */}
         {isIntake && showIvCalc && (
-          <div className="px-6 py-3 border-b bg-blue-50">
+          <div className="px-6 py-3 border-b bg-blue-50 flex-1 overflow-y-auto min-h-0">
             <div className="text-xs font-medium text-blue-900 mb-2 flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5" /> IV Flow Rate Calculator</div>
             <div className="grid grid-cols-4 gap-2 items-end">
               <div>

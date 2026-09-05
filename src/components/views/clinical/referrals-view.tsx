@@ -1177,7 +1177,7 @@ function ReferralDetailDialog({
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="wide">
-          <LoadingState rows={5} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={5} /></div>
         </DialogContent>
       </Dialog>
     );
@@ -1187,7 +1187,7 @@ function ReferralDetailDialog({
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="wide">
-          <ErrorState message="Failed to load referral" onRetry={() => refetch()} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load referral" onRetry={() => refetch()} /></div>
         </DialogContent>
       </Dialog>
     );
@@ -1247,7 +1247,7 @@ function ReferralDetailDialog({
 
         {/* ===== OVERVIEW ===== */}
         {activeSection === "overview" && (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 overflow-y-auto p-6 min-h-0">
             {/* Patient info */}
             <Card>
               <CardHeader className="pb-2">
@@ -1357,7 +1357,7 @@ function ReferralDetailDialog({
 
         {/* ===== TIMELINE ===== */}
         {activeSection === "timeline" && (
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1 overflow-y-auto p-6 min-h-0">
             {events.length === 0 ? (
               <EmptyState title="No events yet" description="Timeline events will appear here as the referral progresses." icon={Activity} />
             ) : (
@@ -1400,7 +1400,7 @@ function ReferralDetailDialog({
 
         {/* ===== FEEDBACK (counter-referral) ===== */}
         {activeSection === "feedback" && (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 overflow-y-auto p-6 min-h-0">
             <div className="flex items-center justify-between">
               <p className="text-xs text-slate-500">
                 Counter-referral feedback from the receiving facility. Submit interim updates or the final discharge summary.
@@ -1493,7 +1493,7 @@ function ReferralDetailDialog({
 
         {/* ===== MESSAGES (communication log) ===== */}
         {activeSection === "messages" && (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 overflow-y-auto p-6 min-h-0">
             <div className="space-y-2 max-h-[40vh] overflow-y-auto">
               {messages.length === 0 ? (
                 <EmptyState title="No messages" description="Send a message, info request, or log a phone call." icon={MessageSquare} />
@@ -1565,7 +1565,7 @@ function ReferralDetailDialog({
 
         {/* ===== ACTIONS ===== */}
         {activeSection === "actions" && (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 overflow-y-auto p-6 min-h-0">
             {/* Role indicator banner */}
             <div className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
               userRole === "referring"

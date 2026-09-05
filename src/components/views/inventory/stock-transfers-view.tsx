@@ -1644,7 +1644,7 @@ function ViewTransferDialog({
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 border-y py-2">
+        <div className="flex flex-wrap gap-2 border-y py-2 flex-1 overflow-y-auto p-6 min-h-0">
           {canTransfer && data?.status === "draft" && (
             <Button size="sm" onClick={() => doAction("submit", {}, "Transfer submitted")} className="gap-1.5 h-8 bg-amber-600 hover:bg-amber-700">
               <Send className="w-3.5 h-3.5" /> Submit
@@ -1730,7 +1730,7 @@ function ViewTransferDialog({
         </div>
 
         {/* Inner tabs */}
-        <Tabs value={innerTab} onValueChange={setInnerTab}>
+        <div className="flex-1 overflow-y-auto min-h-0 p-6"><Tabs value={innerTab} onValueChange={setInnerTab}>
           <TabsList>
             <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
             <TabsTrigger value="items" className="text-xs">Line Items</TabsTrigger>
@@ -1847,7 +1847,7 @@ function ViewTransferDialog({
           <TabsContent value="audit">
             <AuditTimeline transfer={data} />
           </TabsContent>
-        </Tabs>
+        </Tabs></div>
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>

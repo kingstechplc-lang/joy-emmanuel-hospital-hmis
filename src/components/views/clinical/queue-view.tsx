@@ -925,13 +925,13 @@ function TransferDialog({
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         {/* Keyed body — fresh form state per entry, no effect needed */}
         {entry && (
-          <TransferDialogBody
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><TransferDialogBody
             key={entry.id}
             entry={entry}
             allQueues={allQueues}
             onConfirm={onConfirm}
             onClose={onClose}
-          />
+          /></div>
         )}
       </DialogContent>
     </Dialog>
@@ -1037,12 +1037,12 @@ function SkipDialog({
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         {/* Keyed body — fresh form state per entry, no effect needed */}
         {entry && (
-          <SkipDialogBody
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><SkipDialogBody
             key={entry.id}
             entry={entry}
             onConfirm={onConfirm}
             onClose={onClose}
-          />
+          /></div>
         )}
       </DialogContent>
     </Dialog>
@@ -1203,7 +1203,7 @@ function AddToQueueDialog({
           <DialogTitle className="text-white">Add Patient to Queue</DialogTitle>
           <DialogDescription className="text-white/80">Add a patient to today&apos;s queue.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="p-6 space-y-3 flex-1 overflow-y-auto min-h-0">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <Input

@@ -45,15 +45,15 @@ export function ProviderDetailsDialog({ providerId, onClose }: { providerId: str
   if (isLoading) return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
-        <div className="p-8 text-center text-slate-500">Loading provider details…</div>
+        <div className="p-8 text-center text-slate-500 flex-1 overflow-y-auto p-6 min-h-0">Loading provider details…</div>
       </DialogContent>
     </Dialog>
   );
   if (isError || !p) return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="wide">
-        <div className="p-8 text-center text-rose-600">Failed to load provider details.</div>
-        <div className="flex justify-center pb-4"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
+        <div className="p-8 text-center text-rose-600 flex-1 overflow-y-auto p-6 min-h-0">Failed to load provider details.</div>
+        <div className="flex justify-center pb-4 flex-1 overflow-y-auto p-6 min-h-0"><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>
       </DialogContent>
     </Dialog>
   );

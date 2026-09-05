@@ -446,7 +446,7 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
           )}
         </DialogHeader>
 
-        {isLoading ? <LoadingState rows={4} /> : appt ? (
+        {isLoading ? <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={4} /></div> : appt ? (
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* Patient + Status */}
             <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
@@ -530,7 +530,7 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
             )}
           </div>
         ) : (
-          <EmptyState title="Appointment not found" />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="Appointment not found" /></div>
         )}
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

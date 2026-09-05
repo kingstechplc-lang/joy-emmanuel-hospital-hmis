@@ -979,7 +979,7 @@ function SupplierDetailDialog({
 
         {/* Footer actions */}
         {supplier && (
-          <DetailFooter supplier={supplier} onChanged={() => { onChanged(); refetch(); }} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><DetailFooter supplier={supplier} onChanged={() => { onChanged(); refetch(); }} /></div>
         )}
       </DialogContent>
     </Dialog>

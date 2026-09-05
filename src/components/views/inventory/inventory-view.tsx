@@ -1490,13 +1490,13 @@ function ItemDetailDialog({
         </DialogHeader>
 
         {isLoading ? (
-          <LoadingState rows={6} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={6} /></div>
         ) : isError ? (
-          <ErrorState message="Failed to load item" onRetry={() => refetch()} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load item" onRetry={() => refetch()} /></div>
         ) : !item ? (
-          <EmptyState title="Item not found" description="The item you're looking for does not exist." />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="Item not found" description="The item you're looking for does not exist." /></div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto p-6 min-h-0">
             {/* Item info */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-lg">
               <Info label="Name" value={item.name} />
@@ -2241,42 +2241,44 @@ function HistoryDialog({ item, facilityId, onClose }: { item: any; facilityId?: 
         </DialogHeader>
 
         {isLoading ? (
-          <LoadingState rows={4} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={4} /></div>
         ) : isError ? (
-          <ErrorState message="Failed to load history" />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load history" /></div>
         ) : (data?.items || []).length === 0 ? (
-          <EmptyState title="No transactions" description="No stock movements recorded for this item." />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><EmptyState title="No transactions" description="No stock movements recorded for this item." /></div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b bg-slate-50">
-              <tr>
-                <th className="text-left p-2 font-semibold text-slate-700 text-xs">Type</th>
-                <th className="text-right p-2 font-semibold text-slate-700 text-xs">Qty</th>
-                <th className="text-right p-2 font-semibold text-slate-700 text-xs">Before</th>
-                <th className="text-right p-2 font-semibold text-slate-700 text-xs">After</th>
-                <th className="text-left p-2 font-semibold text-slate-700 text-xs">Batch</th>
-                <th className="text-left p-2 font-semibold text-slate-700 text-xs">By</th>
-                <th className="text-left p-2 font-semibold text-slate-700 text-xs">Date</th>
-                <th className="text-left p-2 font-semibold text-slate-700 text-xs">Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((t: any) => (
-                <tr key={t.id} className="border-b hover:bg-slate-50">
-                  <td className="p-2 text-xs capitalize">{t.transactionType.replace(/_/g, " ")}</td>
-                  <td className={`p-2 text-right font-mono font-semibold ${t.quantity < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                    {t.quantity > 0 ? "+" : ""}{t.quantity}
-                  </td>
-                  <td className="p-2 text-right text-xs font-mono text-slate-500">{t.balanceBefore ?? "—"}</td>
-                  <td className="p-2 text-right text-xs font-mono text-slate-500">{t.balanceAfter ?? "—"}</td>
-                  <td className="p-2 text-xs">{t.batch?.batchNumber || "—"}</td>
-                  <td className="p-2 text-xs">{t.performedBy ? `${t.performedBy.firstName} ${t.performedBy.lastName}` : "—"}</td>
-                  <td className="p-2 text-xs">{formatDate(t.transactionAt, true)}</td>
-                  <td className="p-2 text-xs text-slate-500">{t.reason || t.notes || "—"}</td>
+          <div className="flex-1 overflow-y-auto min-h-0 p-6">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-slate-50">
+                <tr>
+                  <th className="text-left p-2 font-semibold text-slate-700 text-xs">Type</th>
+                  <th className="text-right p-2 font-semibold text-slate-700 text-xs">Qty</th>
+                  <th className="text-right p-2 font-semibold text-slate-700 text-xs">Before</th>
+                  <th className="text-right p-2 font-semibold text-slate-700 text-xs">After</th>
+                  <th className="text-left p-2 font-semibold text-slate-700 text-xs">Batch</th>
+                  <th className="text-left p-2 font-semibold text-slate-700 text-xs">By</th>
+                  <th className="text-left p-2 font-semibold text-slate-700 text-xs">Date</th>
+                  <th className="text-left p-2 font-semibold text-slate-700 text-xs">Reason</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.items.map((t: any) => (
+                  <tr key={t.id} className="border-b hover:bg-slate-50">
+                    <td className="p-2 text-xs capitalize">{t.transactionType.replace(/_/g, " ")}</td>
+                    <td className={`p-2 text-right font-mono font-semibold ${t.quantity < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                      {t.quantity > 0 ? "+" : ""}{t.quantity}
+                    </td>
+                    <td className="p-2 text-right text-xs font-mono text-slate-500">{t.balanceBefore ?? "—"}</td>
+                    <td className="p-2 text-right text-xs font-mono text-slate-500">{t.balanceAfter ?? "—"}</td>
+                    <td className="p-2 text-xs">{t.batch?.batchNumber || "—"}</td>
+                    <td className="p-2 text-xs">{t.performedBy ? `${t.performedBy.firstName} ${t.performedBy.lastName}` : "—"}</td>
+                    <td className="p-2 text-xs">{formatDate(t.transactionAt, true)}</td>
+                    <td className="p-2 text-xs text-slate-500">{t.reason || t.notes || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

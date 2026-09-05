@@ -297,7 +297,7 @@ function DonorDetail({ donor, onClose }: { donor: any; onClose: () => void }) {
           {donor.occupation && <div><Label className="text-slate-500">Occupation</Label><div>{donor.occupation}</div></div>}
         </div>
         {/* Screening results */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
           <Label className="text-amber-700 font-semibold">Screening Results</Label>
           <div className="grid grid-cols-4 gap-2 mt-2 text-xs">
             <div className="text-center"><div className="text-slate-500">HBsAg</div><div className={`font-bold ${donor.hbsAg === "Negative" || donor.hbsAg === "Non-reactive" ? "text-emerald-600" : donor.hbsAg ? "text-rose-600" : "text-slate-400"}`}>{donor.hbsAg || "—"}</div></div>
@@ -308,7 +308,7 @@ function DonorDetail({ donor, onClose }: { donor: any; onClose: () => void }) {
         </div>
         {/* Donation history */}
         {donations.length > 0 && (
-          <div className="border-t pt-3">
+          <div className="border-t pt-3 flex-1 overflow-y-auto p-6 min-h-0">
             <h4 className="text-sm font-bold text-slate-800 mb-2">Donation History ({donations.length})</h4>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {donations.map((d) => (

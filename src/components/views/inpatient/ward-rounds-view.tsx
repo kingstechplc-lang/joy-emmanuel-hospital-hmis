@@ -310,7 +310,7 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
   const [showAddPatient, setShowAddPatient] = useState(false);
 
   if (isLoading) return <Dialog open onOpenChange={onClose}><DialogContent  size="wide"><div className="p-8 text-center text-slate-500">Loading…</div></DialogContent></Dialog>;
-  if (!r) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600">Not found</div></DialogContent></Dialog>;
+  if (!r) return <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact"><div className="p-4 text-rose-600 flex-1 overflow-y-auto min-h-0">Not found</div></DialogContent></Dialog>;
 
   const lifecycleAction = async (action: string) => {
     try {
@@ -337,13 +337,13 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
 
         {/* Lifecycle buttons */}
         {r.status === "scheduled" && canManage && (
-          <div className="px-6 py-2 border-b flex gap-2">
+          <div className="px-6 py-2 border-b flex gap-2 flex-1 overflow-y-auto min-h-0">
             <Button size="sm" onClick={() => lifecycleAction("start")} className="gap-1.5 bg-amber-600 hover:bg-amber-700"><Play className="w-3.5 h-3.5" /> Start Round</Button>
             <Button size="sm" variant="outline" onClick={() => lifecycleAction("cancel")} className="text-rose-600">Cancel</Button>
           </div>
         )}
         {r.status === "in_progress" && canComplete && (
-          <div className="px-6 py-2 border-b flex gap-2">
+          <div className="px-6 py-2 border-b flex gap-2 flex-1 overflow-y-auto min-h-0">
             <Button size="sm" onClick={() => lifecycleAction("complete")} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><StopCircle className="w-3.5 h-3.5" /> Complete Round</Button>
             <Button size="sm" variant="outline" onClick={() => lifecycleAction("cancel")} className="text-rose-600">Cancel</Button>
           </div>

@@ -680,7 +680,7 @@ function PregnancyDetailDialog({
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
-          <LoadingState rows={5} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={5} /></div>
         </DialogContent>
       </Dialog>
     );
@@ -690,7 +690,7 @@ function PregnancyDetailDialog({
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="wide">
-          <ErrorState message="Failed to load maternity record" onRetry={() => refetch()} />
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><ErrorState message="Failed to load maternity record" onRetry={() => refetch()} /></div>
         </DialogContent>
       </Dialog>
     );
