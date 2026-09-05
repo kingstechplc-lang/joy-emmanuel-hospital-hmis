@@ -222,9 +222,9 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
   });
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
-      <DialogHeader><DialogTitle>Create Payroll Period</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><CalendarDays className="w-5 h-5" /> Create Payroll Period</DialogTitle><DialogDescription className="text-white/80">Define a new payroll period for processing.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
-        <div className="flex-1 overflow-y-auto p-6 space-y-1.5"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., August 2026 Payroll" /></div>
+        <div className="space-y-1.5"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., August 2026 Payroll" /></div>
         <div className="space-y-1.5"><Label>Period Type</Label><Select value={periodType} onValueChange={setPeriodType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="monthly">Monthly</SelectItem><SelectItem value="biweekly">Biweekly</SelectItem><SelectItem value="weekly">Weekly</SelectItem><SelectItem value="custom">Custom</SelectItem></SelectContent></Select></div>
         <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><FieldLabel required>Start Date</FieldLabel><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div><div className="space-y-1.5"><FieldLabel required>End Date</FieldLabel><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div></div>
         <div className="space-y-1.5"><Label>Payment Date</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
@@ -275,9 +275,9 @@ function NewProfileDialog({ onClose }: { onClose: () => void }) {
   });
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-      <DialogHeader><DialogTitle>Staff Payroll Profile</DialogTitle><DialogDescription>Set up compensation and payment details for a staff member.</DialogDescription></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Users className="w-5 h-5" /> Staff Payroll Profile</DialogTitle><DialogDescription className="text-white/80">Set up compensation and payment details for a staff member.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="flex-1 overflow-y-auto p-6 md:col-span-2"><StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required /></div>
+        <div className="md:col-span-2"><StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required /></div>
         <div className="space-y-1.5"><FieldLabel required>Basic Salary (GHS)</FieldLabel><Input type="number" step="0.01" value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} placeholder="e.g., 3000" /></div>
         <div className="space-y-1.5"><Label>Pay Frequency</Label><Select value={payFrequency} onValueChange={setPayFrequency}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="monthly">Monthly</SelectItem><SelectItem value="biweekly">Biweekly</SelectItem><SelectItem value="weekly">Weekly</SelectItem></SelectContent></Select></div>
         <div className="space-y-1.5"><Label>Payment Method</Label><Select value={paymentMethod} onValueChange={setPaymentMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="bank_transfer">Bank Transfer</SelectItem><SelectItem value="mobile_money">Mobile Money</SelectItem><SelectItem value="cash">Cash</SelectItem><SelectItem value="cheque">Cheque</SelectItem></SelectContent></Select></div>
@@ -346,10 +346,10 @@ function NewLoanDialog({ onClose, tab }: { onClose: () => void; tab: string }) {
   });
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
-      <DialogHeader><DialogTitle>{tab === "loans" ? "New Staff Loan" : "New Salary Advance"}</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Wallet className="w-5 h-5" /> {tab === "loans" ? "New Staff Loan" : "New Salary Advance"}</DialogTitle><DialogDescription className="text-white/80">Record a new {tab === "loans" ? "staff loan" : "salary advance"} for repayment through payroll deductions.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required />
-        <div className="flex-1 overflow-y-auto p-6 space-y-1.5"><FieldLabel required>{tab === "loans" ? "Loan Amount (GHS)" : "Advance Amount (GHS)"}</FieldLabel><Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+        <div className="space-y-1.5"><FieldLabel required>{tab === "loans" ? "Loan Amount (GHS)" : "Advance Amount (GHS)"}</FieldLabel><Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5"><FieldLabel required>{tab === "loans" ? "Term (months)" : "Repayment Months"}</FieldLabel><Input type="number" value={term} onChange={(e) => setTerm(e.target.value)} /></div>
           {tab === "loans" && <div className="space-y-1.5"><Label>Interest Rate (%)</Label><Input type="number" step="0.01" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} /></div>}
@@ -395,7 +395,7 @@ function SimpleNewDialog({ entity, title, fields, onClose }: { entity: string; t
   });
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
-      <DialogHeader><DialogTitle>New {title.slice(0, -1)}</DialogTitle></DialogHeader>
+      <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><Settings className="w-5 h-5" /> New {title.slice(0, -1)}</DialogTitle><DialogDescription className="text-white/80">Create a new {title.slice(0, -1).toLowerCase()} entry for payroll processing.</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {fields.map((f) => (
           <div key={f} className="space-y-1.5">

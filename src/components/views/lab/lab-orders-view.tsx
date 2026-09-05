@@ -481,7 +481,7 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
-            <div className="flex-1 overflow-y-auto p-6 border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
+            <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
                 <AlertTriangle className="w-4 h-4" /> Duplicate order detected
               </div>
@@ -654,7 +654,7 @@ function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => voi
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3 text-sm">
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Order #</p>
               <p className="font-mono text-slate-900">{order.orderNumber}</p>
@@ -996,7 +996,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
           <DialogDescription className="text-white/80">Confirm sample received at the lab. Order {order.orderNumber}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-600 bg-slate-50 p-3 rounded">
-          <div className="flex-1 overflow-y-auto p-6 font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
+          <div className="font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
           <div className="text-xs mt-1">Order has {(order.samples || []).length} sample(s).</div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
@@ -1172,7 +1172,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
           <DialogDescription className="text-white/80">You are about to verify all results on order {order.orderNumber}. This will mark them ready for release.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-600 bg-slate-50 p-3 rounded">
-          <div className="flex-1 overflow-y-auto p-6 font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
+          <div className="font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
           <div className="text-xs mt-1">{(order.items || []).length} test result(s) to verify.</div>
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">

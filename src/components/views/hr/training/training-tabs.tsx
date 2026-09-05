@@ -165,7 +165,7 @@ function NewProgramDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">Configure a new training program for your organization.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex-1 overflow-y-auto p-6 space-y-1.5 md:col-span-2">
+          <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Title</FieldLabel>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Basic Life Support" />
           </div>
@@ -393,7 +393,7 @@ function NewSessionDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">Create a new session for a training program.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex-1 overflow-y-auto p-6 md:col-span-2">
+          <div className="md:col-span-2">
             <SearchableSelect
               options={programs.map((p: any) => ({ value: p.id, label: p.title, description: p.code, secondary: p.category }))}
               value={programId}
@@ -814,7 +814,7 @@ function NewCertificateDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">A unique certificate number and verification code will be auto-generated.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex-1 overflow-y-auto p-6 md:col-span-2">
+          <div className="md:col-span-2">
             <StaffSearchableSelect
               value={staffId}
               onValueChange={setStaffId}
@@ -1002,7 +1002,7 @@ function NewRequestDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">Request training for your department.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
+          <div className="space-y-1.5">
             <FieldLabel required>Training Requested</FieldLabel>
             <Input value={requestedTraining} onChange={(e) => setRequestedTraining(e.target.value)} placeholder="e.g., Advanced Cardiac Life Support" />
           </div>
@@ -1164,7 +1164,7 @@ function NewProviderDialog({ onClose }: { onClose: () => void }) {
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Training Provider</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex-1 overflow-y-auto p-6 space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="space-y-1.5"><Label>Type</Label><Select value={providerType} onValueChange={setProviderType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="internal">Internal</SelectItem><SelectItem value="external">External</SelectItem><SelectItem value="academic">Academic</SelectItem><SelectItem value="government">Government</SelectItem><SelectItem value="vendor">Vendor</SelectItem></SelectContent></Select></div>
           <div className="space-y-1.5"><Label>Contact Person</Label><Input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} /></div>
           <div className="space-y-1.5"><Label>Email</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
@@ -1213,7 +1213,7 @@ function NewTrainerDialog({ onClose }: { onClose: () => void }) {
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Trainer</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex-1 overflow-y-auto p-6 space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isInternal} onChange={(e) => setIsInternal(e.target.checked)} /> Internal staff trainer</label></div>
           {isInternal && (
             <div className="md:col-span-2">

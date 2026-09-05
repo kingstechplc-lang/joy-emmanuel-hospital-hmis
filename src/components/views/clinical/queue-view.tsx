@@ -232,7 +232,7 @@ function DashboardTab({ facilityId }: { facilityId: string }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                  <tr className="bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
                     <th className="text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider">Queue / Department</th>
                     <th className="text-center px-3 py-2.5 text-xs font-bold uppercase tracking-wider">Type</th>
                     <th className="text-center px-3 py-2.5 text-xs font-bold uppercase tracking-wider">Total</th>

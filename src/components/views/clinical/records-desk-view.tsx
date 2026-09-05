@@ -153,7 +153,7 @@ function DashboardTab({ activeFacilityId }: { activeFacilityId: string | null })
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                      <tr className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
                         <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Patient</th>
                         <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">MRN</th>
                         <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Type</th>

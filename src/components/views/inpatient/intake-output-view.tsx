@@ -1155,7 +1155,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>Amend Entry</DialogTitle>
           <DialogDescription className="text-white/80">
             Original amount: <span className="font-medium text-slate-700">{entry.amount.toLocaleString()} {entry.unit}</span>
@@ -1299,7 +1299,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className={`px-6 pt-6 pb-3 shrink-0 border-b ${isIntake ? "bg-emerald-50" : "bg-amber-50"}`}>
+        <DialogHeader className={`px-6 pt-5 pb-3 shrink-0 border-b text-white ${isIntake ? "bg-gradient-to-r from-emerald-600 to-teal-700" : "bg-gradient-to-r from-amber-500 to-orange-600"}`}>
           <DialogTitle className="flex items-center gap-2 text-white">
             {isIntake ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
             Record {isIntake ? "Intake" : "Output"} Entry
@@ -1545,7 +1545,7 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> Monitoring Period</DialogTitle>
           <DialogDescription className="text-white/80">Start, end, or update fluid-balance monitoring for this patient.</DialogDescription>
         </DialogHeader>
@@ -1903,7 +1903,7 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>Acknowledge Alert</DialogTitle>
           <DialogDescription className="text-white/80">{alert.title}</DialogDescription>
         </DialogHeader>
@@ -2703,7 +2703,7 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">

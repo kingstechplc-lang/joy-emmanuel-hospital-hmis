@@ -947,7 +947,7 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {order.report?.findings?.startsWith("Indication:") && (
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm">
+            <div className="bg-slate-50 p-3 rounded text-sm">
               <span className="text-slate-500">Indication: </span>
               <span className="font-medium text-slate-900">{order.report.findings.replace(/^Indication:\s*/, "").trim()}</span>
             </div>
@@ -1091,7 +1091,7 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm space-y-1">
+          <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{order.procedureName}</div>
             <div className="text-xs text-slate-500">Patient: {order.patient?.firstName} {order.patient?.lastName}</div>
             <div className="text-xs text-slate-500">Order #: <span className="font-mono">{order.orderNumber || order.id}</span></div>

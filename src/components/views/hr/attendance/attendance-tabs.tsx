@@ -792,7 +792,7 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">Define a date range for attendance review and payroll locking.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
+          <div className="space-y-1.5">
             <FieldLabel required>Period Name</FieldLabel>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., August 2026" />
           </div>
@@ -954,7 +954,7 @@ function NewAttendancePolicyDialog({ onClose }: { onClose: () => void }) {
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Attendance Policy</DialogTitle><DialogDescription className="text-white/80">Configure grace periods, thresholds, break rules, and rounding for attendance calculations.</DialogDescription></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
-          <div className="flex-1 overflow-y-auto p-6 space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Default Hospital Policy" /></div>
+          <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Default Hospital Policy" /></div>
           <div className="space-y-1.5"><Label>Facility</Label><Select value={facilityId} onValueChange={setFacilityId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">All Facilities</SelectItem>{(facilitiesData?.items || []).map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-1.5"><Label>Grace Period (minutes)</Label><Input type="number" value={gracePeriodMinutes} onChange={(e) => setGracePeriodMinutes(e.target.value)} /></div>
           <div className="space-y-1.5"><Label>Late Threshold (minutes)</Label><Input type="number" value={lateThresholdMinutes} onChange={(e) => setLateThresholdMinutes(e.target.value)} /></div>

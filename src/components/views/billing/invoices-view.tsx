@@ -1436,15 +1436,15 @@ function ViewInvoiceDialog({
             <div className="p-4"><LoadingState rows={4} /></div>
           ) : (
             <>
-              <DialogHeader className="shrink-0">
+              <DialogHeader className="shrink-0 px-6 pt-5 pb-3 border-b bg-gradient-to-r from-rose-600 to-pink-700 text-white">
                 <DialogTitle className="text-white flex items-center gap-2 text-lg">
-                  <Receipt className="w-5 h-5 text-rose-600" />
+                  <Receipt className="w-5 h-5" />
                   <span className="font-mono">{inv.invoiceNumber}</span>
                   <InvoiceStatusBadge status={inv.status} />
                   {inv.isOverdue && <OverdueBadge />}
                 </DialogTitle>
                 <DialogDescription className="text-white/80">
-                  <span className="font-medium text-slate-700">
+                  <span className="font-medium text-white">
                     {inv.patient?.firstName} {inv.patient?.lastName}
                   </span>{" "}
                   ({inv.patient?.patientNumber}) • {inv.facility?.name} •{" "}
@@ -2314,13 +2314,13 @@ function NewInvoiceDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 px-6 pt-5 pb-3 border-b bg-gradient-to-r from-rose-600 to-pink-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
-            <Receipt className="w-5 h-5 text-rose-600" /> New Invoice
+            <Receipt className="w-5 h-5" /> New Invoice
           </DialogTitle>
           <DialogDescription className="text-white/80">
             Selecting a service auto-fills the unit price from the facility price list. The invoice is created as
-            <span className="font-semibold text-slate-700"> Draft</span> — submit it for review to begin the lifecycle.
+            <span className="font-semibold text-white"> Draft</span> — submit it for review to begin the lifecycle.
           </DialogDescription>
         </DialogHeader>
 

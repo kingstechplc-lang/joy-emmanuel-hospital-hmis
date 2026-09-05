@@ -70,7 +70,7 @@ export function EncounterDetailDialog({
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />

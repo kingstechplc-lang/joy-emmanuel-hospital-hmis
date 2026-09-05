@@ -705,7 +705,7 @@ function ValidateDialog({ data, onClose, onGenerate, canGenerate, isValidating }
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="space-y-4">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-3" />
@@ -917,7 +917,7 @@ function XmlPreviewDialog({ data, onClose, onDownload, canDownload }: {
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="space-y-3">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-violet-500 animate-spin mb-3" />
@@ -1013,7 +1013,7 @@ function DetailDialog({ record, onClose, onDownload }: {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <FileCheck2 className="w-5 h-5" /> {record.claimNumber}
           </DialogTitle>
@@ -1023,7 +1023,7 @@ function DetailDialog({ record, onClose, onDownload }: {
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="space-y-4">
             {/* Status row */}
             <div className="flex items-center gap-3">
               <StatusBadge status={record.status} />

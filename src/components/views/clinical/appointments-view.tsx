@@ -743,7 +743,7 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
           <DialogDescription className="text-white/80">Choose a new date and time. The original slot will be preserved in history.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>New Date</FieldLabel>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

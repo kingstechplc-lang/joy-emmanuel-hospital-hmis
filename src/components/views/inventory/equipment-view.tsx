@@ -240,7 +240,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
           <DialogDescription className="text-white/80">{isEdit ? "Update equipment information" : "Register a new equipment asset"}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Asset #</FieldLabel>
               <Input value={assetNumber} onChange={(e) => setAssetNumber(e.target.value)} placeholder="AST-001" disabled={isEdit} />

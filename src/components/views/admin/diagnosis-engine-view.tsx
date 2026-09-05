@@ -302,7 +302,7 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-indigo-600" />
             {item ? "Edit Diagnosis" : "New Diagnosis Catalog Entry"}

@@ -1036,7 +1036,7 @@ function ProcessActionButton({
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-3">
-            <div className="flex-1 overflow-y-auto p-6 text-xs bg-slate-50 p-3 rounded-lg space-y-1">
+            <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Refund #</span><span className="font-mono font-semibold">{refund.refundNumber || refund.id.slice(-8).toUpperCase()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Approved Amount</span><span className="font-mono font-semibold">{formatCurrency(defaultAmount)}</span></div>
             </div>
@@ -1471,7 +1471,7 @@ function ApproveActionButton({
             <DialogDescription className="text-white/80">Confirm the approved refund amount (cannot exceed the requested amount).</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-3">
-            <div className="flex-1 overflow-y-auto p-6 text-xs bg-slate-50 p-3 rounded-lg space-y-1">
+            <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Refund #</span><span className="font-mono font-semibold">{refund.refundNumber || refund.id.slice(-8).toUpperCase()}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Requested Amount</span><span className="font-mono font-semibold">{formatCurrency(refund.amount)}</span></div>
             </div>

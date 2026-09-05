@@ -691,7 +691,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 p-3 rounded text-sm space-y-1">
+          <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{result.labOrderItem?.laboratoryTest?.name}</div>
             <div className="text-xs text-slate-500">Patient: {result.labOrderItem?.labOrder?.patient?.firstName} {result.labOrderItem?.labOrder?.patient?.lastName}</div>
             <div className="text-xs text-slate-500">Order #: <span className="font-mono">{result.labOrderItem?.labOrder?.orderNumber}</span></div>

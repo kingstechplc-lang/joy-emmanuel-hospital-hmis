@@ -158,7 +158,7 @@ function DashboardTab() {
                     ],
                     sortValues: [item.admissionNumber, item.deceasedName, item.deceasedAge || 0, item.dateOfDeath, item.placeOfDeath || "", item.admissionStatus, item.admittedAt],
                   }))}
-                  gradient="from-slate-700 to-slate-800"
+                  gradient="from-slate-700 to-slate-900"
                   pageSize={10}
                   sortable={false}
                 />
@@ -256,7 +256,7 @@ function CasesTab({ canManage }: { canManage: boolean }) {
                sortValues: [item.admissionNumber, item.deceasedName, item.deceasedAge || 0, item.dateOfDeath, item.placeOfDeath || "", item.admissionStatus, item.admittedAt, ""],
                onClick: () => setViewCase(item),
              }))}
-             gradient="from-slate-700 to-slate-800"
+             gradient="from-slate-700 to-slate-900"
              pageSize={10}
            />}
         </CardContent>
@@ -530,7 +530,7 @@ function ReleaseForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><DoorOpen className="w-5 h-5" /> Release Body</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Released To (Name)</FieldLabel><Input value={form.releasedTo} onChange={(e) => set("releasedTo", e.target.value)} /></div>
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div><Label>Phone</Label><Input value={form.releasedToPhone} onChange={(e) => set("releasedToPhone", e.target.value)} /></div>
             <div><Label>ID Type</Label><Select value={form.releasedToIdType} onValueChange={(v) => set("releasedToIdType", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="national_id">National ID</SelectItem><SelectItem value="driving">Driving License</SelectItem><SelectItem value="passport">Passport</SelectItem><SelectItem value="voter">Voter Card</SelectItem></SelectContent></Select></div>
           </div>
@@ -553,7 +553,7 @@ function ViewingForm({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCh
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Calendar className="w-5 h-5" /> Schedule Viewing</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Viewer Name</FieldLabel><Input value={form.viewerName} onChange={(e) => set("viewerName", e.target.value)} /></div>
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div><Label>Relationship</Label><Input value={form.viewerRelation} onChange={(e) => set("viewerRelation", e.target.value)} placeholder="Spouse / Son" /></div>
             <div><Label>Phone</Label><Input value={form.viewerPhone} onChange={(e) => set("viewerPhone", e.target.value)} /></div>
           </div>

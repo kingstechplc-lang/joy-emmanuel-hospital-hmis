@@ -900,3 +900,74 @@ J. Remaining limitations:
 - Patient photo upload: not added in this pass (existing photoUrl field is
   available but no upload UI was implemented).
 - GPS location capture: not added (not mandatory per spec).
+
+---
+Task ID: 29 (Dialog header + scroll nav off fix)
+Agent: main
+Task: Fix dialogs that still don't have the gradient header upgrade (Finance Invoices etc.) and fix input fields where scroll nav is off (Create Training, Add Certifications, etc.) — affecting first input fields on dialogs across all modules.
+
+INVESTIGATION:
+- Used VLM to analyze all 8 recent screenshots (Finance Invoices, Create Training, Add Cert, New On-Call, Staff Payroll Profile, Upload Document, Add New Role, Create Payroll, Create New Task).
+- Discovered two distinct bug patterns:
+
+  1. Plain/missing gradient headers: Finance Invoices "Draft" dialog, Staff Payroll Profile, Create Payroll Period, New Staff Loan/Advance, New Allowance/Deduction, NHIA Claim preview (used solid bg-slate-800 not gradient), Add Bed, Edit Bed, Add Ward, Add Room, Doctor Progress Note (SOAP), Request Discharge, Discharge Detail, Record Intake/Output Entry (used light bg-emerald-50/bg-amber-50 with white text — invisible title).
+
+  2. Input field text clipping on the FIRST field of most dialogs: caused by an earlier script that wrongly wrapped the first input field in a duplicate `<div className="flex-1 overflow-y-auto p-6 ...">` nested inside the dialog body's `<div className="flex-1 overflow-y-auto p-6 ...">`. The nested dup makes each input a tiny scroll container with stretched height, which clips the placeholder/text rendering. Affected dialogs include: Add Certification (Staff Member field text severely clipped), Create Training (Title field), New On-Call Assignment (Staff Member placeholder cut off at bottom), Staff Payroll Profile (Staff Member), New Staff Loan/Advance (Staff Member), Upload Document, Create New Task.
+
+- Also discovered 9 pre-existing duplicate `className="text-white" className="..."` attributes on DialogTitle elements (from an earlier upgrade script that added text-white without merging). These caused TS17001 errors and the second className was silently dropped by React.
+
+A. Fixes applied:
+
+  A1. Nested flex-1 overflow-y-auto p-6 removal (script: scripts/fix-nested-flex-overflow.py)
+    - Wrote a JSX-aware tokenizer (handles `>` inside `{}` expressions and template-literal interpolations — previous regex-only script broke on lines like `<div className={`h-full ${w.occupancyRate > 80 ? "bg-rose-500" : ...}`}>`).
+    - Walks every .tsx file in src/components/views/, tracks depth of any JSX element with className containing `flex-1 overflow-y-auto`, strips `flex-1 overflow-y-auto` + associated padding (`p-6`, `p-4`, `px-6 py-4`, `py-6 px-4`) from any NESTED `<div>` (depth >= 1). Non-div elements (e.g. ScrollArea) keep their classes.
+    - Applied 59 fixes across 28 files including: hr/certifications/cert-tabs.tsx, hr/training/training-tabs.tsx, hr/workforce/workforce-tabs.tsx, hr/workforce/roster-tab.tsx, hr/attendance/attendance-tabs.tsx, finance/payroll-view.tsx, billing/invoices-view.tsx, billing/refunds-view.tsx, inpatient/admissions-view.tsx, inpatient/beds-view.tsx, inpatient/discharges-view.tsx, inpatient/intake-output-view.tsx, inpatient/nursing-view.tsx, inpatient/transfers-view.tsx, inpatient/ward-rounds-view.tsx, lab/lab-orders-view.tsx, lab/lab-results-view.tsx, imaging/imaging-view.tsx, admin/departments-admin-view.tsx, admin/services-admin-view.tsx, clinical/appointments-view.tsx, pharmacy/prescriptions-view.tsx, procedures/procedures-view.tsx, inventory/equipment-view.tsx, inventory/purchase-orders-view.tsx, inventory/stock-transfers-view.tsx, finance/nhia-claims-view.tsx.
+
+  A2. Manual gradient header upgrades (via MultiEdit on 7 files):
+    - finance/payroll-view.tsx — 4 dialogs (Create Payroll Period, Staff Payroll Profile, New Staff Loan/Advance, New Allowance/Deduction) → emerald/teal (finance payroll theme).
+    - billing/invoices-view.tsx — 2 dialogs (Invoice detail, New Invoice) → rose/pink (billing theme). Fixed text-white-on-white bug; slate-700 secondary text changed to text-white/80.
+    - finance/nhia-claims-view.tsx — Claim preview dialog → indigo/purple (insurance theme).
+    - inpatient/admissions-view.tsx — Doctor Progress Note (SOAP) → blue/indigo (inpatient theme).
+    - inpatient/intake-output-view.tsx — Record Intake/Output Entry → emerald/teal (intake) or amber/orange (output) conditional gradient. Fixed text-white-on-light-pastel bug.
+    - inpatient/discharges-view.tsx — Request Discharge, Discharge Detail → indigo/purple. Fixed text-white-on-light-pastel bug, slate-700 secondary text → text-white/80.
+    - inpatient/beds-view.tsx — Add Bed, Add Ward, Add Room, Edit Bed, Edit Ward, Edit Room → blue/indigo (inpatient theme). Added icons to all titles.
+
+  A3. Mass slate gradient → vibrant gradient upgrade (script: scripts/upgrade-slate-headers.py)
+    - Upgraded 58 dialog headers from `from-slate-700 to-slate-800` (dark gray, looked "plain" to the user) to module-themed vibrant gradients:
+      - admin (roles, depts, users, audit, services, reports) → indigo/purple
+      - admin medications → emerald/teal (pharmacy theme)
+      - admin facilities → blue/indigo
+      - admin diagnosis-engine → cyan/blue
+      - admin insurance-providers → indigo/purple
+      - operations (tasks, documents, handover, incidents) → amber/orange
+      - inpatient (admissions, intake-output, discharges, ward-rounds, transfers, nursing, beds) → blue/indigo (or indigo/purple for discharges)
+      - clinical (records-desk, queue) → blue/indigo (or cyan/blue for queue)
+      - extended/mortuary → slate-700 to-slate-900 (somber dark by theme)
+
+  A4. Duplicate className merge (script: scripts/fix-duplicate-classnames.py)
+    - Merged 9 adjacent duplicate `className="A" className="B"` attributes into single `className="A B"`. Files: admin/lab-tests/test-details.tsx, operations/documents-view.tsx, operations/handover-view.tsx (2), operations/incident-reports-view.tsx (2), hr/workforce/leave-tab.tsx, hr/workforce/roster-tab.tsx, hr/certifications/cert-tabs.tsx.
+    - Eliminated all TS17001 "JSX elements cannot have multiple attributes with the same name" errors.
+
+B. Verification:
+- TypeScript check: 27 errors remain, ALL pre-existing (in scripts/nhia-tests/*, skills/*, clinical/encounters-view, extended/workflow-dashboard, lib/auth.ts). Zero new errors introduced. Zero TS17001 errors.
+- Production build: ✓ Compiled successfully in 57s.
+- All DialogHeader elements in src/components/views now use a gradient background (verified via ripgrep — no remaining plain/light-pastel/solid-slate headers).
+- All nested `flex-1 overflow-y-auto p-6` patterns stripped (verified via dry-run — 0 remaining).
+- StaffSearchableSelect / SearchableSelect trigger Button now renders cleanly inside the dialog body without the nested scroll wrapper that was clipping its text.
+
+C. Files modified:
+- 28 files for nested flex-1 overflow-y-auto removal (A1).
+- 7 files for manual gradient header upgrade (A2).
+- 18 files for mass slate gradient → vibrant gradient upgrade (A3).
+- 7 files for duplicate className merge (A4).
+- Total: ~50 unique files touched.
+
+D. Scripts added:
+- /home/z/my-project/scripts/fix-nested-flex-overflow.py — JSX-aware nested flex-1 overflow-y-auto removal.
+- /home/z/my-project/scripts/upgrade-slate-headers.py — slate-700/800 → vibrant module-themed gradient.
+- /home/z/my-project/scripts/fix-duplicate-classnames.py — merge adjacent duplicate className attributes.
+
+NO SCHEMA CHANGES
+NO API CHANGES
+NO BREAKING CHANGES
+

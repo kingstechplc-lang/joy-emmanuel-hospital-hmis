@@ -229,7 +229,7 @@ function ReviewDialog({ onClose, onSubmit, action }: { onClose: () => void; onSu
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
-          <DialogTitle className="text-white" className="capitalize">{action} Leave Request</DialogTitle>
+          <DialogTitle className="text-white capitalize">{action} Leave Request</DialogTitle>
           <DialogDescription className="text-white/80">
             {action === "approve" && "Approving will deduct the leave days from the staff member's balance and mark them as on-leave."}
             {action === "reject" && "Rejecting will restore any pending balance deductions."}

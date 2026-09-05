@@ -546,7 +546,7 @@ function GeneratedReportDisplay({ report }: { report: any }) {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                  <tr className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
                     {report.tableColumns.map((col: string, i: number) => (
                       <th key={i} className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">{col}</th>
                     ))}
@@ -839,7 +839,7 @@ function GeneratedReportDisplay({ report }: { report: any }) {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+                  <tr className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
                     <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Action</th>
                     <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">User</th>
                     <th className="text-left px-4 py-2 text-xs font-bold uppercase tracking-wider">Resource</th>

@@ -529,7 +529,7 @@ function NewTransferDialog({ facilityId, onClose, onCreated }: any) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5" /> New Patient Transfer</DialogTitle>
           <DialogDescription className="text-white/80">Request a patient transfer. The patient stays in their current location until the transfer is approved and executed.</DialogDescription>
         </DialogHeader>
@@ -754,7 +754,7 @@ function TransferDetailDialog({ transferId, onClose, onChanged, canEdit, canTran
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 text-xl flex-wrap">
             <ArrowRightLeft className="w-5 h-5" />
             <span>{t.patient?.firstName} {t.patient?.lastName}</span>
@@ -1139,10 +1139,10 @@ function CommunicationsPanel({ transferId, communications, onChanged }: any) {
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
           <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
-            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Log Communication</DialogTitle></DialogHeader>
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Log Communication</DialogTitle></DialogHeader>
             <div className="flex-1 overflow-y-auto p-6 space-y-2">
               <div><FieldLabel required>Recipient Name</FieldLabel><Input value={newComm.recipientName} onChange={(e) => setNewComm({ ...newComm, recipientName: e.target.value })} placeholder="e.g., Dr. Mensah" /></div>
-              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div><Label>Department</Label><Input value={newComm.recipientDepartment} onChange={(e) => setNewComm({ ...newComm, recipientDepartment: e.target.value })} /></div>
                 <div><Label>Facility</Label><Input value={newComm.recipientFacility} onChange={(e) => setNewComm({ ...newComm, recipientFacility: e.target.value })} /></div>
               </div>
