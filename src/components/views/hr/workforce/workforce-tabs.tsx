@@ -228,7 +228,7 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Request Shift Swap</DialogTitle>
           <DialogDescription>Select your shift and the target staff/shift to swap with. Conflicts will be validated.</DialogDescription>
@@ -474,7 +474,7 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>New Coverage Request</DialogTitle>
           <DialogDescription>Use this when staff cannot make a shift and a replacement is needed.</DialogDescription>
@@ -604,7 +604,7 @@ function AssignCoverageDialog({ coverage, onClose }: { coverage: any; onClose: (
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Find Replacement</DialogTitle>
           <DialogDescription>
@@ -815,7 +815,7 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>New On-Call Assignment</DialogTitle>
           <DialogDescription>Assign staff to be on-call for a specified period.</DialogDescription>
@@ -1236,7 +1236,7 @@ function NewShiftTypeDialog({ onClose, facilityId }: { onClose: () => void; faci
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Shift Type</DialogTitle>
           <DialogDescription>Configure a custom shift type for your facility.</DialogDescription>
@@ -1430,7 +1430,7 @@ function NewLeaveTypeDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Leave Type</DialogTitle>
           <DialogDescription>Configure a custom leave type with policy rules.</DialogDescription>
@@ -1895,7 +1895,7 @@ function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader><DialogTitle>New Leave Policy</DialogTitle><DialogDescription>Define accrual, carry-forward, and negative balance rules for a leave type.</DialogDescription></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave Policy 2026" /></div>

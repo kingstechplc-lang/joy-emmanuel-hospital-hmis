@@ -273,7 +273,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Upload Document</DialogTitle>
           <DialogDescription>Record document metadata. For this demo, the file URL is a text input rather than an actual file upload.</DialogDescription>

@@ -295,7 +295,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> Admit Deceased Person</DialogTitle>
           <DialogDescription className="text-white/80">Record a deceased person — works for both facility deaths and bodies brought in from outside.</DialogDescription>
@@ -406,7 +406,7 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> {item.deceasedName}</DialogTitle>
           <DialogDescription className="text-white/80">Mortuary Admission — {item.admissionNumber}</DialogDescription>

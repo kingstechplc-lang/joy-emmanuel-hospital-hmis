@@ -287,7 +287,7 @@ function TicketForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Server className="w-5 h-5 text-indigo-600" /> New IT Support Ticket</DialogTitle>
           <DialogDescription className="text-white/80">Report a technical issue or request IT assistance.</DialogDescription>
@@ -397,7 +397,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <TypeIcon className="w-5 h-5 text-indigo-600" />
@@ -570,7 +570,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><BookOpen className="w-5 h-5" /> New Knowledge Base Article</DialogTitle></DialogHeader>
             <KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -579,7 +579,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
 
       {viewArticle && (
         <Dialog open onOpenChange={() => setViewArticle(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewArticle.title}</DialogTitle></DialogHeader>
             <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{viewArticle.content}</div>
             <div className="flex items-center gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
@@ -712,7 +712,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Monitor className="w-5 h-5" /> Register IT Asset</DialogTitle></DialogHeader>
             <AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -721,7 +721,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
 
       {viewAsset && (
         <Dialog open onOpenChange={() => setViewAsset(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewAsset.assetTag} — {viewAsset.manufacturer} {viewAsset.model}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div><Label className="text-slate-500">Type</Label><div className="font-semibold uppercase">{viewAsset.assetType}</div></div>

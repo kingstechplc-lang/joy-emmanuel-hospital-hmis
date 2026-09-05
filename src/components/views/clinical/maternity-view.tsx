@@ -512,7 +512,7 @@ function NewPregnancyDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Baby className="w-5 h-5 text-pink-600" />
@@ -523,7 +523,7 @@ function NewPregnancyDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {/* Patient search */}
           <div>
             <FieldLabel required>Patient</FieldLabel>
@@ -646,7 +646,7 @@ function NewPregnancyDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-pink-600 hover:bg-pink-700">
             {saving ? "Registering…" : "Register Pregnancy"}
@@ -679,7 +679,7 @@ function PregnancyDetailDialog({
   if (isLoading) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl flex flex-col p-0 gap-0 overflow-hidden">
           <LoadingState rows={5} />
         </DialogContent>
       </Dialog>
@@ -689,7 +689,7 @@ function PregnancyDetailDialog({
   if (isError || !data?.item) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl flex flex-col p-0 gap-0 overflow-hidden">
           <ErrorState message="Failed to load maternity record" onRetry={() => refetch()} />
         </DialogContent>
       </Dialog>
@@ -700,7 +700,7 @@ function PregnancyDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Baby className="w-5 h-5 text-pink-600" />
@@ -720,7 +720,7 @@ function PregnancyDetailDialog({
         </DialogHeader>
 
         {/* Section tabs */}
-        <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2">
+        <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2 px-6 pt-4 shrink-0">
           {[
             { id: "overview", label: "Overview", icon: FileText },
             { id: "anc", label: `ANC (${r.ancVisits?.length || 0})`, icon: Stethoscope },
@@ -743,11 +743,13 @@ function PregnancyDetailDialog({
           ))}
         </div>
 
+        <div className="flex-1 overflow-y-auto p-6">
         {activeTab === "overview" && <OverviewSection record={r} />}
         {activeTab === "anc" && <AncSection recordId={recordId} visits={r.ancVisits || []} onUpdated={() => { refetch(); onUpdated(); }} />}
         {activeTab === "newborn" && <NewbornSection recordId={recordId} newborns={r.newborns || []} onUpdated={() => { refetch(); onUpdated(); }} />}
         {activeTab === "labor" && <LaborSection recordId={recordId} labor={r.laborAndDelivery} onUpdated={() => { refetch(); onUpdated(); }} />}
         {activeTab === "postnatal" && <PostnatalSection recordId={recordId} visits={r.postnatalVisits || []} onUpdated={() => { refetch(); onUpdated(); }} />}
+        </div>
       </DialogContent>
     </Dialog>
   );

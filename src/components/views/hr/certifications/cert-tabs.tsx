@@ -279,7 +279,7 @@ function NewCertDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add Certification / Credential</DialogTitle>
           <DialogDescription>Record a staff member's certification, license, or credential.</DialogDescription>

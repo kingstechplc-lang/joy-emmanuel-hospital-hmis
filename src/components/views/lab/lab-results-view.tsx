@@ -683,7 +683,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5 text-emerald-600" /> Amend Result</DialogTitle>
           <DialogDescription className="text-white/80">

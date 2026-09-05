@@ -573,7 +573,7 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Department" : "Add Department"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update department details." : "Create a new department within a facility."}</DialogDescription>
@@ -710,7 +710,7 @@ function UnitDialog({ departmentId, unit, onClose, onSaved }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white">{isEdit ? "Edit Unit" : "Add Unit"}</DialogTitle>
           <DialogDescription className="text-white/80">

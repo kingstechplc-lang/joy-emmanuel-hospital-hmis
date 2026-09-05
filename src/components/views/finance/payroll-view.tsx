@@ -274,7 +274,7 @@ function NewProfileDialog({ onClose }: { onClose: () => void }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
       <DialogHeader><DialogTitle>Staff Payroll Profile</DialogTitle><DialogDescription>Set up compensation and payment details for a staff member.</DialogDescription></DialogHeader>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
         <div className="md:col-span-2"><StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required /></div>

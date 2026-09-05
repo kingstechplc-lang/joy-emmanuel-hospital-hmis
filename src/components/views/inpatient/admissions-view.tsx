@@ -754,7 +754,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5 text-emerald-600" /> New Admission</DialogTitle>
           <DialogDescription className="text-white/80">Admit a patient and assign a bed. The admission and bed assignment are created atomically — if the bed is unavailable, the operation is rolled back.</DialogDescription>
@@ -906,7 +906,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5 text-rose-600" /> Discharge Patient</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -986,7 +986,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
 function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; canManage: boolean; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Stethoscope className="w-5 h-5 text-indigo-600" />

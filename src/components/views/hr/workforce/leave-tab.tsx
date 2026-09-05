@@ -313,7 +313,7 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Submit Leave Request</DialogTitle>
           <DialogDescription>The system will check leave balance, conflicts with shifts, and existing leave records.</DialogDescription>

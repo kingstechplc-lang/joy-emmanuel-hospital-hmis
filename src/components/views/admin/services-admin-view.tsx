@@ -445,7 +445,7 @@ function ServiceForm({ service, onClose, onSaved }: { service: any | null; onClo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -597,7 +597,7 @@ function ServiceDetailDialog({ serviceId, onClose, onEdit }: { serviceId: string
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -870,7 +870,7 @@ function PackageForm({ pkg, onClose, onSaved }: { pkg: any | null; onClose: () =
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Package className="w-5 h-5 text-emerald-600" /> {isEdit ? "Edit Package" : "Add Package"}</DialogTitle>
         </DialogHeader>
@@ -967,7 +967,7 @@ Ultrasound Scan,RAD-001,imaging,diagnostic,150,80,true,test`;
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="text-white flex items-center gap-2"><Upload className="w-5 h-5 text-emerald-600" /> Import Services (CSV)</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Button variant="outline" size="sm" onClick={() => setCsvText(sample)}>Load Sample</Button>
@@ -1041,7 +1041,7 @@ function BulkUpdateDialog({ onClose, onUpdated }: { onClose: () => void; onUpdat
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="text-white flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Bulk Price Update</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">

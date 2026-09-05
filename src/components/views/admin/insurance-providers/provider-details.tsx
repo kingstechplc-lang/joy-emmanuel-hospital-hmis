@@ -44,7 +44,7 @@ export function ProviderDetailsDialog({ providerId, onClose }: { providerId: str
 
   if (isLoading) return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="p-8 text-center text-slate-500">Loading provider details…</div>
       </DialogContent>
     </Dialog>
