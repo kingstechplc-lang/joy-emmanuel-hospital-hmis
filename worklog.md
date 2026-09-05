@@ -971,3 +971,66 @@ NO SCHEMA CHANGES
 NO API CHANGES
 NO BREAKING CHANGES
 
+
+---
+Task ID: 30 (Notes/Description/Text fields → expandable Textarea)
+Agent: main
+Task: Fix text/description/notes input fields that are not expandable — characters continue in a single block of line and user cannot create paragraphs.
+
+INVESTIGATION:
+- Searched every `<Input>` element in src/components/views/ for bindings to text-like state variables: description, notes, reason, comment, remarks, instructions, details, narrative, summary, justification, explanation, findings, impression, recommendations, allergies, history, presentation, clinicalIndication, rejectionReason, rejectionNotes, amendmentReason, cancelReason, voidReason, transferReason, emergencyReason, verificationNotes, resultNotes, approvalNotes, reasonForTransport, correctiveAction, expectedOutcome, symptoms.
+- Found 40 single-line Input fields across 22 files that should be expandable Textareas so users can type paragraphs.
+
+FIX (script: scripts/convert-input-to-textarea.py):
+- Wrote a brace-depth-aware JSX tokenizer that correctly handles `>` inside JSX expressions like `onChange={(e) => ...}` (a naive `[^>]*` regex would stop at the arrow `=>` and miss the rest of the tag).
+- For each matched `<Input ... />` whose value={...} references a text-like variable:
+  - Replace `<Input` with `<Textarea`
+  - Remove `type="text"` / `type="number"` / `step="..."` / `min="..."` / `max="..."` (Textarea has no type)
+  - Add `rows={3}` attribute before `/>`
+- If file doesn't already import `Textarea`, add it to the existing `@/components/ui/textarea` import block.
+
+CONVERSIONS (40 total across 22 files):
+- admin/roles-admin-view.tsx (1: Description)
+- admin/departments-admin-view.tsx (2: Description × 2)
+- admin/lab-tests-admin-view.tsx (1: Description)
+- admin/insurance-providers/provider-details.tsx (3: Notes × 3)
+- billing/invoices-view.tsx (2: line-item description, new invoice description)
+- clinical/appointments-view.tsx (2: Reason for visit, Reason for rescheduling)
+- clinical/encounters-view.tsx (1)
+- clinical/referrals-view.tsx (1)
+- clinical/maternity-view.tsx (2: Symptoms/Complaints, Notes)
+- clinical/nhis-workflow/nhis-workflow-view.tsx (3: Notes × 3)
+- extended/ambulance-view.tsx (1: Reason for Transport)
+- extended/specialty-clinics-view.tsx (1: Description)
+- extended/support-services-view.tsx (1: Corrective Action)
+- hr/workforce/workforce-tabs.tsx (1: Reason)
+- imaging/imaging-view.tsx (1)
+- inpatient/beds-view.tsx (2: Description, Notes)
+- inpatient/discharges-view.tsx (2: transferReason, medication Instructions)
+- inpatient/nursing-view.tsx (3: Notes, Description, Expected Outcome)
+- inventory/inventory-view.tsx (2: Reason × 2)
+- inventory/purchase-orders-view.tsx (3: emergencyReason, Notes, shippingAddress)
+- inventory/stock-transfers-view.tsx (1: Reason)
+- lab/lab-orders-view.tsx (2: rejectionReason, resultNotes)
+- pharmacy/prescriptions-view.tsx (1: Instructions)
+
+CLEANUP (script: scripts/cleanup-textarea-height.py):
+- Stripped leftover `h-7` / `h-8` / `h-9` / `h-10` / `h-11` className tokens from converted Textareas. The initial regex required whitespace before `h-N` but inside `className="h-8 text-xs"` the `h-8` is preceded by `"` so it was missed. The cleanup script properly tokenizes className strings and removes standalone `h-N` tokens.
+- Cleaned 6 Textareas across 5 files (ambulance, invoices, prescriptions, maternity, purchase-orders).
+
+SKIPPED (intentionally — inline notes fields in horizontal flex rows with adjacent buttons where Textarea would break the layout):
+- lab/lab-results-view.tsx:790 — inline ack-notes field next to Acknowledge button.
+- extended/specialty-clinics-view.tsx:887 — inline clinical-note field next to Add button.
+- extended/it-support-view.tsx:317 — Subject field (short summary by design; a Description Textarea already exists below).
+
+VERIFICATION:
+- TypeScript check: Zero new errors in src/components/views/*.
+- Production build: ✓ Compiled successfully in 58s.
+
+PUSHED TO GITHUB:
+- Commit ba06934 pushed to main on kingstechplc-lang/joy-emmanuel-hospital-hmis.
+
+NO SCHEMA CHANGES
+NO API CHANGES
+NO BREAKING CHANGES
+
