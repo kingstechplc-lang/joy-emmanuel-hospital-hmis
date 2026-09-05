@@ -1034,3 +1034,156 @@ NO SCHEMA CHANGES
 NO API CHANGES
 NO BREAKING CHANGES
 
+
+---
+Task ID: 31 (Centralized HMIS Print / Document Formatting System)
+Agent: main
+Task: Design and implement a centralized print/document infrastructure per the 2400-line spec.  Domain modules own their data; central print system owns presentation.
+
+PHASE 0 — REPOSITORY RECONNAISSANCE (delegated to general-purpose subagent):
+- Found exactly ONE shared print primitive: src/components/print/print-layout.tsx
+  (PrintLayout + PrintButton, popup-window + window.print() technique, hardcoded A4).
+- No PDF library in package.json.  No server-side PDF route.  No print CSS in globals.css.
+- No printSetting/branding model in Prisma.  Organization.logoUrl exists but unused by PrintLayout.
+- Facility model has name, address, city, region, country, phone, email — sufficient for branding.
+- SystemSetting model exists with (organizationId, facilityId, settingKey) unique constraint.
+- AuditLog model + auditLog() helper already present in src/lib/session.ts.
+- 6 views call raw window.print() of the entire SPA (broken — prints whole dashboard):
+  discharges-view, transfers-view, intake-output-view (×3), reports-view,
+  purchase-orders-view, stock-transfers-view.
+- 5 views correctly use PrintButton: invoices, payments, refunds, lab-results (×2), imaging.
+- Zero Playwright tests for print.  No /api/print-log endpoint.
+
+ARCHITECTURE DECISION (per spec Section 3):
+- Reuse existing popup-window + window.print() technique (no new PDF library).
+- Extend PrintLayout + PrintButton (don't replace — backward compatible).
+- Add paper profiles + document primitives + facility context + audit log.
+- Migrate the 6 broken raw window.print() callsites to PrintButton.
+- No Prisma migration (SystemSetting suffices for per-facility print config).
+
+FILES CREATED:
+- src/lib/print/paper-profiles.ts — 4 paper profiles (A4/A5/THERMAL_80/THERMAL_58) +
+  17-document-type registry + buildPageCssRule() + buildBodyStyle() helpers.
+- src/components/print/document-primitives.tsx — DocumentPage, FacilityHeader,
+  DocumentTitle, PatientHeader, DocumentMeta, DocumentSection, DocumentTable,
+  DocumentTotals, SignatureBlock, DocumentFooter, StatusBadge (text-based, print-safe),
+  FlagIndicator, PrintDivider.  All inline-styled (popups don't load Tailwind).
+- src/components/print/facility-print-context.tsx — FacilityPrintProvider +
+  useFacilityBranding hook (react-query, 5-min staleTime, fetches /api/facilities).
+- src/components/print/templates/discharge-template.tsx
+- src/components/print/templates/transfer-template.tsx
+- src/components/print/templates/purchase-order-template.tsx
+- src/components/print/templates/stock-transfer-template.tsx
+- src/components/print/templates/report-template.tsx (generic fallback)
+- src/app/api/print-log/route.ts — POST endpoint for audit logging.
+
+FILES MODIFIED:
+- src/components/print/print-layout.tsx — extended PrintLayout + PrintButton
+  with paperSize, orientation, documentType, recordId, recordSummary props.
+  Uses buildPageCssRule() + buildBodyStyle() for correct @page + body styling.
+  Fire-and-forgets POST to /api/print-log.  Auto-loads facility from context.
+- src/components/providers/providers-inner.tsx — wraps children in
+  FacilityPrintProvider so every print component has facility branding.
+- src/components/views/inpatient/discharges-view.tsx — 2 raw window.print() →
+  PrintButton + DischargeTemplate.  Added imports.
+- src/components/views/inpatient/transfers-view.tsx — 2 raw window.print() →
+  PrintButton + TransferTemplate.  Added imports.
+- src/components/views/inpatient/intake-output-view.tsx — 3 raw window.print() →
+  PrintButton + ReportTemplate with inline-styled tables.  Added imports.
+- src/components/views/admin/reports-view.tsx — 1 raw window.print() →
+  popup with centralized print CSS + audit log POST.
+- src/components/views/inventory/purchase-orders-view.tsx — 1 raw window.print() →
+  PrintButton + PurchaseOrderTemplate.  Added imports.
+- src/components/views/inventory/stock-transfers-view.tsx — 1 raw window.print() →
+  PrintButton + StockTransferTemplate.  Added imports.
+- src/components/views/lab/lab-results-view.tsx — 2 existing PrintButton calls
+  upgraded with documentType=lab_report / lab_test + recordId + recordSummary.
+- src/components/views/billing/invoices-view.tsx — existing PrintButton upgraded
+  with documentType=invoice, paperSize=A4, recordId, recordSummary.
+- src/components/views/billing/payments-view.tsx — existing PrintButton upgraded
+  with documentType=receipt, paperSize=THERMAL_80, recordId, recordSummary.
+- src/components/views/billing/refunds-view.tsx — existing PrintButton upgraded
+  with documentType=refund_receipt, paperSize=THERMAL_80, recordId, recordSummary.
+- src/components/views/imaging/imaging-view.tsx — existing PrintButton upgraded
+  with documentType=imaging_report, recordId, recordSummary.
+
+PAPER FORMATS IMPLEMENTED (per spec Sections 5–7, 41):
+- A4: 210×297mm, 12mm margins, portrait, fontScale 1.0
+- A5: 148×210mm, 10mm margins, portrait, fontScale 0.92
+- THERMAL_80: 80mm wide, 3mm margins, continuous-feed, fontScale 0.85
+- THERMAL_58: 58mm wide, 2mm margins, continuous-feed, fontScale 0.78
+- Per-document-type default paper formats (receipt→THERMAL_80, invoice→A4,
+  lab_report→A4, prescription→A5, etc.) per spec Section 41.
+
+PAGE BREAK MANAGEMENT (per spec Section 13):
+- DocumentSection: break-inside: avoid
+- DocumentTable: thead { display: table-header-group } (repeats on each page);
+  tr { break-inside: avoid }
+- SignatureBlock: avoid breaking before signature line
+- @media print CSS in popup hides .no-print class
+
+SECURITY (per spec Sections 36, 44, 66):
+- /api/print-log requires authentication (any logged-in user can print —
+  RBAC is enforced by parent views; user already has permission to see the record)
+- organizationId and facilityId derived from SESSION, never from body —
+  prevents IDOR-style audit-log poisoning
+- Whitelist of allowed documentType + paperSize values
+- recordSummary length-capped to 200 chars
+
+AUDIT LOGGING (per spec Section 37):
+- Every PrintButton call POSTs to /api/print-log (fire-and-forget, non-blocking)
+- AuditLog entry: action='DOCUMENT_PRINTED', resourceType='print:<documentType>',
+  resourceId, newValues={documentType, paperSize, orientation, recordSummary}
+- Uses existing auditLog() helper in src/lib/session.ts — no duplicate audit system
+
+DATA INTEGRITY (per spec Sections 35, 50–52):
+- Print layer renders authoritative data, never recalculates
+- All existing PrintButton call sites pass the exact record's data
+  (invoice.id, labResult.id, payment.id, etc.) — no array-index/first-record shortcuts
+
+NO SCHEMA CHANGES (per spec Section 65):
+- No Prisma migration.  SystemSetting (already present) can hold per-facility
+  print config in a future iteration (key format: print_default_paper_<documentType>).
+
+NO NEW DEPENDENCIES (per spec Section 16):
+- No jsPDF / puppeteer / react-pdf / html2canvas.  Existing popup-window +
+  window.print() technique reused and centralized.
+
+VERIFICATION:
+- TypeScript: 0 errors in src/components/print, src/lib/print,
+  src/app/api/print-log, src/components/views.
+- Production build: ✓ Compiled successfully in 54s.
+
+PUSHED TO GITHUB:
+- Commit 4d0a42b pushed to main.
+
+DEFERRED (per spec Section 67 — NO FABRICATION):
+- Per-document-type print preview UI with format picker (Phase 5 of spec) —
+  current PrintButton auto-picks the default format.  A preview UI with
+  paper/orientation/preview/close controls is deferred to a future iteration.
+- Server-side PDF generation — no PDF library added; users print via browser
+  (which can save to PDF natively via the OS print dialog).
+- PrescriptionTemplate, PatientStatementTemplate, AdmissionTemplate,
+  ReferralTemplate — deferred; not implemented because the existing views
+  (pharmacy/prescriptions, patients, clinical/referrals, inpatient/admissions)
+  currently have NO print button at all, so adding one is net-new functionality
+  rather than migration of existing functionality.
+- Migrating inline lab-report/imaging/invoice/receipt/refund bodies to
+  dedicated template files (currently they inline JSX into PrintLayout's
+  children — works, but not as reusable).  Deferred to keep this PR focused
+  on the centralized infrastructure + the 6 broken-raw-window.print() migrations.
+- Print preview UI on mobile — not specifically tested.
+- Playwright E2E tests for print — deferred (no existing Playwright tests in repo).
+
+RELEASE STATUS: CONDITIONAL GO
+- Core functionality (paper profiles, document primitives, facility branding,
+  audit logging, 6 broken-window.print() migrations, 5 existing PrintButton
+  upgrades) is implemented and verified.
+- Documented non-critical limitations remain (preview UI, PDF, prescription/
+  statement/admission/referral templates, Playwright tests) — all listed
+  above and in the commit message.
+
+NO SCHEMA CHANGES
+NO API CHANGES (only added /api/print-log — additive)
+NO BREAKING CHANGES
+
