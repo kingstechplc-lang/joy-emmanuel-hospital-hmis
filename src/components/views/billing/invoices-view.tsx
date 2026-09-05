@@ -2041,7 +2041,7 @@ function LifecycleActionDialog({
             Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Balance {formatCurrency(invoice.balance)}
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {c.requireAmount && (
             <div>
               <FieldLabel required>Amount (GHS)</FieldLabel>
@@ -2683,7 +2683,7 @@ function PaymentDialog({
               Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Outstanding {formatCurrency(invoice.balance)}
             </DialogDescription>
           </DialogHeader>
-          <div className="p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto p-6 space-y-3">
             <div>
               <FieldLabel required>Amount (GHS)</FieldLabel>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
@@ -2801,7 +2801,7 @@ function AddItemDialog({
           </DialogTitle>
           <DialogDescription className="text-white/80">Totals will be recomputed automatically.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel>Service (optional)</FieldLabel>
             <Select value={serviceId || "_none"} onValueChange={(v) => v !== "_none" && selectService(v)}>

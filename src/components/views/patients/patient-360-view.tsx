@@ -1488,7 +1488,7 @@ function AddInsuranceDialog({ patientId, onClose, onAdded }: { patientId: string
           </DialogTitle>
           <DialogDescription className="text-white/80">Add a new insurance provider/coverage for this patient.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <Label>Insurance Provider</Label>
             <InsuranceProviderSelect

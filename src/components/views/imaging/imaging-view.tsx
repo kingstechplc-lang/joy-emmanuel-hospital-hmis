@@ -837,7 +837,7 @@ function ScheduleDialog({ order, onClose, onChanged }: { order: any; onClose: ()
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarClock className="w-5 h-5" /> Schedule Imaging</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <Label>Scheduled At</Label>
             <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
@@ -886,7 +886,7 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
           <DialogTitle className="flex items-center gap-2 text-white"><Stethoscope className="w-5 h-5" /> Perform Imaging</DialogTitle>
           <DialogDescription className="text-white/80">Confirm the imaging procedure has begun. {order.procedureName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <Label>Accession Number (optional)</Label>
             <Input value={accessionNumber} onChange={(e) => setAccessionNumber(e.target.value)} placeholder="PACS/RIS accession number" />
@@ -945,7 +945,7 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
           <DialogTitle className="flex items-center gap-2 text-white"><FileText className="w-5 h-5" /> Imaging Report</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {order.report?.findings?.startsWith("Indication:") && (
             <div className="bg-slate-50 p-3 rounded text-sm">
               <span className="text-slate-500">Indication: </span>
@@ -1090,7 +1090,7 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
             A new amended report version will be created. The original is preserved for audit.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{order.procedureName}</div>
             <div className="text-xs text-slate-500">Patient: {order.patient?.firstName} {order.patient?.lastName}</div>

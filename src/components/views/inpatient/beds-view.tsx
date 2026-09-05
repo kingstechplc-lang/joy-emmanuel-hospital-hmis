@@ -412,7 +412,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
             {bed.ward?.name} {bed.room ? `• Room ${bed.room.roomNumber}` : ""} • {bed.bedType || "Regular bed"}
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">Status:</span>
             <StatusBadge status={bed.status} />
@@ -786,7 +786,7 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>{isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
-      <div className="p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div><Label>Ward Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-3">
@@ -872,7 +872,7 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>{isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
-      <div className="p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <div>
           <Label>Ward</Label>
           {isEdit ? (

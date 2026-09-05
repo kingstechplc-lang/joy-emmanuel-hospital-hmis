@@ -1140,7 +1140,7 @@ function CommunicationsPanel({ transferId, communications, onChanged }: any) {
         <Dialog open onOpenChange={setShowAdd}>
           <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Log Communication</DialogTitle></DialogHeader>
-            <div className="p-6 space-y-2">
+            <div className="flex-1 overflow-y-auto p-6 space-y-2">
               <div><FieldLabel required>Recipient Name</FieldLabel><Input value={newComm.recipientName} onChange={(e) => setNewComm({ ...newComm, recipientName: e.target.value })} placeholder="e.g., Dr. Mensah" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Department</Label><Input value={newComm.recipientDepartment} onChange={(e) => setNewComm({ ...newComm, recipientDepartment: e.target.value })} /></div>

@@ -589,7 +589,7 @@ function EscalationDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><AlertTriangle className="w-5 h-5" /> Escalate Concern</DialogTitle></DialogHeader>
-      <div className="p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Priority</Label><Select value={priority} onValueChange={setPriority}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="routine">Routine</SelectItem><SelectItem value="urgent">Urgent</SelectItem><SelectItem value="critical">Critical</SelectItem></SelectContent></Select></div>
@@ -627,7 +627,7 @@ function TaskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> New Nursing Task</DialogTitle></DialogHeader>
-      <div className="p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Task Type</Label><Select value={taskType} onValueChange={setTaskType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TASK_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
@@ -726,7 +726,7 @@ function RiskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><ShieldAlert className="w-5 h-5" /> Risk Assessment</DialogTitle></DialogHeader>
-      <div className="p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Assessment Type</Label><Select value={assessmentType} onValueChange={setAssessmentType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{RISK_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>

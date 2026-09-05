@@ -334,7 +334,7 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
           <DialogTitle className="text-white flex items-center gap-2"><Sparkles className="w-5 h-5" /> New Service Request</DialogTitle>
           <DialogDescription className="text-white/80">Request a support service for your department or facility.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div>
             <FieldLabel>Service Type</FieldLabel>
             <Select value={form.serviceType} onValueChange={(v) => set("serviceType", v)}>
@@ -413,7 +413,7 @@ function RequestDetail({ item, canManage, onClose }: { item: any; canManage: boo
           </DialogTitle>
           <DialogDescription className="text-white/80">Created {formatDate(item.createdAt, true)}</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
           <div><Label className="text-slate-500">Service Type</Label><div className="font-semibold">{typeInfo.label}</div></div>
           <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={item.priority} /></div></div>
           <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={item.status} /></div></div>

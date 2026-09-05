@@ -239,7 +239,7 @@ function EquipmentDialog({ open, onClose, onCreated, existing, defaultFacilityId
           <DialogTitle className="flex items-center gap-2 text-white"><Cpu className="w-4 h-4" /> {isEdit ? "Edit Equipment" : "New Equipment"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update equipment information" : "Register a new equipment asset"}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <FieldLabel required className="text-xs">Asset #</FieldLabel>
@@ -422,7 +422,7 @@ function ScheduleMaintenanceDialog({ equipment, onClose, onDone }: { equipment: 
           <DialogTitle className="flex items-center gap-2 text-white"><Wrench className="w-4 h-4" /> Schedule Maintenance</DialogTitle>
           <DialogDescription className="text-white/80">{equipment.name} ({equipment.assetNumber})</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <Label className="text-xs">Maintenance Type</Label>
             <Select value={maintenanceType || undefined} onValueChange={setMaintenanceType}>

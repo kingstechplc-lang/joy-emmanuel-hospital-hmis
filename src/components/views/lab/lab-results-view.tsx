@@ -601,7 +601,7 @@ export function LabResultsView() {
                 This lab order has multiple amendable results. Choose the specific result you want to amend. The original will be preserved for audit.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 py-2">
+            <div className="flex-1 overflow-y-auto p-6 space-y-2">
               {amendSelectGroup.map((r: any) => (
                 <button
                   key={r.id}
@@ -690,7 +690,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
             A new amended result will be created. The original is preserved for audit.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="bg-slate-50 p-3 rounded text-sm space-y-1">
             <div className="font-medium text-slate-900">{result.labOrderItem?.laboratoryTest?.name}</div>
             <div className="text-xs text-slate-500">Patient: {result.labOrderItem?.labOrder?.patient?.firstName} {result.labOrderItem?.labOrder?.patient?.lastName}</div>

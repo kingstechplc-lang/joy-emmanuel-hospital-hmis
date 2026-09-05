@@ -1562,7 +1562,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
             File a claim against an outstanding invoice. NHIS claims require ICD-10 diagnosis codes and NHIS membership number per Ghana NHIS policy.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -1741,7 +1741,7 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
             Claim {claim.claimNumber} • Original claim amount: {formatCurrency(claim.claimAmount)}
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Approved Amount</FieldLabel>
             <Input type="number" step="0.01" value={approvedAmount} onChange={(e) => setApprovedAmount(Number(e.target.value))} />

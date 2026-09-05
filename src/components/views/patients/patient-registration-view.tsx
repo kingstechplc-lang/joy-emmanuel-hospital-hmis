@@ -1015,7 +1015,7 @@ export function PatientRegistrationView() {
               We found one or more existing patients that may match this entry. Please review and choose to either use an existing record or create a new one anyway.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+          <div className="p-6 space-y-2 max-h-[50vh] overflow-y-auto">
             {duplicates?.map((d, i) => (
               <Card key={d.patient.id + i}>
                 <CardContent className="p-3 flex items-center justify-between">

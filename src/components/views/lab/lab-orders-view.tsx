@@ -653,7 +653,7 @@ function OrderDetailsDialog({ order, onClose }: { order: any; onClose: () => voi
             {order.patient ? `${order.patient.firstName} ${order.patient.lastName} (${order.patient.patientNumber})` : "—"} • {formatDate(order.orderedAt, true)}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 text-sm">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3 text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Order #</p>
@@ -774,7 +774,7 @@ function CollectSampleDialog({ order, onClose, onChanged }: { order: any; onClos
           <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Collect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Sample Number</FieldLabel>
             <Input value={sampleNumber} onChange={(e) => setSampleNumber(e.target.value)} />
@@ -845,7 +845,7 @@ function RejectSampleDialog({ order, onClose, onChanged }: { order: any; onClose
           <DialogTitle className="text-white flex items-center gap-2 text-rose-700"><AlertTriangle className="w-5 h-5" /> Reject Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Sample</FieldLabel>
             <Select value={sampleId} onValueChange={setSampleId}>
@@ -927,7 +927,7 @@ function RecollectSampleDialog({ order, onClose, onChanged }: { order: any; onCl
           <DialogTitle className="text-white flex items-center gap-2 text-white"><TestTube className="w-5 h-5" /> Recollect Sample</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Rejected sample to replace</FieldLabel>
             <Select value={sampleId} onValueChange={(v) => { setSampleId(v); const s = rejectedSamples.find((x: any) => x.id === v); if (s) setSpecimenType(s.specimenType || ""); }}>
@@ -995,7 +995,7 @@ function ReceiveSampleDialog({ order, onClose, onChanged }: { order: any; onClos
           <DialogTitle className="text-white flex items-center gap-2 text-white"><Beaker className="w-5 h-5" /> Receive Sample</DialogTitle>
           <DialogDescription className="text-white/80">Confirm sample received at the lab. Order {order.orderNumber}</DialogDescription>
         </DialogHeader>
-        <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded">
+        <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-600 bg-slate-50 p-3 rounded">
           <div className="font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
           <div className="text-xs mt-1">Order has {(order.samples || []).length} sample(s).</div>
         </div>
@@ -1072,7 +1072,7 @@ function EnterResultDialog({ order, onClose, onChanged }: { order: any; onClose:
           <DialogTitle className="text-white flex items-center gap-2 text-white"><FlaskConical className="w-5 h-5" /> Enter Results</DialogTitle>
           <DialogDescription className="text-white/80">Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {items.map((it: any) => {
             const r = results[it.id] || {};
             return (
@@ -1171,7 +1171,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
           <DialogTitle className="text-white flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5" /> Verify Results</DialogTitle>
           <DialogDescription className="text-white/80">You are about to verify all results on order {order.orderNumber}. This will mark them ready for release.</DialogDescription>
         </DialogHeader>
-        <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded">
+        <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-600 bg-slate-50 p-3 rounded">
           <div className="font-medium text-slate-900">{order.patient?.firstName} {order.patient?.lastName}</div>
           <div className="text-xs mt-1">{(order.items || []).length} test result(s) to verify.</div>
         </div>

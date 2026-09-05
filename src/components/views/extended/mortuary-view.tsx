@@ -300,7 +300,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> Admit Deceased Person</DialogTitle>
           <DialogDescription className="text-white/80">Record a deceased person — works for both facility deaths and bodies brought in from outside.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <PatientPicker
             label="Deceased Patient (link to record if known)"
             value={patient}
@@ -528,7 +528,7 @@ function ReleaseForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><DoorOpen className="w-5 h-5" /> Release Body</DialogTitle></DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Released To (Name)</FieldLabel><Input value={form.releasedTo} onChange={(e) => set("releasedTo", e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Phone</Label><Input value={form.releasedToPhone} onChange={(e) => set("releasedToPhone", e.target.value)} /></div>
@@ -551,7 +551,7 @@ function ViewingForm({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Calendar className="w-5 h-5" /> Schedule Viewing</DialogTitle></DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Viewer Name</FieldLabel><Input value={form.viewerName} onChange={(e) => set("viewerName", e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Relationship</Label><Input value={form.viewerRelation} onChange={(e) => set("viewerRelation", e.target.value)} placeholder="Spouse / Son" /></div>

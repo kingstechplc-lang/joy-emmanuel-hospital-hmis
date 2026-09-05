@@ -620,7 +620,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5" /> Book New Appointment</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a patient appointment. The system checks for double-booking automatically.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient by name, MRN, phone..." className="" inputClassName="" />
@@ -742,7 +742,7 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5" /> Reschedule Appointment</DialogTitle>
           <DialogDescription className="text-white/80">Choose a new date and time. The original slot will be preserved in history.</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>New Date</FieldLabel>

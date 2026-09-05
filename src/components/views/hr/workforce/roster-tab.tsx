@@ -196,7 +196,7 @@ function NewRosterDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle className="text-white">Create New Roster</DialogTitle>
           <DialogDescription className="text-white/80">A roster is a collection of shift assignments for a date range. It starts in draft status.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Roster Name</FieldLabel>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., August 2026 Medical Ward" />

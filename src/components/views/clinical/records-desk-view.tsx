@@ -490,7 +490,7 @@ function RequestsTab() {
               <DialogTitle className="flex items-center gap-2 text-white">{viewItem.requestNumber} — {viewItem.patientName}</DialogTitle>
               <DialogDescription className="text-white/80">Requested {formatDate(viewItem.requestedAt, true)}</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
               <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={viewItem.priority} /></div></div>
               <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={viewItem.status} /></div></div>
               <div><Label className="text-slate-500">Department</Label><div>{viewItem.requestingDepartment || "—"}</div></div>

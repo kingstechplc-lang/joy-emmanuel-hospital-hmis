@@ -1162,7 +1162,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
             <br />The original value will be preserved in <span className="font-medium">originalAmount</span> and the audit log.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>New Amount ({entry.unit || "ml"})</FieldLabel>
             <Input type="number" min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -1907,7 +1907,7 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
           <DialogTitle>Acknowledge Alert</DialogTitle>
           <DialogDescription className="text-white/80">{alert.title}</DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <Label>Action Taken</Label>
             <Input value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} placeholder="e.g., Notified Dr. Mensah; reviewed I&O chart" />

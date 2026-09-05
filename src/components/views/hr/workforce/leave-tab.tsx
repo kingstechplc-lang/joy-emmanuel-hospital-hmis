@@ -236,7 +236,7 @@ function ReviewDialog({ onClose, onSubmit, action }: { onClose: () => void; onSu
             {action === "cancel" && "Cancelling will restore balances and (if approved) set the staff back to active status."}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 py-2">
+        <div className="flex-1 overflow-y-auto p-6 space-y-2">
           <Label>Comment / Reason (optional)</Label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder={`Reason for ${action}...`} />
         </div>

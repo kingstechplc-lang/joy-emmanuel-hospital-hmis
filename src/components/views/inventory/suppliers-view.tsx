@@ -842,7 +842,7 @@ function LifecycleMenu({ supplier, onDone }: { supplier: any; onDone: () => void
               blocked from new purchase orders until reactivated.
             </DialogDescription>
           </DialogHeader>
-          <div className="p-6 space-y-2">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <FieldLabel required className="text-xs">Reason for suspension</FieldLabel>
             <Textarea
               value={reason}
@@ -1484,7 +1484,7 @@ function DetailFooter({ supplier, onChanged }: { supplier: any; onChanged: () =>
               Suspend <span className="font-medium text-slate-900">{supplier.name}</span>?
             </DialogDescription>
           </DialogHeader>
-          <div className="p-6 space-y-2">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <FieldLabel required className="text-xs">Reason for suspension</FieldLabel>
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="Required — explain why this supplier is being suspended." />
           </div>

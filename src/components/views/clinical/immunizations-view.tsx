@@ -1251,7 +1251,7 @@ function WastageDialog({
             This will deduct the wasted quantity from the selected batch and create an auditable inventory transaction.
           </DialogDescription>
         </DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div>
             <FieldLabel required>Select Batch (or enter manually)</FieldLabel>
             <Select

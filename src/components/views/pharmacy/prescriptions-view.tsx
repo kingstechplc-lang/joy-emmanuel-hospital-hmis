@@ -1353,7 +1353,7 @@ function ViewPrescriptionDialog({
                 : "Cancelling will mark this prescription as cancelled. A reason is optional."}
             </DialogDescription>
           </DialogHeader>
-          <div className="p-6 space-y-2">
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
             <Label className="text-xs">
               Reason{actionDialog?.type === "discontinue" ? " (required)" : " (optional)"}
             </Label>

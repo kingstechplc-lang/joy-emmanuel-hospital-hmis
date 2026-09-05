@@ -1005,7 +1005,7 @@ export function EncountersView() {
                 — {cancelEncounter.patient?.firstName} {cancelEncounter.patient?.lastName}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 py-2">
+            <div className="p-6 space-y-3">
               <Label>Reason for Cancellation *</Label>
               <Input
                 value={cancelReason}

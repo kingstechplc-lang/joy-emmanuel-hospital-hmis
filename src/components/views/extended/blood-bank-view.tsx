@@ -253,7 +253,7 @@ function DonorForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5" /> Register Blood Donor</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
           <div className="col-span-2"><FieldLabel>Full Name</FieldLabel><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} /></div>
           <div><Label>Age</Label><Input type="number" value={form.age} onChange={(e) => set("age", e.target.value)} /></div>
           <div><Label>Sex</Label><Select value={form.sex} onValueChange={(v) => set("sex", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select></div>
@@ -285,7 +285,7 @@ function DonorDetail({ donor, onClose }: { donor: any; onClose: () => void }) {
           <DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5" /> {donor.fullName}</DialogTitle>
           <DialogDescription className="text-white/80">{donor.donorNumber}</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
           <div><Label className="text-slate-500">Blood Group</Label><div className="font-bold text-rose-600 text-lg">{donor.bloodGroup || "—"}</div></div>
           <div><Label className="text-slate-500">Age / Sex</Label><div>{donor.age ? `${donor.age}y` : "—"} / {donor.sex || "—"}</div></div>
           <div><Label className="text-slate-500">Eligibility</Label><div><StatusBadge status={donor.eligibilityStatus} /></div></div>
@@ -423,7 +423,7 @@ function UnitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Droplet className="w-5 h-5" /> Register Blood Unit</DialogTitle></DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div><FieldLabel>Donor ID</FieldLabel><Input value={form.donorId} onChange={(e) => set("donorId", e.target.value)} placeholder="Donor ID from donor registry" /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Blood Group</Label><Select value={form.bloodGroup} onValueChange={(v) => set("bloodGroup", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{BLOOD_GROUPS.map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}</SelectContent></Select></div>
@@ -604,7 +604,7 @@ function CrossmatchForm({ open, onOpenChange, onSubmit, loading }: { open: boole
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Beaker className="w-5 h-5" /> New Crossmatch Test</DialogTitle></DialogHeader>
-        <div className="p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <PatientPicker
             label="Patient (recipient)"
             required

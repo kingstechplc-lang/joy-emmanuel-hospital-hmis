@@ -284,7 +284,7 @@ function NewCertDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle className="text-white">Add Certification / Credential</DialogTitle>
           <DialogDescription className="text-white/80">Record a staff member's certification, license, or credential.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2">
             <StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required />
           </div>
@@ -394,7 +394,7 @@ function ActionDialog({ onClose, onSubmit, action, certName }: { onClose: () => 
           <DialogTitle className="text-white" className="capitalize">{action} Certification</DialogTitle>
           <DialogDescription className="text-white/80">{certName}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {isVerify && (
             <>
               <div className="space-y-1.5">
@@ -553,7 +553,7 @@ function NewCertTypeDialog({ onClose }: { onClose: () => void }) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Certification Type</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Basic Life Support" /></div>
           <div className="space-y-1.5"><FieldLabel required>Code</FieldLabel><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g., BLS" /></div>
           <div className="space-y-1.5"><Label>Category</Label><Select value={category || "__none__"} onValueChange={(v) => setCategory(v === "__none__" ? "" : v)}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="__none__">—</SelectItem>{CERT_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>

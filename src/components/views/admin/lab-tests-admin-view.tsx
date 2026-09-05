@@ -484,7 +484,7 @@ function BulkUpdateDialog({ testIds, onClose, onDone }: { testIds: string[]; onC
           <DialogTitle className="text-white">Bulk Update {testIds.length} Test(s)</DialogTitle>
           <DialogDescription className="text-white/80">Set fields to update across all selected tests. Empty fields are ignored. A preview runs first.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
+        <div className="p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Category</Label>
