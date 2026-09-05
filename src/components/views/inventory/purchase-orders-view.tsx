@@ -1222,8 +1222,8 @@ function NewPODialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ShoppingCart className="w-4 h-4" /> New Purchase Order</DialogTitle>
           <DialogDescription className="text-white/80">Select facility, supplier, commercial terms and line items.</DialogDescription>
         </DialogHeader>
@@ -1472,7 +1472,7 @@ function NewPODialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700">
             {submitting ? "Creating..." : "Create PO"}
@@ -1543,8 +1543,8 @@ function ViewPODialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <DialogTitle className="flex items-center gap-2 text-xl">
@@ -1827,7 +1827,7 @@ function ViewPODialog({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -1980,8 +1980,8 @@ function ReceiveDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><PackageCheck className="w-4 h-4" /> Receive Goods: {data?.purchaseOrderNumber}</DialogTitle>
           <DialogDescription className="text-white/80">{data?.supplier?.name} · {data?.facility?.name}</DialogDescription>
         </DialogHeader>
@@ -2050,7 +2050,7 @@ function ReceiveDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700">
             {submitting ? "Receiving..." : "Receive Goods"}

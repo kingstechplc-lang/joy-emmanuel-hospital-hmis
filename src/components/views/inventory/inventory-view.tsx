@@ -1479,8 +1479,8 @@ function ItemDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Package className="w-5 h-5 text-teal-600" /> Item Detail
           </DialogTitle>
@@ -1638,7 +1638,7 @@ function ItemDetailDialog({
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -1786,8 +1786,8 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-teal-600" /> New Inventory Item
           </DialogTitle>
@@ -1943,7 +1943,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
           </section>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 gap-1.5">
             {submitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
@@ -2074,8 +2074,8 @@ function StockMovementDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <TitleIcon className="w-5 h-5 text-teal-600" /> {title}: {item.name}
           </DialogTitle>
@@ -2207,7 +2207,7 @@ function StockMovementDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 gap-1.5">
             {submitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <TitleIcon className="w-3.5 h-3.5" />}
@@ -2230,8 +2230,8 @@ function HistoryDialog({ item, facilityId, onClose }: { item: any; facilityId?: 
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <History className="w-5 h-5 text-teal-600" /> Transaction History
           </DialogTitle>
@@ -2279,7 +2279,7 @@ function HistoryDialog({ item, facilityId, onClose }: { item: any; facilityId?: 
           </table>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

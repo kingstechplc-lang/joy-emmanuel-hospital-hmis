@@ -483,7 +483,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
       {/* Delete Confirmation */}
       {deleteItem && (
         <Dialog open onOpenChange={(o) => !o && setDeleteItem(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
               <DialogTitle className="text-white flex items-center gap-2 text-rose-700">
                 <AlertCircle className="w-5 h-5" /> Confirm Delete
@@ -492,7 +492,7 @@ export function ExtendedModuleView({ config }: { config: ModuleConfig }) {
                 Are you sure you want to delete &quot;{deleteItem[config.fields[0].name]}&quot;? This action cannot be undone and will be recorded in the audit log.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button variant="outline" onClick={() => setDeleteItem(null)}>Cancel</Button>
               <Button
                 variant="destructive"
@@ -791,7 +791,7 @@ function RecordDetailDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Icon className={`w-5 h-5 ${config.accentColor || "text-slate-700"}`} />
@@ -868,7 +868,7 @@ function RecordDetailDialog({
         </Tabs>
 
         {onEdit && (
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
             <Button onClick={onEdit}>
               <Pencil className="w-4 h-4 mr-1" /> Edit Record
@@ -904,7 +904,7 @@ function WorkflowDialog({
   const [notes, setNotes] = useState("");
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" /> {target.action.label}
@@ -927,7 +927,7 @@ function WorkflowDialog({
             placeholder="Add any notes about this status change..."
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
             onClick={() => onSubmit(notes || undefined)}
@@ -1002,7 +1002,7 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <config.icon className="w-5 h-5" /> {isEdit ? "Edit" : "New"} {config.title}
@@ -1071,7 +1071,7 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
           ))}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={loading}>
             {loading ? "Saving..." : isEdit ? "Update Record" : "Create Record"}

@@ -832,7 +832,7 @@ function LifecycleMenu({ supplier, onDone }: { supplier: any; onDone: () => void
       </div>
 
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="flex items-center gap-2 text-rose-700">
               <Ban className="w-4 h-4" /> Suspend Supplier
@@ -851,7 +851,7 @@ function LifecycleMenu({ supplier, onDone }: { supplier: any; onDone: () => void
               placeholder="e.g. Failed to deliver on PO-2026-000045; quality issues with last batch"
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={() => setSuspendOpen(false)}>Cancel</Button>
             <Button
               onClick={confirmSuspend}
@@ -895,7 +895,7 @@ function SupplierDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b bg-gradient-to-r from-blue-500 to-indigo-600 text-white shrink-0">
           <div className="flex items-start justify-between gap-3">
@@ -1475,7 +1475,7 @@ function DetailFooter({ supplier, onChanged }: { supplier: any; onChanged: () =>
       </Button>
 
       <Dialog open={suspendOpen} onOpenChange={(o) => setSuspendOpen(o)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="flex items-center gap-2 text-rose-700">
               <Ban className="w-4 h-4" /> Suspend Supplier
@@ -1488,7 +1488,7 @@ function DetailFooter({ supplier, onChanged }: { supplier: any; onChanged: () =>
             <FieldLabel required className="text-xs">Reason for suspension</FieldLabel>
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="Required — explain why this supplier is being suspended." />
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={() => setSuspendOpen(false)}>Cancel</Button>
             <Button onClick={() => { if (!reason.trim()) return toast.error("A suspension reason is required"); setBusy(true); mutation.mutate({ action: "suspend", reason }); }} disabled={busy} className="bg-rose-600 hover:bg-rose-700 gap-1.5">
               <Ban className="w-3.5 h-3.5" /> {busy ? "Suspending…" : "Confirm Suspend"}
@@ -1870,7 +1870,7 @@ function SupplierDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-5 py-4 border-b bg-gradient-to-r from-blue-500 to-indigo-600 text-white shrink-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Truck className="w-5 h-5" /> {isEdit ? "Edit Supplier" : "New Supplier"}

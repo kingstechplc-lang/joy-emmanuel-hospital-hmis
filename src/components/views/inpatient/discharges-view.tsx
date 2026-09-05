@@ -541,7 +541,7 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b bg-indigo-50">
           <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5 text-indigo-600" /> Request Discharge</DialogTitle>
           <DialogDescription className="text-white/80">Initiate a discharge request. The admission remains active until the discharge is finalized.</DialogDescription>
@@ -750,7 +750,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
             <LogOut className="w-5 h-5 text-indigo-600" />
@@ -1141,7 +1141,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
 
       {showAdd && (
         <Dialog open onOpenChange={setShowAdd}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Discharge Medication</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2"><FieldLabel required>Medication Name</FieldLabel><Input value={newMed.medicationName} onChange={(e) => setNewMed({ ...newMed, medicationName: e.target.value })} placeholder="e.g., Amoxicillin" /></div>
@@ -1164,7 +1164,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
                 <label className="flex items-center gap-1 text-xs"><Checkbox checked={newMed.inpatient} onCheckedChange={(v) => setNewMed({ ...newMed, inpatient: !!v })} /> Inpatient</label>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
               <Button onClick={addMed} className="bg-emerald-600 hover:bg-emerald-700">Add Medication</Button>
             </DialogFooter>

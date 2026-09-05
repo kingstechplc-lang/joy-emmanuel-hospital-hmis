@@ -787,8 +787,8 @@ function NewReferralDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Patient Referral</DialogTitle>
           <DialogDescription className="text-white/80">
             Refer a patient to another facility or specialist. A unique referral
@@ -1044,7 +1044,7 @@ function NewReferralDialog({
             )}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
@@ -1177,7 +1177,7 @@ function ReferralDetailDialog({
   if (isLoading) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <LoadingState rows={5} />
         </DialogContent>
       </Dialog>
@@ -1187,7 +1187,7 @@ function ReferralDetailDialog({
   if (isError || !r) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           <ErrorState message="Failed to load referral" onRetry={() => refetch()} />
         </DialogContent>
       </Dialog>
@@ -1200,8 +1200,8 @@ function ReferralDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {r.referralNumber && (
               <span className="font-mono text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">

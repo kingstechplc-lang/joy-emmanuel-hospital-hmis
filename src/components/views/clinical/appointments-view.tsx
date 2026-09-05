@@ -432,8 +432,8 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5 text-cyan-600" />
             Appointment Details
@@ -532,7 +532,7 @@ function AppointmentDetailDialog({ id, onClose, onChanged }: { id: string; onClo
           <EmptyState title="Appointment not found" />
         )}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -615,8 +615,8 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5 text-cyan-600" /> Book New Appointment</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a patient appointment. The system checks for double-booking automatically.</DialogDescription>
         </DialogHeader>
@@ -689,7 +689,7 @@ function NewAppointmentDialog({ open, onClose, onCreated, defaultFacilityId }: {
             <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for visit" />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={create} disabled={saving} className="gap-2 bg-cyan-600 hover:bg-cyan-700">
             <Calendar className="w-4 h-4" /> {saving ? "Booking..." : "Book Appointment"}
@@ -737,8 +737,8 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
 
   return (
     <Dialog open={!!id} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarPlus className="w-5 h-5 text-cyan-600" /> Reschedule Appointment</DialogTitle>
           <DialogDescription className="text-white/80">Choose a new date and time. The original slot will be preserved in history.</DialogDescription>
         </DialogHeader>
@@ -758,7 +758,7 @@ function RescheduleDialog({ id, onClose, onDone }: { id: string | null; onClose:
             <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g., Patient request, clinician unavailable" />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-cyan-600 hover:bg-cyan-700">
             {saving ? "Saving..." : "Reschedule"}

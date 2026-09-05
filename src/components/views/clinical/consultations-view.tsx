@@ -433,8 +433,8 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle>New Consultation Note</DialogTitle>
           <DialogDescription className="text-white/80">Will be saved as draft. Sign after completion.</DialogDescription>
         </DialogHeader>
@@ -498,7 +498,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
             </TabsContent>
           </Tabs>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? <Save className="w-4 h-4 animate-pulse" /> : <ClipboardList className="w-4 h-4" />}
@@ -666,8 +666,8 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
             <DialogTitle className="flex items-center gap-2 flex-wrap">
               <ClipboardList className="w-5 h-5" /> Consultation Note
               <StatusBadge status={editable.status} />
@@ -885,8 +885,8 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
 
       {/* Nested Add Addendum dialog */}
       <Dialog open={showAddendum} onOpenChange={(o) => !o && setShowAddendum(false)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <StickyNote className="w-4 h-4 text-amber-600" /> Add Addendum
             </DialogTitle>
@@ -907,7 +907,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
               {" • "}Timestamp will be set automatically.
             </p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={() => setShowAddendum(false)}>Cancel</Button>
             <Button onClick={submitAddendum} disabled={addingAddendum} className="gap-1 bg-amber-600 hover:bg-amber-700">
               {addingAddendum ? <StickyNote className="w-4 h-4 animate-pulse" /> : <Check className="w-4 h-4" />}

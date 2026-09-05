@@ -279,10 +279,10 @@ function NewCertDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Add Certification / Credential</DialogTitle>
-          <DialogDescription>Record a staff member's certification, license, or credential.</DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Add Certification / Credential</DialogTitle>
+          <DialogDescription className="text-white/80">Record a staff member's certification, license, or credential.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="md:col-span-2">
@@ -365,7 +365,7 @@ function NewCertDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !certificationName || !issueDate} className="bg-emerald-600 hover:bg-emerald-700">
             Add Certification
@@ -389,10 +389,10 @@ function ActionDialog({ onClose, onSubmit, action, certName }: { onClose: () => 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="capitalize">{action} Certification</DialogTitle>
-          <DialogDescription>{certName}</DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white" className="capitalize">{action} Certification</DialogTitle>
+          <DialogDescription className="text-white/80">{certName}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           {isVerify && (
@@ -433,7 +433,7 @@ function ActionDialog({ onClose, onSubmit, action, certName }: { onClose: () => 
             </>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => onSubmit(isVerify ? { verificationMethod, verificationReference, verificationNotes } : isRenew ? { newIssueDate, newExpiryDate: newExpiryDate || undefined, newCertificateNumber: newCertificateNumber || undefined } : {})} className="bg-emerald-600 hover:bg-emerald-700">
             Confirm {action}
@@ -551,8 +551,8 @@ function NewCertTypeDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>New Certification Type</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Certification Type</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Basic Life Support" /></div>
           <div className="space-y-1.5"><FieldLabel required>Code</FieldLabel><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g., BLS" /></div>
@@ -562,7 +562,7 @@ function NewCertTypeDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5 md:col-span-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isMandatory} onChange={(e) => setIsMandatory(e.target.checked)} /> Mandatory</label></div>
           <div className="space-y-1.5 md:col-span-2"><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !code} className="bg-emerald-600 hover:bg-emerald-700">Create Type</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !code} className="bg-emerald-600 hover:bg-emerald-700">Create Type</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

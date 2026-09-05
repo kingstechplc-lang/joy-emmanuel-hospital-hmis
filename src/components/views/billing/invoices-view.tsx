@@ -1431,7 +1431,7 @@ function ViewInvoiceDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
           {isLoading || !inv ? (
             <div className="p-4"><LoadingState rows={4} /></div>
           ) : (
@@ -2032,8 +2032,8 @@ function LifecycleActionDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Icon className={`w-5 h-5 ${c.iconColor}`} /> {c.title}
           </DialogTitle>
@@ -2091,7 +2091,7 @@ function LifecycleActionDialog({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button
             onClick={handleSubmit}
@@ -2313,7 +2313,7 @@ function NewInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Receipt className="w-5 h-5 text-rose-600" /> New Invoice
@@ -2582,7 +2582,7 @@ function NewInvoiceDialog({
               Total: {formatCurrency(total)}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
               onClick={submit}
@@ -2674,8 +2674,8 @@ function PaymentDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <CreditCard className="w-5 h-5 text-emerald-600" /> Record Payment
             </DialogTitle>
@@ -2709,7 +2709,7 @@ function PaymentDialog({
               <Input value={transactionReference} onChange={(e) => setTransactionReference(e.target.value)} placeholder="Momo ref, cheque #, etc." />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={submit} disabled={saving || !canPay} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
               {saving ? "Recording..." : <><CreditCard className="w-4 h-4" /> Record Payment</>}
@@ -2794,8 +2794,8 @@ function AddItemDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-emerald-600" /> Add Item to {invoice.invoiceNumber}
           </DialogTitle>
@@ -2844,7 +2844,7 @@ function AddItemDialog({
             Line Total: {formatCurrency(lineTotal)}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !description.trim()} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Adding..." : <><Plus className="w-4 h-4" /> Add Item</>}

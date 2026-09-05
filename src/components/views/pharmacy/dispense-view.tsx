@@ -1377,8 +1377,8 @@ export function DispenseView() {
 
       {/* ===== Bulk Dispense Preview Dialog (dry-run) ===== */}
       <Dialog open={showBulkPreview} onOpenChange={(o) => !o && cancelBulkPreview()}>
-        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <ListChecks className="w-5 h-5 text-amber-600" />
               Bulk Dispense Preview

@@ -271,12 +271,12 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white" className="flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-emerald-600" /> New Shift Handover
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Record handover notes between outgoing and incoming nursing/clinical staff.
           </DialogDescription>
         </DialogHeader>
@@ -421,7 +421,7 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}
@@ -449,13 +449,13 @@ function HandoverDetail({ handover, onClose }: { handover: any; onClose: () => v
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white" className="flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-emerald-600" />
             Shift Handover Details
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {handover.facility?.name} • {formatDate(handover.handoverDate, true)}
           </DialogDescription>
         </DialogHeader>
@@ -482,7 +482,7 @@ function HandoverDetail({ handover, onClose }: { handover: any; onClose: () => v
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

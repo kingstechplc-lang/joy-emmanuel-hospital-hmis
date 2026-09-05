@@ -592,8 +592,8 @@ export function LabResultsView() {
           LabResult to amend — eliminates the silent first-result bug. */}
       {amendSelectGroup && (
         <Dialog open onOpenChange={() => setAmendSelectGroup(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
               <DialogTitle className="flex items-center gap-2 text-white">
                 <History className="w-5 h-5 text-emerald-600" /> Select Result to Amend
               </DialogTitle>
@@ -631,7 +631,7 @@ export function LabResultsView() {
                 </button>
               ))}
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button variant="outline" onClick={() => setAmendSelectGroup(null)}>Cancel</Button>
             </DialogFooter>
           </DialogContent>
@@ -683,8 +683,8 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-cyan-600 to-blue-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><History className="w-5 h-5 text-emerald-600" /> Amend Result</DialogTitle>
           <DialogDescription className="text-white/80">
             A new amended result will be created. The original is preserved for audit.
@@ -742,7 +742,7 @@ function AmendResultDialog({ result, onClose, onAmended }: { result: any; onClos
             <Textarea value={form.resultNotes} onChange={(e) => setField("resultNotes", e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Amending..." : "Create Amendment"}

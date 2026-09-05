@@ -479,10 +479,10 @@ function BulkUpdateDialog({ testIds, onClose, onDone }: { testIds: string[]; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Bulk Update {testIds.length} Test(s)</DialogTitle>
-          <DialogDescription>Set fields to update across all selected tests. Empty fields are ignored. A preview runs first.</DialogDescription>
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
+          <DialogTitle className="text-white">Bulk Update {testIds.length} Test(s)</DialogTitle>
+          <DialogDescription className="text-white/80">Set fields to update across all selected tests. Empty fields are ignored. A preview runs first.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -566,7 +566,7 @@ function BulkUpdateDialog({ testIds, onClose, onDone }: { testIds: string[]; onC
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={run} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
             <Upload className="w-4 h-4" /> {saving ? "Working..." : mode === "preview" ? "Preview" : "Apply Update"}

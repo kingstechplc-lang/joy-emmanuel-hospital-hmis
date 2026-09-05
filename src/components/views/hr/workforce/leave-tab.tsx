@@ -227,10 +227,10 @@ function ReviewDialog({ onClose, onSubmit, action }: { onClose: () => void; onSu
   const [comment, setComment] = useState("");
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="capitalize">{action} Leave Request</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white" className="capitalize">{action} Leave Request</DialogTitle>
+          <DialogDescription className="text-white/80">
             {action === "approve" && "Approving will deduct the leave days from the staff member's balance and mark them as on-leave."}
             {action === "reject" && "Rejecting will restore any pending balance deductions."}
             {action === "cancel" && "Cancelling will restore balances and (if approved) set the staff back to active status."}
@@ -240,7 +240,7 @@ function ReviewDialog({ onClose, onSubmit, action }: { onClose: () => void; onSu
           <Label>Comment / Reason (optional)</Label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder={`Reason for ${action}...`} />
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => onSubmit(comment)}
@@ -313,10 +313,10 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Submit Leave Request</DialogTitle>
-          <DialogDescription>The system will check leave balance, conflicts with shifts, and existing leave records.</DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Submit Leave Request</DialogTitle>
+          <DialogDescription className="text-white/80">The system will check leave balance, conflicts with shifts, and existing leave records.</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
@@ -418,7 +418,7 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
           </Alert>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId} className="bg-emerald-600 hover:bg-emerald-700">
             Submit Request

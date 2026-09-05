@@ -402,7 +402,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <BedDouble className="w-5 h-5 text-emerald-600" />
@@ -548,7 +548,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -784,7 +784,7 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>{isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
@@ -837,7 +837,7 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
           <div><Label>Status</Label><Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
         </div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -870,7 +870,7 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>{isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div>
@@ -895,7 +895,7 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
           </div>
         </div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : isEdit ? "Save" : "Create"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -934,7 +934,7 @@ function BedMasterDialog({ bed, facilityId, onClose, onDone }: { bed?: any; faci
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>{isEdit ? "Edit Bed" : "Add Bed"}</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">

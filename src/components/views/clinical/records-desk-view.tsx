@@ -476,8 +476,8 @@ function RequestsTab() {
 
       {showForm && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-            <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FolderOpen className="w-5 h-5 text-indigo-600" /> New Record Request</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FolderOpen className="w-5 h-5 text-indigo-600" /> New Record Request</DialogTitle></DialogHeader>
             <RequestForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
         </Dialog>
@@ -485,8 +485,8 @@ function RequestsTab() {
 
       {viewItem && (
         <Dialog open onOpenChange={() => setViewItem(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-            <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
               <DialogTitle className="flex items-center gap-2 text-white">{viewItem.requestNumber} — {viewItem.patientName}</DialogTitle>
               <DialogDescription className="text-white/80">Requested {formatDate(viewItem.requestedAt, true)}</DialogDescription>
             </DialogHeader>
@@ -564,7 +564,7 @@ function RequestForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loadin
       </div>
       <div><Label>Requesting Staff</Label><Input value={form.requestingStaffName} onChange={(e) => set("requestingStaffName", e.target.value)} /></div>
       <div className="col-span-2"><Label>Purpose</Label><Textarea value={form.purpose} onChange={(e) => set("purpose", e.target.value)} rows={2} placeholder="Why is the record needed?" /></div>
-      <DialogFooter><Button onClick={submit} disabled={loading || !patient?.patientName}>{loading ? "Creating..." : "Create Request"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={submit} disabled={loading || !patient?.patientName}>{loading ? "Creating..." : "Create Request"}</Button></DialogFooter>
     </div>
   );
 }
@@ -674,8 +674,8 @@ function AmendmentsTab({ canEdit }: { canEdit: boolean }) {
 
       {showForm && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-            <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FileEdit className="w-5 h-5" /> Request Record Amendment</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><FileEdit className="w-5 h-5" /> Request Record Amendment</DialogTitle></DialogHeader>
             <AmendmentForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
         </Dialog>
@@ -724,7 +724,7 @@ function AmendmentForm({ onSubmit, loading }: { onSubmit: (d: any) => void; load
       <div><Label>Original Value</Label><Input value={form.originalValue} onChange={(e) => set("originalValue", e.target.value)} /></div>
       <div><Label>Corrected Value</Label><Input value={form.correctedValue} onChange={(e) => set("correctedValue", e.target.value)} /></div>
       <div className="col-span-2"><FieldLabel>Reason</FieldLabel><Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={3} placeholder="Why is this correction needed?" /></div>
-      <DialogFooter><Button onClick={submit} disabled={loading || !patient?.patientName || !form.reason}>{loading ? "Submitting..." : "Submit Request"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={submit} disabled={loading || !patient?.patientName || !form.reason}>{loading ? "Submitting..." : "Submit Request"}</Button></DialogFooter>
     </div>
   );
 }

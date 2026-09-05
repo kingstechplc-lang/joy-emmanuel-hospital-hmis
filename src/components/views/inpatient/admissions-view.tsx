@@ -452,7 +452,7 @@ function ApproveDialog({ admission, onClose, onDone }: { admission: any; onClose
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Approve Admission Request</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
@@ -468,7 +468,7 @@ function ApproveDialog({ admission, onClose, onDone }: { admission: any; onClose
           </div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Approval/decline notes..." /></div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className={`gap-2 ${decision === "approved" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}`}>
             {saving ? "Saving..." : decision === "approved" ? "Approve" : "Decline"}
@@ -509,7 +509,7 @@ function AssignBedDialog({ admission, onClose, onDone }: { admission: any; onClo
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Assign Bed</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
@@ -534,7 +534,7 @@ function AssignBedDialog({ admission, onClose, onDone }: { admission: any; onClo
             The bed will be reserved until the patient arrives. Use "Confirm Arrival" to mark the patient as admitted.
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !wardId || !bedId} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? "Assigning..." : "Assign Bed"}</Button>
         </DialogFooter>
@@ -560,7 +560,7 @@ function ConfirmDialog({ admission, onClose, onDone }: { admission: any; onClose
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Confirm Patient Arrival</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
@@ -569,7 +569,7 @@ function ConfirmDialog({ admission, onClose, onDone }: { admission: any; onClose
             This will mark the admission as "Admitted" and the bed as "Occupied".
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? "Confirming..." : "Confirm Arrival"}</Button>
         </DialogFooter>
@@ -601,7 +601,7 @@ function DischargePlanDialog({ admission, onClose, onDone }: { admission: any; o
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Plan Discharge</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
         <div className="space-y-3">
@@ -616,7 +616,7 @@ function DischargePlanDialog({ admission, onClose, onDone }: { admission: any; o
           </div>
           <div><Label>Pending Items (one per line)</Label><Textarea value={pendingItems} onChange={(e) => setPendingItems(e.target.value)} rows={3} placeholder="e.g., Await lab results&#10;Pharmacy clearance&#10;Specialist consult" /></div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-violet-600 hover:bg-violet-700">{saving ? "Saving..." : "Save Plan"}</Button>
         </DialogFooter>
@@ -647,7 +647,7 @@ function ProgressNoteDialog({ admission, onClose, onDone }: { admission: any; on
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle>Doctor Progress Note (SOAP)</DialogTitle>
           <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription>
@@ -754,7 +754,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5 text-emerald-600" /> New Admission</DialogTitle>
           <DialogDescription className="text-white/80">Admit a patient and assign a bed. The admission and bed assignment are created atomically — if the bed is unavailable, the operation is rolled back.</DialogDescription>
@@ -854,7 +854,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
             <Textarea value={admissionDiagnosis} onChange={(e) => setAdmissionDiagnosis(e.target.value)} rows={2} placeholder="Provisional diagnosis at admission" />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !patientId || !wardId || !bedId} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Creating..." : <><BedDouble className="w-4 h-4" /> Admit & Assign Bed</>}
@@ -906,7 +906,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><LogOut className="w-5 h-5 text-rose-600" /> Discharge Patient</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -969,7 +969,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-rose-600 hover:bg-rose-700">
             {saving ? "Discharging..." : <><XCircle className="w-4 h-4" /> Confirm Discharge</>}
@@ -986,7 +986,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
 function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; canManage: boolean; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Stethoscope className="w-5 h-5 text-indigo-600" />
@@ -1010,7 +1010,7 @@ function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; ca
             </p>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

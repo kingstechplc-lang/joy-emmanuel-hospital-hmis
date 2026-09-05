@@ -759,8 +759,8 @@ function NewPrescriptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Plus className="w-5 h-5 text-amber-600" /> New Prescription
           </DialogTitle>
@@ -921,7 +921,7 @@ function NewPrescriptionDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={() => { reset(); onClose(); }}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={submitting} className="bg-amber-600 hover:bg-amber-700">
             {submitting ? "Creating..." : "Create Prescription"}
@@ -1156,8 +1156,8 @@ function ViewPrescriptionDialog({
   return (
     <>
       <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-        <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+        <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <FileText className="w-4 h-4 text-amber-600" /> Prescription {full?.prescriptionNumber}
             </DialogTitle>
@@ -1338,8 +1338,8 @@ function ViewPrescriptionDialog({
 
       {/* Discontinue / Cancel reason dialog */}
       <Dialog open={!!actionDialog} onOpenChange={(o) => { if (!o) setActionDialog(null); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+        <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               {actionDialog?.type === "discontinue" ? (
                 <><StopCircle className="w-4 h-4 text-orange-600" /> Discontinue Prescription</>
@@ -1369,7 +1369,7 @@ function ViewPrescriptionDialog({
               autoFocus
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={() => setActionDialog(null)}>Cancel</Button>
             <Button
               onClick={submitAction}
@@ -1549,8 +1549,8 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Pill className="w-4 h-4 text-amber-600" /> Dispense: {full?.prescriptionNumber}
           </DialogTitle>
@@ -1638,7 +1638,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

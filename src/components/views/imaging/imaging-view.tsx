@@ -653,7 +653,7 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-white"><ScanLine className="w-5 h-5 text-emerald-600" /> New Imaging Order</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a radiology study for a patient.</DialogDescription>
@@ -832,8 +832,8 @@ function ScheduleDialog({ order, onClose, onChanged }: { order: any; onClose: ()
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CalendarClock className="w-5 h-5 text-emerald-600" /> Schedule Imaging</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
@@ -843,7 +843,7 @@ function ScheduleDialog({ order, onClose, onChanged }: { order: any; onClose: ()
             <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Scheduling..." : "Schedule"}
@@ -881,8 +881,8 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Stethoscope className="w-5 h-5 text-emerald-600" /> Perform Imaging</DialogTitle>
           <DialogDescription className="text-white/80">Confirm the imaging procedure has begun. {order.procedureName}</DialogDescription>
         </DialogHeader>
@@ -900,7 +900,7 @@ function PerformDialog({ order, onClose, onChanged }: { order: any; onClose: () 
             Contrast used
           </label>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Starting..." : "Mark In Progress"}
@@ -940,8 +940,8 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><FileText className="w-5 h-5 text-emerald-600" /> Imaging Report</DialogTitle>
           <DialogDescription className="text-white/80">{order.procedureName} • {order.patient?.firstName} {order.patient?.lastName}</DialogDescription>
         </DialogHeader>
@@ -961,7 +961,7 @@ function ReportDialog({ order, onClose, onChanged }: { order: any; onClose: () =
             <Textarea value={impression} onChange={(e) => setImpression(e.target.value)} rows={4} placeholder="Radiologist's impression / conclusion..." />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Saving..." : "Submit Report"}
@@ -996,8 +996,8 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> Verify Report</DialogTitle>
           <DialogDescription className="text-white/80">Confirm the imaging report is verified. {order.procedureName}</DialogDescription>
         </DialogHeader>
@@ -1013,7 +1013,7 @@ function VerifyDialog({ order, onClose, onChanged }: { order: any; onClose: () =
             )}
           </div>
         )}
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Verifying..." : "Verify"}
@@ -1081,8 +1081,8 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <History className="w-5 h-5 text-blue-600" /> Amend Imaging Report
           </DialogTitle>
@@ -1126,7 +1126,7 @@ function AmendReportDialog({ order, onClose, onAmended }: { order: any; onClose:
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !form.amendmentReason.trim()} className="gap-2 bg-blue-600 hover:bg-blue-700">
             {saving ? "Amending..." : "Amend Report"}

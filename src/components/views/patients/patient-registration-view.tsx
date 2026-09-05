@@ -1006,8 +1006,8 @@ export function PatientRegistrationView() {
 
       {/* Duplicate detection modal */}
       <Dialog open={!!duplicates} onOpenChange={(o) => !o && setDuplicates(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+        <DialogContent className="max-w-2xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
             <DialogTitle className="flex items-center gap-2 text-white">
               <AlertTriangle className="w-5 h-5" /> Possible Duplicate Patient Found
             </DialogTitle>
@@ -1041,7 +1041,7 @@ export function PatientRegistrationView() {
               </Card>
             ))}
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={() => setDuplicates(null)}>Cancel</Button>
             <Button
               variant="destructive"

@@ -445,7 +445,7 @@ function ServiceForm({ service, onClose, onSaved }: { service: any | null; onClo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -564,7 +564,7 @@ function ServiceForm({ service, onClose, onSaved }: { service: any | null; onClo
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Saving…" : isEdit ? "Update Service" : "Create Service"}
@@ -597,7 +597,7 @@ function ServiceDetailDialog({ serviceId, onClose, onEdit }: { serviceId: string
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -721,7 +721,7 @@ function ServiceDetailDialog({ serviceId, onClose, onEdit }: { serviceId: string
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={onEdit} className="bg-emerald-600 hover:bg-emerald-700 gap-1.5">
             <FileText className="w-4 h-4" /> Edit
@@ -870,7 +870,7 @@ function PackageForm({ pkg, onClose, onSaved }: { pkg: any | null; onClose: () =
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Package className="w-5 h-5 text-emerald-600" /> {isEdit ? "Edit Package" : "Add Package"}</DialogTitle>
         </DialogHeader>
@@ -910,7 +910,7 @@ function PackageForm({ pkg, onClose, onSaved }: { pkg: any | null; onClose: () =
             )}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving…" : isEdit ? "Update Package" : "Create Package"}</Button>
         </DialogFooter>
@@ -967,7 +967,7 @@ Ultrasound Scan,RAD-001,imaging,diagnostic,150,80,true,test`;
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="text-white flex items-center gap-2"><Upload className="w-5 h-5 text-emerald-600" /> Import Services (CSV)</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Button variant="outline" size="sm" onClick={() => setCsvText(sample)}>Load Sample</Button>
@@ -982,7 +982,7 @@ Ultrasound Scan,RAD-001,imaging,diagnostic,150,80,true,test`;
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={handleImport} disabled={importing || !csvText.trim()} className="bg-emerald-600 hover:bg-emerald-700">
             {importing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Upload className="w-4 h-4 mr-1" />}
@@ -1041,7 +1041,7 @@ function BulkUpdateDialog({ onClose, onUpdated }: { onClose: () => void; onUpdat
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="text-white flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Bulk Price Update</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
@@ -1119,7 +1119,7 @@ function BulkUpdateDialog({ onClose, onUpdated }: { onClose: () => void; onUpdat
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={handleUpdate} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Zap className="w-4 h-4 mr-1" />}

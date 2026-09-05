@@ -295,7 +295,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> Admit Deceased Person</DialogTitle>
           <DialogDescription className="text-white/80">Record a deceased person — works for both facility deaths and bodies brought in from outside.</DialogDescription>
@@ -344,7 +344,7 @@ function AdmitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
           </div>
           <div><Label>Source Notes</Label><Textarea value={form.sourceNotes} onChange={(e) => set("sourceNotes", e.target.value)} rows={2} placeholder="Additional notes about source or circumstances..." /></div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={loading || !patient?.patientName || !form.dateOfDeath}>{loading ? "Admitting..." : "Admit to Mortuary"}</Button>
         </DialogFooter>
@@ -406,7 +406,7 @@ function CaseDetail({ item, canManage, onClose }: { item: any; canManage: boolea
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Skull className="w-5 h-5" /> {item.deceasedName}</DialogTitle>
           <DialogDescription className="text-white/80">Mortuary Admission — {item.admissionNumber}</DialogDescription>
@@ -526,7 +526,7 @@ function ReleaseForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><DoorOpen className="w-5 h-5" /> Release Body</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><FieldLabel>Released To (Name)</FieldLabel><Input value={form.releasedTo} onChange={(e) => set("releasedTo", e.target.value)} /></div>
@@ -538,7 +538,7 @@ function ReleaseForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
           <div><Label>Funeral Home / Undertaking Company</Label><Input value={form.undertakingCompany} onChange={(e) => set("undertakingCompany", e.target.value)} /></div>
           <div><Label>Release Notes</Label><Textarea value={form.releaseNotes} onChange={(e) => set("releaseNotes", e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.releasedTo}>{loading ? "Releasing..." : "Confirm Release"}</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.releasedTo}>{loading ? "Releasing..." : "Confirm Release"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -549,7 +549,7 @@ function ViewingForm({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCh
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Calendar className="w-5 h-5" /> Schedule Viewing</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><FieldLabel>Viewer Name</FieldLabel><Input value={form.viewerName} onChange={(e) => set("viewerName", e.target.value)} /></div>
@@ -563,7 +563,7 @@ function ViewingForm({ open, onOpenChange, onSubmit }: { open: boolean; onOpenCh
           </div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={!form.viewerName || !form.scheduledAt}>Schedule</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={!form.viewerName || !form.scheduledAt}>Schedule</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -681,7 +681,7 @@ function StorageTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Boxes className="w-5 h-5" /> Add Storage Unit</DialogTitle></DialogHeader>
             <StorageForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -703,7 +703,7 @@ function StorageForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loadin
       </div>
       <div><Label>Location</Label><Input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="Building / Room description" /></div>
       <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
-      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.name}>{loading ? "Creating..." : "Create Unit"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={() => onSubmit(form)} disabled={loading || !form.name}>{loading ? "Creating..." : "Create Unit"}</Button></DialogFooter>
     </div>
   );
 }

@@ -1235,7 +1235,7 @@ function TriageDetailDialog({ record, onClose }: { record: any; onClose: () => v
   return (
     <Dialog open={!!record} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Activity className="w-5 h-5 text-rose-600" />
             Triage Record Detail

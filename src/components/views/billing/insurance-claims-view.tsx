@@ -584,8 +584,8 @@ function ValidateResultDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <ShieldCheck className="w-5 h-5 text-emerald-600" /> Claim Validation
           </DialogTitle>
@@ -714,7 +714,7 @@ function ValidateResultDialog({
           </div>
         ) : null}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -755,8 +755,8 @@ function ClaimDetailDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
             Claim Detail
@@ -986,7 +986,7 @@ function ClaimDetailDialog({
           </Tabs>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           {claim?.encounterId && (
             <Button
               variant="outline"
@@ -1555,8 +1555,8 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ShieldCheck className="w-5 h-5 text-emerald-600" /> New Insurance Claim</DialogTitle>
           <DialogDescription className="text-white/80">
             File a claim against an outstanding invoice. NHIS claims require ICD-10 diagnosis codes and NHIS membership number per Ghana NHIS policy.
@@ -1695,7 +1695,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
             </>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !patientId || !invoiceId || !providerId || !claimAmount || (isNhisProvider && !isNhisValid)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Creating..." : <><ShieldCheck className="w-4 h-4" /> Create Draft Claim</>}
@@ -1734,8 +1734,8 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><DollarSign className="w-5 h-5 text-emerald-600" /> Partial Approval</DialogTitle>
           <DialogDescription className="text-white/80">
             Claim {claim.claimNumber} • Original claim amount: {formatCurrency(claim.claimAmount)}
@@ -1748,7 +1748,7 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
             <p className="text-[10px] text-slate-500 mt-1">Must be less than the claim amount ({formatCurrency(claim.claimAmount)})</p>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Approving..." : "Confirm Partial Approval"}
@@ -1871,8 +1871,8 @@ function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Layers className="w-5 h-5 text-emerald-600" />
             Bulk NHIS Claim Generation
@@ -1955,7 +1955,7 @@ function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: stri
               </Card>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button onClick={onCreated} className="gap-2 bg-emerald-600 hover:bg-emerald-700">Done</Button>
             </DialogFooter>
           </div>
@@ -2066,7 +2066,7 @@ function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: stri
               </span>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={submit} disabled={saving || !providerId || selectedInvoices.size === 0} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 {saving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Layers className="w-4 h-4" /> Generate {selectedInvoices.size} Claims</>}

@@ -191,10 +191,10 @@ function NewRosterDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Create New Roster</DialogTitle>
-          <DialogDescription>A roster is a collection of shift assignments for a date range. It starts in draft status.</DialogDescription>
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Create New Roster</DialogTitle>
+          <DialogDescription className="text-white/80">A roster is a collection of shift assignments for a date range. It starts in draft status.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
@@ -228,7 +228,7 @@ function NewRosterDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !facilityId || !startDate || !endDate} className="bg-emerald-600 hover:bg-emerald-700">
             Create Draft Roster
@@ -258,12 +258,12 @@ function ViewRosterDialog({ roster, onClose }: { roster: any; onClose: () => voi
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white" className="flex items-center gap-2">
             <FileText className="w-5 h-5" /> {roster.name}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             {roster.facility?.name} • {formatDate(roster.startDate)} → {formatDate(roster.endDate)} • Status: <ColoredBadge status={roster.status} list={ROSTER_STATUSES} /> • v{roster.versionNumber}
           </DialogDescription>
         </DialogHeader>

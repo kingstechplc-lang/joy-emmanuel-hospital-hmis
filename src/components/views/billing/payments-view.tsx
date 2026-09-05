@@ -1198,8 +1198,8 @@ function PaymentDetailDialog({
 
   return (
     <Dialog open={!!paymentId} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white">
             <CreditCard className="w-5 h-5 text-emerald-600" /> Payment Detail
           </DialogTitle>
@@ -1406,8 +1406,8 @@ function RefundRequestDialog({
 
   return (
     <Dialog open={!!payment} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><RotateCcw className="w-5 h-5 text-amber-600" /> Request Refund</DialogTitle>
           <DialogDescription className="text-white/80">
             A refund request will be created against this payment. The original payment record is preserved — the refund creates its own audit trail.
@@ -1439,7 +1439,7 @@ function RefundRequestDialog({
             </div>
           </div>
         )}
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !payment || !amount || !reason.trim()} className="gap-2 bg-amber-600 hover:bg-amber-700">
             {saving ? "Requesting..." : <><RotateCcw className="w-4 h-4" /> Request Refund</>}
@@ -1597,8 +1597,8 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CreditCard className="w-5 h-5 text-emerald-600" /> Record Payment</DialogTitle>
           <DialogDescription className="text-white/80">Select an invoice with an outstanding balance. The payment will update the invoice's amount paid, balance, and status atomically.</DialogDescription>
         </DialogHeader>
@@ -1682,7 +1682,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving || !invoiceId || !amount} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? "Recording..." : <><CreditCard className="w-4 h-4" /> Record Payment</>}

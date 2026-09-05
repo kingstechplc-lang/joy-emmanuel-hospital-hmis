@@ -992,7 +992,7 @@ export function EncountersView() {
 
       {cancelEncounter && (
         <Dialog open onOpenChange={() => setCancelEncounter(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
               <DialogTitle className="text-white flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-rose-600" /> Cancel Encounter
@@ -1017,7 +1017,7 @@ export function EncountersView() {
                 audit record.
               </p>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
               <Button variant="outline" onClick={() => setCancelEncounter(null)}>
                 Don&apos;t Cancel
               </Button>
@@ -1299,7 +1299,7 @@ function NewEncounterDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="text-white">New Encounter</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1407,7 +1407,7 @@ function NewEncounterDialog({
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

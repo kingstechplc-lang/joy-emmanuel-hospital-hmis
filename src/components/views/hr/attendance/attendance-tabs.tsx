@@ -786,10 +786,10 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create Attendance Period</DialogTitle>
-          <DialogDescription>Define a date range for attendance review and payroll locking.</DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Create Attendance Period</DialogTitle>
+          <DialogDescription className="text-white/80">Define a date range for attendance review and payroll locking.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
@@ -811,7 +811,7 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !startDate || !endDate} className="bg-emerald-600 hover:bg-emerald-700">
             Create Period
@@ -951,8 +951,8 @@ function NewAttendancePolicyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader><DialogTitle>New Attendance Policy</DialogTitle><DialogDescription>Configure grace periods, thresholds, break rules, and rounding for attendance calculations.</DialogDescription></DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Attendance Policy</DialogTitle><DialogDescription className="text-white/80">Configure grace periods, thresholds, break rules, and rounding for attendance calculations.</DialogDescription></DialogHeader>
         <div className="grid grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Default Hospital Policy" /></div>
           <div className="space-y-1.5"><Label>Facility</Label><Select value={facilityId} onValueChange={setFacilityId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">All Facilities</SelectItem>{(facilitiesData?.items || []).map((f: any) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent></Select></div>
@@ -968,7 +968,7 @@ function NewAttendancePolicyDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5"><Label>Night End Hour</Label><Input type="number" min="0" max="23" value={nightEndHour} onChange={(e) => setNightEndHour(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Policy</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Policy</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

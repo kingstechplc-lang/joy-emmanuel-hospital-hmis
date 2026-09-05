@@ -348,7 +348,7 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> New Ambulance Request</DialogTitle>
         </DialogHeader>
@@ -449,7 +449,7 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm" /></div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-red-600 hover:bg-red-700">{saving ? "Creating…" : "Create Request"}</Button>
         </DialogFooter>
@@ -519,7 +519,7 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2 flex-wrap">
             <Badge className="bg-red-100 text-red-700 border-red-200 font-mono text-[10px]">{t.tripNumber}</Badge>
@@ -627,7 +627,7 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -758,7 +758,7 @@ function NewVehicleDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> Add Ambulance</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -783,7 +783,7 @@ function NewVehicleDialog({ facilityId, onClose, onCreated }: { facilityId: stri
           <div><Label>Base Location</Label><Input value={baseLocation} onChange={(e) => setBaseLocation(e.target.value)} placeholder="Ambulance bay, main facility" className="h-8 text-sm" /></div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm" /></div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-red-600 hover:bg-red-700">{saving ? "Adding…" : "Add Vehicle"}</Button>
         </DialogFooter>

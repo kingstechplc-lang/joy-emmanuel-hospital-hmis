@@ -251,7 +251,7 @@ function DonorForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5 text-rose-600" /> Register Blood Donor</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2"><FieldLabel>Full Name</FieldLabel><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} /></div>
@@ -264,7 +264,7 @@ function DonorForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; o
           <div className="col-span-2"><Label>Address</Label><Textarea value={form.address} onChange={(e) => set("address", e.target.value)} rows={2} /></div>
           <div><Label>Occupation</Label><Input value={form.occupation} onChange={(e) => set("occupation", e.target.value)} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.fullName}>{loading ? "Registering..." : "Register Donor"}</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.fullName}>{loading ? "Registering..." : "Register Donor"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -280,7 +280,7 @@ function DonorDetail({ donor, onClose }: { donor: any; onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><HeartPulse className="w-5 h-5 text-rose-600" /> {donor.fullName}</DialogTitle>
           <DialogDescription className="text-white/80">{donor.donorNumber}</DialogDescription>
@@ -421,7 +421,7 @@ function UnitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; on
   const set = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Droplet className="w-5 h-5 text-rose-600" /> Register Blood Unit</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div><FieldLabel>Donor ID</FieldLabel><Input value={form.donorId} onChange={(e) => set("donorId", e.target.value)} placeholder="Donor ID from donor registry" /></div>
@@ -435,7 +435,7 @@ function UnitForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; on
             <div><Label>Storage Temp</Label><Input value={form.storageTemp} onChange={(e) => set("storageTemp", e.target.value)} /></div>
           </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.donorId || !form.expiryDate}>{loading ? "Registering..." : "Register Unit"}</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.donorId || !form.expiryDate}>{loading ? "Registering..." : "Register Unit"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -602,7 +602,7 @@ function CrossmatchForm({ open, onOpenChange, onSubmit, loading }: { open: boole
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Beaker className="w-5 h-5 text-rose-600" /> New Crossmatch Test</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <PatientPicker
@@ -619,7 +619,7 @@ function CrossmatchForm({ open, onOpenChange, onSubmit, loading }: { open: boole
           </div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={submit} disabled={loading || !patient?.patientName || !form.unitId}>{loading ? "Recording..." : "Record Test"}</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={submit} disabled={loading || !patient?.patientName || !form.unitId}>{loading ? "Recording..." : "Record Test"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

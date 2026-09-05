@@ -357,12 +357,12 @@ function NewIncidentDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white" className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" /> Report Incident
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Document an adverse event, near-miss, or operational incident for follow-up and corrective action.
           </DialogDescription>
         </DialogHeader>
@@ -426,7 +426,7 @@ function NewIncidentDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => mutation.mutate()}
@@ -461,13 +461,13 @@ function IncidentDetail({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
+          <DialogTitle className="text-white" className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
             Incident Report
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80">
             Filed {formatDate(incident.createdAt, true)} ({formatRelative(incident.createdAt)})
           </DialogDescription>
         </DialogHeader>
@@ -523,7 +523,7 @@ function IncidentDetail({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>

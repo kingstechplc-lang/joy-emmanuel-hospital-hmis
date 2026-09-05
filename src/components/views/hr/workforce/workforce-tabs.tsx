@@ -228,10 +228,10 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Request Shift Swap</DialogTitle>
-          <DialogDescription>Select your shift and the target staff/shift to swap with. Conflicts will be validated.</DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Request Shift Swap</DialogTitle>
+          <DialogDescription className="text-white/80">Select your shift and the target staff/shift to swap with. Conflicts will be validated.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <StaffSearchableSelect
@@ -282,7 +282,7 @@ function NewSwapDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder="Reason for swap request..." />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !requesterStaffId || !requesterShiftId} className="bg-emerald-600 hover:bg-emerald-700">
             Submit Swap Request
@@ -474,10 +474,10 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>New Coverage Request</DialogTitle>
-          <DialogDescription>Use this when staff cannot make a shift and a replacement is needed.</DialogDescription>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">New Coverage Request</DialogTitle>
+          <DialogDescription className="text-white/80">Use this when staff cannot make a shift and a replacement is needed.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="md:col-span-2">
@@ -553,7 +553,7 @@ function NewCoverageDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !originalStaffId || !activeFacilityId} className="bg-emerald-600 hover:bg-emerald-700">
             Create Coverage Request
@@ -604,10 +604,10 @@ function AssignCoverageDialog({ coverage, onClose }: { coverage: any; onClose: (
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Find Replacement</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Find Replacement</DialogTitle>
+          <DialogDescription className="text-white/80">
             Coverage for {coverage.originalStaff?.firstName} {coverage.originalStaff?.lastName} on {formatDate(coverage.shiftDate)} • {formatTime(coverage.startTime)} → {formatTime(coverage.endTime)}
           </DialogDescription>
         </DialogHeader>
@@ -815,10 +815,10 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>New On-Call Assignment</DialogTitle>
-          <DialogDescription>Assign staff to be on-call for a specified period.</DialogDescription>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">New On-Call Assignment</DialogTitle>
+          <DialogDescription className="text-white/80">Assign staff to be on-call for a specified period.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="md:col-span-2">
@@ -889,7 +889,7 @@ function NewOnCallDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !activeFacilityId} className="bg-emerald-600 hover:bg-emerald-700">
             Create On-Call
@@ -1236,10 +1236,10 @@ function NewShiftTypeDialog({ onClose, facilityId }: { onClose: () => void; faci
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Create New Shift Type</DialogTitle>
-          <DialogDescription>Configure a custom shift type for your facility.</DialogDescription>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Create New Shift Type</DialogTitle>
+          <DialogDescription className="text-white/80">Configure a custom shift type for your facility.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5">
@@ -1304,7 +1304,7 @@ function NewShiftTypeDialog({ onClose, facilityId }: { onClose: () => void; faci
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !code} className="bg-emerald-600 hover:bg-emerald-700">
             Create Shift Type
@@ -1430,10 +1430,10 @@ function NewLeaveTypeDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Create New Leave Type</DialogTitle>
-          <DialogDescription>Configure a custom leave type with policy rules.</DialogDescription>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Create New Leave Type</DialogTitle>
+          <DialogDescription className="text-white/80">Configure a custom leave type with policy rules.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5">
@@ -1502,7 +1502,7 @@ function NewLeaveTypeDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !code} className="bg-emerald-600 hover:bg-emerald-700">
             Create Leave Type
@@ -1602,10 +1602,10 @@ function NewHolidayDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create New Public Holiday</DialogTitle>
-          <DialogDescription>Add a custom public holiday for your organization.</DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Create New Public Holiday</DialogTitle>
+          <DialogDescription className="text-white/80">Add a custom public holiday for your organization.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
@@ -1637,7 +1637,7 @@ function NewHolidayDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !date} className="bg-emerald-600 hover:bg-emerald-700">
             Create Holiday
@@ -1747,8 +1747,8 @@ function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>New Staffing Requirement</DialogTitle><DialogDescription>Define minimum staffing levels for a department/shift/day type.</DialogDescription></DialogHeader>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Staffing Requirement</DialogTitle><DialogDescription className="text-white/80">Define minimum staffing levels for a department/shift/day type.</DialogDescription></DialogHeader>
         <div className="grid grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
             <Label>Department</Label>
@@ -1791,7 +1791,7 @@ function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5"><Label>Ideal Count (optional)</Label><Input type="number" value={idealCount} onChange={(e) => setIdealCount(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !activeFacilityId} className="bg-emerald-600 hover:bg-emerald-700">Create Requirement</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !activeFacilityId} className="bg-emerald-600 hover:bg-emerald-700">Create Requirement</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1895,8 +1895,8 @@ function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader><DialogTitle>New Leave Policy</DialogTitle><DialogDescription>Define accrual, carry-forward, and negative balance rules for a leave type.</DialogDescription></DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Leave Policy</DialogTitle><DialogDescription className="text-white/80">Define accrual, carry-forward, and negative balance rules for a leave type.</DialogDescription></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Policy Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Annual Leave Policy 2026" /></div>
           <div className="space-y-1.5">
@@ -1951,7 +1951,7 @@ function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {
           {negativeBalanceAllowed && <div className="space-y-1.5"><Label>Negative Balance Limit (days)</Label><Input type="number" step="0.5" value={negativeBalanceLimit} onChange={(e) => setNegativeBalanceLimit(e.target.value)} placeholder="e.g., 5" /></div>}
           <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !leaveTypeId} className="bg-emerald-600 hover:bg-emerald-700">Create Policy</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !leaveTypeId} className="bg-emerald-600 hover:bg-emerald-700">Create Policy</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -2106,10 +2106,10 @@ function NewAvailabilityDialog({ onClose, date }: { onClose: () => void; date: s
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Set Staff Availability</DialogTitle>
-          <DialogDescription>Override a staff member&apos;s default availability for a specific date.</DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Set Staff Availability</DialogTitle>
+          <DialogDescription className="text-white/80">Override a staff member&apos;s default availability for a specific date.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <StaffSearchableSelect
@@ -2140,7 +2140,7 @@ function NewAvailabilityDialog({ onClose, date }: { onClose: () => void; date: s
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId} className="bg-emerald-600 hover:bg-emerald-700">
             Set Availability

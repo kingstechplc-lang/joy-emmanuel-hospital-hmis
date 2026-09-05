@@ -392,7 +392,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5 text-emerald-600" /> New Procedure</DialogTitle>
           <DialogDescription className="text-white/80">Request or record a procedure for a patient.</DialogDescription>
@@ -631,8 +631,8 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5 text-emerald-600" /> Procedure Record <StatusBadge status={editable.status} /></DialogTitle>
           <DialogDescription className="text-white/80">
             {procedure.patient?.firstName} {procedure.patient?.lastName} • {procedure.encounter?.encounterNumber || "—"} • Performed {formatDate(procedure.performedAt, true)}
@@ -682,7 +682,7 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
             Performed by: {procedure.performedBy ? `Dr. ${procedure.performedBy.firstName} ${procedure.performedBy.lastName}` : "—"} • Facility: {procedure.facility?.name || "—"}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose} className="gap-1"><X className="w-4 h-4" /> Close</Button>
           <Button onClick={update} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             {saving ? <Save className="w-4 h-4 animate-pulse" /> : <Save className="w-4 h-4" />}

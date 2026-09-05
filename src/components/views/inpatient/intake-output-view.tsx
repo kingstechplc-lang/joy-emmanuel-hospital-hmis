@@ -1154,7 +1154,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle>Amend Entry</DialogTitle>
           <DialogDescription className="text-white/80">
@@ -1176,7 +1176,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-violet-600 hover:bg-violet-700 gap-2">
             {saving ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <PenLineIcon />} Amend Entry
@@ -1298,7 +1298,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className={`px-6 pt-6 pb-3 shrink-0 border-b ${isIntake ? "bg-emerald-50" : "bg-amber-50"}`}>
           <DialogTitle className="flex items-center gap-2 text-white">
             {isIntake ? <TrendingUp className="w-5 h-5 text-emerald-600" /> : <TrendingDown className="w-5 h-5 text-amber-600" />}
@@ -1544,7 +1544,7 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5 text-cyan-600" /> Monitoring Period</DialogTitle>
           <DialogDescription className="text-white/80">Start, end, or update fluid-balance monitoring for this patient.</DialogDescription>
@@ -1902,7 +1902,7 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
   const [notes, setNotes] = useState("");
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle>Acknowledge Alert</DialogTitle>
           <DialogDescription className="text-white/80">{alert.title}</DialogDescription>
@@ -1917,7 +1917,7 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => onSubmit(actionTaken, notes)} className="bg-emerald-600 hover:bg-emerald-700">Acknowledge</Button>
         </DialogFooter>
@@ -2702,7 +2702,7 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5 text-cyan-600" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
         </DialogHeader>

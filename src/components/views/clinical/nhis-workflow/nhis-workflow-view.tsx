@@ -1155,8 +1155,8 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><CreditCard className="w-5 h-5 text-violet-600" /> Encounter Coverage</DialogTitle>
           <DialogDescription className="text-white/80">Select the payer for this encounter.</DialogDescription>
         </DialogHeader>
@@ -1309,7 +1309,7 @@ function CoverageDialog({ encounterId, patientId, existing, onClose, onSaved }: 
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. corporate billing arrangement..." />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving || insuranceBlocked}>
             {saving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
@@ -1379,8 +1379,8 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><ShieldCheck className="w-5 h-5 text-amber-600" /> Eligibility Verification</DialogTitle>
           <DialogDescription className="text-white/80">Record an eligibility check for this encounter.</DialogDescription>
         </DialogHeader>
@@ -1464,7 +1464,7 @@ function EligibilityDialog({ encounterId, patientId, coverage, onClose, onSaved 
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
@@ -1536,8 +1536,8 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Fingerprint className="w-5 h-5 text-cyan-600" /> Attendance Verification</DialogTitle>
           <DialogDescription className="text-white/80">Capture the attendance code for this encounter.</DialogDescription>
         </DialogHeader>
@@ -1609,7 +1609,7 @@ function AttendanceDialog({ encounterId, patientId, coverage, existing, onClose,
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving || (method !== "NOT_REQUIRED" && !code && !existing?.code)}>
             {saving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
@@ -1665,8 +1665,8 @@ function AuthorizationDialog({ patientId, encounterId, onClose, onSaved }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader className="-mx-6 -mt-6 px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><FileText className="w-5 h-5 text-orange-600" /> New Pre-Authorization</DialogTitle>
           <DialogDescription className="text-white/80">Request or record an insurance pre-authorization.</DialogDescription>
         </DialogHeader>
@@ -1710,7 +1710,7 @@ function AuthorizationDialog({ patientId, encounterId, onClose, onSaved }: {
             </div>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving || !provider?.id}>
             {saving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}

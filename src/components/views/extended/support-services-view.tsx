@@ -329,7 +329,7 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-teal-600" /> New Service Request</DialogTitle>
           <DialogDescription className="text-white/80">Request a support service for your department or facility.</DialogDescription>
@@ -375,7 +375,7 @@ function RequestForm({ open, onOpenChange, onSubmit, loading }: { open: boolean;
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={loading || !form.title}>{loading ? "Creating..." : "Create Request"}</Button>
         </DialogFooter>
@@ -405,7 +405,7 @@ function RequestDetail({ item, canManage, onClose }: { item: any; canManage: boo
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <TypeIcon className="w-5 h-5 text-teal-600" />
@@ -543,7 +543,7 @@ function MaintenanceTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Wrench className="w-5 h-5" /> Schedule Maintenance</DialogTitle></DialogHeader>
             <MaintenanceForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -595,7 +595,7 @@ function MaintenanceForm({ onSubmit, loading }: { onSubmit: (d: any) => void; lo
         </div>
       </div>
       <div><Label>Location</Label><Input value={form.location} onChange={(e) => set("location", e.target.value)} /></div>
-      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.title || !form.scheduledDate}>{loading ? "Scheduling..." : "Schedule Maintenance"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={() => onSubmit(form)} disabled={loading || !form.title || !form.scheduledDate}>{loading ? "Scheduling..." : "Schedule Maintenance"}</Button></DialogFooter>
     </div>
   );
 }
@@ -690,7 +690,7 @@ function InspectionsTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><ClipboardCheck className="w-5 h-5" /> New Facility Inspection</DialogTitle></DialogHeader>
             <InspectionForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -737,7 +737,7 @@ function InspectionForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loa
       </div>
       <div><Label>Findings</Label><Textarea value={form.findings} onChange={(e) => set("findings", e.target.value)} rows={3} placeholder="What was found during the inspection..." /></div>
       <div><Label>Corrective Action</Label><Input value={form.correctiveAction} onChange={(e) => set("correctiveAction", e.target.value)} placeholder="Action taken or required" /></div>
-      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.title}>{loading ? "Recording..." : "Record Inspection"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={() => onSubmit(form)} disabled={loading || !form.title}>{loading ? "Recording..." : "Record Inspection"}</Button></DialogFooter>
     </div>
   );
 }

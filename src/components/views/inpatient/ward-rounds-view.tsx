@@ -260,7 +260,7 @@ function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-white"><ClipboardCheck className="w-5 h-5 text-emerald-600" /> Schedule Ward Round</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a round with type, priority, consultant, and patient list.</DialogDescription>
@@ -323,7 +323,7 @@ function WardRoundDetailDialog({ roundId, onClose, onChanged, canManage, canSign
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-xl flex-wrap">
             <ClipboardCheck className="w-5 h-5 text-indigo-600" />
@@ -476,7 +476,7 @@ function NoteDialog({ roundId, onClose, onCreated }: any) {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>SOAP Round Note</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <div><FieldLabel required>Patient</FieldLabel><Input value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })} placeholder="Patient ID" /></div>
@@ -506,7 +506,7 @@ function ActionDialog({ roundId, patients, onClose, onCreated }: any) {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Action Item</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div><Label>Action Type</Label><Select value={form.actionType} onValueChange={(v) => setForm({ ...form, actionType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ACTION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
@@ -521,7 +521,7 @@ function ActionDialog({ roundId, patients, onClose, onCreated }: any) {
           <div><Label>Priority</Label><Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
         </div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Create Action"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Create Action"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -541,7 +541,7 @@ function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
       <ClearableSearch value={search} onChange={setSearch} placeholder="Search admitted patients..." className="mb-2" />
       <div className="max-h-60 overflow-y-auto border rounded">

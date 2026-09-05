@@ -287,7 +287,7 @@ function TicketForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Server className="w-5 h-5 text-indigo-600" /> New IT Support Ticket</DialogTitle>
           <DialogDescription className="text-white/80">Report a technical issue or request IT assistance.</DialogDescription>
@@ -329,7 +329,7 @@ function TicketForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; 
             <Input value={form.reportedByName} onChange={(e) => set("reportedByName", e.target.value)} placeholder="Your name" />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={() => onSubmit(form)} disabled={loading || !form.subject || !form.description}>
             {loading ? "Creating..." : "Create Ticket"}
@@ -397,7 +397,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <TypeIcon className="w-5 h-5 text-indigo-600" />
@@ -570,7 +570,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><BookOpen className="w-5 h-5" /> New Knowledge Base Article</DialogTitle></DialogHeader>
             <KBForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -579,7 +579,7 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
 
       {viewArticle && (
         <Dialog open onOpenChange={() => setViewArticle(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewArticle.title}</DialogTitle></DialogHeader>
             <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{viewArticle.content}</div>
             <div className="flex items-center gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
@@ -609,7 +609,7 @@ function KBForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading: bo
       </div>
       <div><FieldLabel>Content</FieldLabel><Textarea value={form.content} onChange={(e) => set("content", e.target.value)} rows={8} placeholder="Write the article content..." /></div>
       <div><Label>Keywords (comma-separated)</Label><Input value={form.keywords} onChange={(e) => set("keywords", e.target.value)} placeholder="password, login, reset" /></div>
-      <DialogFooter><Button variant="outline" onClick={() => {}}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.title || !form.content}>{loading ? "Publishing..." : "Publish Article"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={() => {}}>Cancel</Button><Button onClick={() => onSubmit(form)} disabled={loading || !form.title || !form.content}>{loading ? "Publishing..." : "Publish Article"}</Button></DialogFooter>
     </div>
   );
 }
@@ -712,7 +712,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
 
       {showForm && canManage && (
         <Dialog open onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Monitor className="w-5 h-5" /> Register IT Asset</DialogTitle></DialogHeader>
             <AssetForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
           </DialogContent>
@@ -721,7 +721,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
 
       {viewAsset && (
         <Dialog open onOpenChange={() => setViewAsset(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewAsset.assetTag} — {viewAsset.manufacturer} {viewAsset.model}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div><Label className="text-slate-500">Type</Label><div className="font-semibold uppercase">{viewAsset.assetType}</div></div>
@@ -762,7 +762,7 @@ function AssetForm({ onSubmit, loading }: { onSubmit: (d: any) => void; loading:
         <div><Label>MAC Address</Label><Input value={form.macAddress} onChange={(e) => set("macAddress", e.target.value)} /></div>
       </div>
       <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
-      <DialogFooter><Button onClick={() => onSubmit(form)} disabled={loading || !form.assetType}>{loading ? "Registering..." : "Register Asset"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button onClick={() => onSubmit(form)} disabled={loading || !form.assetType}>{loading ? "Registering..." : "Register Asset"}</Button></DialogFooter>
     </div>
   );
 }

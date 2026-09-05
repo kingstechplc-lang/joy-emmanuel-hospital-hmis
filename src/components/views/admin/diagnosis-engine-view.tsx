@@ -301,7 +301,7 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-indigo-600" />
@@ -370,7 +370,7 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !form.code || !form.name} className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
             {saveMut.isPending ? "Saving..." : item ? "Update Diagnosis" : "Create Diagnosis"}

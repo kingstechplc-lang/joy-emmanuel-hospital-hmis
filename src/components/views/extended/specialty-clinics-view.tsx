@@ -411,7 +411,7 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <selectedSpecialty.icon className="w-5 h-5 text-purple-600" />
@@ -466,7 +466,7 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => {
@@ -580,7 +580,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <sp.icon className="w-5 h-5 text-purple-600" />
@@ -720,7 +720,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
         <ClinicalNotesSection encounterId={encounter.id} notes={notes} canManage={canManage} />
 
         {canManage && (
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 shrink-0 border-t">
             <Button variant="outline" onClick={onClose}>Close</Button>
             <Button onClick={save} disabled={loading} className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
               {loading ? "Saving..." : "Save Encounter"}
@@ -1051,7 +1051,7 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <CalendarPlus className="w-5 h-5 text-blue-600" />
@@ -1092,7 +1092,7 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
           </p>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => {
@@ -1264,7 +1264,7 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Building2 className="w-5 h-5 text-emerald-600" /> {item ? "Edit Clinic" : "New Clinic Configuration"}</DialogTitle>
           <DialogDescription className="text-white/80">Configure the operating days, time slots, and lead clinician for a specialty clinic.</DialogDescription>
@@ -1299,7 +1299,7 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !form.name} className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
             {saveMut.isPending ? "Saving..." : item ? "Update Clinic" : "Create Clinic"}
@@ -1495,7 +1495,7 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2">
             <Share2 className="w-5 h-5 text-amber-600" />
@@ -1547,7 +1547,7 @@ function NewReferralDialog({ onClose, onCreated }: { onClose: () => void; onCrea
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => {

@@ -221,7 +221,7 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader><DialogTitle>Create Payroll Period</DialogTitle></DialogHeader>
       <div className="space-y-3 py-2">
         <div className="space-y-1.5"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., August 2026 Payroll" /></div>
@@ -229,7 +229,7 @@ function NewPeriodDialog({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><FieldLabel required>Start Date</FieldLabel><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div><div className="space-y-1.5"><FieldLabel required>End Date</FieldLabel><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div></div>
         <div className="space-y-1.5"><Label>Payment Date</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !startDate || !endDate} className="bg-emerald-600 hover:bg-emerald-700">Create Period</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name || !startDate || !endDate} className="bg-emerald-600 hover:bg-emerald-700">Create Period</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -274,7 +274,7 @@ function NewProfileDialog({ onClose }: { onClose: () => void }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader><DialogTitle>Staff Payroll Profile</DialogTitle><DialogDescription>Set up compensation and payment details for a staff member.</DialogDescription></DialogHeader>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
         <div className="md:col-span-2"><StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required /></div>
@@ -286,7 +286,7 @@ function NewProfileDialog({ onClose }: { onClose: () => void }) {
         <div className="space-y-1.5"><Label>Account Number</Label><Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} /></div>
         <div className="space-y-1.5 md:col-span-2"><Label>Account Name</Label><Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} /></div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !basicSalary} className="bg-emerald-600 hover:bg-emerald-700">Create Profile</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !basicSalary} className="bg-emerald-600 hover:bg-emerald-700">Create Profile</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -345,7 +345,7 @@ function NewLoanDialog({ onClose, tab }: { onClose: () => void; tab: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader><DialogTitle>{tab === "loans" ? "New Staff Loan" : "New Salary Advance"}</DialogTitle></DialogHeader>
       <div className="space-y-3 py-2">
         <StaffSearchableSelect value={staffId} onValueChange={setStaffId} label="Staff Member" required />
@@ -356,7 +356,7 @@ function NewLoanDialog({ onClose, tab }: { onClose: () => void; tab: string }) {
         </div>
         <div className="space-y-1.5"><Label>Reason / Notes</Label><Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} /></div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !amount} className="bg-emerald-600 hover:bg-emerald-700">Create</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !amount} className="bg-emerald-600 hover:bg-emerald-700">Create</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -394,7 +394,7 @@ function SimpleNewDialog({ entity, title, fields, onClose }: { entity: string; t
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader><DialogTitle>New {title.slice(0, -1)}</DialogTitle></DialogHeader>
       <div className="space-y-3 py-2">
         {fields.map((f) => (
@@ -404,7 +404,7 @@ function SimpleNewDialog({ entity, title, fields, onClose }: { entity: string; t
           </div>
         ))}
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">Create</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">Create</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }

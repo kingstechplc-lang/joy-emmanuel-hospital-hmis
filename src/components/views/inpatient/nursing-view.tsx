@@ -445,7 +445,7 @@ function NewNursingNoteDialog({ onClose, onCreated }: { onClose: () => void; onC
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-white"><NotebookPen className="w-5 h-5 text-emerald-600" /> New Nursing Note</DialogTitle>
           <DialogDescription className="text-white/80">Note is created as DRAFT. Sign it to make it part of the clinical record.</DialogDescription>
@@ -505,7 +505,7 @@ function NewCarePlanDialog({ onClose, onCreated }: { onClose: () => void; onCrea
   };
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2 text-white"><ClipboardList className="w-5 h-5 text-emerald-600" /> New Care Plan</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -548,7 +548,7 @@ function HandoverDialog({ onClose, onCreated }: { onClose: () => void; onCreated
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2 text-white"><ArrowRightLeft className="w-5 h-5 text-emerald-600" /> Nursing Handover</DialogTitle><DialogDescription className="text-white/80">SBAR-format patient handover</DialogDescription></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -587,7 +587,7 @@ function EscalationDialog({ onClose, onCreated }: { onClose: () => void; onCreat
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><AlertTriangle className="w-5 h-5 text-amber-600" /> Escalate Concern</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -598,7 +598,7 @@ function EscalationDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         <div><FieldLabel required>Concern</FieldLabel><Textarea value={concern} onChange={(e) => setConcern(e.target.value)} rows={3} placeholder="Describe the clinical concern..." /></div>
         <div><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className={`gap-2 ${priority === "critical" ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"}`}>{saving ? "Saving..." : "Escalate"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className={`gap-2 ${priority === "critical" ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"}`}>{saving ? "Saving..." : "Escalate"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -625,7 +625,7 @@ function TaskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> New Nursing Task</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -637,7 +637,7 @@ function TaskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
         <div><Label>Description</Label><Input value={description} onChange={(e) => setDescription(e.target.value)} /></div>
         <div><FieldLabel required>Due At</FieldLabel><Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Create Task"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">{saving ? "Saving..." : "Create Task"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }
@@ -671,7 +671,7 @@ function WoundDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle className="flex items-center gap-2 text-white"><Bandage className="w-5 h-5 text-emerald-600" /> Wound Assessment</DialogTitle></DialogHeader>
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -724,7 +724,7 @@ function RiskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   return (
-    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md">
+    <Dialog open onOpenChange={onClose}><DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-slate-700 to-slate-800 text-white"><DialogTitle className="flex items-center gap-2 text-white"><ShieldAlert className="w-5 h-5 text-amber-600" /> Risk Assessment</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <PatientPicker patientId={patientId} setPatientId={setPatientId} setEncounterId={setEncounterId} />
@@ -737,7 +737,7 @@ function RiskDialog({ onClose, onCreated }: { onClose: () => void; onCreated: ()
         <div><Label>Prevention Plan</Label><Textarea value={preventionPlan} onChange={(e) => setPreventionPlan(e.target.value)} rows={2} /></div>
         <div><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="gap-2 bg-amber-600 hover:bg-amber-700">{saving ? "Saving..." : "Save Assessment"}</Button></DialogFooter>
+      <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving} className="gap-2 bg-amber-600 hover:bg-amber-700">{saving ? "Saving..." : "Save Assessment"}</Button></DialogFooter>
     </DialogContent></Dialog>
   );
 }

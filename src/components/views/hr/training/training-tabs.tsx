@@ -159,10 +159,10 @@ function NewProgramDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Create Training Program</DialogTitle>
-          <DialogDescription>Configure a new training program for your organization.</DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Create Training Program</DialogTitle>
+          <DialogDescription className="text-white/80">Configure a new training program for your organization.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2">
@@ -241,7 +241,7 @@ function NewProgramDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !title || !code} className="bg-emerald-600 hover:bg-emerald-700">
             Create Program
@@ -387,10 +387,10 @@ function NewSessionDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Schedule Training Session</DialogTitle>
-          <DialogDescription>Create a new session for a training program.</DialogDescription>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Schedule Training Session</DialogTitle>
+          <DialogDescription className="text-white/80">Create a new session for a training program.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="md:col-span-2">
@@ -444,7 +444,7 @@ function NewSessionDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !programId} className="bg-emerald-600 hover:bg-emerald-700">
             Create Session
@@ -594,10 +594,10 @@ function NewEnrollmentDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Enroll Staff in Training</DialogTitle>
-          <DialogDescription>Select staff and training program/session.</DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Enroll Staff in Training</DialogTitle>
+          <DialogDescription className="text-white/80">Select staff and training program/session.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <StaffSearchableSelect
@@ -646,7 +646,7 @@ function NewEnrollmentDialog({ onClose }: { onClose: () => void }) {
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !programId} className="bg-emerald-600 hover:bg-emerald-700">
             Enroll
@@ -808,10 +808,10 @@ function NewCertificateDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Issue Training Certificate</DialogTitle>
-          <DialogDescription>A unique certificate number and verification code will be auto-generated.</DialogDescription>
+      <DialogContent className="max-w-lg p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Issue Training Certificate</DialogTitle>
+          <DialogDescription className="text-white/80">A unique certificate number and verification code will be auto-generated.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="md:col-span-2">
@@ -857,7 +857,7 @@ function NewCertificateDialog({ onClose }: { onClose: () => void }) {
             <Input value={documentUrl} onChange={(e) => setDocumentUrl(e.target.value)} placeholder="https://..." />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !staffId || !title} className="bg-emerald-600 hover:bg-emerald-700">
             Issue Certificate
@@ -996,10 +996,10 @@ function NewRequestDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Submit Training Request</DialogTitle>
-          <DialogDescription>Request training for your department.</DialogDescription>
+      <DialogContent className="max-w-md p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+          <DialogTitle className="text-white">Submit Training Request</DialogTitle>
+          <DialogDescription className="text-white/80">Request training for your department.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
@@ -1029,7 +1029,7 @@ function NewRequestDialog({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !requestedTraining} className="bg-emerald-600 hover:bg-emerald-700">
             Submit Request
@@ -1161,8 +1161,8 @@ function NewProviderDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader><DialogTitle>New Training Provider</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Training Provider</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="space-y-1.5"><Label>Type</Label><Select value={providerType} onValueChange={setProviderType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="internal">Internal</SelectItem><SelectItem value="external">External</SelectItem><SelectItem value="academic">Academic</SelectItem><SelectItem value="government">Government</SelectItem><SelectItem value="vendor">Vendor</SelectItem></SelectContent></Select></div>
@@ -1174,7 +1174,7 @@ function NewProviderDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5"><Label>Accreditation</Label><Input value={accreditation} onChange={(e) => setAccreditation(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Provider</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Provider</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1210,8 +1210,8 @@ function NewTrainerDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader><DialogTitle>New Trainer</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden p-0 gap-0 flex flex-col overflow-hidden p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white">New Trainer</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 md:col-span-2"><FieldLabel required>Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isInternal} onChange={(e) => setIsInternal(e.target.checked)} /> Internal staff trainer</label></div>
@@ -1233,7 +1233,7 @@ function NewTrainerDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5"><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
           <div className="space-y-1.5 md:col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Trainer</Button></DialogFooter>
+        <DialogFooter className="p-6 pt-4 shrink-0 border-t"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name} className="bg-emerald-600 hover:bg-emerald-700">Create Trainer</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
