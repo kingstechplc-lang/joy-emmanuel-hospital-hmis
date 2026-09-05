@@ -420,7 +420,7 @@ function NewEncounterDialog({ onClose, onCreated }: { onClose: () => void; onCre
           <DialogDescription className="text-white/80">Create a clinical encounter for a specialty consultation, procedure, or follow-up.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <PatientPicker
             label="Patient"
             required
@@ -592,7 +592,7 @@ function EncounterDetail({ encounter, canManage, onClose, onUpdate, loading }: {
         </DialogHeader>
 
         {/* Patient info — with internal links */}
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
           <div>
             <Label className="text-slate-500">Patient</Label>
             {encounter.patientId ? (
@@ -1270,7 +1270,7 @@ function ClinicFormDialog({ item, onClose, onSaved }: { item: any | null; onClos
           <DialogDescription className="text-white/80">Configure the operating days, time slots, and lead clinician for a specialty clinic.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <FieldLabel>Specialty</FieldLabel>
             <Select value={form.code} onValueChange={(v) => set("code", v)} disabled={!!item}>

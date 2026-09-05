@@ -265,7 +265,7 @@ function NewWardRoundDialog({ onClose, onCreated }: { onClose: () => void; onCre
           <DialogTitle className="flex items-center gap-2 text-white"><ClipboardCheck className="w-5 h-5" /> Schedule Ward Round</DialogTitle>
           <DialogDescription className="text-white/80">Schedule a round with type, priority, consultant, and patient list.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div><Label>Ward</Label><Select value={form.wardId || "_none"} onValueChange={(v) => setForm({ ...form, wardId: v === "_none" ? "" : v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="_none">— All wards —</SelectItem>{wards.map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
             <div><Label>Round Type</Label><Select value={form.roundType} onValueChange={(v) => setForm({ ...form, roundType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROUND_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
@@ -478,7 +478,7 @@ function NoteDialog({ roundId, onClose, onCreated }: any) {
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>SOAP Round Note</DialogTitle></DialogHeader>
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
         <div><FieldLabel required>Patient</FieldLabel><Input value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })} placeholder="Patient ID" /></div>
         <div><Label>S — Subjective</Label><Textarea value={form.subjective} onChange={(e) => setForm({ ...form, subjective: e.target.value })} rows={2} placeholder="Patient complaints, overnight events..." /></div>
         <div><Label>O — Objective</Label><Textarea value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} rows={2} placeholder="Examination findings, vitals..." /></div>
@@ -508,7 +508,7 @@ function ActionDialog({ roundId, patients, onClose, onCreated }: any) {
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Add Action Item</DialogTitle></DialogHeader>
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
         <div><Label>Action Type</Label><Select value={form.actionType} onValueChange={(v) => setForm({ ...form, actionType: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ACTION_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
         <div><FieldLabel required>Title</FieldLabel><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Review CT scan result" /></div>
         <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></div>
@@ -544,7 +544,7 @@ function AddPatientDialog({ roundId, facilityId, onClose, onCreated }: any) {
     <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Add Patient to Round</DialogTitle></DialogHeader>
       <ClearableSearch value={search} onChange={setSearch} placeholder="Search admitted patients..." className="mb-2" />
-      <div className="flex-1 overflow-y-auto p-6 max-h-60 overflow-y-auto border rounded">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 max-h-60 overflow-y-auto border rounded">
         {admissions.length === 0 ? <div className="p-3 text-center text-sm text-slate-500">No patients found</div> : admissions.map((a: any) => (
           <button key={a.id} onClick={() => add(a.patientId, a.id)} disabled={saving} className="w-full text-left p-2 hover:bg-emerald-50 text-sm border-b last:border-0">
             <span className="font-medium">{a.patient?.firstName} {a.patient?.lastName}</span>

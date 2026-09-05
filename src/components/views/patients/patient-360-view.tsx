@@ -1165,7 +1165,7 @@ function EditPatientDialog({ patient, onClose, onSaved }: { patient: any; onClos
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
           {/* Personal Information */}
           <div className="border-l-4 border-l-emerald-300 rounded-lg p-3 shadow-sm">
             <h4 className="text-sm font-semibold text-slate-700 mb-2">Personal Information</h4>
@@ -1488,7 +1488,7 @@ function AddInsuranceDialog({ patientId, onClose, onAdded }: { patientId: string
           </DialogTitle>
           <DialogDescription className="text-white/80">Add a new insurance provider/coverage for this patient.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <Label>Insurance Provider</Label>
             <InsuranceProviderSelect

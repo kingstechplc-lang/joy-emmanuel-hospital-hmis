@@ -1200,7 +1200,7 @@ function AmendDialog({ entry, onClose, onSaved }: any) {
             <br />The original value will be preserved in <span className="font-medium">originalAmount</span> and the audit log.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>New Amount ({entry.unit || "ml"})</FieldLabel>
             <Input type="number" min="0" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -1383,7 +1383,7 @@ function NewEntryDialog({ entryType, patient, facilityId, onClose, onSaved }: an
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Category</FieldLabel>
@@ -1588,7 +1588,7 @@ function MonitoringDialog({ patient, facilityId, onClose, onSaved }: any) {
           <DialogDescription className="text-white/80">Start, end, or update fluid-balance monitoring for this patient.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           {activePeriod ? (
             <div className="bg-cyan-50 border border-cyan-200 rounded p-3 text-sm">
               <div className="font-medium text-cyan-700 flex items-center gap-1.5"><Play className="w-4 h-4" /> Active monitoring</div>
@@ -1945,7 +1945,7 @@ function AckAlertDialog({ alert, onClose, onSubmit }: any) {
           <DialogTitle>Acknowledge Alert</DialogTitle>
           <DialogDescription className="text-white/80">{alert.title}</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <Label>Action Taken</Label>
             <Input value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} placeholder="e.g., Notified Dr. Mensah; reviewed I&O chart" />
@@ -2799,7 +2799,7 @@ function AlertConfigDialog({ facilityId, existing, onClose, onSaved }: any) {
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <DialogTitle className="flex items-center gap-2 text-white"><Settings2 className="w-5 h-5" /> {isEdit ? "Edit Alert Config" : "New Alert Config"}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div>
             <FieldLabel required>Config Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Low urine output — adult" />

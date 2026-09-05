@@ -397,7 +397,7 @@ function NewProcedureDialog({ open, onClose, onCreated, defaultFacilityId }: { o
           <DialogTitle className="flex items-center gap-2 text-white"><Scissors className="w-5 h-5" /> New Procedure</DialogTitle>
           <DialogDescription className="text-white/80">Request or record a procedure for a patient.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -638,7 +638,7 @@ function ViewProcedureDialog({ procedure, extractConsent, stripConsent, onClose,
             {procedure.patient?.firstName} {procedure.patient?.lastName} • {procedure.encounter?.encounterNumber || "—"} • Performed {formatDate(procedure.performedAt, true)}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Procedure Name</Label>

@@ -580,7 +580,7 @@ function DepartmentDialog({ department, facilityId, onClose }: { department?: an
           <DialogDescription className="text-white/80">{isEdit ? "Update department details." : "Create a new department within a facility."}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Emergency Department" />
@@ -718,7 +718,7 @@ function UnitDialog({ departmentId, unit, onClose, onSaved }: {
             {isEdit ? "Update unit details." : "Create a new unit within this department."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., ICU" />

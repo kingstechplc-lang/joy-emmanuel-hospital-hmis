@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import {
   DialogSize,
   DEFAULT_DIALOG_SIZE,
+  DIALOG_BODY_SHELL,
   getDialogContentClasses,
 } from "@/lib/ui/dialog-sizes"
 

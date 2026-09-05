@@ -114,32 +114,37 @@ const HEIGHT_CLASSES: Record<DialogSize, string> = {
 // ─── Mobile-fullscreen behavior ────────────────────────────────────
 //
 // On screens below the `sm` breakpoint (640px), every non-compact dialog
-// becomes near-fullscreen.  We achieve this by adding mobile-only
-// classes that override the default rounded centered dialog shape:
+// becomes near-fullscreen.  We use `max-sm:` variants (Tailwind v4) so
+// these classes ONLY apply below the sm breakpoint and do NOT leak into
+// desktop rendering.  This avoids CSS specificity conflicts between
+// arbitrary-value classes (e.g. `h-[100dvh]`) and breakpoint-prefixed
+// classes (e.g. `sm:h-auto`) that can cause the dialog to be forced
+// to 100dvh on desktop, breaking the flex+overflow scroll architecture.
 //
-//   - `max-w-none sm:max-w-[calc(100%-2rem)]` — full width on mobile,
-//      then return to safe-margin width at sm+.
-//   - `h-[100dvh] sm:h-auto` — full viewport height on mobile, auto
-//     on desktop (where max-h takes over).
-//   - `top-0 left-0 sm:top-[50%] sm:left-[50%]` — anchor top-left on
-//     mobile, return to center on sm+.
-//   - `translate-x-0 translate-y-0 sm:translate-x-[-50%] sm:translate-y-[-50%]`
-//     — no horizontal/vertical centering offset on mobile.
-//   - `rounded-none sm:rounded-lg` — sharp corners on mobile (looks
-//     more "app-like" when the dialog fills the screen).
+// Mobile-only overrides (applied via `max-sm:` = below 640px):
+//   - `max-sm:max-w-none`     — full width (override base max-w-[calc(100%-2rem)])
+//   - `max-sm:h-[100dvh]`     — full viewport height
+//   - `max-sm:top-0`          — anchor top-left (override base top-[50%])
+//   - `max-sm:left-0`         — anchor top-left (override base left-[50%])
+//   - `max-sm:translate-x-0`  — no horizontal centering offset
+//   - `max-sm:translate-y-0`  — no vertical centering offset
+//   - `max-sm:rounded-none`   — sharp corners (more "app-like" on mobile)
 //
-// These mobile-only classes are applied by `getDialogContentClasses()`
-// below for every preset EXCEPT `compact` (small confirmations stay
-// small and centered even on mobile, per spec §47 "Small confirmation
-// dialogs should remain small").
+// At sm+ (640px+), NONE of these apply — the base classes (top-[50%],
+// left-[50%], translate-x-[-50%], translate-y-[-50%], rounded-lg) and
+// the size preset's width/height take over, producing the normal
+// centered dialog appearance on desktop.
 // =====================================================================
 
 const MOBILE_FULLSCREEN_CLASSES = [
-  "max-w-none sm:max-w-[calc(100%-2rem)]",
-  "h-[100dvh] sm:h-auto",
-  "top-0 left-0 sm:top-[50%] sm:left-[50%]",
-  "translate-x-0 translate-y-0 sm:translate-x-[-50%] sm:translate-y-[-50%]",
-  "rounded-none sm:rounded-lg",
+  "max-sm:max-w-none",
+  "max-sm:h-[100dvh]",
+  "max-sm:max-h-[100dvh]",
+  "max-sm:top-0",
+  "max-sm:left-0",
+  "max-sm:translate-x-0",
+  "max-sm:translate-y-0",
+  "max-sm:rounded-none",
 ].join(" ");
 
 // ─── Body scroll architecture classes ──────────────────────────────

@@ -343,7 +343,7 @@ function UserDialog({ user: existingUser, onClose }: { user?: any; onClose: () =
           <DialogDescription className="text-white/80">{isEdit ? "Update user info and role assignments." : "Create a new user account and assign roles."}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           {!isEdit && (
             <>
               <div className="space-y-1.5">

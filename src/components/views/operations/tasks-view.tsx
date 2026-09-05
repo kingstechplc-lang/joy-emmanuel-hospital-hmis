@@ -301,7 +301,7 @@ function NewTaskDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription className="text-white/80">Assign a follow-up task to a team member.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5 md:col-span-2">
             <FieldLabel required>Title</FieldLabel>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g., Contact patient about lab results" />

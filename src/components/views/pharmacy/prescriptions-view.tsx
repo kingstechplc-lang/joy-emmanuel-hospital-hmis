@@ -769,7 +769,7 @@ function NewPrescriptionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
           {/* Patient + Encounter + Facility */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -1353,7 +1353,7 @@ function ViewPrescriptionDialog({
                 : "Cancelling will mark this prescription as cancelled. A reason is optional."}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
             <Label className="text-xs">
               Reason{actionDialog?.type === "discontinue" ? " (required)" : " (optional)"}
             </Label>
@@ -1573,7 +1573,7 @@ function DispenseDialog({ prescription, onClose, onDone }: { prescription: any; 
         )}
 
         {loading ? (
-          <div className="flex-1 overflow-y-auto p-6"><LoadingState rows={3} /></div>
+          <div className="flex-1 overflow-y-auto min-h-0 p-6"><LoadingState rows={3} /></div>
         ) : (
           <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
             {(full?.items || []).filter((it: any) => it.status !== "dispensed" && it.status !== "cancelled").map((it: any) => {

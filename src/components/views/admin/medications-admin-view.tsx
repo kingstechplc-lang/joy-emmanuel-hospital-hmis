@@ -555,7 +555,7 @@ Artemether/Lumefantrine,Coartem,20/120mg,tablet,oral,antimalarials,Antimalarial,
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="flex items-center gap-2">
             <Button
               variant="outline" size="sm"
@@ -681,7 +681,7 @@ function MedicationForm({ med, onClose, onSaved }: { med: any | null; onClose: (
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Core identification */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
@@ -954,7 +954,7 @@ function MedicationDetailDialog({ medId, onClose, onEdit }: { medId: string; onC
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Details grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
             {m.therapeuticClass && <div><div className="text-[10px] text-slate-400 uppercase">Therapeutic Class</div><div className="font-medium">{m.therapeuticClass}</div></div>}

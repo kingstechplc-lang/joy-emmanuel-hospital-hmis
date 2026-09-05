@@ -1230,7 +1230,7 @@ function NewPODialog({
           <DialogDescription className="text-white/80">Select facility, supplier, commercial terms and line items.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Header fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -1568,7 +1568,7 @@ function ViewPODialog({
         </DialogHeader>
 
         {/* Financial summary */}
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 md:grid-cols-5 gap-2">
           <div className="border rounded p-2 text-center">
             <div className="text-[10px] text-slate-500 uppercase">PO Total</div>
             <div className="font-bold text-slate-900">{formatCurrency(m.poTotal, data?.currency)}</div>
@@ -1990,7 +1990,7 @@ function ReceiveDialog({
           <DialogDescription className="text-white/80">{data?.supplier?.name} · {data?.facility?.name}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel>GRN / Reference Number</FieldLabel>

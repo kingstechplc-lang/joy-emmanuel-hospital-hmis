@@ -456,7 +456,7 @@ function ServiceForm({ service, onClose, onSaved }: { service: any | null; onClo
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="col-span-2">
               <FieldLabel required>Service Name</FieldLabel>
@@ -612,7 +612,7 @@ function ServiceDetailDialog({ serviceId, onClose, onEdit }: { serviceId: string
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Pricing grid */}
           <Card>
             <CardContent className="p-3">
@@ -874,7 +874,7 @@ function PackageForm({ pkg, onClose, onSaved }: { pkg: any | null; onClose: () =
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Package className="w-5 h-5" /> {isEdit ? "Edit Package" : "Add Package"}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><FieldLabel required>Package Name</FieldLabel><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maternity Package" className="h-8 text-sm" /></div>
             <div><FieldLabel required>Code</FieldLabel><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. MAT-PKG-001" className="h-8 text-sm font-mono" /></div>
@@ -969,7 +969,7 @@ Ultrasound Scan,RAD-001,imaging,diagnostic,150,80,true,test`;
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Upload className="w-5 h-5" /> Import Services (CSV)</DialogTitle></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <Button variant="outline" size="sm" onClick={() => setCsvText(sample)}>Load Sample</Button>
           <Textarea value={csvText} onChange={(e) => setCsvText(e.target.value)} rows={10} className="text-xs font-mono" placeholder="name,code,category,serviceType,defaultPrice,nhisPrice,nhisEligible,unitOfMeasure" />
           {result && (
@@ -1043,7 +1043,7 @@ function BulkUpdateDialog({ onClose, onUpdated }: { onClose: () => void; onUpdat
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Zap className="w-5 h-5" /> Bulk Price Update</DialogTitle></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label className="text-[10px]">Action</Label>

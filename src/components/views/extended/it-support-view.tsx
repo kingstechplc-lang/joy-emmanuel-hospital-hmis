@@ -292,7 +292,7 @@ function TicketForm({ open, onOpenChange, onSubmit, loading }: { open: boolean; 
           <DialogTitle className="text-white flex items-center gap-2"><Server className="w-5 h-5" /> New IT Support Ticket</DialogTitle>
           <DialogDescription className="text-white/80">Report a technical issue or request IT assistance.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 gap-3">
           <div>
             <FieldLabel>Ticket Type</FieldLabel>
             <Select value={form.ticketType} onValueChange={(v) => set("ticketType", v)}>
@@ -409,7 +409,7 @@ function TicketDetail({ ticket, canManage, onClose }: { ticket: any; canManage: 
         </DialogHeader>
 
         {/* Ticket info */}
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-lg">
           <div><Label className="text-slate-500">Type</Label><div className="font-semibold text-slate-800">{typeInfo.label}</div></div>
           <div><Label className="text-slate-500">Priority</Label><div><StatusBadge status={ticket.priority} /></div></div>
           <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={ticket.status} /></div></div>
@@ -581,8 +581,8 @@ function KnowledgeBaseTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={() => setViewArticle(null)}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewArticle.title}</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{viewArticle.content}</div>
-            <div className="flex-1 overflow-y-auto p-6 flex items-center gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{viewArticle.content}</div>
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 flex items-center gap-3 mt-4 pt-3 border-t text-xs text-slate-500">
               <span>Category: <strong>{viewArticle.category}</strong></span>
               <span>Views: {viewArticle.viewCount}</span>
               <span>By: {viewArticle.authorName || "IT Team"}</span>
@@ -723,7 +723,7 @@ function AssetsTab({ canManage }: { canManage: boolean }) {
         <Dialog open onOpenChange={() => setViewAsset(null)}>
           <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white">{viewAsset.assetTag} — {viewAsset.manufacturer} {viewAsset.model}</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-3 text-xs">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 gap-3 text-xs">
               <div><Label className="flex-1 overflow-y-auto p-6 text-slate-500">Type</Label><div className="font-semibold uppercase">{viewAsset.assetType}</div></div>
               <div><Label className="text-slate-500">Status</Label><div><StatusBadge status={viewAsset.status} /></div></div>
               <div><Label className="text-slate-500">Serial Number</Label><div className="font-mono">{viewAsset.serialNumber || "—"}</div></div>

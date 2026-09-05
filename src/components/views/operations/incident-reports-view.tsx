@@ -367,7 +367,7 @@ function NewIncidentDialog({ onClose }: { onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Incident Type</FieldLabel>
             <Select value={form.incidentType || undefined} onValueChange={(v) => setForm({ ...form, incidentType: v })}>
@@ -472,7 +472,7 @@ function IncidentDetail({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={incident.incidentType} />
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border capitalize ${SEVERITY_COLOR[incident.severity] || "bg-slate-100 text-slate-700 border-slate-200"}`}>

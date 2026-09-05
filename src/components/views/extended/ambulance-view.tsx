@@ -352,7 +352,7 @@ function NewRequestDialog({ facilityId, onClose, onCreated }: { facilityId: stri
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white">
           <DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> New Ambulance Request</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Patient search (optional for emergencies) */}
           <div>
             <Label>Patient (optional — leave blank for unregistered emergency)</Label>
@@ -532,7 +532,7 @@ function TripDetailDialog({ tripId, facilityId, onClose, onUpdated }: { tripId: 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Route info */}
           <Card><CardContent className="p-3 grid grid-cols-2 gap-3 text-xs">
             <div>
@@ -760,7 +760,7 @@ function NewVehicleDialog({ facilityId, onClose, onCreated }: { facilityId: stri
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-teal-600 to-cyan-700 text-white"><DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-red-600" /> Add Ambulance</DialogTitle></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><FieldLabel required>Fleet Number</FieldLabel><Input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="AMB-001" className="h-8 text-sm font-mono" /></div>
             <div><FieldLabel required>Registration</FieldLabel><Input value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="GR-1234-24" className="h-8 text-sm" /></div>

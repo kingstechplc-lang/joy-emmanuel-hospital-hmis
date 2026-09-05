@@ -455,7 +455,7 @@ function ApproveDialog({ admission, onClose, onDone }: { admission: any; onClose
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Approve Admission Request</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Decision</FieldLabel>
             <Select value={decision} onValueChange={setDecision}>
@@ -512,7 +512,7 @@ function AssignBedDialog({ admission, onClose, onDone }: { admission: any; onClo
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Assign Bed</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div><FieldLabel required>Ward</FieldLabel>
             <Select value={wardId || undefined} onValueChange={(v) => { setWardId(v); setBedId(""); }}>
               <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
@@ -563,7 +563,7 @@ function ConfirmDialog({ admission, onClose, onDone }: { admission: any; onClose
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Confirm Patient Arrival</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div><Label>Condition on Arrival / Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Patient's condition on arrival..." /></div>
           <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
             This will mark the admission as "Admitted" and the bed as "Occupied".
@@ -604,7 +604,7 @@ function DischargePlanDialog({ admission, onClose, onDone }: { admission: any; o
       <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Plan Discharge</DialogTitle>
         <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription></DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Expected Discharge Date</Label><Input type="date" value={expectedDischargeDate} onChange={(e) => setExpectedDischargeDate(e.target.value)} /></div>
             <div><Label>Discharge Readiness</Label>
@@ -652,7 +652,7 @@ function ProgressNoteDialog({ admission, onClose, onDone }: { admission: any; on
           <DialogTitle className="flex items-center gap-2 text-white"><Stethoscope className="w-5 h-5" /> Doctor Progress Note (SOAP)</DialogTitle>
           <DialogDescription className="text-white/80">{admission.admissionNumber} — {admission.patient?.firstName} {admission.patient?.lastName}</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div><Label>S — Subjective</Label><Textarea value={subjective} onChange={(e) => setSubjective(e.target.value)} rows={2} placeholder="Patient's complaint, history..." /></div>
           <div><Label>O — Objective</Label><Textarea value={objective} onChange={(e) => setObjective(e.target.value)} rows={2} placeholder="Examination findings, vitals..." /></div>
           <div><Label>A — Assessment</Label><Textarea value={assessment} onChange={(e) => setAssessment(e.target.value)} rows={2} placeholder="Clinical assessment, diagnosis..." /></div>
@@ -759,7 +759,7 @@ function NewAdmissionDialog({ open, onClose, onCreated, facilityId }: { open: bo
           <DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> New Admission</DialogTitle>
           <DialogDescription className="text-white/80">Admit a patient and assign a bed. The admission and bed assignment are created atomically — if the bed is unavailable, the operation is rolled back.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -915,7 +915,7 @@ function DischargeDialog({ admission, onClose, onDone }: { admission: any; onClo
             {ba ? ` • Bed ${ba.bed?.bedNumber} (${ba.ward?.name})` : ""}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <Label>Discharge Summary</Label>
             <Textarea value={dischargeSummary} onChange={(e) => setDischargeSummary(e.target.value)} rows={3} placeholder="Course of treatment during admission..." />
@@ -997,7 +997,7 @@ function DiagnosisDialog({ admission, canManage, onClose }: { admission: any; ca
             {admission.admissionDiagnosis && ` • Admission Dx: ${admission.admissionDiagnosis}`}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {admission.patientId && admission.encounterId ? (
             <DiagnosisPicker
               patientId={admission.patientId}

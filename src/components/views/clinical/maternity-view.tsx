@@ -523,7 +523,7 @@ function NewPregnancyDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Patient search */}
           <div>
             <FieldLabel required>Patient</FieldLabel>
@@ -720,7 +720,7 @@ function PregnancyDetailDialog({
         </DialogHeader>
 
         {/* Section tabs */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-wrap gap-1 border-b border-slate-200 pb-2 px-6 pt-4 shrink-0">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 flex flex-wrap gap-1 border-b border-slate-200 pb-2 px-6 pt-4 shrink-0">
           {[
             { id: "overview", label: "Overview", icon: FileText },
             { id: "anc", label: `ANC (${r.ancVisits?.length || 0})`, icon: Stethoscope },
@@ -743,7 +743,7 @@ function PregnancyDetailDialog({
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6">
         {activeTab === "overview" && <OverviewSection record={r} />}
         {activeTab === "anc" && <AncSection recordId={recordId} visits={r.ancVisits || []} onUpdated={() => { refetch(); onUpdated(); }} />}
         {activeTab === "newborn" && <NewbornSection recordId={recordId} newborns={r.newborns || []} onUpdated={() => { refetch(); onUpdated(); }} />}

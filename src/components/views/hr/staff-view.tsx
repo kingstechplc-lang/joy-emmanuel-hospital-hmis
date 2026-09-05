@@ -1723,7 +1723,7 @@ function StaffDialog({ mode, staff, onClose }: { mode: "create" | "edit"; staff?
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
           {/* User account */}
           {!isEdit && (
             <div>
@@ -2468,7 +2468,7 @@ function LifecycleActionDialog({ staff, type, onClose }: { staff: any; type: str
           <DialogDescription className="text-white/80">{meta.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 py-2 flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 py-2 flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200">
           <Avatar className="w-8 h-8 bg-blue-100">
             <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{`${staff?.firstName?.[0] || ""}${staff?.lastName?.[0] || ""}`.toUpperCase()}</AvatarFallback>
           </Avatar>

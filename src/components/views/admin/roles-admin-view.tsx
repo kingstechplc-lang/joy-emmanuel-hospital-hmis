@@ -269,7 +269,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0 border-y">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0 border-y">
           <div className="space-y-1.5">
             <FieldLabel required>Name</FieldLabel>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={role?.isSystemRole} />
@@ -306,7 +306,7 @@ function RoleDialog({ role, onClose }: { role?: any; onClose: () => void }) {
               No permissions are seeded in the database yet.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto min-h-0 flex-1 pr-1">
               {Object.entries(groupedPerms).map(([mod, perms]: [string, any]) => {
                 const permsArr = perms as any[];
                 const allSelected = permsArr.every((p) => selectedPerms.has(p.code));

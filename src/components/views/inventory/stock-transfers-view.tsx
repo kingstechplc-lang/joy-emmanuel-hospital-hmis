@@ -1351,7 +1351,7 @@ function NewTransferDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Header fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -1633,7 +1633,7 @@ function ViewTransferDialog({
         </DialogHeader>
 
         {/* Quantity summary */}
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
           <SummaryTile label="Requested" value={m.totalRequestedQty} />
           <SummaryTile label="Approved" value={m.totalApprovedQty} color="blue" />
           <SummaryTile label="Dispatched" value={m.totalDispatchedQty} color="cyan" />
@@ -2009,7 +2009,7 @@ function ReceiveDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2 max-h-[60vh] overflow-y-auto pr-1">
           {(data?.items || []).map((it: any) => {
             const cfg = recvMap[it.id] || {};
             const dispatched = Number(it.dispatchedQuantity) || Number(it.requestedQuantity) || 0;

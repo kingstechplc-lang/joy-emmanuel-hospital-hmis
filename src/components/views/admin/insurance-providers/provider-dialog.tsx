@@ -82,7 +82,7 @@ export function ProviderDialog({ provider, onClose }: { provider?: any; onClose:
           <DialogTitle className="text-white">{isEdit ? "Edit Insurance Provider" : "Add Insurance Provider"}</DialogTitle>
           <DialogDescription className="text-white/80">{isEdit ? "Update provider details. Use the details dialog for plans, contacts, and coverage." : "Add a new insurance provider to the master directory."}</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
             <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">

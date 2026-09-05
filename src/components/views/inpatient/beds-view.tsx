@@ -412,7 +412,7 @@ function BedDetailDialog({ bed, onClose, onChanged, canManage }: { bed: any; onC
             {bed.ward?.name} {bed.room ? `• Room ${bed.room.roomNumber}` : ""} • {bed.bedType || "Regular bed"}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">Status:</span>
             <StatusBadge status={bed.status} />
@@ -786,7 +786,7 @@ function WardDialog({ ward, facilityId, onClose, onDone }: { ward?: any; facilit
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> {isEdit ? "Edit Ward" : "Add Ward"}</DialogTitle></DialogHeader>
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
         <div><Label>Ward Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div><Label>Ward Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-3">
@@ -872,7 +872,7 @@ function RoomDialog({ room, facilityId, onClose, onDone }: { room?: any; facilit
   return (
     <Dialog open onOpenChange={onClose}><DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> {isEdit ? "Edit Room" : "Add Room"}</DialogTitle></DialogHeader>
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
         <div>
           <Label>Ward</Label>
           {isEdit ? (
@@ -936,7 +936,7 @@ function BedMasterDialog({ bed, facilityId, onClose, onDone }: { bed?: any; faci
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle className="flex items-center gap-2 text-white"><BedDouble className="w-5 h-5" /> {isEdit ? "Edit Bed" : "Add Bed"}</DialogTitle></DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Ward</Label><Select value={form.wardId || undefined} onValueChange={(v) => setForm({ ...form, wardId: v, roomId: "" })} disabled={isEdit}><SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger><SelectContent>{(wardsData?.items || []).map((w: any) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
             <div><Label>Room (optional)</Label><Select value={form.roomId || "_none"} onValueChange={(v) => setForm({ ...form, roomId: v === "_none" ? "" : v })}><SelectTrigger><SelectValue placeholder="No room" /></SelectTrigger><SelectContent><SelectItem value="_none">No room</SelectItem>{(roomsData?.items || []).map((r: any) => <SelectItem key={r.id} value={r.id}>Room {r.roomNumber}</SelectItem>)}</SelectContent></Select></div>

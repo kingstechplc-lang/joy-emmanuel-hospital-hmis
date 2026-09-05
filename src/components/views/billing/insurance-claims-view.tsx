@@ -595,7 +595,7 @@ function ValidateResultDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center py-12 gap-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 flex flex-col items-center justify-center py-12 gap-3">
             <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
             <p className="text-sm text-slate-600">Running validation checks…</p>
           </div>
@@ -1562,7 +1562,7 @@ function NewClaimDialog({ open, onClose, onCreated, facilityId }: { open: boolea
             File a claim against an outstanding invoice. NHIS claims require ICD-10 diagnosis codes and NHIS membership number per Ghana NHIS policy.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">
@@ -1741,7 +1741,7 @@ function PartialApprovalDialog({ claim, onClose, onDone }: { claim: any; onClose
             Claim {claim.claimNumber} • Original claim amount: {formatCurrency(claim.claimAmount)}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Approved Amount</FieldLabel>
             <Input type="number" step="0.01" value={approvedAmount} onChange={(e) => setApprovedAmount(Number(e.target.value))} />
@@ -1885,7 +1885,7 @@ function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: stri
 
         {results ? (
           /* Results view */
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-emerald-700">{results.summary.success}</p>
@@ -1961,7 +1961,7 @@ function BulkClaimsDialog({ facilityId, onClose, onCreated }: { facilityId: stri
           </div>
         ) : (
           /* Setup + selection view */
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
             {/* Provider + claim type + default diagnosis */}
             <div className="grid grid-cols-2 gap-3">
               <div>

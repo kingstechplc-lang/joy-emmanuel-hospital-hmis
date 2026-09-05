@@ -1414,7 +1414,7 @@ function RefundRequestDialog({
           </DialogDescription>
         </DialogHeader>
         {payment && (
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
             <div className="text-xs bg-slate-50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between"><span className="text-slate-500">Payment #</span><span className="font-mono font-semibold">{payment.paymentNumber}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Patient</span><span className="font-medium">{payment.patient?.firstName} {payment.patient?.lastName}</span></div>
@@ -1606,7 +1606,7 @@ function NewPaymentDialog({ open, onClose, onCreated, facilityId }: { open: bool
           <DialogTitle className="flex items-center gap-2 text-white"><CreditCard className="w-5 h-5" /> Record Payment</DialogTitle>
           <DialogDescription className="text-white/80">Select an invoice with an outstanding balance. The payment will update the invoice's amount paid, balance, and status atomically.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <div className="relative">

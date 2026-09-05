@@ -536,7 +536,7 @@ function NewTransferDialog({ facilityId, onClose, onCreated }: any) {
           <DialogDescription className="text-white/80">Request a patient transfer. The patient stays in their current location until the transfer is approved and executed.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           {/* Patient selection */}
           <div>
             <FieldLabel required>Select Admitted Patient</FieldLabel>
@@ -1142,7 +1142,7 @@ function CommunicationsPanel({ transferId, communications, onChanged }: any) {
         <Dialog open onOpenChange={setShowAdd}>
           <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><DialogTitle>Log Communication</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto p-6 space-y-2">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
               <div><FieldLabel required>Recipient Name</FieldLabel><Input value={newComm.recipientName} onChange={(e) => setNewComm({ ...newComm, recipientName: e.target.value })} placeholder="e.g., Dr. Mensah" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Department</Label><Input value={newComm.recipientDepartment} onChange={(e) => setNewComm({ ...newComm, recipientDepartment: e.target.value })} /></div>

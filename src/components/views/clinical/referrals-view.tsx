@@ -795,7 +795,7 @@ function NewReferralDialog({
             number (REF-YYYY-000001) will be generated automatically.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Patient search */}
           <div>
             <FieldLabel required>Patient</FieldLabel>
@@ -1222,7 +1222,7 @@ function ReferralDetailDialog({
         </DialogHeader>
 
         {/* Section tabs */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-wrap gap-1 border-b border-slate-200 pb-2">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 flex flex-wrap gap-1 border-b border-slate-200 pb-2">
           {[
             { id: "overview", label: "Overview", icon: FileText },
             { id: "timeline", label: `Timeline (${events.length})`, icon: Activity },

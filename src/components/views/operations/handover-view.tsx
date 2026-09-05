@@ -281,7 +281,7 @@ function NewHandoverDialog({ onClose }: { onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <FieldLabel required>Facility</FieldLabel>
             <Input value={form.facilityId} disabled placeholder="Active facility" />
@@ -460,7 +460,7 @@ function HandoverDetail({ handover, onClose }: { handover: any; onClose: () => v
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className={`capitalize ${SHIFT_BADGE[handover.shiftType] || ""}`}>
               {handover.shiftType} shift

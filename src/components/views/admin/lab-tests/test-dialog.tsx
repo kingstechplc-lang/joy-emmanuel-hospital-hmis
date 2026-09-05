@@ -125,7 +125,7 @@ export function LabTestDialog({ test, onClose }: { test?: any; onClose: () => vo
             {isEdit ? "Update test details. Use the test details dialog for full configuration (specimen, ranges, critical values, panel)." : "Add a new laboratory test to the central catalog. You can configure specimen, reference ranges, critical values, and panels after creation."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           {duplicates && duplicates.length > 0 && (
             <div className="border border-amber-300 bg-amber-50 rounded p-3 space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">

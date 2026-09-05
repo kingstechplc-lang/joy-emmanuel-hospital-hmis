@@ -549,7 +549,7 @@ function NewDischargeDialog({ facilityId, onClose, onCreated }: any) {
           <DialogDescription className="text-white/80">Initiate a discharge request. The admission remains active until the discharge is finalized.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
           {/* Patient selection */}
           <div>
             <FieldLabel required>Select Admitted Patient</FieldLabel>
@@ -1145,7 +1145,7 @@ function MedicationReconciliationPanel({ dischargeId, medications, canEdit, onCh
         <Dialog open onOpenChange={setShowAdd}>
           <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="medium">
             <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white"><DialogTitle>Add Discharge Medication</DialogTitle></DialogHeader>
-            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-2">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 gap-2">
               <div className="col-span-2"><FieldLabel required>Medication Name</FieldLabel><Input value={newMed.medicationName} onChange={(e) => setNewMed({ ...newMed, medicationName: e.target.value })} placeholder="e.g., Amoxicillin" /></div>
               <div><Label>Strength</Label><Input value={newMed.strength} onChange={(e) => setNewMed({ ...newMed, strength: e.target.value })} placeholder="500mg" /></div>
               <div><Label>Dose</Label><Input value={newMed.dose} onChange={(e) => setNewMed({ ...newMed, dose: e.target.value })} placeholder="1 tab" /></div>

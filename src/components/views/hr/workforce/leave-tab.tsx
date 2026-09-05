@@ -236,7 +236,7 @@ function ReviewDialog({ onClose, onSubmit, action }: { onClose: () => void; onSu
             {action === "cancel" && "Cancelling will restore balances and (if approved) set the staff back to active status."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-2">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
           <Label>Comment / Reason (optional)</Label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder={`Reason for ${action}...`} />
         </div>
@@ -319,7 +319,7 @@ function NewLeaveDialog({ onClose, leaveTypes }: { onClose: () => void; leaveTyp
           <DialogDescription className="text-white/80">The system will check leave balance, conflicts with shifts, and existing leave records.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2">
             <StaffSearchableSelect
               value={staffId}

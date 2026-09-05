@@ -1454,7 +1454,7 @@ function ViewInvoiceDialog({
               </DialogHeader>
 
               {/* Lifecycle action bar */}
-              <div className="flex-1 overflow-y-auto p-6 shrink-0 flex flex-wrap gap-2 pb-2 border-b">
+              <div className="flex-1 overflow-y-auto min-h-0 p-6 shrink-0 flex flex-wrap gap-2 pb-2 border-b">
                 {inv.status === "draft" && canCreate && (
                   <Button size="sm" variant="outline" onClick={() => runAction("review")} disabled={lifecycleMutation.isPending} className="gap-1.5 h-7 text-xs">
                     <ClipboardCheck className="w-3.5 h-3.5" /> Submit for Review
@@ -2045,7 +2045,7 @@ function LifecycleActionDialog({
             Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Balance {formatCurrency(invoice.balance)}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {c.requireAmount && (
             <div>
               <FieldLabel required>Amount (GHS)</FieldLabel>
@@ -2328,7 +2328,7 @@ function NewInvoiceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3 overflow-y-auto flex-1 pr-1">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3 overflow-y-auto flex-1 pr-1">
           {/* Patient + encounter + dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -2687,7 +2687,7 @@ function PaymentDialog({
               Invoice <span className="font-mono">{invoice.invoiceNumber}</span> • Outstanding {formatCurrency(invoice.balance)}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
             <div>
               <FieldLabel required>Amount (GHS)</FieldLabel>
               <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
@@ -2805,7 +2805,7 @@ function AddItemDialog({
           </DialogTitle>
           <DialogDescription className="text-white/80">Totals will be recomputed automatically.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel>Service (optional)</FieldLabel>
             <Select value={serviceId || "_none"} onValueChange={(v) => v !== "_none" && selectService(v)}>

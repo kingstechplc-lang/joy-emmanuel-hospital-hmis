@@ -1796,7 +1796,7 @@ function NewItemDialog({ open, onClose, onCreated }: { open: boolean; onClose: (
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
           {/* Identity */}
           <section className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -2084,7 +2084,7 @@ function StockMovementDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           {/* Before / After preview */}
           <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-lg">
             <div className="text-center">

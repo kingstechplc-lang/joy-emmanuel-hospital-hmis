@@ -310,7 +310,7 @@ function DiagnosisCatalogForm({ item, onClose, onSaved }: { item: any | null; on
           <DialogDescription className="text-white/80">Standardized diagnosis with code (ICD-10/ICD-11/SNOMED), synonyms, and category.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <FieldLabel>Code *</FieldLabel>
             <Input value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="e.g., I10, E11.9" disabled={!!item} />

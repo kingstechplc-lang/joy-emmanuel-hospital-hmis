@@ -438,7 +438,7 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
           <DialogTitle>New Consultation Note</DialogTitle>
           <DialogDescription className="text-white/80">Will be saved as draft. Sign after completion.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
           <div>
             <FieldLabel required>Patient</FieldLabel>
             <ClearableSearch value={patientQuery} onChange={setPatientQuery} placeholder="Search patient..." className="" inputClassName="" />
@@ -686,7 +686,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
             {/* Quick Actions row — cross-module links */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/50 p-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 mr-1 hidden sm:inline">
@@ -894,7 +894,7 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
               The original signed note will be preserved. The addendum will be appended with your name and timestamp.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 space-y-2">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
             <Label className="text-xs font-semibold text-slate-700">Addendum Text</Label>
             <Textarea
               value={addendumText}

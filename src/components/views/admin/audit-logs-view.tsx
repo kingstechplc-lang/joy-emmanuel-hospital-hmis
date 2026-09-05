@@ -334,7 +334,7 @@ function LogDetailDialog({ log, onClose }: { log: any; onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <DetailItem label="Timestamp" value={formatDate(log.createdAt, true)} />
           <DetailItem label="User" value={log.user ? `${log.user.firstName} ${log.user.lastName} (@${log.user.username})` : "System"} />
           <DetailItem label="Facility" value={log.facility?.name || "—"} />

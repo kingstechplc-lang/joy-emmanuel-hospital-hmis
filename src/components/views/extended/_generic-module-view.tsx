@@ -805,7 +805,7 @@ function RecordDetailDialog({
         </DialogHeader>
 
         {workflowActions.length > 0 && (
-          <div className="flex-1 overflow-y-auto p-6 bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
             <div className="text-xs font-semibold text-amber-800 mb-2">Workflow Actions:</div>
             <div className="flex gap-2 flex-wrap">
               {workflowActions.map((a) => {
@@ -1012,7 +1012,7 @@ function RecordForm({ config, open, onOpenChange, onSubmit, loading, initialValu
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
           {groupNames.map((g) => (
             <div key={g} className={groupNames.length > 1 ? "border-t pt-3 first:border-t-0 first:pt-0" : ""}>
               {groupNames.length > 1 && (
