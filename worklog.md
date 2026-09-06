@@ -1290,3 +1290,93 @@ NO API CHANGES
 NO BREAKING CHANGES
 NO NEW DEPENDENCIES
 
+
+---
+Task ID: 33 (Clinical Workflow & Navigation Enhancement)
+Agent: main
+Task: Make Consultation the central clinical workspace for the current encounter. Queue→Consultation context, Lab/Imaging/Pharmacy pre-fill, return navigation, IDOR hardening.
+
+PHASE 0 — RECONNAISSANCE (delegated to general-purpose subagent):
+- 234 DialogContent, 0 Sheet/Drawer/AlertDialog usages in views. Consultation state machine: draft→signed→amended (3 statuses; UI "In Progress" is visual-only).
+- DiagnosisPicker gate is `c.patientId && c.encounterId` (no status gate). The "requires Draft Save" perception is because NewConsultationDialog doesn't include the picker (consultation needs to be persisted first to have an id).
+- Lab/Imaging/Prescription New dialogs accept only defaultFacilityId (+ defaultPrescriberId for Rx). None accept defaultPatientId/defaultEncounterId. None read the store's selectedPatientId/selectedEncounterId.
+- selectedPatientId+selectedEncounterId exist in the store; selectedConsultationId did NOT. Persistence only covers activeFacilityId+sidebarCollapsed.
+- consultationId does NOT exist anywhere in the data model (Lab/Imaging/Prescription/Diagnosis all attach to Encounter).
+- Cross-module navigation from Consultations sets selectedPatientId but NOT selectedEncounterId (line 662). The destination views don't read the store either. This was the largest UX gap.
+
+PHASE 1a — APP-STORE EXTENSION (src/stores/app-store.ts):
+- Added selectedConsultationId + selectConsultation setter.
+- Added return-context state: returnToView, returnToConsultationId, returnToEncounterId, returnToPatientId.
+- Added navigateFromConsultation({patientId, encounterId, consultationId, targetView}) — sets context AND return-context, then switches view.
+- Added returnToConsultation() — clears return-context and navigates back.
+- Added clearReturnContext().
+- Updated setView() to auto-clear return-context when navigating to a non-consultation view via sidebar.
+
+PHASE 1b — QUEUE→CONSULTATION NAVIGATION (queue-view.tsx):
+- Added useSession + RBAC check (canStartConsult via clinical.create).
+- Each QueueEntryRow looks up consultations by encounterId (useQuery, enabled when encounterId exists AND user can create consultations; 30s staleTime).
+- State-aware consultation action button per queue entry:
+  - No encounter → no button.
+  - Encounter + no consultations → "Start Consultation".
+  - Encounter + draft → "Continue Consultation".
+  - Encounter + only signed → "View Consultation".
+  - Encounter + multiple → "Open Consultations".
+- Added "Patient 360" button per entry.
+- Encounter number displayed on queue row when linked.
+
+PHASE 2 — CONSULTATIONS VIEW (consultations-view.tsx):
+- Imported useEffect.
+- NewConsultationDialog now accepts defaultPatientId+defaultEncounterId; pre-fills patientId/encounterId state; fetches patient display name.
+- ConsultationsView now:
+  - Filters consultations by selectedEncounterId when set.
+  - Auto-opens consultation identified by selectedConsultationId (from Queue "Continue"/"View" buttons). Clears trigger after opening.
+  - Auto-opens New Consultation dialog when arriving with selectedPatientId+selectedEncounterId set AND no existing consultation for that encounter (Queue "Start Consultation" path). Fires once per (patient,encounter) pair.
+- ViewConsultationDialog:
+  - Fixed goToModule to also call selectEncounter (was only calling selectPatient — major bug per audit).
+  - Added goToSideWorkflow helper using navigateFromConsultation for Lab/Imaging/Pharmacy.
+  - Lab/Imaging/Pharmacy Quick Actions now use goToSideWorkflow (gated on patientId+encounterId+consultationId all present).
+
+PHASE 3-5 — LAB/IMAGING/PRESCRIPTION DIALOGS:
+- NewLabOrderDialog, NewImagingOrderDialog, NewPrescriptionDialog all accept defaultPatientId+defaultEncounterId and pre-fill state. Each fetches patient display name.
+- All three parent views read selectedPatientId+selectedEncounterId+returnToConsultation+returnToView from store, pass to dialogs.
+- All three parent views auto-open New dialog when arriving from consultation with patient+encounter set. Fires once per (patient,encounter) pair.
+
+PHASE 7 — RETURN-TO-CONSULTATION BANNERS:
+- Lab Orders, Imaging, Prescriptions views: blue banner with "Return to Consultation" button (shown when returnToView==="consultations" && returnToConsultation exists).
+
+PHASE 15 — IDOR HARDENING (consultations/route.ts POST):
+- Added server-side verification that encounter belongs to claimed patient (db.encounter.findFirst({ where: { id: encounterId, patientId } })). Returns 404 if mismatched.
+- Added organization isolation: verifies encounter.facility.organizationId === session.user.organizationId. Returns 403 if cross-org.
+
+DUPLICATE PREVENTION (per spec §17):
+- Queue "Start Consultation" only navigates — does NOT create a consultation.
+- Consultations view auto-open of New Consultation dialog only fires when no consultation exists for the encounter (data.items.some check).
+- Existing consultations take priority (auto-open via selectedConsultationId path).
+- Consultation POST verifies encounter↔patient consistency (Phase 15).
+- Lab/Imaging auto-create encounters only when encounterId is missing — but consultation navigation ALWAYS passes the existing encounterId, so no auto-create triggers.
+- Auto-open effects use per-(patient,encounter) "fired" flag to prevent re-opening.
+
+NO-INVESTIGATION WORKFLOW (per spec §9):
+- DiagnosisPicker unconditionally visible in ViewConsultationDialog. A clinician can: open → document → diagnose → finalize without lab/imaging. Lab/Imaging Quick Actions are optional and gated by relevant permissions.
+
+VERIFICATION:
+- TypeScript: 0 errors in any modified file.
+- Production build: ✓ Compiled successfully in 58s.
+
+PUSHED TO GITHUB:
+- Commit cc668b5 pushed to main.
+
+DEFERRED (per spec §67 — NO FABRICATION):
+- E2E Playwright tests: not executed (no Playwright tests exist in the repo to extend).
+- Visual verification on real devices: deferred.
+- Adding consultationId to Lab/Imaging/Prescription schema: explicitly decided against — encounter is the correct clinical anchor. Consultation context preserved through UI store (return navigation) + encounter (clinical history).
+
+RELEASE STATUS: CONDITIONAL GO
+- Core infrastructure implemented and verified by build + TypeScript.
+- Documented non-critical limitations remain (E2E test execution, real-device visual verification).
+
+NO SCHEMA CHANGES (deliberate — consultationId not added to order models).
+NO API CHANGES (only tightened consultations POST validation — additive, backward compatible).
+NO BREAKING CHANGES (all new props are optional; store additions are pure additions).
+NO NEW DEPENDENCIES.
+
