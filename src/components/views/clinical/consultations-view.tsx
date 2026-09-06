@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -23,6 +23,33 @@ import {
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 import { FieldLabel } from "@/components/ui/required-label";
+
+// =====================================================================
+// CLINICAL FIELDS — the set of fields that can be "dirty" (changed by
+// the clinician but not yet persisted).  Used by `hasUnsavedChanges`
+// to detect whether an auto-save is needed before Quick Action navigation.
+// =====================================================================
+const CONSULTATION_EDITABLE_FIELDS = [
+  "chiefComplaint", "historyPresentingIllness", "pastMedicalHistory",
+  "pastSurgicalHistory", "medicationHistory", "familyHistory",
+  "socialHistory", "reviewOfSystems", "physicalExamination",
+  "assessment", "treatmentPlan", "followUpPlan",
+  "disposition", "dispositionNotes", "patientInstructions",
+] as const;
+
+/** Returns true if any editable clinical field in `editable` differs from
+ *  the persisted `original` consultation.  Used to decide whether an
+ *  auto-save is needed before navigating to a side workflow (Lab/Imaging/Pharmacy).
+ *  Both `null`/`undefined`/`""` are treated as equivalent (empty). */
+function hasUnsavedChanges(editable: any, original: any): boolean {
+  if (!editable || !original) return false;
+  for (const f of CONSULTATION_EDITABLE_FIELDS) {
+    const a = (editable[f] ?? "").trim();
+    const b = (original[f] ?? "").trim();
+    if (a !== b) return true;
+  }
+  return false;
+}
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -461,6 +488,12 @@ function NewConsultationDialog({
     assessment: "", treatmentPlan: "", followUpPlan: "",
   });
   const [saving, setSaving] = useState(false);
+  // Auto-save state for Quick Action buttons (Lab/Imaging/Pharmacy) that
+  // trigger a POST (create draft) + navigate before the user clicks "Save Draft".
+  // The ref prevents rapid double-clicks from creating duplicate consultations.
+  const autoSavingRef = useRef(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const navigateFromConsultation = useAppStore((s) => s.navigateFromConsultation);
 
   // When the dialog opens with a defaultPatientId (from the store's
   // selectedPatientId, set by Queue/Encounter navigation), resolve the
@@ -518,6 +551,67 @@ function NewConsultationDialog({
       toast.error(e.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // =====================================================================
+  // AUTO-SAVE NEW CONSULTATION + NAVIGATE TO SIDE WORKFLOW
+  // (per spec §1: Quick Action from an unsaved/new consultation MUST
+  // auto-save as DRAFT before navigating)
+  //
+  // Sequence:
+  //   1. Validate patientId + encounterId (minimum for POST /api/consultations)
+  //   2. Prevent rapid double-clicks via ref (per spec §14)
+  //   3. POST to create consultation with status DRAFT
+  //   4. On success: close dialog, invalidate queries, navigate with the
+  //      new consultationId as context
+  //   5. On failure: show error, DO NOT navigate, preserve all form data
+  //      so the clinician's work is not lost (per spec §13)
+  // =====================================================================
+  const autoSaveNewAndNavigate = async (targetView: any) => {
+    if (autoSavingRef.current || saving) return;
+    if (!patientId || !encounterId) {
+      toast.error("Please select a patient and encounter before using Quick Actions.");
+      return;
+    }
+    autoSavingRef.current = true;
+    setAutoSaving(true);
+    const toastId = toast.loading("Saving consultation draft...");
+    try {
+      const res = await fetch("/api/consultations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId, encounterId, ...form }),
+      });
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err.error || "Failed to save consultation draft");
+      }
+      const data = await safeJson(res);
+      const newConsultationId = data.id;
+      toast.success("Consultation draft saved", { id: toastId });
+      // Close dialog + invalidate queries (same as manual "Save Draft")
+      onCreated();
+      // Navigate to the destination with the exact patient + encounter +
+      // newly-created consultation context.  The destination view (Lab/
+      // Imaging/Pharmacy) will pre-fill its New dialog from the store's
+      // selectedPatientId + selectedEncounterId + selectedConsultationId,
+      // and will offer a "Return to Consultation" banner.
+      navigateFromConsultation({
+        patientId,
+        encounterId,
+        consultationId: newConsultationId,
+        targetView,
+      });
+    } catch (e: any) {
+      toast.error(
+        `Unable to save consultation draft. ${e.message}. Your consultation has not been saved. Please try again.`,
+        { id: toastId },
+      );
+      // DO NOT navigate — stay in the dialog so work is not lost.
+    } finally {
+      autoSavingRef.current = false;
+      setAutoSaving(false);
     }
   };
 
@@ -587,12 +681,44 @@ function NewConsultationDialog({
               <Section label="Follow-up Plan"><Textarea value={form.followUpPlan} onChange={(e) => setField("followUpPlan", e.target.value)} rows={2} /></Section>
             </TabsContent>
           </Tabs>
+
+          {/* Quick Actions row — auto-save the consultation as Draft then
+              navigate to the destination module with the patient/encounter/
+              consultation context pre-filled.  Only visible when patient +
+              encounter are selected (minimum required to create a draft).
+              Buttons are disabled while a save is in-flight (per spec §14
+              — prevents duplicate consultations from rapid double-clicks). */}
+          {patientId && encounterId && (
+            <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/50 p-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 mr-1 hidden sm:inline">
+                Quick Actions (saves draft first):
+              </span>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-cyan-600 hover:bg-cyan-50"
+                disabled={autoSaving || saving}
+                onClick={() => autoSaveNewAndNavigate("lab_orders")}
+                title="Save draft + navigate to Lab Orders with patient/encounter pre-filled">
+                <FlaskConical className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Order Lab"}</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-indigo-600 hover:bg-indigo-50"
+                disabled={autoSaving || saving}
+                onClick={() => autoSaveNewAndNavigate("imaging")}
+                title="Save draft + navigate to Imaging with patient/encounter pre-filled">
+                <ImageIcon className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Request Imaging"}</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-pink-600 hover:bg-pink-50"
+                disabled={autoSaving || saving}
+                onClick={() => autoSaveNewAndNavigate("prescriptions")}
+                title="Save draft + navigate to Prescription with patient/encounter/prescriber pre-filled">
+                <Pill className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Prescription"}</span>
+              </Button>
+            </div>
+          )}
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <Save className="w-4 h-4 animate-pulse" /> : <ClipboardList className="w-4 h-4" />}
-            {saving ? "Saving..." : "Save Draft"}
+          <Button variant="outline" onClick={onClose} disabled={autoSaving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving || autoSaving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            {saving || autoSaving ? <Save className="w-4 h-4 animate-pulse" /> : <ClipboardList className="w-4 h-4" />}
+            {saving || autoSaving ? "Saving..." : "Save Draft"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -631,6 +757,12 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
   const [showAddendum, setShowAddendum] = useState(false);
   const [addendumText, setAddendumText] = useState("");
   const [addingAddendum, setAddingAddendum] = useState(false);
+  // Auto-save state: when a Quick Action triggers an auto-save before
+  // navigation, we track it here so the buttons show "Saving..." and rapid
+  // double-clicks don't fire duplicate saves.  The ref is the source of
+  // truth (synchronous); the state is for the UI.
+  const autoSavingRef = useRef(false);
+  const [autoSaving, setAutoSaving] = useState(false);
 
   const isSigned = editable.status === "signed" || editable.status === "amended";
   const lockFields = isSigned && !canAmend;
@@ -762,21 +894,102 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
     setView(view);
   };
 
-  // Navigate to a side workflow (Lab/Imaging/Pharmacy) from this consultation,
-  // remembering the consultation context so the destination can offer a
-  // "Return to Consultation" action.  This sets the store's patient/encounter/
-  // consultation context AND the return-context, then switches the view.
-  const goToSideWorkflow = (targetView: any) => {
+  // Navigate to a side workflow (Lab/Imaging/Pharmacy) from this consultation.
+  // CRITICAL (per spec): if the consultation has unsaved changes, auto-save
+  // as DRAFT (or PATCH an existing draft, or amend a signed consultation per
+  // existing amendment rules) BEFORE navigating.  Never navigate before the
+  // save succeeds — on failure, stay in the consultation so work is not lost.
+  // Uses a ref to prevent rapid double-clicks from creating duplicate saves.
+  const goToSideWorkflow = async (targetView: any) => {
     if (!c.patientId || !c.encounterId || !c.id) {
       toast.error("Cannot navigate — consultation is missing patient/encounter/id context");
       return;
     }
-    navigateFromConsultation({
-      patientId: c.patientId,
-      encounterId: c.encounterId,
-      consultationId: c.id,
-      targetView,
-    });
+    // Prevent rapid double-clicks (per spec §14)
+    if (autoSavingRef.current) return;
+
+    const dirty = hasUnsavedChanges(editable, c);
+
+    // If nothing changed, just navigate — no save needed.
+    if (!dirty) {
+      navigateFromConsultation({
+        patientId: c.patientId,
+        encounterId: c.encounterId,
+        consultationId: c.id,
+        targetView,
+      });
+      return;
+    }
+
+    // Has unsaved changes — must auto-save first.
+    // Permission check: if the consultation is signed, the user needs
+    // amendment permission (the existing PATCH auto-flips status to
+    // "amended" per the amendment rules).  If it's draft, edit/create
+    // permission suffices.
+    if (isSigned && !canAmend) {
+      toast.error(
+        "You have unsaved changes but lack amendment permission for this signed consultation. Please ask an authorized user to save.",
+      );
+      return;
+    }
+    if (!isSigned && !canEdit) {
+      toast.error(
+        "You have unsaved changes but lack permission to save this consultation.",
+      );
+      return;
+    }
+
+    // Auto-save: PATCH the current editable state.  The API auto-sets
+    // consultationStart on first edit and auto-flips signed→amended.
+    autoSavingRef.current = true;
+    setAutoSaving(true);
+    const toastId = toast.loading("Saving consultation draft...");
+
+    try {
+      const res = await fetch(`/api/consultations/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chiefComplaint: editable.chiefComplaint,
+          historyPresentingIllness: editable.historyPresentingIllness,
+          pastMedicalHistory: editable.pastMedicalHistory,
+          pastSurgicalHistory: editable.pastSurgicalHistory,
+          medicationHistory: editable.medicationHistory,
+          familyHistory: editable.familyHistory,
+          socialHistory: editable.socialHistory,
+          reviewOfSystems: editable.reviewOfSystems,
+          physicalExamination: editable.physicalExamination,
+          assessment: editable.assessment,
+          treatmentPlan: editable.treatmentPlan,
+          followUpPlan: editable.followUpPlan,
+          disposition: editable.disposition,
+          dispositionNotes: editable.dispositionNotes,
+          patientInstructions: editable.patientInstructions,
+        }),
+      });
+      if (!res.ok) {
+        const err = await safeJson(res);
+        throw new Error(err.error || "Failed to save consultation draft");
+      }
+      // Save succeeded — navigate now with the exact consultation context.
+      toast.success("Consultation draft saved", { id: toastId });
+      navigateFromConsultation({
+        patientId: c.patientId,
+        encounterId: c.encounterId,
+        consultationId: c.id,
+        targetView,
+      });
+    } catch (e: any) {
+      // Save FAILED — DO NOT navigate.  Stay in the consultation so
+      // the clinician's work is not lost.  Show a clear error.
+      toast.error(
+        `Unable to save consultation draft. ${e.message}. Your consultation has not been saved. Please try again.`,
+        { id: toastId },
+      );
+    } finally {
+      autoSavingRef.current = false;
+      setAutoSaving(false);
+    }
   };
 
   return (
@@ -826,20 +1039,23 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
               )}
               {c.patientId && c.encounterId && c.id && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-pink-600 hover:bg-pink-50"
-                  onClick={() => goToSideWorkflow("prescriptions")} title="Send to Pharmacy (prefilled — return to consultation available)">
-                  <Pill className="w-3.5 h-3.5" /> <span className="text-xs">Pharmacy</span>
+                  disabled={autoSaving || saving || signing}
+                  onClick={() => goToSideWorkflow("prescriptions")} title="Send to Pharmacy — saves draft first if needed">
+                  <Pill className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Pharmacy"}</span>
                 </Button>
               )}
               {c.patientId && c.encounterId && c.id && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-cyan-600 hover:bg-cyan-50"
-                  onClick={() => goToSideWorkflow("lab_orders")} title="Order Lab Tests (prefilled — return to consultation available)">
-                  <FlaskConical className="w-3.5 h-3.5" /> <span className="text-xs">Lab</span>
+                  disabled={autoSaving || saving || signing}
+                  onClick={() => goToSideWorkflow("lab_orders")} title="Order Lab Tests — saves draft first if needed">
+                  <FlaskConical className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Lab"}</span>
                 </Button>
               )}
               {c.patientId && c.encounterId && c.id && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-indigo-600 hover:bg-indigo-50"
-                  onClick={() => goToSideWorkflow("imaging")} title="Order Imaging (prefilled — return to consultation available)">
-                  <ImageIcon className="w-3.5 h-3.5" /> <span className="text-xs">Imaging</span>
+                  disabled={autoSaving || saving || signing}
+                  onClick={() => goToSideWorkflow("imaging")} title="Order Imaging — saves draft first if needed">
+                  <ImageIcon className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Imaging"}</span>
                 </Button>
               )}
               {c.patientId && (
