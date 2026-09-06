@@ -66,12 +66,34 @@ export function LabOrdersView() {
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const selectedPatientId = useAppStore((s) => s.selectedPatientId);
+  const selectedEncounterId = useAppStore((s) => s.selectedEncounterId);
+  const returnToConsultation = useAppStore((s) => s.returnToConsultation);
+  const returnToView = useAppStore((s) => s.returnToView);
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [actionOrder, setActionOrder] = useState<any | null>(null);
+  // Track whether we've auto-opened the New dialog for the current
+  // (patient, encounter) pair to avoid reopening it on every re-render.
+  const [autoOpenFired, setAutoOpenFired] = useState<string | null>(null);
+
+  // Auto-open the New Lab Order dialog when arriving from a consultation
+  // with selectedPatientId + selectedEncounterId set.  We only fire once
+  // per (patient, encounter) pair to avoid loops.
+  useEffect(() => {
+    if (
+      can("lab.order") &&
+      selectedPatientId &&
+      selectedEncounterId &&
+      autoOpenFired !== `${selectedPatientId}:${selectedEncounterId}`
+    ) {
+      setShowNew(true);
+      setAutoOpenFired(`${selectedPatientId}:${selectedEncounterId}`);
+    }
+  }, [can, selectedPatientId, selectedEncounterId, autoOpenFired]);
 
   // KPI range state
   const [kpiRange, setKpiRange] = useState("today");
@@ -128,6 +150,22 @@ export function LabOrdersView() {
         </Button>
         }
       />
+
+      {/* Return-to-consultation banner — shown when the user arrived here
+          from a consultation via "Order Lab".  Preserves the consultation
+          context (patient/encounter/consultation) so the user can return
+          to the originating consultation after creating the lab order. */}
+      {returnToView === "consultations" && returnToConsultation && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2 text-sm">
+          <span className="text-blue-800">
+            <strong>Lab Orders</strong> — patient + encounter pre-filled from your consultation.
+            Create the order, then return to continue the consultation.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => returnToConsultation()} className="gap-1.5 h-7">
+            ← Return to Consultation
+          </Button>
+        </div>
+      )}
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view lab orders.</CardContent></Card>
@@ -360,6 +398,8 @@ export function LabOrdersView() {
         onClose={() => setShowNew(false)}
         onCreated={() => { setShowNew(false); invalidate(); }}
         defaultFacilityId={activeFacilityId}
+        defaultPatientId={selectedPatientId}
+        defaultEncounterId={selectedEncounterId}
       />
 
       {actionOrder && (
@@ -391,10 +431,24 @@ async function doAction(id: string, action: string, successMsg: string, onDone: 
   }
 }
 
-function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { open: boolean; onClose: () => void; onCreated: () => void; defaultFacilityId: string | null }) {
+function NewLabOrderDialog({
+  open,
+  onClose,
+  onCreated,
+  defaultFacilityId,
+  defaultPatientId,
+  defaultEncounterId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  defaultFacilityId: string | null;
+  defaultPatientId?: string | null;
+  defaultEncounterId?: string | null;
+}) {
   const [patientQuery, setPatientQuery] = useState("");
-  const [patientId, setPatientId] = useState("");
-  const [encounterId, setEncounterId] = useState("");
+  const [patientId, setPatientId] = useState(defaultPatientId || "");
+  const [encounterId, setEncounterId] = useState(defaultEncounterId || "");
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
   const [priority, setPriority] = useState("routine");
   const [notes, setNotes] = useState("");
@@ -404,6 +458,20 @@ function NewLabOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { op
   const [saving, setSaving] = useState(false);
   const [duplicates, setDuplicates] = useState<any[] | null>(null);
   const [isDuplicateOverride, setIsDuplicateOverride] = useState(false);
+
+  // Pre-fill the patient's display name when defaultPatientId is provided
+  // (from the store's selectedPatientId, set by Consultation navigation).
+  const { data: defaultPatient } = useQuery({
+    queryKey: ["patient-prefill", defaultPatientId],
+    queryFn: () => fetchJson(`/api/patients/${defaultPatientId}`),
+    enabled: !!defaultPatientId && !patientQuery,
+  });
+  useEffect(() => {
+    if (defaultPatient?.patient && !patientQuery) {
+      const p = defaultPatient.patient;
+      setPatientQuery(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
+    }
+  }, [defaultPatient, patientQuery]);
 
   const { data: patientsData } = useQuery({
     queryKey: ["patient-search", patientQuery],

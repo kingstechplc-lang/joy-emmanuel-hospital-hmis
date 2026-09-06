@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -66,11 +66,33 @@ export function ImagingView() {
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const selectedPatientId = useAppStore((s) => s.selectedPatientId);
+  const selectedEncounterId = useAppStore((s) => s.selectedEncounterId);
+  const returnToConsultation = useAppStore((s) => s.returnToConsultation);
+  const returnToView = useAppStore((s) => s.returnToView);
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [actionOrder, setActionOrder] = useState<any | null>(null);
+  // Track whether we've auto-opened the New dialog for the current
+  // (patient, encounter) pair to avoid reopening it on every re-render.
+  const [autoOpenFired, setAutoOpenFired] = useState<string | null>(null);
+
+  // Auto-open the New Imaging Order dialog when arriving from a consultation
+  // with selectedPatientId + selectedEncounterId set.  We only fire once
+  // per (patient, encounter) pair to avoid loops.
+  useEffect(() => {
+    if (
+      can("imaging.order") &&
+      selectedPatientId &&
+      selectedEncounterId &&
+      autoOpenFired !== `${selectedPatientId}:${selectedEncounterId}`
+    ) {
+      setShowNew(true);
+      setAutoOpenFired(`${selectedPatientId}:${selectedEncounterId}`);
+    }
+  }, [can, selectedPatientId, selectedEncounterId, autoOpenFired]);
   // Expandable row state — one expanded order at a time (by order.id)
   const [expandedId, setExpandedId] = useState<string | null>(null);
   // Amend dialog state — holds the order whose report should be amended.
@@ -132,6 +154,22 @@ export function ImagingView() {
         </Button>
         }
       />
+
+      {/* Return-to-consultation banner — shown when the user arrived here
+          from a consultation via "Request Imaging".  Preserves the
+          consultation context so the user can return to the originating
+          consultation after creating the imaging order. */}
+      {returnToView === "consultations" && returnToConsultation && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2 text-sm">
+          <span className="text-blue-800">
+            <strong>Imaging</strong> — patient + encounter pre-filled from your consultation.
+            Create the order, then return to continue the consultation.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => returnToConsultation()} className="gap-1.5 h-7">
+            ← Return to Consultation
+          </Button>
+        </div>
+      )}
 
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view imaging orders.</CardContent></Card>
@@ -551,6 +589,8 @@ export function ImagingView() {
         onClose={() => setShowNew(false)}
         onCreated={() => { setShowNew(false); invalidate(); }}
         defaultFacilityId={activeFacilityId}
+        defaultPatientId={selectedPatientId}
+        defaultEncounterId={selectedEncounterId}
       />
 
       {actionOrder && (
@@ -593,10 +633,24 @@ async function doAction(id: string, action: string, successMsg: string, onDone: 
   }
 }
 
-function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: { open: boolean; onClose: () => void; onCreated: () => void; defaultFacilityId: string | null }) {
+function NewImagingOrderDialog({
+  open,
+  onClose,
+  onCreated,
+  defaultFacilityId,
+  defaultPatientId,
+  defaultEncounterId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  defaultFacilityId: string | null;
+  defaultPatientId?: string | null;
+  defaultEncounterId?: string | null;
+}) {
   const [patientQuery, setPatientQuery] = useState("");
-  const [patientId, setPatientId] = useState("");
-  const [encounterId, setEncounterId] = useState("");
+  const [patientId, setPatientId] = useState(defaultPatientId || "");
+  const [encounterId, setEncounterId] = useState(defaultEncounterId || "");
   const [procedureType, setProcedureType] = useState("X-Ray");
   const [procedureName, setProcedureName] = useState("");
   const [procedureCode, setProcedureCode] = useState("");
@@ -610,6 +664,20 @@ function NewImagingOrderDialog({ open, onClose, onCreated, defaultFacilityId }: 
   const [diagnosisRef, setDiagnosisRef] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Pre-fill the patient's display name when defaultPatientId is provided
+  // (from the store's selectedPatientId, set by Consultation navigation).
+  const { data: defaultPatient } = useQuery({
+    queryKey: ["patient-prefill", defaultPatientId],
+    queryFn: () => fetchJson(`/api/patients/${defaultPatientId}`),
+    enabled: !!defaultPatientId && !patientQuery,
+  });
+  useEffect(() => {
+    if (defaultPatient?.patient && !patientQuery) {
+      const p = defaultPatient.patient;
+      setPatientQuery(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
+    }
+  }, [defaultPatient, patientQuery]);
 
   const { data: patientsData } = useQuery({
     queryKey: ["patient-search", patientQuery],

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
   Plus, UserCheck, Play, Check, X, ListOrdered, Clock, Activity, Pause,
   SkipForward, RotateCcw, ArrowRightLeft, Search, LayoutDashboard, Monitor,
   RefreshCw, Users, CheckCircle2, BellRing, XCircle, AlertTriangle, Timer,
-  Building2,
+  Building2, Stethoscope, FileText, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -534,6 +535,32 @@ function QueueEntryRow({
   onTransfer: () => void;
   onSkip: () => void;
 }) {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const perms: string[] = user?.permissions || [];
+  const canStartConsult = user?.roles?.includes("super_admin") || perms.includes("clinical.create");
+
+  const selectPatient = useAppStore((s) => s.selectPatient);
+  const selectEncounter = useAppStore((s) => s.selectEncounter);
+  const selectConsultation = useAppStore((s) => s.selectConsultation);
+  const setView = useAppStore((s) => s.setView);
+
+  // Look up existing consultations for this queue entry's encounter (if linked).
+  // We only fire the query when an encounterId exists AND the user can view
+  // consultations.  This avoids unnecessary API calls for queue entries that
+  // are not yet checked in (encounterId = null).
+  const encounterId = entry.encounterId;
+  const { data: consultData } = useQuery({
+    queryKey: ["queue-consultation-lookup", encounterId],
+    queryFn: () => fetchJson(`/api/consultations?encounterId=${encounterId}&limit=10`),
+    enabled: !!encounterId && canStartConsult,
+    staleTime: 30 * 1000, // 30s — short so newly-created consultations appear quickly
+  });
+  const consultations: any[] = consultData?.items || [];
+  const draftConsultations = consultations.filter((c: any) => c.status === "draft");
+  const signedConsultations = consultations.filter((c: any) => c.status === "signed" || c.status === "amended");
+  const hasConsultations = consultations.length > 0;
+
   const waitMin = calcWaitMinutes(entry.createdAt);
   const priorityColor =
     entry.priority === "emergency"
@@ -541,6 +568,93 @@ function QueueEntryRow({
       : entry.priority === "urgent"
         ? "bg-amber-100 text-amber-700 border-amber-200"
         : "bg-slate-100 text-slate-600 border-slate-200";
+
+  // Navigate to consultations view with patient + encounter context set.
+  // If a specific consultation id is provided, also set selectedConsultationId
+  // so the consultations view can auto-open that consultation.
+  const goToConsultations = (consultationId?: string) => {
+    if (entry.patientId) selectPatient(entry.patientId);
+    if (encounterId) selectEncounter(encounterId);
+    if (consultationId) selectConsultation(consultationId);
+    else selectConsultation(null);
+    setView("consultations");
+  };
+
+  const goToPatient360 = () => {
+    if (entry.patientId) selectPatient(entry.patientId);
+    setView("patient_360");
+  };
+
+  // Determine the consultation action button based on state.
+  // - No encounter linked → no consultation action (patient not checked in).
+  // - Encounter linked, no consultations → "Start Consultation" (navigates to consultations view; the consultations view's "New" dialog will pre-fill patient + encounter from the store).
+  // - Encounter linked, draft exists → "Continue Consultation" (auto-opens the draft).
+  // - Encounter linked, only signed → "View Consultation".
+  // - Encounter linked, multiple → "Open Consultations" (navigates to list).
+  const renderConsultationAction = () => {
+    if (!encounterId) return null; // patient not checked in — no encounter to anchor a consultation
+    if (!canStartConsult) return null; // RBAC — user not authorized to view/start consultations
+    if (!hasConsultations) {
+      // Start Consultation — navigates to consultations view, which will
+      // pre-fill the New Consultation dialog with the patient + encounter
+      // from the store (selectedPatientId + selectedEncounterId).
+      return (
+        <Button
+          size="sm"
+          onClick={() => goToConsultations()}
+          disabled={busy}
+          className="gap-1 h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700"
+          title="Start a new consultation for this patient's encounter"
+        >
+          <Stethoscope className="w-3 h-3" /> Start Consultation
+        </Button>
+      );
+    }
+    if (draftConsultations.length > 0) {
+      // Continue the most recent draft consultation.
+      const latestDraft = draftConsultations[0];
+      return (
+        <Button
+          size="sm"
+          onClick={() => goToConsultations(latestDraft.id)}
+          disabled={busy}
+          className="gap-1 h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700"
+          title={`Continue draft consultation (started ${formatRelative(latestDraft.createdAt)})`}
+        >
+          <Stethoscope className="w-3 h-3" /> Continue Consultation
+        </Button>
+      );
+    }
+    if (signedConsultations.length > 0 && consultations.length === 1) {
+      // Single signed/amended consultation — view it.
+      const onlySigned = signedConsultations[0];
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => goToConsultations(onlySigned.id)}
+          disabled={busy}
+          className="gap-1 h-7 px-2 text-xs"
+          title="View the completed consultation"
+        >
+          <FileText className="w-3 h-3" /> View Consultation
+        </Button>
+      );
+    }
+    // Multiple consultations — open the list (filtered by encounter via the store).
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => goToConsultations()}
+        disabled={busy}
+        className="gap-1 h-7 px-2 text-xs"
+        title={`${consultations.length} consultations exist for this encounter — open the list`}
+      >
+        <FileText className="w-3 h-3" /> Open Consultations
+      </Button>
+    );
+  };
 
   return (
     <div className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-amber-50/40">
@@ -564,6 +678,15 @@ function QueueEntryRow({
               <Clock className="w-3 h-3" />
               {formatWait(waitMin)}
             </span>
+            {entry.encounterId && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="inline-flex items-center gap-0.5 text-emerald-700" title="Encounter linked to this queue entry">
+                  <Activity className="w-3 h-3" />
+                  {entry.encounter?.encounterNumber || "ENC"}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -573,6 +696,23 @@ function QueueEntryRow({
         <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${priorityColor}`}>
           {entry.priority}
         </span>
+
+        {/* Context-aware consultation action (state-aware) */}
+        {renderConsultationAction()}
+
+        {/* Patient 360 — always available when a patient is linked */}
+        {entry.patientId && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={goToPatient360}
+            disabled={busy}
+            className="gap-1 h-7 px-2 text-xs text-slate-700"
+            title="Open Patient 360"
+          >
+            <User className="w-3 h-3" /> 360
+          </Button>
+        )}
 
         {/* Context-aware action buttons */}
         {entry.status === "waiting" && (

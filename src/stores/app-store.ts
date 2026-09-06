@@ -102,12 +102,42 @@ type AppState = {
   activeFacilityId: string | null;
   selectedPatientId: string | null;
   selectedEncounterId: string | null;
+  // NEW: consultation context for cross-module navigation (Queue → Consultation,
+  // Consultation → Lab/Imaging/Pharmacy → back to Consultation).  This is UI
+  // context only — the data model has no `consultationId` on Lab/Imaging/Rx
+  // (orders anchor to Encounter, not Consultation), so this id is used purely
+  // for UI return-navigation and "return to consultation" prompts.
+  selectedConsultationId: string | null;
+  // NEW: when the user navigates away from Consultation to a side workflow
+  // (Lab/Imaging/Pharmacy), we remember where to return to.  The destination
+  // view's "Return to Consultation" button calls `returnToConsultation()`.
+  returnToView: ViewKey | null;
+  returnToConsultationId: string | null;
+  returnToEncounterId: string | null;
+  returnToPatientId: string | null;
   sidebarCollapsed: boolean;
   setView: (v: ViewKey) => void;
   setActiveFacility: (id: string | null) => void;
   selectPatient: (id: string | null) => void;
   selectEncounter: (id: string | null) => void;
+  selectConsultation: (id: string | null) => void;
   toggleSidebar: () => void;
+  // NEW: Navigate to a side workflow (Lab/Imaging/Pharmacy) from a consultation,
+  // remembering the consultation context so the destination can offer a
+  // "Return to Consultation" action.  Sets the store's patient/encounter/
+  // consultation context so the destination view's "New" dialog can pre-fill.
+  navigateFromConsultation: (params: {
+    patientId: string;
+    encounterId: string;
+    consultationId: string;
+    targetView: ViewKey;
+  }) => void;
+  // NEW: Clear the return-context and navigate back to the originating
+  // consultation view.  Called by Lab/Imaging/Pharmacy "Return to Consultation".
+  returnToConsultation: () => void;
+  // NEW: Clear just the return-context (without navigating) — used when the
+  // user manually navigates elsewhere via the sidebar.
+  clearReturnContext: () => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -117,12 +147,65 @@ export const useAppStore = create<AppState>()(
       activeFacilityId: null,
       selectedPatientId: null,
       selectedEncounterId: null,
+      selectedConsultationId: null,
+      returnToView: null,
+      returnToConsultationId: null,
+      returnToEncounterId: null,
+      returnToPatientId: null,
       sidebarCollapsed: false,
-      setView: (v) => set({ view: v }),
+      setView: (v) =>
+        set((s) => {
+          // When the user manually navigates via the sidebar to a view that
+          // is NOT the consultation return target, clear the return-context
+          // so we don't show a stale "Return to Consultation" button.
+          if (s.returnToView && v !== s.returnToView) {
+            return {
+              view: v,
+              returnToView: null,
+              returnToConsultationId: null,
+              returnToEncounterId: null,
+              returnToPatientId: null,
+            };
+          }
+          return { view: v };
+        }),
       setActiveFacility: (id) => set({ activeFacilityId: id }),
       selectPatient: (id) => set({ selectedPatientId: id }),
       selectEncounter: (id) => set({ selectedEncounterId: id }),
+      selectConsultation: (id) => set({ selectedConsultationId: id }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      navigateFromConsultation: ({ patientId, encounterId, consultationId, targetView }) =>
+        set({
+          selectedPatientId: patientId,
+          selectedEncounterId: encounterId,
+          selectedConsultationId: consultationId,
+          returnToView: "consultations",
+          returnToConsultationId: consultationId,
+          returnToEncounterId: encounterId,
+          returnToPatientId: patientId,
+          view: targetView,
+        }),
+      returnToConsultation: () =>
+        set((s) => {
+          if (!s.returnToView || !s.returnToConsultationId) return {};
+          return {
+            view: s.returnToView,
+            selectedPatientId: s.returnToPatientId,
+            selectedEncounterId: s.returnToEncounterId,
+            selectedConsultationId: s.returnToConsultationId,
+            returnToView: null,
+            returnToConsultationId: null,
+            returnToEncounterId: null,
+            returnToPatientId: null,
+          };
+        }),
+      clearReturnContext: () =>
+        set({
+          returnToView: null,
+          returnToConsultationId: null,
+          returnToEncounterId: null,
+          returnToPatientId: null,
+        }),
     }),
     {
       name: "jem-hmis-store",

@@ -74,6 +74,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "encounterId and patientId are required" }, { status: 400 });
   }
 
+  // ─── IDOR / consistency check (per spec §15) ─────────────────────────
+  // Verify the encounter actually belongs to the claimed patient AND to
+  // the authenticated user's organization.  Without this check, a malicious
+  // client could POST { patientId: A, encounterId: B } where encounter B
+  // belongs to a different patient — creating a consultation attached to
+  // the wrong encounter in Patient 360.
+  const encounter = await db.encounter.findFirst({
+    where: { id: encounterId, patientId },
+    include: { facility: { select: { organizationId: true } } },
+  });
+  if (!encounter) {
+    return NextResponse.json(
+      { error: "Encounter not found for this patient. Cannot create a consultation against a mismatched encounter." },
+      { status: 404 }
+    );
+  }
+  // Organization isolation: the encounter's facility must belong to the
+  // authenticated user's organization.  (Facility→Organization is a hard
+  // FK in the schema; this check enforces cross-org isolation at the API
+  // layer in addition to the DB-level FK.)
+  if (encounter.facility?.organizationId !== session.user.organizationId) {
+    return NextResponse.json(
+      { error: "Encounter does not belong to your organization." },
+      { status: 403 }
+    );
+  }
+
   const consultation = await db.consultation.create({
     data: {
       encounterId,

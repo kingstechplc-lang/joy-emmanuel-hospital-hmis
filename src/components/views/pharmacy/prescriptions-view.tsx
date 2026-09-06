@@ -137,7 +137,11 @@ export function PrescriptionsView() {
   const can = (p: string) => user?.roles?.includes("super_admin") || perms.includes(p);
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
-  const [tab, setTab] = useState("dashboard");
+  const selectedPatientId = useAppStore((s) => s.selectedPatientId);
+  const selectedEncounterId = useAppStore((s) => s.selectedEncounterId);
+  const returnToConsultation = useAppStore((s) => s.returnToConsultation);
+  const returnToView = useAppStore((s) => s.returnToView);
+  const [tab, setTab] = useState("prescriptions");
 
   return (
     <div className="space-y-4">
@@ -160,6 +164,22 @@ export function PrescriptionsView() {
         }
       />
 
+      {/* Return-to-consultation banner — shown when the user arrived here
+          from a consultation via "Pharmacy".  Preserves the consultation
+          context so the user can return to the originating consultation
+          after creating the prescription. */}
+      {returnToView === "consultations" && returnToConsultation && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2 text-sm">
+          <span className="text-blue-800">
+            <strong>Prescriptions</strong> — patient + encounter + prescriber pre-filled from your consultation.
+            Create the prescription, then return to continue the consultation.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => returnToConsultation()} className="gap-1.5 h-7">
+            ← Return to Consultation
+          </Button>
+        </div>
+      )}
+
       {!activeFacilityId && (
         <Card>
           <CardContent className="p-4 text-sm text-amber-700 bg-amber-50">
@@ -177,6 +197,8 @@ export function PrescriptionsView() {
             facilityId={activeFacilityId}
             can={can}
             defaultPrescriberId={user?.id}
+            defaultPatientId={selectedPatientId}
+            defaultEncounterId={selectedEncounterId}
           />
         </TabsContent>
       </Tabs>
@@ -254,10 +276,14 @@ function PrescriptionsTab({
   facilityId,
   can,
   defaultPrescriberId,
+  defaultPatientId,
+  defaultEncounterId,
 }: {
   facilityId: string | null;
   can: (p: string) => boolean;
   defaultPrescriberId?: string;
+  defaultPatientId?: string | null;
+  defaultEncounterId?: string | null;
 }) {
   const qc = useQueryClient();
   const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
@@ -266,6 +292,24 @@ function PrescriptionsTab({
   const [showNew, setShowNew] = useState(false);
   const [viewRx, setViewRx] = useState<any | null>(null);
   const [dispenseItem, setDispenseItem] = useState<any | null>(null);
+  // Track whether we've auto-opened the New dialog for the current
+  // (patient, encounter) pair to avoid reopening it on every re-render.
+  const [autoOpenFired, setAutoOpenFired] = useState<string | null>(null);
+
+  // Auto-open the New Prescription dialog when arriving from a consultation
+  // with defaultPatientId + defaultEncounterId set.  We only fire once per
+  // (patient, encounter) pair to avoid loops.
+  useEffect(() => {
+    if (
+      can("pharmacy.prescribe") &&
+      defaultPatientId &&
+      defaultEncounterId &&
+      autoOpenFired !== `${defaultPatientId}:${defaultEncounterId}`
+    ) {
+      setShowNew(true);
+      setAutoOpenFired(`${defaultPatientId}:${defaultEncounterId}`);
+    }
+  }, [can, defaultPatientId, defaultEncounterId, autoOpenFired]);
 
   const params = new URLSearchParams();
   if (facilityId) params.set("facilityId", facilityId);
@@ -392,6 +436,8 @@ function PrescriptionsTab({
         onCreated={() => { setShowNew(false); invalidate(); }}
         defaultFacilityId={facilityId || undefined}
         defaultPrescriberId={defaultPrescriberId}
+        defaultPatientId={defaultPatientId}
+        defaultEncounterId={defaultEncounterId}
       />
 
       {viewRx && (
@@ -518,15 +564,20 @@ function PrescriptionCard({
 // =====================================================================
 function NewPrescriptionDialog({
   open, onClose, onCreated, defaultFacilityId, defaultPrescriberId,
+  defaultPatientId, defaultEncounterId,
 }: {
   open: boolean; onClose: () => void; onCreated: () => void;
   defaultFacilityId?: string; defaultPrescriberId?: string;
+  /** Pre-fill patient (from the store's selectedPatientId, set by Consultation navigation). */
+  defaultPatientId?: string | null;
+  /** Pre-fill encounter (from the store's selectedEncounterId). */
+  defaultEncounterId?: string | null;
 }) {
   const [patientQuery, setPatientQuery] = useState("");
   const [patients, setPatients] = useState<any[]>([]);
-  const [patientId, setPatientId] = useState("");
+  const [patientId, setPatientId] = useState(defaultPatientId || "");
   const [patientAllergies, setPatientAllergies] = useState<any[]>([]);
-  const [encounterId, setEncounterId] = useState("");
+  const [encounterId, setEncounterId] = useState(defaultEncounterId || "");
   const [encounters, setEncounters] = useState<any[]>([]);
   const [facilityId, setFacilityId] = useState(defaultFacilityId || "");
   const [facilities, setFacilities] = useState<any[]>([]);
@@ -538,6 +589,21 @@ function NewPrescriptionDialog({
   const [submitting, setSubmitting] = useState(false);
   const medPickerRef = useRef<HTMLDivElement>(null);
   const itemsEndRef = useRef<HTMLDivElement>(null);
+
+  // Pre-fill the patient's display name when defaultPatientId is provided
+  // (from the store's selectedPatientId, set by Consultation navigation).
+  useEffect(() => {
+    if (!defaultPatientId) return;
+    fetchJson(`/api/patients/${defaultPatientId}`)
+      .then((d) => {
+        if (d?.patient) {
+          const p = d.patient;
+          // Only set the query text if the user hasn't typed anything yet.
+          setPatientQuery((prev) => prev || `${p.firstName} ${p.lastName} (${p.patientNumber})`);
+        }
+      })
+      .catch(() => {});
+  }, [defaultPatientId]);
 
   // Load facilities
   useEffect(() => {

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -55,16 +55,69 @@ export function ConsultationsView() {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const selectPatient = useAppStore((s) => s.selectPatient);
   const setView = useAppStore((s) => s.setView);
+  const selectedPatientId = useAppStore((s) => s.selectedPatientId);
+  const selectedEncounterId = useAppStore((s) => s.selectedEncounterId);
+  const selectedConsultationId = useAppStore((s) => s.selectedConsultationId);
+  const selectConsultation = useAppStore((s) => s.selectConsultation);
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [viewConsult, setViewConsult] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "list">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "list">("list");
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["consultations", activeFacilityId],
-    queryFn: () => fetchJson(`/api/consultations?facilityId=${activeFacilityId}`),
+    queryKey: ["consultations", activeFacilityId, selectedEncounterId],
+    queryFn: () => {
+      // When selectedEncounterId is set (e.g., from Queue navigation),
+      // filter consultations by encounter so the relevant ones appear at
+      // the top of the list.  The API returns all facility consultations
+      // when no encounterId is provided.
+      const url = selectedEncounterId
+        ? `/api/consultations?facilityId=${activeFacilityId}&encounterId=${selectedEncounterId}`
+        : `/api/consultations?facilityId=${activeFacilityId}`;
+      return fetchJson(url);
+    },
     enabled: !!activeFacilityId,
   });
+
+  // Auto-open the consultation identified by selectedConsultationId (set
+  // by the Queue view's "Continue Consultation" / "View Consultation"
+  // buttons).  We only auto-open once per selectedConsultationId change —
+  // the effect's dependency array ensures we don't loop.
+  useEffect(() => {
+    if (!selectedConsultationId || !data?.items) return;
+    const found = data.items.find((c: any) => c.id === selectedConsultationId);
+    if (found) {
+      setViewConsult(found);
+      // Clear the selectedConsultationId so the user can manually navigate
+      // away and come back without the dialog auto-reopening.
+      selectConsultation(null);
+    }
+  }, [selectedConsultationId, data, selectConsultation]);
+
+  // When the user arrives from Queue with selectedPatientId +
+  // selectedEncounterId set BUT no existing consultation (the Queue
+  // "Start Consultation" path), auto-open the New Consultation dialog
+  // so they don't have to click the button manually.  We only fire this
+  // once per (patient, encounter) pair — the dependency array ensures
+  // we don't loop, and we clear the trigger by setting activeTab to
+  // "list" (the dialog renders regardless of tab).
+  const [autoOpenFired, setAutoOpenFired] = useState<string | null>(null);
+  useEffect(() => {
+    if (
+      canCreate &&
+      selectedPatientId &&
+      selectedEncounterId &&
+      data?.items &&
+      // Only auto-open when there are no consultations for this encounter
+      // (otherwise the user wants to view an existing one, not create a
+      // duplicate).
+      !data.items.some((c: any) => c.encounterId === selectedEncounterId) &&
+      autoOpenFired !== `${selectedPatientId}:${selectedEncounterId}`
+    ) {
+      setShowNew(true);
+      setAutoOpenFired(`${selectedPatientId}:${selectedEncounterId}`);
+    }
+  }, [canCreate, selectedPatientId, selectedEncounterId, data, autoOpenFired]);
 
   return (
     <div className="space-y-4">
@@ -201,6 +254,8 @@ export function ConsultationsView() {
             qc.invalidateQueries({ queryKey: ["consultations-stats"] });
           }}
           defaultFacilityId={activeFacilityId}
+          defaultPatientId={selectedPatientId}
+          defaultEncounterId={selectedEncounterId}
         />
       )}
       {viewConsult && (
@@ -379,10 +434,26 @@ function ConsultationsDashboard({ facilityId, canCreate, onNew }: { facilityId: 
 // =====================================================================
 // NEW CONSULTATION DIALOG — patient search + encounter selection + form
 // =====================================================================
-function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: { open: boolean; onClose: () => void; onCreated: () => void; defaultFacilityId: string | null }) {
+function NewConsultationDialog({
+  open,
+  onClose,
+  onCreated,
+  defaultFacilityId,
+  defaultPatientId,
+  defaultEncounterId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  defaultFacilityId: string | null;
+  /** Pre-fill patient (from queue/encounter navigation context). */
+  defaultPatientId?: string | null;
+  /** Pre-fill encounter (from queue/encounter navigation context). */
+  defaultEncounterId?: string | null;
+}) {
   const [patientQuery, setPatientQuery] = useState("");
-  const [patientId, setPatientId] = useState("");
-  const [encounterId, setEncounterId] = useState("");
+  const [patientId, setPatientId] = useState(defaultPatientId || "");
+  const [encounterId, setEncounterId] = useState(defaultEncounterId || "");
   const [form, setForm] = useState({
     chiefComplaint: "", historyPresentingIllness: "", pastMedicalHistory: "",
     pastSurgicalHistory: "", medicationHistory: "", familyHistory: "",
@@ -390,6 +461,23 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
     assessment: "", treatmentPlan: "", followUpPlan: "",
   });
   const [saving, setSaving] = useState(false);
+
+  // When the dialog opens with a defaultPatientId (from the store's
+  // selectedPatientId, set by Queue/Encounter navigation), resolve the
+  // patient's display name so the search box shows them by name instead
+  // of requiring the user to type.  We only fetch when we have an id and
+  // no current query text (so we don't overwrite a user's search).
+  const { data: defaultPatient } = useQuery({
+    queryKey: ["patient-prefill", defaultPatientId],
+    queryFn: () => fetchJson(`/api/patients/${defaultPatientId}`),
+    enabled: !!defaultPatientId && !patientQuery,
+  });
+  useEffect(() => {
+    if (defaultPatient?.patient && !patientQuery) {
+      const p = defaultPatient.patient;
+      setPatientQuery(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
+    }
+  }, [defaultPatient, patientQuery]);
 
   const setField = (k: string, val: string) => setForm((p) => ({ ...p, [k]: val }));
 
@@ -424,6 +512,8 @@ function NewConsultationDialog({ open, onClose, onCreated, defaultFacilityId }: 
       setPatientQuery(""); setPatientId(""); setEncounterId("");
       setForm({ chiefComplaint: "", historyPresentingIllness: "", pastMedicalHistory: "", pastSurgicalHistory: "", medicationHistory: "", familyHistory: "", socialHistory: "", reviewOfSystems: "", physicalExamination: "", assessment: "", treatmentPlan: "", followUpPlan: "" });
       onCreated();
+      // After creating, the parent ConsultationsView will navigate to the
+      // new consultation (via the onCreated callback's refetch + auto-open).
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -531,6 +621,9 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
   const canAmend = user?.roles?.includes("super_admin") || perms.includes("clinical.amend");
 
   const selectPatient = useAppStore((s) => s.selectPatient);
+  const selectEncounter = useAppStore((s) => s.selectEncounter);
+  const selectConsultation = useAppStore((s) => s.selectConsultation);
+  const navigateFromConsultation = useAppStore((s) => s.navigateFromConsultation);
   const setView = useAppStore((s) => s.setView);
   const [editable, setEditable] = useState<any>(c);
   const [saving, setSaving] = useState(false);
@@ -658,9 +751,32 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
     }
   };
 
+  // Cross-module navigation: set patient + encounter + consultation context
+  // before navigating so the destination view can pre-fill its "New" dialog.
+  // For Lab/Imaging/Pharmacy, use navigateFromConsultation so the destination
+  // view can offer a "Return to Consultation" button.
   const goToModule = (view: any) => {
     if (c.patientId) selectPatient(c.patientId);
+    if (c.encounterId) selectEncounter(c.encounterId);
+    if (c.id) selectConsultation(c.id);
     setView(view);
+  };
+
+  // Navigate to a side workflow (Lab/Imaging/Pharmacy) from this consultation,
+  // remembering the consultation context so the destination can offer a
+  // "Return to Consultation" action.  This sets the store's patient/encounter/
+  // consultation context AND the return-context, then switches the view.
+  const goToSideWorkflow = (targetView: any) => {
+    if (!c.patientId || !c.encounterId || !c.id) {
+      toast.error("Cannot navigate — consultation is missing patient/encounter/id context");
+      return;
+    }
+    navigateFromConsultation({
+      patientId: c.patientId,
+      encounterId: c.encounterId,
+      consultationId: c.id,
+      targetView,
+    });
   };
 
   return (
@@ -708,21 +824,21 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
                   className="h-7 px-2 text-amber-600 hover:bg-amber-50"
                 />
               )}
-              {c.patientId && (
+              {c.patientId && c.encounterId && c.id && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-pink-600 hover:bg-pink-50"
-                  onClick={() => goToModule("prescriptions")} title="Send to Pharmacy">
+                  onClick={() => goToSideWorkflow("prescriptions")} title="Send to Pharmacy (prefilled — return to consultation available)">
                   <Pill className="w-3.5 h-3.5" /> <span className="text-xs">Pharmacy</span>
                 </Button>
               )}
-              {c.patientId && (
+              {c.patientId && c.encounterId && c.id && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-cyan-600 hover:bg-cyan-50"
-                  onClick={() => goToModule("lab_orders")} title="Order Lab Tests">
+                  onClick={() => goToSideWorkflow("lab_orders")} title="Order Lab Tests (prefilled — return to consultation available)">
                   <FlaskConical className="w-3.5 h-3.5" /> <span className="text-xs">Lab</span>
                 </Button>
               )}
-              {c.patientId && (
+              {c.patientId && c.encounterId && c.id && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-indigo-600 hover:bg-indigo-50"
-                  onClick={() => goToModule("imaging")} title="Order Imaging">
+                  onClick={() => goToSideWorkflow("imaging")} title="Order Imaging (prefilled — return to consultation available)">
                   <ImageIcon className="w-3.5 h-3.5" /> <span className="text-xs">Imaging</span>
                 </Button>
               )}
