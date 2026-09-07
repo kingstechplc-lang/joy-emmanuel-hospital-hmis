@@ -501,25 +501,78 @@ function NewConsultationDialog({
     assessment: "", treatmentPlan: "", followUpPlan: "",
   });
   const [saving, setSaving] = useState(false);
-  // Auto-save state for Quick Action buttons (Lab/Imaging/Pharmacy) that
-  // trigger a POST (create draft) + navigate before the user clicks "Save Draft".
-  // The ref prevents rapid double-clicks from creating duplicate consultations.
   const autoSavingRef = useRef(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const navigateFromConsultation = useAppStore((s) => s.navigateFromConsultation);
+  // Pull store setters so we can clear the selected patient/encounter
+  // when the dialog is cancelled — otherwise the pre-filled data persists
+  // across reopens (the store's selectedPatientId/selectedEncounterId
+  // are passed as defaultPatientId/defaultEncounterId props and the
+  // useState only initializes once per mount, not per open).
+  const selectPatientStore = useAppStore((s) => s.selectPatient);
+  const selectEncounterStore = useAppStore((s) => s.selectEncounter);
 
-  // When the dialog opens with a defaultPatientId (from the store's
+  // ─── RESET ON OPEN/CLOSE ───────────────────────────────────────────
+  // When the dialog transitions from closed → open, re-initialize the
+  // form state from the current defaultPatientId/defaultEncounterId
+  // props (which may have changed since the last open).  When it
+  // transitions open → closed, clear ALL state so the next open starts
+  // fresh.  This fixes the "pre-filled data persists after Cancel" bug.
+  // We use a ref to track the previous open state so we detect the
+  // transition, not just the open state.
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      // Dialog just opened — initialize from current props.
+      setPatientId(defaultPatientId || "");
+      setEncounterId(defaultEncounterId || "");
+      setPatientQuery(""); // Will be set by the prefill effect below
+      setForm({
+        chiefComplaint: "", historyPresentingIllness: "", pastMedicalHistory: "",
+        pastSurgicalHistory: "", medicationHistory: "", familyHistory: "",
+        socialHistory: "", reviewOfSystems: "", physicalExamination: "",
+        assessment: "", treatmentPlan: "", followUpPlan: "",
+      });
+      setSaving(false);
+      setAutoSaving(false);
+      autoSavingRef.current = false;
+    }
+    if (!open && prevOpenRef.current) {
+      // Dialog just closed — clear all state.
+      setPatientId("");
+      setEncounterId("");
+      setPatientQuery("");
+      setForm({
+        chiefComplaint: "", historyPresentingIllness: "", pastMedicalHistory: "",
+        pastSurgicalHistory: "", medicationHistory: "", familyHistory: "",
+        socialHistory: "", reviewOfSystems: "", physicalExamination: "",
+        assessment: "", treatmentPlan: "", followUpPlan: "",
+      });
+      // Clear the store's selectedPatientId/selectedEncounterId so the
+      // next "New Consultation" open (via the sidebar button, not via
+      // Queue navigation) starts completely fresh.  When the user arrives
+      // via Queue navigation, the store is re-set before this dialog
+      // opens, so clearing here doesn't break that flow.
+      selectPatientStore(null);
+      selectEncounterStore(null);
+    }
+    prevOpenRef.current = open;
+  }, [open, defaultPatientId, defaultEncounterId, selectPatientStore, selectEncounterStore]);
+
+  // When the dialog is open with a defaultPatientId (from the store's
   // selectedPatientId, set by Queue/Encounter navigation), resolve the
   // patient's display name so the search box shows them by name instead
   // of requiring the user to type.  We only fetch when we have an id and
   // no current query text (so we don't overwrite a user's search).
+  // We also only fire this when the dialog is open, so we don't fetch
+  // unnecessarily when the dialog is closed.
   const { data: defaultPatient } = useQuery({
     queryKey: ["patient-prefill", defaultPatientId],
     queryFn: () => fetchJson(`/api/patients/${defaultPatientId}`),
-    enabled: !!defaultPatientId && !patientQuery,
+    enabled: !!defaultPatientId && !!open && !patientQuery,
   });
   useEffect(() => {
-    if (defaultPatient?.patient && !patientQuery) {
+    if (open && defaultPatient?.patient && !patientQuery) {
       const p = defaultPatient.patient;
       setPatientQuery(`${p.firstName} ${p.lastName} (${p.patientNumber})`);
     }
