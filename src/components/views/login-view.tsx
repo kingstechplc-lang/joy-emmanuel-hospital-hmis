@@ -40,9 +40,12 @@ export function LoginView() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Brand Panel */}
-      <div className="md:w-1/2 bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
+    <div className="h-screen flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+      {/* Brand Panel — hidden on mobile to make the login form immediately
+          visible.  On mobile, a compact header is shown in the Login Panel
+          instead (see below).  On md+ screens, the full branding panel
+          appears on the left as before. */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white p-8 md:p-12 flex-col justify-between relative overflow-hidden">
         {/* Decorative background blobs */}
         <div className="absolute inset-0 opacity-20 pointer-events-none">
           <div className="w-96 h-96 bg-white rounded-full blur-3xl absolute -top-32 -right-32 animate-pulse" style={{ animationDuration: "8s" }} />
@@ -117,9 +120,19 @@ export function LoginView() {
         </div>
       </div>
 
-      {/* Login Panel */}
-      <div className="md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-gradient-to-br from-slate-50 to-slate-100 relative">
-        <Card className="w-full max-w-md shadow-xl ring-1 ring-slate-200/50">
+      {/* Login Panel — full width on mobile, right half on md+ */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-gradient-to-br from-slate-50 to-slate-100 relative">
+        {/* Mobile-only compact header — replaces the hidden Brand Panel */}
+        <div className="md:hidden absolute top-0 left-0 right-0 bg-gradient-to-r from-emerald-700 to-teal-800 text-white px-6 py-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/15 backdrop-blur rounded-lg flex items-center justify-center ring-1 ring-white/30">
+            <ShieldPlus className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Joy Emmanuel Hospital</h1>
+            <p className="text-emerald-100 text-xs">Hospital Management Information System</p>
+          </div>
+        </div>
+        <Card className="w-full max-w-md shadow-xl ring-1 ring-slate-200/50 mt-20 md:mt-0">
           <CardHeader className="space-y-1.5 pb-2">
             <div className="w-11 h-11 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-lg flex items-center justify-center mb-2 shadow-md">
               <ShieldPlus className="w-6 h-6 text-white" />
