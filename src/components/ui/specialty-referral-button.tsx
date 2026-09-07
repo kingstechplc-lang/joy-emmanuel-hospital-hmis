@@ -163,10 +163,10 @@ export function SpecialtyReferralButton({
 
       {open && (
         <Dialog open onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
-            <DialogHeader>
+          <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
               <DialogTitle className="text-white flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-amber-600" />
+                <Share2 className="w-5 h-5" />
                 Refer to Specialty Clinic
               </DialogTitle>
               <DialogDescription className="text-white/80">
@@ -174,84 +174,86 @@ export function SpecialtyReferralButton({
               </DialogDescription>
             </DialogHeader>
 
-            {preselectedPatient ? (
-              // Patient already known — show chip
-              <div className="flex items-center gap-2 p-2 border rounded-lg bg-emerald-50 border-emerald-200">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs flex-shrink-0">
-                  {patient?.firstName?.[0]?.toUpperCase()}{patient?.lastName?.[0]?.toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-900 truncate">
-                    {preselectedPatient.patientName}
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
+              {preselectedPatient ? (
+                // Patient already known — show chip
+                <div className="flex items-center gap-2 p-2 border rounded-lg bg-emerald-50 border-emerald-200">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs flex-shrink-0">
+                    {patient?.firstName?.[0]?.toUpperCase()}{patient?.lastName?.[0]?.toUpperCase()}
                   </div>
-                  <div className="text-xs text-slate-500 truncate">
-                    {preselectedPatient.patientNumber && <span className="font-mono">{preselectedPatient.patientNumber}</span>}
-                    {preselectedPatient.patientAge != null && <span> · {preselectedPatient.patientAge}y</span>}
-                    {preselectedPatient.patientSex && <span> · {preselectedPatient.patientSex}</span>}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate">
+                      {preselectedPatient.patientName}
+                    </div>
+                    <div className="text-xs text-slate-500 truncate">
+                      {preselectedPatient.patientNumber && <span className="font-mono">{preselectedPatient.patientNumber}</span>}
+                      {preselectedPatient.patientAge != null && <span> · {preselectedPatient.patientAge}y</span>}
+                      {preselectedPatient.patientSex && <span> · {preselectedPatient.patientSex}</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              // No pre-selected patient — show picker
-              <PatientPicker
-                label="Patient"
-                required
-                value={pickerPatient}
-                onChange={setPickerPatient}
-                onRegisterNew={() => {
-                  setOpen(false);
-                  setView("patient_new");
-                }}
-              />
-            )}
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div>
-                <Label>Urgency</Label>
-                <Select value={form.urgency} onValueChange={(v) => set("urgency", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="routine">Routine</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2">
-                <DepartmentSelect
-                  label="From Department"
+              ) : (
+                // No pre-selected patient — show picker
+                <PatientPicker
+                  label="Patient"
                   required
-                  value={fromDept}
-                  onChange={setFromDept}
-                  allowManual
+                  value={pickerPatient}
+                  onChange={setPickerPatient}
+                  onRegisterNew={() => {
+                    setOpen(false);
+                    setView("patient_new");
+                  }}
                 />
-              </div>
-              <div>
-                <Label>Referring Clinician</Label>
-                <Input value={form.fromClinicianName} onChange={(e) => set("fromClinicianName", e.target.value)} />
-              </div>
-              <div>
-                <FieldLabel>To Specialty</FieldLabel>
-                <Select value={form.toDepartmentCode} onValueChange={(v) => set("toDepartmentCode", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SPECIALTIES.map((s) => (
-                      <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Receiving Clinician (optional)</Label>
-                <Input value={form.toClinicianName} onChange={(e) => set("toClinicianName", e.target.value)} />
-              </div>
-              <div className="col-span-2 md:col-span-3">
-                <FieldLabel>Reason for Referral</FieldLabel>
-                <Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={2} placeholder="Brief reason for referral..." />
-              </div>
-              <div className="col-span-2 md:col-span-3">
-                <Label>Clinical Summary</Label>
-                <Textarea value={form.clinicalSummary} onChange={(e) => set("clinicalSummary", e.target.value)} rows={3} placeholder="Relevant history, findings, current medications..." />
+              )}
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div>
+                  <Label>Urgency</Label>
+                  <Select value={form.urgency} onValueChange={(v) => set("urgency", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="routine">Routine</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <DepartmentSelect
+                    label="From Department"
+                    required
+                    value={fromDept}
+                    onChange={setFromDept}
+                    allowManual
+                  />
+                </div>
+                <div>
+                  <Label>Referring Clinician</Label>
+                  <Input value={form.fromClinicianName} onChange={(e) => set("fromClinicianName", e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel>To Specialty</FieldLabel>
+                  <Select value={form.toDepartmentCode} onValueChange={(v) => set("toDepartmentCode", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SPECIALTIES.map((s) => (
+                        <SelectItem key={s.code} value={s.code}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Receiving Clinician (optional)</Label>
+                  <Input value={form.toClinicianName} onChange={(e) => set("toClinicianName", e.target.value)} />
+                </div>
+                <div className="col-span-2 md:col-span-3">
+                  <FieldLabel>Reason for Referral</FieldLabel>
+                  <Textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} rows={2} placeholder="Brief reason for referral..." />
+                </div>
+                <div className="col-span-2 md:col-span-3">
+                  <Label>Clinical Summary</Label>
+                  <Textarea value={form.clinicalSummary} onChange={(e) => set("clinicalSummary", e.target.value)} rows={3} placeholder="Relevant history, findings, current medications..." />
+                </div>
               </div>
             </div>
 
