@@ -1062,16 +1062,15 @@ function TransferDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
-        {/* Keyed body — fresh form state per entry, no effect needed */}
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="compact">
         {entry && (
-          <div className="flex-1 overflow-y-auto min-h-0 p-6"><TransferDialogBody
+          <TransferDialogBody
             key={entry.id}
             entry={entry}
             allQueues={allQueues}
             onConfirm={onConfirm}
             onClose={onClose}
-          /></div>
+          />
         )}
       </DialogContent>
     </Dialog>
@@ -1105,16 +1104,18 @@ function TransferDialogBody({
   return (
     <>
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-        <DialogTitle className="text-white">Transfer Patient</DialogTitle>
+        <DialogTitle className="text-white flex items-center gap-2">
+          <ArrowRightLeft className="w-5 h-5" /> Transfer Patient
+        </DialogTitle>
         <DialogDescription className="text-white/80">
           Move{" "}
-          <span className="font-semibold text-slate-900">
+          <span className="font-semibold text-white">
             {entry?.patient?.firstName} {entry?.patient?.lastName}
           </span>{" "}
           (#{entry?.queueNumber}) to another queue. A new queue number will be assigned.
         </DialogDescription>
       </DialogHeader>
-      <div className="p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
         <div>
           <FieldLabel required>Target Queue</FieldLabel>
           <Select value={targetQueueId} onValueChange={setTargetQueueId}>
@@ -1174,15 +1175,14 @@ function SkipDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="p-0 gap-0 flex flex-col overflow-hidden" size="compact">
-        {/* Keyed body — fresh form state per entry, no effect needed */}
+      <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="compact">
         {entry && (
-          <div className="flex-1 overflow-y-auto min-h-0 p-6"><SkipDialogBody
+          <SkipDialogBody
             key={entry.id}
             entry={entry}
             onConfirm={onConfirm}
             onClose={onClose}
-          /></div>
+          />
         )}
       </DialogContent>
     </Dialog>
@@ -1213,19 +1213,19 @@ function SkipDialogBody({
     <>
       <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
         <DialogTitle className="text-white flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <AlertTriangle className="w-5 h-5" />
           {isNoShow ? "Mark as No-Show" : "Skip Patient"}
         </DialogTitle>
         <DialogDescription className="text-white/80">
           Record why{" "}
-          <span className="font-semibold text-slate-900">
+          <span className="font-semibold text-white">
             {entry?.patient?.firstName} {entry?.patient?.lastName}
           </span>{" "}
           (#{entry?.queueNumber}) is being {isNoShow ? "marked as no-show (cancelled)" : "skipped"}.
         </DialogDescription>
       </DialogHeader>
-      <div className="p-6 space-y-3">
-        <div className="flex-1 overflow-y-auto p-6 flex gap-2">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-3">
+        <div className="flex gap-2">
           <Button
             size="sm"
             variant={!isNoShow ? "default" : "outline"}
