@@ -101,6 +101,49 @@ export async function POST(req: Request) {
     );
   }
 
+  // ─── DUPLICATE PREVENTION (per spec §2, §3, §10) ────────────────────
+  // ONE ENCOUNTER = ONE PRIMARY CONSULTATION for the OPD/general workflow.
+  //
+  // The Consultation model has NO consultationType/isPrimary discriminator —
+  // every consultation created through this API IS a primary OPD consultation.
+  // Specialty consultations use a DIFFERENT model (SpecialtyEncounter in
+  // schema-extended.prisma), so one-per-encounter is the correct rule here.
+  //
+  // Before creating, check whether a consultation already exists for this
+  // encounter.  If it does, return 409 Conflict with the existing
+  // consultation's id and status so the client can open/continue/view it
+  // instead of creating a duplicate.
+  //
+  // Race-condition note (per spec §11): this check is NOT perfectly race-safe
+  // (two concurrent requests could both pass the check).  A partial unique
+  // index would provide true race safety, but we deliberately do NOT add one
+  // (per spec §3 — existing data may contain legitimate duplicates from before
+  // this rule was enforced, and a unique constraint would break the migration).
+  // The practical risk is extremely low: two clinicians creating consultations
+  // for the same encounter at the exact same millisecond is unrealistic in the
+  // OPD workflow.  The client-side check (NewConsultationDialog lookup) provides
+  // a second layer of protection.
+  const existingConsultation = await db.consultation.findFirst({
+    where: { encounterId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, clinicianId: true, createdAt: true },
+  });
+  if (existingConsultation) {
+    return NextResponse.json(
+      {
+        error: "An existing consultation is already associated with this encounter.",
+        code: "CONSULTATION_ALREADY_EXISTS",
+        existingConsultation: {
+          id: existingConsultation.id,
+          status: existingConsultation.status,
+          clinicianId: existingConsultation.clinicianId,
+          createdAt: existingConsultation.createdAt,
+        },
+      },
+      { status: 409 }
+    );
+  }
+
   const consultation = await db.consultation.create({
     data: {
       encounterId,

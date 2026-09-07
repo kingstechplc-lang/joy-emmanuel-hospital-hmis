@@ -15,6 +15,7 @@ import {
   Plus, ClipboardList, PenSquare, Save, Check, X, Lock, Share2, Eye,
   Clock, StickyNote, LayoutDashboard, ListChecks, Pill, FlaskConical,
   Image as ImageIcon, BedDouble, CalendarClock, RotateCw, Activity,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -283,6 +284,12 @@ export function ConsultationsView() {
           defaultFacilityId={activeFacilityId}
           defaultPatientId={selectedPatientId}
           defaultEncounterId={selectedEncounterId}
+          onOpenExisting={(consultation) => {
+            // Close the New dialog and open the View dialog with the
+            // existing consultation — this prevents creating a duplicate.
+            setShowNew(false);
+            setViewConsult(consultation);
+          }}
         />
       )}
       {viewConsult && (
@@ -468,6 +475,7 @@ function NewConsultationDialog({
   defaultFacilityId,
   defaultPatientId,
   defaultEncounterId,
+  onOpenExisting,
 }: {
   open: boolean;
   onClose: () => void;
@@ -477,6 +485,11 @@ function NewConsultationDialog({
   defaultPatientId?: string | null;
   /** Pre-fill encounter (from queue/encounter navigation context). */
   defaultEncounterId?: string | null;
+  /** Called when the user chooses to open/continue/view an existing
+   *  consultation for the selected encounter (instead of creating a
+   *  duplicate).  The parent view should close this dialog and open
+   *  the ViewConsultationDialog with the specified consultation. */
+  onOpenExisting?: (consultation: any) => void;
 }) {
   const [patientQuery, setPatientQuery] = useState("");
   const [patientId, setPatientId] = useState(defaultPatientId || "");
@@ -525,9 +538,29 @@ function NewConsultationDialog({
     enabled: !!patientId,
   });
 
+  // ─── DUPLICATE CONSULTATION DETECTION (per spec §5, §6, §7) ────────
+  // When the user selects patient + encounter, look up whether a
+  // consultation already exists for that encounter.  If it does, the
+  // dialog shows a "consultation exists" banner with Continue/View/Amend
+  // actions instead of allowing a new consultation to be created.
+  // This prevents accidental duplicate primary consultations.
+  const { data: existingConsultData } = useQuery({
+    queryKey: ["existing-consultation", encounterId],
+    queryFn: () => fetchJson(`/api/consultations?encounterId=${encounterId}&limit=1`),
+    enabled: !!encounterId,
+  });
+  const existingConsultation: any = (existingConsultData?.items || [])[0] || null;
+  const consultationExists = !!existingConsultation;
+
   const submit = async () => {
     if (!patientId || !encounterId) {
       toast.error("Please select patient and encounter");
+      return;
+    }
+    // If the client-side lookup already detected an existing consultation,
+    // block the submit — the user should use Continue/View instead.
+    if (consultationExists && existingConsultation) {
+      toast.info("A consultation already exists for this encounter. Use 'Continue' or 'View' instead.");
       return;
     }
     setSaving(true);
@@ -539,14 +572,24 @@ function NewConsultationDialog({
       });
       if (!res.ok) {
         const err = await safeJson(res);
+        // Handle 409 Conflict — server caught a duplicate that the
+        // client-side lookup missed (e.g., a race condition).  Offer
+        // to open the existing consultation instead of creating a new one.
+        if (res.status === 409 && err.existingConsultation) {
+          toast.info("A consultation already exists for this encounter. Opening it...");
+          // Fetch the full consultation record so we can open it.
+          const fullRes = await fetchJson(`/api/consultations/${err.existingConsultation.id}`);
+          if (fullRes && onOpenExisting) {
+            onOpenExisting(fullRes);
+          }
+          return;
+        }
         throw new Error(err.error || "Failed");
       }
       toast.success("Consultation created (draft)");
       setPatientQuery(""); setPatientId(""); setEncounterId("");
       setForm({ chiefComplaint: "", historyPresentingIllness: "", pastMedicalHistory: "", pastSurgicalHistory: "", medicationHistory: "", familyHistory: "", socialHistory: "", reviewOfSystems: "", physicalExamination: "", assessment: "", treatmentPlan: "", followUpPlan: "" });
       onCreated();
-      // After creating, the parent ConsultationsView will navigate to the
-      // new consultation (via the onCreated callback's refetch + auto-open).
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -574,6 +617,22 @@ function NewConsultationDialog({
       toast.error("Please select a patient and encounter before using Quick Actions.");
       return;
     }
+    // ─── DUPLICATE CHECK (per spec §9, §18) ─────────────────────────
+    // Before POSTing, check if a consultation already exists for this
+    // encounter.  If it does, do NOT create a duplicate — use the
+    // existing consultation's id for navigation instead.  This prevents
+    // the auto-save from making the duplicate problem worse.
+    if (consultationExists && existingConsultation) {
+      // Use the existing consultation's id — do NOT POST a new one.
+      toast.info("Using existing consultation for this encounter.", { id: undefined });
+      navigateFromConsultation({
+        patientId,
+        encounterId,
+        consultationId: existingConsultation.id,
+        targetView,
+      });
+      return;
+    }
     autoSavingRef.current = true;
     setAutoSaving(true);
     const toastId = toast.loading("Saving consultation draft...");
@@ -585,18 +644,24 @@ function NewConsultationDialog({
       });
       if (!res.ok) {
         const err = await safeJson(res);
+        // Handle 409 Conflict — server caught a duplicate (race condition).
+        // Use the existing consultation instead of creating a new one.
+        if (res.status === 409 && err.existingConsultation) {
+          toast.info("A consultation already exists — using it.", { id: toastId });
+          navigateFromConsultation({
+            patientId,
+            encounterId,
+            consultationId: err.existingConsultation.id,
+            targetView,
+          });
+          return;
+        }
         throw new Error(err.error || "Failed to save consultation draft");
       }
       const data = await safeJson(res);
       const newConsultationId = data.id;
       toast.success("Consultation draft saved", { id: toastId });
-      // Close dialog + invalidate queries (same as manual "Save Draft")
       onCreated();
-      // Navigate to the destination with the exact patient + encounter +
-      // newly-created consultation context.  The destination view (Lab/
-      // Imaging/Pharmacy) will pre-fill its New dialog from the store's
-      // selectedPatientId + selectedEncounterId + selectedConsultationId,
-      // and will offer a "Return to Consultation" banner.
       navigateFromConsultation({
         patientId,
         encounterId,
@@ -653,6 +718,65 @@ function NewConsultationDialog({
             </div>
           )}
 
+          {/* ─── EXISTING CONSULTATION DETECTION (per spec §5, §6, §7) ──
+              When a consultation already exists for the selected encounter,
+              show a banner with Continue/View/Amend actions instead of
+              allowing a new consultation to be created.  This prevents
+              duplicate primary consultations. */}
+          {consultationExists && existingConsultation && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">
+                    An existing consultation is already associated with this encounter.
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Status: <span className="font-medium uppercase">{existingConsultation.status}</span>
+                    {existingConsultation.clinician && (
+                      <> • Clinician: {existingConsultation.clinician.firstName} {existingConsultation.clinician.lastName}</>
+                    )}
+                    {existingConsultation.createdAt && (
+                      <> • Created {formatDate(existingConsultation.createdAt, true)}</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {existingConsultation.status === "draft" && (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-blue-600 hover:bg-blue-700"
+                    onClick={() => onOpenExisting?.(existingConsultation)}
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" /> Continue Consultation
+                  </Button>
+                )}
+                {(existingConsultation.status === "signed" || existingConsultation.status === "amended") && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => onOpenExisting?.(existingConsultation)}
+                  >
+                    <Eye className="w-3.5 h-3.5" /> View Consultation
+                  </Button>
+                )}
+                {/* "Amend" button is offered by the ViewConsultationDialog
+                    itself (gated by clinical.amend permission), so we don't
+                    need to duplicate that logic here.  The View button opens
+                    the consultation; the user can amend from there. */}
+              </div>
+              <p className="text-[11px] text-amber-600">
+                A new consultation cannot be created for this encounter. Use the buttons above to open the existing consultation.
+              </p>
+            </div>
+          )}
+
+          {/* Hide the form tabs when a consultation already exists — the
+              clinician should use the existing consultation's form, not fill
+              out a new one that would create a duplicate. */}
+          {!consultationExists && (
           <Tabs defaultValue="complaint">
             <TabsList className="flex w-max flex-wrap">
               <TabsTrigger value="complaint">Complaint</TabsTrigger>
@@ -681,14 +805,18 @@ function NewConsultationDialog({
               <Section label="Follow-up Plan"><Textarea value={form.followUpPlan} onChange={(e) => setField("followUpPlan", e.target.value)} rows={2} /></Section>
             </TabsContent>
           </Tabs>
+          )}
 
           {/* Quick Actions row — auto-save the consultation as Draft then
               navigate to the destination module with the patient/encounter/
               consultation context pre-filled.  Only visible when patient +
               encounter are selected (minimum required to create a draft).
+              Also hidden when a consultation already exists (to prevent
+              creating a duplicate via auto-save — the user should use
+              the existing consultation's Quick Actions instead).
               Buttons are disabled while a save is in-flight (per spec §14
               — prevents duplicate consultations from rapid double-clicks). */}
-          {patientId && encounterId && (
+          {patientId && encounterId && !consultationExists && (
             <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/50 p-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 mr-1 hidden sm:inline">
                 Quick Actions (saves draft first):
@@ -716,10 +844,14 @@ function NewConsultationDialog({
         </div>
         <DialogFooter className="p-6 pt-4 shrink-0 border-t">
           <Button variant="outline" onClick={onClose} disabled={autoSaving}>Cancel</Button>
-          <Button onClick={submit} disabled={saving || autoSaving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            {saving || autoSaving ? <Save className="w-4 h-4 animate-pulse" /> : <ClipboardList className="w-4 h-4" />}
-            {saving || autoSaving ? "Saving..." : "Save Draft"}
-          </Button>
+          {/* Hide "Save Draft" when a consultation already exists — the
+              user should use "Continue"/"View" from the banner instead. */}
+          {!consultationExists && (
+            <Button onClick={submit} disabled={saving || autoSaving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              {saving || autoSaving ? <Save className="w-4 h-4 animate-pulse" /> : <ClipboardList className="w-4 h-4" />}
+              {saving || autoSaving ? "Saving..." : "Save Draft"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
