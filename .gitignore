@@ -88,3 +88,5 @@ server.log
 *.pid
 test-results/
 /test-results/
+playwright-report/
+test-results/
