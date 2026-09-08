@@ -163,8 +163,8 @@ export function WorkflowDashboardView() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="p-3 flex flex-wrap gap-2 items-center">
+      <Card className="w-full">
+        <CardContent className="p-3 w-full flex flex-wrap gap-2 items-center">
           <div className="flex gap-1 border rounded-md p-0.5">
             <Button
               variant={filter === "all" ? "default" : "ghost"}
@@ -205,13 +205,13 @@ export function WorkflowDashboardView() {
       </Card>
 
       {/* Notification List */}
-      <Card>
+      <Card className="w-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Activity className="w-4 h-4" /> Notifications ({filteredNotifications.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full">
           {isLoading ? (
             <LoadingState rows={5} />
           ) : isError ? (
@@ -227,13 +227,13 @@ export function WorkflowDashboardView() {
               icon={Bell}
             />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 w-full">
               {filteredNotifications.map((n) => {
                 const typeInfo = TYPE_LABELS[n.type] || { label: n.type || "Notification", color: "bg-slate-50 text-slate-700 border-slate-200", icon: "🔔" };
                 return (
                   <div
                     key={n.id}
-                    className={`border rounded-xl p-3 sm:p-4 transition-all hover:shadow-md card-hover-lift ${
+                    className={`w-full border rounded-xl p-3 sm:p-4 transition-all hover:shadow-md card-hover-lift ${
                       n.readAt ? "bg-white border-slate-200" : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
                     }`}
                   >
@@ -280,7 +280,7 @@ export function WorkflowDashboardView() {
       </Card>
 
       {/* Workflow Examples Info Card */}
-      <Card className="bg-slate-50">
+      <Card className="bg-slate-50 w-full">
         <CardContent className="p-4">
           <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-emerald-600" /> How Hospital Workflow Notifications Work
