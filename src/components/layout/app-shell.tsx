@@ -190,7 +190,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="h-screen flex bg-slate-50 overflow-hidden">
+    <div className="h-dvh flex bg-slate-50 overflow-hidden">
       {/* Mobile sidebar trigger */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="p-0 w-72">
@@ -208,7 +208,7 @@ export function AppShell() {
 
       {/* Desktop Sidebar — dark navy */}
       <aside
-        className={`${sidebarCollapsed ? "w-16" : "w-64"} hidden md:flex flex-col bg-slate-900 transition-all duration-200 shrink-0 h-screen overflow-hidden shadow-xl`}
+        className={`${sidebarCollapsed ? "w-16" : "w-64"} hidden md:flex flex-col bg-slate-900 transition-all duration-200 shrink-0 h-dvh overflow-hidden shadow-xl`}
       >
         <SidebarContent
           navByCategory={navByCategory}
@@ -219,7 +219,7 @@ export function AppShell() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-slate-50">
+      <div className="flex-1 flex flex-col min-w-0 h-dvh overflow-hidden bg-slate-50">
         {/* Topbar — clean white with subtle shadow */}
         <header className="h-16 border-b border-slate-200 bg-white px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 z-30 shadow-sm">
           <div className="flex items-center gap-3 flex-1 min-w-0">

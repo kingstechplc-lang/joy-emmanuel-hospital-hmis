@@ -40,7 +40,7 @@ export function LoginView() {
   };
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+    <div className="h-dvh flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
       {/* Brand Panel — hidden on mobile to make the login form immediately
           visible.  On mobile, a compact header is shown in the Login Panel
           instead (see below).  On md+ screens, the full branding panel
