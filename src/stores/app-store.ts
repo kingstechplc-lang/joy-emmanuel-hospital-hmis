@@ -96,7 +96,8 @@ export type ViewKey =
   | "recovery_room"
   | "internal_audit"
   | "workflow_dashboard"
-  | "clinical_alerts";
+  | "clinical_alerts"
+  | "discharge_summaries";
 
 type AppState = {
   view: ViewKey;
@@ -248,6 +249,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "referrals", label: "Referrals", icon: "Share2", permission: "clinical.view", category: "Clinical" },
   { key: "immunizations", label: "Immunizations", icon: "Syringe", permission: "immunization.view", category: "Clinical" },
   { key: "maternity", label: "Maternity", icon: "Baby", permission: "maternity.view", category: "Clinical" },
+  { key: "discharge_summaries", label: "Discharge Summaries", icon: "FileText", permission: "discharge_summary.view", category: "Clinical" },
 
   { key: "diagnostics_dashboard", label: "Diagnostics Dashboard", icon: "Gauge", permission: "lab.view", category: "Diagnostics" },
   { key: "lab_orders", label: "Lab Orders", icon: "FlaskConical", permission: "lab.view", category: "Diagnostics" },

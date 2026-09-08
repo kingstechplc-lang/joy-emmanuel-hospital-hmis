@@ -72,6 +72,7 @@ import type { ViewKey } from "@/stores/app-store";
 import { MortuaryView } from "@/components/views/extended/mortuary-view";
 import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import { ClinicalAlertCenterView } from "@/components/views/clinical/clinical-alert-center-view";
+import { DischargeSummaryView } from "@/components/views/clinical/discharge-summary-view";
 import { ITSupportView } from "@/components/views/extended/it-support-view";
 import { SupportServicesView } from "@/components/views/extended/support-services-view";
 import { AmbulanceView } from "@/components/views/extended/ambulance-view";
@@ -180,6 +181,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   recovery_room: RecoveryRoomView,
   internal_audit: InternalAuditView,
   clinical_alerts: ClinicalAlertCenterView,
+  discharge_summaries: DischargeSummaryView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
@@ -273,6 +275,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   recovery_room: "recovery.view",
   internal_audit: "audit.view",
   clinical_alerts: "clinical_alert.view",
+  discharge_summaries: "discharge_summary.view",
 };
 
 export function ViewRenderer({ view }: { view: ViewKey }) {

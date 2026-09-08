@@ -122,6 +122,7 @@ model Organization {
   payrollAdjustments      PayrollAdjustment[]
   statutoryRules          StatutoryRule[]
   costCenters             CostCenter[]
+  dischargeSummaries      DischargeSummary[]
 }
 
 model Facility {
@@ -202,6 +203,7 @@ model Facility {
   intakeOutputAlerts            IntakeOutputAlert[]
   intakeOutputAlertConfigs      IntakeOutputAlertConfig[]
   dischargeRecords              DischargeRecord[]
+  dischargeSummaries            DischargeSummary[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -615,6 +617,13 @@ model User {
   // --- Finance & Payroll back-relations ---
   payrollPeriodCreator       PayrollPeriod[]           @relation("PayrollPeriodCreator")
   payrollPeriodApprover      PayrollPeriod[]           @relation("PayrollPeriodApprover")
+  // --- Discharge Summary back-relations (Phase 7 CDSS) ---
+  dischargeSummariesCreated    DischargeSummary[]     @relation("dischargeSummaryCreatedBy")
+  dischargeSummariesAttending  DischargeSummary[]     @relation("dischargeSummaryAttending")
+  dischargeSummariesReviewed   DischargeSummary[]     @relation("dischargeSummaryReviewedBy")
+  dischargeSummariesApproved   DischargeSummary[]     @relation("dischargeSummaryApprovedBy")
+  dischargeSummariesFinalized  DischargeSummary[]     @relation("dischargeSummaryFinalizedBy")
+  dischargeSummariesAmended    DischargeSummary[]     @relation("dischargeSummaryAmendedBy")
 }
 
 model Staff {
@@ -1025,6 +1034,7 @@ model Patient {
   wardRoundActions              WardRoundAction[]
   creditNotes                   CreditNote[]
   insuranceAuthorizations       InsuranceAuthorization[]
+  dischargeSummaries            DischargeSummary[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -1393,6 +1403,7 @@ model Encounter {
   attendanceVerification    AttendanceVerification?
   claimReadinessAssessments ClaimReadinessAssessment[]
   eligibilityVerifications  EligibilityVerification[]
+  dischargeSummaries        DischargeSummary[]
 
   @@unique([facilityId, encounterNumber])
   @@index([patientId, facilityId])
@@ -2857,6 +2868,7 @@ model Admission {
   progressNotes                 ProgressNote[]
   careTeamMembers               CareTeamMember[]
   bedReservations               BedReservation[]
+  dischargeSummaries            DischargeSummary[]
 
   @@unique([facilityId, admissionNumber])
   @@index([patientId, status])
@@ -3186,6 +3198,7 @@ model DischargeRecord {
 
   checklist                 DischargeChecklistItem[]
   medicationsReconciliation DischargeMedication[]
+  dischargeSummaries       DischargeSummary[]
 
   @@index([patientId])
   @@index([admissionId])
@@ -9976,11 +9989,20 @@ model ClinicalAlert {
 model DischargeSummary {
   id              String    @id @default(cuid())
   organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
   facilityId      String
+  facility        Facility  @relation(fields: [facilityId], references: [id])
   patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id])
   encounterId     String
+  encounter       Encounter @relation(fields: [encounterId], references: [id])
   admissionId     String?
+  admission       Admission? @relation(fields: [admissionId], references: [id])
   dischargeRecordId String? // link to existing DischargeRecord if finalized
+  dischargeRecord   DischargeRecord? @relation(fields: [dischargeRecordId], references: [id])
+
+  // Human-readable summary number, e.g. DSum-2026-000001
+  summaryNumber   String   @unique
 
   // Document state
   status          String   @default("draft") // draft | reviewed | approved | finalized | amended
@@ -9990,21 +10012,30 @@ model DischargeSummary {
   // Generated content (assembled from encounter data)
   content         String   @db.Text // JSON: structured sections (demographics, clinical, diagnoses, investigations, treatment, discharge)
 
+  // Authorship
+  createdById     String?
+  createdBy       User?     @relation("dischargeSummaryCreatedBy", fields: [createdById], references: [id])
+
   // Clinical context snapshot
   attendingClinicianId String?
+  attendingClinician   User?  @relation("dischargeSummaryAttending", fields: [attendingClinicianId], references: [id])
   primaryDiagnosisName String?
   primaryDiagnosisCode String?
 
   // Review/approval
   reviewedById    String?
+  reviewedBy      User?     @relation("dischargeSummaryReviewedBy", fields: [reviewedById], references: [id])
   reviewedAt      DateTime?
   approvedById    String?
+  approvedBy      User?     @relation("dischargeSummaryApprovedBy", fields: [approvedById], references: [id])
   approvedAt      DateTime?
   finalizedById   String?
+  finalizedBy     User?     @relation("dischargeSummaryFinalizedBy", fields: [finalizedById], references: [id])
   finalizedAt     DateTime?
 
   // Amendment
   amendedById     String?
+  amendedBy       User?     @relation("dischargeSummaryAmendedBy", fields: [amendedById], references: [id])
   amendedAt       DateTime?
   amendmentReason String?
 
