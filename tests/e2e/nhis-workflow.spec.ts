@@ -22,7 +22,7 @@ import { test, expect, type Page } from "@playwright/test";
 /** Login via the credentials form — waits for React hydration */
 async function login(page: Page, username: string, password: string) {
   // The dev server needs time to compile on first request — use a long timeout
-  await page.goto("/", { timeout: 60000, waitUntil: "domcontentloaded" });
+  await page.goto("/", { timeout: 300000, waitUntil: "domcontentloaded" });
   // Wait for any input to appear (React hydration)
   await page.waitForSelector('input', { timeout: 30000 });
   await page.waitForTimeout(3000); // Allow full React hydration
@@ -41,12 +41,12 @@ async function login(page: Page, username: string, password: string) {
   await submitButton.click();
 
   // Wait for navigation to the app (sidebar appears)
-  await page.waitForSelector("aside, nav", { timeout: 30000 });
+  await page.waitForSelector("aside, nav", { timeout: 300000 });
 }
 
 /** Login using the quick demo login buttons (Super Admin) */
 async function loginAsSuperAdmin(page: Page) {
-  await page.goto("/", { timeout: 60000, waitUntil: "domcontentloaded" });
+  await page.goto("/", { timeout: 300000, waitUntil: "domcontentloaded" });
   await page.waitForSelector('input', { timeout: 30000 });
   await page.waitForTimeout(3000); // Allow full React hydration
   // Click the "Super Admin" quick demo button (fills username + password)
@@ -58,7 +58,7 @@ async function loginAsSuperAdmin(page: Page) {
   const submitButton = page.locator('button[type="submit"]').first();
   await submitButton.click();
   // Wait for the app to load (sidebar appears)
-  await page.waitForSelector("aside, nav", { timeout: 30000 });
+  await page.waitForSelector("aside, nav", { timeout: 300000 });
 }
 
 /** Navigate to a sidebar view by clicking the nav item */

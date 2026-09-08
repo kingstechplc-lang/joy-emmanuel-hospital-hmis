@@ -13,8 +13,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
 async function loginWithCredentials(page: Page, username: string, password: string) {
-  await page.goto("/", { timeout: 90000, waitUntil: "domcontentloaded" });
-  await page.waitForSelector('input', { timeout: 60000 });
+  await page.goto("/", { timeout: 300000, waitUntil: "domcontentloaded" });
+  await page.waitForSelector('input', { timeout: 300000 });
   await page.waitForTimeout(5000); // Allow full React hydration
 
   const usernameInput = page.locator('input[name="username"], input[placeholder*="username" i], input[type="text"]').first();

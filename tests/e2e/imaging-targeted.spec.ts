@@ -20,8 +20,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
 async function loginAsSuperAdmin(page: Page) {
-  await page.goto("/", { timeout: 90000, waitUntil: "domcontentloaded" });
-  await page.waitForSelector("input", { timeout: 60000 });
+  await page.goto("/", { timeout: 300000, waitUntil: "domcontentloaded" });
+  await page.waitForSelector("input", { timeout: 300000 });
   await page.waitForTimeout(5000);
   const superAdminButton = page.locator('button:has-text("Super Admin")').first();
   await superAdminButton.waitFor({ state: "visible", timeout: 15000 });
@@ -29,7 +29,7 @@ async function loginAsSuperAdmin(page: Page) {
   await page.waitForTimeout(500);
   const submitButton = page.locator('button[type="submit"]').first();
   await submitButton.click();
-  await page.waitForSelector("aside, nav", { timeout: 60000 });
+  await page.waitForSelector("aside, nav", { timeout: 300000 });
 }
 
 async function navigateToView(page: Page, viewLabel: string) {

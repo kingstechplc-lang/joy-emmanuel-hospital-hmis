@@ -30,7 +30,10 @@ export function LoginView() {
       return;
     }
     toast.success("Welcome back to Joy Emmanuel Hospital HMIS");
-    router.refresh();
+    // Force a full page reload instead of router.refresh() — router.refresh()
+    // doesn't always trigger useSession() to re-check the session in time,
+    // causing the app shell to never appear after login.
+    window.location.href = "/";
   };
 
   const quickFill = (u: string) => {
