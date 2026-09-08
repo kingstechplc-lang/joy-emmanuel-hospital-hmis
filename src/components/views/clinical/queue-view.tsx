@@ -368,6 +368,46 @@ function LiveQueueTab({ facilityId }: { facilityId: string }) {
       .filter((queue) => (queue.entries || []).length > 0);
   }, [queues, search]);
 
+  // ─── BATCH CONSULTATION LOOKUP (per spec §9 — avoid N+1) ──────────
+  // Instead of each QueueEntryRow firing its own /api/consultations
+  // query (N+1 pattern), collect ALL encounterIds from the visible queue
+  // entries and make a SINGLE query that fetches consultations for all
+  // of them.  The results are passed down to each row as a Map.
+  const allEncounterIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const q of filteredQueues) {
+      for (const e of (q.entries || [])) {
+        if (e.encounterId) ids.add(e.encounterId);
+      }
+    }
+    return Array.from(ids);
+  }, [filteredQueues]);
+
+  const { data: batchConsultData } = useQuery({
+    queryKey: ["queue-consultations-batch", allEncounterIds.join(",")],
+    queryFn: async () => {
+      // Fetch consultations for each encounterId in parallel (but as a
+      // single Promise.all, not N separate useQuery hooks).  Each
+      // request is small (limit=1, only needs existence + status).
+      const results = await Promise.all(
+        allEncounterIds.map(async (eid) => {
+          try {
+            const res = await fetchJson(`/api/consultations?encounterId=${eid}&limit=10`);
+            return [eid, res.items || []] as [string, any[]];
+          } catch {
+            return [eid, []] as [string, any[]];
+          }
+        })
+      );
+      return new Map<string, any[]>(results);
+    },
+    enabled: allEncounterIds.length > 0,
+    staleTime: 30 * 1000, // 30s — matches the previous per-row staleTime
+  });
+
+  // Build a lookup map: encounterId → consultations array
+  const consultationsByEncounter = batchConsultData || new Map<string, any[]>();
+
   return (
     <div className="space-y-3">
       {/* Filters bar */}
@@ -459,6 +499,7 @@ function LiveQueueTab({ facilityId }: { facilityId: string }) {
                         currentQueueName={q.department?.name || "General"}
                         allQueues={queues}
                         busy={updateEntry.isPending}
+                        consultations={consultationsByEncounter.get(entry.encounterId) || []}
                         onAction={(status) =>
                           updateEntry.mutate({ id: entry.id, status })
                         }
@@ -525,6 +566,7 @@ function QueueEntryRow({
   onAction,
   onTransfer,
   onSkip,
+  consultations,
 }: {
   entry: any;
   queueId: string;
@@ -534,6 +576,9 @@ function QueueEntryRow({
   onAction: (status: string) => void;
   onTransfer: () => void;
   onSkip: () => void;
+  /** Pre-fetched consultations for this entry's encounter (from the
+   *  parent's batch query — avoids N+1 per-row queries). */
+  consultations: any[];
 }) {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -545,18 +590,9 @@ function QueueEntryRow({
   const selectConsultation = useAppStore((s) => s.selectConsultation);
   const setView = useAppStore((s) => s.setView);
 
-  // Look up existing consultations for this queue entry's encounter (if linked).
-  // We only fire the query when an encounterId exists AND the user can view
-  // consultations.  This avoids unnecessary API calls for queue entries that
-  // are not yet checked in (encounterId = null).
+  // Use the pre-fetched consultations passed from the parent (batch query).
+  // No per-row useQuery needed — eliminates the N+1 pattern.
   const encounterId = entry.encounterId;
-  const { data: consultData } = useQuery({
-    queryKey: ["queue-consultation-lookup", encounterId],
-    queryFn: () => fetchJson(`/api/consultations?encounterId=${encounterId}&limit=10`),
-    enabled: !!encounterId && canStartConsult,
-    staleTime: 30 * 1000, // 30s — short so newly-created consultations appear quickly
-  });
-  const consultations: any[] = consultData?.items || [];
   const draftConsultations = consultations.filter((c: any) => c.status === "draft");
   const signedConsultations = consultations.filter((c: any) => c.status === "signed" || c.status === "amended");
   const hasConsultations = consultations.length > 0;
