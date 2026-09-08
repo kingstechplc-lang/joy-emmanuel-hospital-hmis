@@ -155,7 +155,57 @@ export function ClinicalAlertCenterView() {
   };
 
   const severityOrder = { critical: 0, high: 1, moderate: 2, low: 3, info: 4 };
-  const sortedAlerts = [...alerts].sort((a, b) => (severityOrder[a.severity as keyof typeof severityOrder] ?? 5) - (severityOrder[b.severity as keyof typeof severityOrder] ?? 5));
+
+  // ─── GROUP ALERTS (per spec §20 — prevent alert fatigue) ──────────
+  // Abnormal vital alerts from the same triage assessment (same sourceId)
+  // are grouped into a single card. The card shows "Multiple Abnormal
+  // Vitals — N alerts" and expands to show each individual vital.
+  // Other alert types (drug_allergy, drug_drug_interaction, critical_lab)
+  // are shown individually since they represent distinct clinical events.
+  const groupedAlerts = useMemo(() => {
+    const groups: { type: "single" | "group"; alert: any; children?: any[] }[] = [];
+    const groupedKeys = new Set<string>();
+
+    // First pass: group abnormal_vital alerts by sourceId (triage record ID)
+    const vitalGroups: Record<string, any[]> = {};
+    for (const a of [...alerts].sort((a, b) => (severityOrder[a.severity as keyof typeof severityOrder] ?? 5) - (severityOrder[b.severity as keyof typeof severityOrder] ?? 5))) {
+      if (a.alertType === "abnormal_vital" && a.sourceId && a.status === "active") {
+        const key = `${a.patientId}:${a.sourceId}`;
+        if (!vitalGroups[key]) vitalGroups[key] = [];
+        vitalGroups[key].push(a);
+        groupedKeys.add(a.id);
+      }
+    }
+
+    // Second pass: build the display list
+    for (const a of [...alerts].sort((a, b) => (severityOrder[a.severity as keyof typeof severityOrder] ?? 5) - (severityOrder[b.severity as keyof typeof severityOrder] ?? 5))) {
+      if (groupedKeys.has(a.id)) {
+        // This alert was already grouped — skip it (it's included in a group below)
+        // But only skip if we haven't already emitted the group
+        const key = `${a.patientId}:${a.sourceId}`;
+        if (vitalGroups[key] && vitalGroups[key].length > 1) {
+          // Emit the group only once — check if we already emitted it
+          if (!groups.some((g) => g.type === "group" && g.children?.some((c) => c.id === a.id))) {
+            const children = vitalGroups[key];
+            const highestSeverity = children.reduce((highest, c) => {
+              const order = severityOrder[c.severity as keyof typeof severityOrder] ?? 5;
+              const highestOrder = severityOrder[highest.severity as keyof typeof severityOrder] ?? 5;
+              return order < highestOrder ? c : highest;
+            }, children[0]);
+            groups.push({ type: "group", alert: highestSeverity, children });
+          }
+        } else {
+          // Single vital alert — show individually
+          groups.push({ type: "single", alert: a });
+        }
+      } else {
+        // Non-vital alert — show individually
+        groups.push({ type: "single", alert: a });
+      }
+    }
+
+    return groups;
+  }, [alerts]);
 
   return (
     <div className="space-y-4">
@@ -224,7 +274,7 @@ export function ClinicalAlertCenterView() {
             <LoadingState rows={5} />
           ) : isError ? (
             <ErrorState message="Failed to load clinical alerts" onRetry={() => refetch()} />
-          ) : sortedAlerts.length === 0 ? (
+          ) : groupedAlerts.length === 0 ? (
             <EmptyState
               title={filter === "active" ? "No active clinical alerts" : "No alerts match your filters"}
               description={filter === "active" ? "All clear! No outstanding clinical safety alerts at this time." : "Try adjusting your filter criteria."}
@@ -232,13 +282,18 @@ export function ClinicalAlertCenterView() {
             />
           ) : (
             <div className="divide-y w-full">
-              {sortedAlerts
-                .filter((a) => {
+              {groupedAlerts
+                .filter((g) => {
                   if (!search.trim()) return true;
                   const q = search.toLowerCase();
-                  return a.title?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q) || a.alertType?.toLowerCase().includes(q);
+                  const a = g.alert;
+                  return a.title?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q) || a.alertType?.toLowerCase().includes(q) ||
+                    (g.children || []).some((c: any) => c.title?.toLowerCase().includes(q) || c.message?.toLowerCase().includes(q));
                 })
-                .map((alert) => {
+                .map((group) => {
+                  const alert = group.alert;
+                  const isGroup = group.type === "group";
+                  const children = group.children || [];
                   const sev = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.info;
                   const typeCfg = ALERT_TYPE_CONFIG[alert.alertType] || { label: alert.alertType, icon: Bell };
                   const statusCfg = STATUS_CONFIG[alert.status] || STATUS_CONFIG.active;
@@ -268,6 +323,12 @@ export function ClinicalAlertCenterView() {
                               <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border bg-white ${sev.text}">
                                 <TypeIcon className="w-3 h-3" /> {typeCfg.label}
                               </span>
+                              {/* Group count badge */}
+                              {isGroup && children.length > 1 && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-600 text-white shadow-sm">
+                                  {children.length} ALERTS
+                                </span>
+                              )}
                               {/* Status badge */}
                               {alert.status !== "active" && (
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${statusCfg.className}`}>
@@ -278,11 +339,39 @@ export function ClinicalAlertCenterView() {
                               <span className="text-[10px] text-slate-400">{formatRelative(alert.createdAt)}</span>
                             </div>
 
-                            <p className={`text-sm font-semibold ${sev.text} mb-1`}>{alert.title}</p>
-                            <p className="text-xs text-slate-600 leading-relaxed break-words">{alert.message}</p>
+                            {/* Title — grouped vs single */}
+                            {isGroup && children.length > 1 ? (
+                              <>
+                                <p className={`text-sm font-semibold ${sev.text} mb-1`}>
+                                  Multiple Abnormal Vital Signs
+                                </p>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                  {children.length} abnormal vital sign alerts detected from the same assessment.
+                                  Highest severity: {sev.label}. Click Details to view each vital.
+                                </p>
+                                {/* Compact summary of affected vitals */}
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {children.map((c: any) => {
+                                    const cEvidence = c.evidence ? (typeof c.evidence === "string" ? JSON.parse(c.evidence) : c.evidence) : {};
+                                    const cSev = SEVERITY_CONFIG[c.severity] || SEVERITY_CONFIG.info;
+                                    return (
+                                      <span key={c.id} className={`text-[10px] px-1.5 py-0.5 rounded border ${cSev.border} ${cSev.bg} ${cSev.text} font-medium`}>
+                                        {cEvidence.vitalType ? cEvidence.vitalType.replace(/_/g, " ").toUpperCase() : c.title}
+                                        {cEvidence.value != null ? ` ${cEvidence.value}${cEvidence.unit || ""}` : ""}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <p className={`text-sm font-semibold ${sev.text} mb-1`}>{alert.title}</p>
+                                <p className="text-xs text-slate-600 leading-relaxed break-words">{alert.message}</p>
+                              </>
+                            )}
 
                             {/* Recommendation */}
-                            {alert.recommendation && (
+                            {alert.recommendation && !isGroup && (
                               <p className="text-xs text-slate-500 italic mt-1.5 flex items-start gap-1">
                                 <Stethoscope className="w-3 h-3 mt-0.5 shrink-0" />
                                 <span>{alert.recommendation}</span>
@@ -295,29 +384,50 @@ export function ClinicalAlertCenterView() {
                                 {canAcknowledge && (
                                   <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1 border-blue-200 hover:bg-blue-50 text-blue-700"
                                     disabled={lifecycleMut.isPending}
-                                    onClick={() => lifecycleMut.mutate({ action: "acknowledge", alertId: alert.id })}>
-                                    <CheckCircle2 className="w-3 h-3" /> Acknowledge
+                                    onClick={() => {
+                                      if (isGroup) {
+                                        // Acknowledge all alerts in the group
+                                        children.forEach((c: any) => {
+                                          lifecycleMut.mutate({ action: "acknowledge", alertId: c.id });
+                                        });
+                                      } else {
+                                        lifecycleMut.mutate({ action: "acknowledge", alertId: alert.id });
+                                      }
+                                    }}>
+                                    <CheckCircle2 className="w-3 h-3" /> {isGroup ? "Acknowledge All" : "Acknowledge"}
                                   </Button>
                                 )}
                                 {canOverride && (
                                   <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1 border-amber-200 hover:bg-amber-50 text-amber-700"
                                     disabled={lifecycleMut.isPending}
-                                    onClick={() => setOverrideDialog(alert)}>
+                                    onClick={() => setOverrideDialog(isGroup ? { ...alert, _groupChildren: children } : alert)}>
                                     <XCircle className="w-3 h-3" /> Override
                                   </Button>
                                 )}
                                 {canEscalate && (
                                   <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1 border-purple-200 hover:bg-purple-50 text-purple-700"
                                     disabled={lifecycleMut.isPending}
-                                    onClick={() => lifecycleMut.mutate({ action: "escalate", alertId: alert.id })}>
-                                    <ArrowUpCircle className="w-3 h-3" /> Escalate
+                                    onClick={() => {
+                                      if (isGroup) {
+                                        children.forEach((c: any) => lifecycleMut.mutate({ action: "escalate", alertId: c.id }));
+                                      } else {
+                                        lifecycleMut.mutate({ action: "escalate", alertId: alert.id });
+                                      }
+                                    }}>
+                                    <ArrowUpCircle className="w-3 h-3" /> {isGroup ? "Escalate All" : "Escalate"}
                                   </Button>
                                 )}
                                 {canAcknowledge && (
                                   <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1 border-slate-200 hover:bg-slate-50 text-slate-500"
                                     disabled={lifecycleMut.isPending}
-                                    onClick={() => lifecycleMut.mutate({ action: "dismiss", alertId: alert.id })}>
-                                    <XCircle className="w-3 h-3" /> Dismiss
+                                    onClick={() => {
+                                      if (isGroup) {
+                                        children.forEach((c: any) => lifecycleMut.mutate({ action: "dismiss", alertId: c.id }));
+                                      } else {
+                                        lifecycleMut.mutate({ action: "dismiss", alertId: alert.id });
+                                      }
+                                    }}>
+                                    <XCircle className="w-3 h-3" /> {isGroup ? "Dismiss All" : "Dismiss"}
                                   </Button>
                                 )}
                                 <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1"
@@ -345,41 +455,85 @@ export function ClinicalAlertCenterView() {
                       {/* Expanded details */}
                       {isExpanded && (
                         <div className="p-4 bg-white border-t">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            {/* Evidence */}
-                            {evidence && Object.keys(evidence).length > 0 && (
-                              <div>
-                                <p className="font-bold uppercase tracking-wider text-slate-500 mb-1.5">Clinical Evidence</p>
-                                <div className="space-y-1">
-                                  {Object.entries(evidence).map(([k, v]) => (
-                                    <div key={k} className="flex gap-2">
-                                      <span className="font-medium text-slate-600 capitalize min-w-[120px]">{k.replace(/([A-Z])/g, " $1").trim()}:</span>
-                                      <span className="text-slate-800">{String(v ?? "—")}</span>
+                          {isGroup && children.length > 1 ? (
+                            /* Grouped vitals: show each child alert as a sub-card */
+                            <div className="space-y-3">
+                              <p className="font-bold uppercase tracking-wider text-slate-500 text-xs">Individual Vital Alerts ({children.length})</p>
+                              {children.map((c: any) => {
+                                const cSev = SEVERITY_CONFIG[c.severity] || SEVERITY_CONFIG.info;
+                                const cEvidence = c.evidence ? (typeof c.evidence === "string" ? JSON.parse(c.evidence) : c.evidence) : {};
+                                const CSevIcon = cSev.icon;
+                                return (
+                                  <div key={c.id} className={`rounded-lg border ${cSev.border} ${cSev.bg} p-3`}>
+                                    <div className="flex items-start gap-2">
+                                      <div className={`shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br ${cSev.gradient} flex items-center justify-center text-white`}>
+                                        <CSevIcon className="w-4 h-4" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-semibold ${cSev.text}`}>{c.title}</p>
+                                        <p className="text-xs text-slate-600 mt-0.5">{c.message}</p>
+                                        {cEvidence && Object.keys(cEvidence).length > 0 && (
+                                          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                                            {Object.entries(cEvidence).map(([k, v]) => (
+                                              <div key={k} className="flex gap-1">
+                                                <span className="text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1").trim()}:</span>
+                                                <span className="text-slate-800 font-medium">{String(v ?? "—")}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  ))}
+                                  </div>
+                                );
+                              })}
+                              {/* Metadata for the group */}
+                              <div className="mt-3 pt-3 border-t">
+                                <p className="font-bold uppercase tracking-wider text-slate-500 text-xs mb-1.5">Group Metadata</p>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Source:</span><span className="text-slate-800">Triage Record ({alert.sourceId?.slice(-8) || "—"})</span></div>
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Created:</span><span className="text-slate-800">{formatDate(alert.createdAt, true)}</span></div>
                                 </div>
                               </div>
-                            )}
-                            {/* Meta */}
-                            <div>
-                              <p className="font-bold uppercase tracking-wider text-slate-500 mb-1.5">Alert Metadata</p>
-                              <div className="space-y-1">
-                                <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Alert ID:</span><span className="text-slate-800 font-mono">{alert.id}</span></div>
-                                <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Rule ID:</span><span className="text-slate-800 font-mono">{alert.ruleId || "—"}</span></div>
-                                <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Source:</span><span className="text-slate-800">{alert.sourceType || "—"} {alert.sourceId ? `(${alert.sourceId.slice(-8)})` : ""}</span></div>
-                                <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Patient ID:</span><span className="text-slate-800 font-mono">{alert.patientId?.slice(-8) || "—"}</span></div>
-                                <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Encounter ID:</span><span className="text-slate-800 font-mono">{alert.encounterId?.slice(-8) || "—"}</span></div>
-                                <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Created:</span><span className="text-slate-800">{formatDate(alert.createdAt, true)}</span></div>
-                                {alert.acknowledgedNote && <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Ack Note:</span><span className="text-slate-800">{alert.acknowledgedNote}</span></div>}
-                              </div>
-                              {alert.patientId && (
-                                <Button size="sm" variant="ghost" className="h-7 mt-2 text-xs gap-1 text-purple-700 hover:bg-purple-50"
-                                  onClick={() => goToPatient360(alert.patientId)}>
-                                  <Eye className="w-3 h-3" /> View Patient 360
-                                </Button>
-                              )}
                             </div>
-                          </div>
+                          ) : (
+                            /* Single alert: show evidence + metadata */
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                              {/* Evidence */}
+                              {evidence && Object.keys(evidence).length > 0 && (
+                                <div>
+                                  <p className="font-bold uppercase tracking-wider text-slate-500 mb-1.5">Clinical Evidence</p>
+                                  <div className="space-y-1">
+                                    {Object.entries(evidence).map(([k, v]) => (
+                                      <div key={k} className="flex gap-2">
+                                        <span className="font-medium text-slate-600 capitalize min-w-[120px]">{k.replace(/([A-Z])/g, " $1").trim()}:</span>
+                                        <span className="text-slate-800">{String(v ?? "—")}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {/* Meta — fixed to show full IDs with proper labels */}
+                              <div>
+                                <p className="font-bold uppercase tracking-wider text-slate-500 mb-1.5">Alert Metadata</p>
+                                <div className="space-y-1">
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Alert ID:</span><span className="text-slate-800 font-mono text-[10px]">{alert.id}</span></div>
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Rule ID:</span><span className="text-slate-800 font-mono text-[10px]">{alert.ruleId || "—"}</span></div>
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Source:</span><span className="text-slate-800">{alert.sourceType || "—"}</span></div>
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Patient Ref:</span><span className="text-slate-800 font-mono text-[10px]">{alert.patientId || "—"}</span></div>
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Encounter Ref:</span><span className="text-slate-800 font-mono text-[10px]">{alert.encounterId || "—"}</span></div>
+                                  <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Created:</span><span className="text-slate-800">{formatDate(alert.createdAt, true)}</span></div>
+                                  {alert.acknowledgedNote && <div className="flex gap-2"><span className="font-medium text-slate-600 min-w-[120px]">Ack Note:</span><span className="text-slate-800">{alert.acknowledgedNote}</span></div>}
+                                </div>
+                                {alert.patientId && (
+                                  <Button size="sm" variant="ghost" className="h-7 mt-2 text-xs gap-1 text-purple-700 hover:bg-purple-50"
+                                    onClick={() => goToPatient360(alert.patientId)}>
+                                    <Eye className="w-3 h-3" /> View Patient 360
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
