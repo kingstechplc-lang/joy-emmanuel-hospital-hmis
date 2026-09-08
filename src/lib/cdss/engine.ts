@@ -196,7 +196,7 @@ export async function checkDrugDrugInteractions(
         ruleId: `ddi:${rule.id}`,
         evidence: {
           newMedication: newMedicationGenericName || newMedicationId,
-          existingMedication: item.medification?.genericName || item.medication?.brandName || activeMedId,
+          existingMedication: item.medication?.genericName || item.medication?.brandName || activeMedId,
           interactionSeverity: rule.severity,
           description: rule.description,
           clinicalAdvice: rule.clinicalAdvice,
