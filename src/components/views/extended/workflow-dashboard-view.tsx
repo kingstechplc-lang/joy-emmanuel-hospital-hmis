@@ -237,7 +237,7 @@ export function WorkflowDashboardView() {
                       n.readAt ? "bg-white border-slate-200" : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2 sm:gap-3">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1">
                           <span className="text-xl sm:text-2xl shrink-0">{typeInfo.icon}</span>
