@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { checkCriticalLabResult, persistAlert } from "@/lib/cdss/engine";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -102,6 +103,40 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       oldValues: { status: existing.status },
       newValues: { status: "verified", verifiedById: session.user.id },
     });
+
+    // ─── CDSS: Critical lab result alert ──────────────────────────────
+    // When a lab result is verified AND has criticalFlag: true, generate
+    // a CDSS critical_lab alert for the ordering clinician/team.
+    // Per spec §13: the alert should go to the ordering clinician.
+    // Per spec §21: CDSS failures must not block the verification.
+    try {
+      const alert = await checkCriticalLabResult(
+        id,
+        existing.labOrderItem.labOrder.patientId,
+        existing.labOrderItem.labOrder.encounterId,
+      );
+      if (alert) {
+        await persistAlert(
+          session.user.organizationId,
+          existing.labOrderItem.labOrder.facilityId,
+          existing.labOrderItem.labOrder.patientId,
+          existing.labOrderItem.labOrder.encounterId,
+          alert,
+        );
+        await auditLog({
+          userId: session.user.id,
+          organizationId: session.user.organizationId,
+          facilityId: existing.labOrderItem.labOrder.facilityId,
+          action: "CLINICAL_ALERT_GENERATED",
+          resourceType: "clinical_alert",
+          resourceId: id,
+          newValues: { alertType: "critical_lab", severity: "critical" },
+        });
+      }
+    } catch (cdssError) {
+      console.error("CDSS critical lab alert failed:", cdssError);
+    }
+
     return NextResponse.json({ item: updated });
   }
 

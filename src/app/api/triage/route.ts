@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { evaluateVitals, persistAlert } from "@/lib/cdss/engine";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -212,6 +213,51 @@ export async function POST(req: Request) {
     resourceId: triageRecord.id,
     newValues: { encounterId, patientId, triageCategory, bmi },
   });
+
+  // ─── CDSS: Abnormal vital sign alerts ─────────────────────────────
+  // Evaluate the recorded vitals using the CDSS engine and persist any
+  // abnormal/critical alerts. Per spec §16: the alert should be visible
+  // where it can affect workflow, including queue/dashboard views.
+  // Per spec §21: CDSS failures must not block the triage recording.
+  try {
+    const cdssAlerts = evaluateVitals({
+      temperature: temperature ?? null,
+      pulse: pulse ?? null,
+      respiratoryRate: respiratoryRate ?? null,
+      systolicBp: systolicBp ?? null,
+      diastolicBp: diastolicBp ?? null,
+      oxygenSaturation: oxygenSaturation ?? null,
+      bloodGlucose: bloodGlucose ?? null,
+      gcsTotal: gcsTotal ?? null,
+    });
+
+    for (const alert of cdssAlerts) {
+      // Override the deduplication key to include the triage record ID
+      // so each triage assessment gets its own set of alerts (per spec §19).
+      const deduplicationKey = `${alert.deduplicationKey}:${triageRecord.id}`;
+      await persistAlert(
+        session.user.organizationId,
+        session.user.facilityId || null,
+        patientId,
+        encounterId,
+        { ...alert, sourceType: "triage", sourceId: triageRecord.id, deduplicationKey },
+      );
+    }
+
+    if (cdssAlerts.length > 0) {
+      await auditLog({
+        userId: session.user.id,
+        organizationId: session.user.organizationId,
+        facilityId: session.user.facilityId || undefined,
+        action: "CLINICAL_ALERT_GENERATED",
+        resourceType: "triage_record",
+        resourceId: triageRecord.id,
+        newValues: { alertType: "abnormal_vital", count: cdssAlerts.length },
+      });
+    }
+  } catch (cdssError) {
+    console.error("CDSS abnormal vital alert failed:", cdssError);
+  }
 
   return NextResponse.json({ item: triageRecord }, { status: 201 });
 }

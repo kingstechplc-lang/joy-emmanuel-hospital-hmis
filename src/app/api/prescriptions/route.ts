@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getSession, auditLog, hasPermission, nextPrescriptionNumber } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { notifyPrescriptionCreated } from "@/lib/workflow-notifications";
+import { checkDrugAllergy, checkDrugDrugInteractions, persistAlert } from "@/lib/cdss/engine";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -265,6 +266,78 @@ export async function POST(req: Request) {
       itemCount: items.length,
     },
   });
+
+  // ─── CDSS: Persist clinical alerts for allergy and drug-drug interactions ─
+  // The existing allergy/DDI checks above already computed the warnings.
+  // Now we persist them as ClinicalAlert records using the CDSS engine so
+  // they appear in the clinical alert center and have a proper lifecycle
+  // (acknowledge/override/resolve). This is non-blocking — failures are
+  // logged but do not prevent the prescription from being created.
+  try {
+    // Re-run the CDSS checks to get structured alert objects (the existing
+    // checks above produced string warnings; the CDSS engine produces
+    // structured CDSSAlert objects with evidence, severity, etc.)
+    for (const item of items) {
+      if (!item.medicationId) continue;
+      const med = await db.medication.findUnique({
+        where: { id: item.medicationId },
+        select: { genericName: true, brandName: true, therapeuticClass: true },
+      });
+      if (!med) continue;
+
+      // A. Drug-allergy alerts via CDSS engine
+      const allergyAlerts = await checkDrugAllergy(
+        patientId,
+        med.genericName || med.brandName || "",
+        med.genericName,
+      );
+      for (const alert of allergyAlerts) {
+        await persistAlert(
+          session.user.organizationId,
+          facilityId,
+          patientId,
+          encounterId,
+          { ...alert, sourceType: "prescription", sourceId: prescription.id },
+        );
+      }
+
+      // B. Drug-drug interaction alerts via CDSS engine
+      const ddiAlerts = await checkDrugDrugInteractions(
+        patientId,
+        item.medicationId,
+        med.genericName,
+        med.therapeuticClass,
+        session.user.organizationId,
+      );
+      for (const alert of ddiAlerts) {
+        await persistAlert(
+          session.user.organizationId,
+          facilityId,
+          patientId,
+          encounterId,
+          { ...alert, sourceType: "prescription", sourceId: prescription.id },
+        );
+      }
+    }
+    // Audit-log the CDSS check
+    await auditLog({
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+      facilityId,
+      action: "CDSS_CHECK",
+      resourceType: "prescription",
+      resourceId: prescription.id,
+      newValues: {
+        allergyWarningCount: allergyWarnings.length,
+        interactionWarningCount: interactionWarnings.length,
+        duplicateWarningCount: duplicateWarnings.length,
+      },
+    });
+  } catch (cdssError) {
+    // CDSS failures must NOT block prescription creation (per spec §21 —
+    // distinguish "no alert" from "check failed"). Log and continue.
+    console.error("CDSS check failed during prescription creation:", cdssError);
+  }
 
   // 🔔 Fire workflow notification to pharmacy staff
   const patForNotif = await db.patient.findUnique({
