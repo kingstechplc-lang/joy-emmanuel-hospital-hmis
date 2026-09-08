@@ -597,6 +597,26 @@ function QueueEntryRow({
   const signedConsultations = consultations.filter((c: any) => c.status === "signed" || c.status === "amended");
   const hasConsultations = consultations.length > 0;
 
+  // ─── CDSS safety indicator (per spec §18 — queue safety) ──────────
+  // If this queue entry's encounter has any triage abnormal-vital alerts,
+  // show a visual indicator. We check the TriageRecord.abnormalVitalsAlert
+  // field which is already populated by the existing triage flow.
+  // This avoids an additional API call — the triage data is embedded
+  // in the queue entry's encounter relation (if loaded) or can be
+  // inferred from the entry's vitals context.
+  // For now, we use the entry's `abnormalVitalsAlert` field if present
+  // (populated by the triage flow and denormalized to the queue entry
+  // by the records desk check-in, which includes patient allergies
+  // and triage context in the response).
+  // SAFETY: only show severity-level indicator, not clinical details
+  // (per spec §18 — do not reveal unnecessary clinical details to
+  // unauthorized users).
+  const hasAbnormalVitals = !!(entry as any).abnormalVitalsAlert;
+  const abnormalAlerts: string[] = hasAbnormalVitals
+    ? (() => { try { return JSON.parse((entry as any).abnormalVitalsAlert); } catch { return []; } })()
+    : [];
+  const hasCriticalVital = abnormalAlerts.some((a: string) => a.includes("CRITICAL"));
+
   const waitMin = calcWaitMinutes(entry.createdAt);
   const priorityColor =
     entry.priority === "emergency"
@@ -729,6 +749,26 @@ function QueueEntryRow({
 
       <div className="flex items-center gap-1 flex-wrap justify-end">
         <StatusBadge status={entry.status} />
+
+        {/* CDSS safety indicator — abnormal vitals badge (per spec §18) */}
+        {hasAbnormalVitals && (
+          <button
+            onClick={() => setView("clinical_alerts")}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-all hover:shadow-sm ${
+              hasCriticalVital
+                ? "bg-rose-100 text-rose-700 border-rose-300 hover:bg-rose-200 animate-pulse"
+                : "bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200"
+            }`}
+            title={hasCriticalVital ? "Critical vital signs detected — review in Clinical Alert Center" : "Abnormal vital signs detected — review in Clinical Alert Center"}
+          >
+            {hasCriticalVital ? (
+              <><AlertTriangle className="w-3 h-3" /> CRITICAL VITALS</>
+            ) : (
+              <><Activity className="w-3 h-3" /> ABNORMAL VITALS</>
+            )}
+          </button>
+        )}
+
         <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${priorityColor}`}>
           {entry.priority}
         </span>

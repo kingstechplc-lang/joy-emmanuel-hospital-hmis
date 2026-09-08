@@ -95,7 +95,8 @@ export type ViewKey =
   | "histopathology"
   | "recovery_room"
   | "internal_audit"
-  | "workflow_dashboard";
+  | "workflow_dashboard"
+  | "clinical_alerts";
 
 type AppState = {
   view: ViewKey;
@@ -231,6 +232,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", category: "Overview" },
   { key: "workflow_dashboard", label: "Workflow & Notifications", icon: "BellRing", category: "Overview" },
+  { key: "clinical_alerts", label: "Clinical Alert Center", icon: "ShieldAlert", permission: "clinical_alert.view", category: "Overview" },
   { key: "records_desk", label: "Records Desk", icon: "ClipboardCheck", permission: "patient.view", category: "Clinical" },
   { key: "nhis_workflow", label: "NHIS Workflow", icon: "ShieldCheck", permission: "encounter_coverage.view", category: "Clinical" },
   { key: "opd", label: "Outpatient (OPD)", icon: "Stethoscope", permission: "encounter.view", category: "Clinical" },
