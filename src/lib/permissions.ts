@@ -328,6 +328,28 @@ export const PERMISSIONS = {
   SETTINGS_MANAGE: "settings.manage",
   SETTINGS_VIEW: "settings.view",
 
+  // Clinical Decision Support System (CDSS)
+  CDSS_VIEW: "cdss.view",
+  CDSS_CONFIGURE: "cdss.configure",
+  CLINICAL_ALERT_VIEW: "clinical_alert.view",
+  CLINICAL_ALERT_ACKNOWLEDGE: "clinical_alert.acknowledge",
+  CLINICAL_ALERT_OVERRIDE: "clinical_alert.override",
+  CLINICAL_ALERT_ESCALATE: "clinical_alert.escalate",
+
+  // Discharge Summary
+  DISCHARGE_SUMMARY_VIEW: "discharge_summary.view",
+  DISCHARGE_SUMMARY_CREATE: "discharge_summary.create",
+  DISCHARGE_SUMMARY_FINALIZE: "discharge_summary.finalize",
+  DISCHARGE_SUMMARY_PRINT: "discharge_summary.print",
+
+  // Patient Identification / Wristband
+  WRISTBAND_PRINT: "wristband.print",
+  WRISTBAND_REPRINT: "wristband.reprint",
+
+  // Pharmacy Medication Labels
+  MEDICATION_LABEL_PRINT: "medication_label.print",
+  MEDICATION_LABEL_REPRINT: "medication_label.reprint",
+
   // Notifications / Tasks
   TASK_ASSIGN: "task.assign",
   TASK_COMPLETE: "task.complete",

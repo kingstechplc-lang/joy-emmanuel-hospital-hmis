@@ -9908,3 +9908,149 @@ model NhiaClaimExport {
   @@index([submissionPeriod])
   @@index([generatedAt])
 }
+
+// =====================================================================
+// CLINICAL DECISION SUPPORT SYSTEM (CDSS) — Tier 1 Clinical Safety
+// =====================================================================
+// Central clinical alert model that unifies drug-allergy, drug-drug
+// interaction, critical lab, and abnormal vital alerts into a single
+// auditable, lifecycle-managed entity.
+// =====================================================================
+
+model ClinicalAlert {
+  id              String    @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  patientId       String
+  encounterId     String?
+
+  // Alert classification
+  alertType       String   // drug_allergy | drug_drug_interaction | therapeutic_duplication | critical_lab | abnormal_vital
+  severity        String   // info | low | moderate | high | critical
+
+  // Alert content
+  title           String
+  message         String   @db.Text
+  sourceType      String?  // prescription | lab_result | triage | vital_sign
+  sourceId        String?  // prescriptionId | labResultId | triageRecordId | vitalSignId
+  ruleId          String?  // identifier of the clinical rule that fired
+  ruleVersion     String?
+
+  // Clinical evidence
+  evidence        String?  @db.Text // JSON: { medication, allergen, interaction, labTest, vitalType, value, range, ... }
+  recommendation  String?
+
+  // Deduplication
+  deduplicationKey String? // deterministic key to prevent duplicate alerts for same patient+encounter+type+source
+
+  // Lifecycle
+  status          String   @default("active") // active | acknowledged | dismissed | overridden | resolved | escalated | expired
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  acknowledgedNote String?
+  dismissedAt     DateTime?
+  dismissedBy     String?
+  overrideAt      DateTime?
+  overrideBy      String?
+  overrideReason  String?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  escalatedAt     DateTime?
+  escalatedBy     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId, encounterId])
+  @@index([alertType, status])
+  @@index([severity, status])
+  @@index([deduplicationKey])
+  @@index([createdAt])
+}
+
+// =====================================================================
+// DISCHARGE SUMMARY — enhanced discharge document with versioning
+// =====================================================================
+
+model DischargeSummary {
+  id              String    @id @default(cuid())
+  organizationId  String
+  facilityId      String
+  patientId       String
+  encounterId     String
+  admissionId     String?
+  dischargeRecordId String? // link to existing DischargeRecord if finalized
+
+  // Document state
+  status          String   @default("draft") // draft | reviewed | approved | finalized | amended
+  version         Int      @default(1)
+  amendedFromId   String?
+
+  // Generated content (assembled from encounter data)
+  content         String   @db.Text // JSON: structured sections (demographics, clinical, diagnoses, investigations, treatment, discharge)
+
+  // Clinical context snapshot
+  attendingClinicianId String?
+  primaryDiagnosisName String?
+  primaryDiagnosisCode String?
+
+  // Review/approval
+  reviewedById    String?
+  reviewedAt      DateTime?
+  approvedById    String?
+  approvedAt      DateTime?
+  finalizedById   String?
+  finalizedAt     DateTime?
+
+  // Amendment
+  amendedById     String?
+  amendedAt       DateTime?
+  amendmentReason String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId, encounterId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// =====================================================================
+// PATIENT WRISTBAND — positive patient identification
+// =====================================================================
+
+model PatientWristband {
+  id              String    @id @default(cuid())
+  organizationId  String
+  facilityId      String
+  patientId       String
+  encounterId     String?
+
+  // Secure token (opaque, not the patientId)
+  token           String   @unique // crypto.randomUUID()
+  tokenExpiresAt  DateTime?
+
+  // Print tracking
+  printCount      Int      @default(0)
+  firstPrintedAt  DateTime?
+  lastPrintedAt   DateTime?
+  firstPrintedById String?
+  lastPrintedById  String?
+  replacementReason String?
+
+  // Status
+  status          String   @default("active") // active | replaced | voided
+  replacedById    String?
+  replacedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([encounterId])
+  @@index([token])
+  @@index([status])
+}
