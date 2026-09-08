@@ -201,7 +201,15 @@ export async function assembleDischargeSummaryContent(encounterId: string): Prom
   admissionId: string | null;
   dischargeRecordId: string | null;
 }> {
-  // 1. Load the encounter with patient + admission + (any) dischargeRecord
+  // 1. Load the encounter with patient + admission (latest only).
+  //    NOTE: the `Admission` model only has the scalar `attendingClinicianId`
+  //    in the Prisma schema — there is no `attendingClinician` relation on
+  //    `Admission` (unlike `DischargeSummary` and `Labor`, which do have it).
+  //    Including `attendingClinician` here throws:
+  //      "Unknown field `attendingClinician` for include statement on
+  //       model `Admission`. Available options are marked with ?."
+  //    So we resolve the attending clinician via a separate User lookup
+  //    below (keeps the API read-only, no migration required).
   const encounter = await db.encounter.findUnique({
     where: { id: encounterId },
     include: {
@@ -209,11 +217,6 @@ export async function assembleDischargeSummaryContent(encounterId: string): Prom
       admissions: {
         orderBy: { admittedAt: "desc" },
         take: 1,
-        include: {
-          attendingClinician: {
-            select: { id: true, firstName: true, lastName: true },
-          },
-        },
       },
     },
   });
@@ -224,6 +227,16 @@ export async function assembleDischargeSummaryContent(encounterId: string): Prom
 
   // 2. Pull the most recent admission (if any) and its dischargeRecord (if any)
   const latestAdmission = encounter.admissions[0] || null;
+
+  // 2a. Resolve the attending clinician's name (separate lookup, since
+  //     `Admission.attendingClinician` is not a Prisma relation).
+  const attendingClinician: { id: string; firstName: string; lastName: string } | null =
+    latestAdmission?.attendingClinicianId
+      ? await db.user.findUnique({
+          where: { id: latestAdmission.attendingClinicianId },
+          select: { id: true, firstName: true, lastName: true },
+        })
+      : null;
   let dischargeRecord: any = null;
   if (latestAdmission) {
     dischargeRecord = await db.dischargeRecord.findFirst({
@@ -396,11 +409,11 @@ export async function assembleDischargeSummaryContent(encounterId: string): Prom
           status: latestAdmission.status,
           admissionReason: latestAdmission.admissionReason,
           admissionDiagnosis: latestAdmission.admissionDiagnosis,
-          attendingClinician: latestAdmission.attendingClinician
+          attendingClinician: attendingClinician
             ? {
-                id: latestAdmission.attendingClinician.id,
-                firstName: latestAdmission.attendingClinician.firstName,
-                lastName: latestAdmission.attendingClinician.lastName,
+                id: attendingClinician.id,
+                firstName: attendingClinician.firstName,
+                lastName: attendingClinician.lastName,
               }
             : null,
           lengthOfStayDays: latestAdmission.dischargedAt
