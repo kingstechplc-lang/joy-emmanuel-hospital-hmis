@@ -54,6 +54,7 @@ import {
   MiniStatCard,
 } from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { MedicationLabelPrintButton } from "@/components/pharmacy/medication-label-print-button";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -2670,6 +2671,20 @@ function PrescriptionDispenseRow({
                       )}
                       {dispensing[it.id] ? "Dispensing…" : "Dispense"}
                     </Button>
+                    {/* Print Medication Label — appears once the item has
+                        been dispensed (dispensedQuantity > 0). Pulls the
+                        chosen batch ID from the dispenseMap state so
+                        the label can include the lot number + expiry. */}
+                    {it.dispensedQuantity > 0 && (
+                      <MedicationLabelPrintButton
+                        prescriptionItemId={it.id}
+                        batchId={dispenseMap[it.id]?.batchId || null}
+                        dispensedQuantity={it.dispensedQuantity}
+                        patientName={rx.patient ? `${rx.patient.firstName} ${rx.patient.lastName}` : null}
+                        medicationName={it.medication?.genericName || null}
+                        compact
+                      />
+                    )}
                   </div>
 
                   {/* Batches quick-view (FEFO sorted) */}

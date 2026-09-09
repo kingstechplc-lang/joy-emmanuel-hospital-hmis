@@ -47,6 +47,7 @@ const ALLOWED_DOCUMENT_TYPES = [
   "intake_output",
   "report",
   "wristband",
+  "medication_label",
 ] as const;
 
 const ALLOWED_PAPER_SIZES = ["A4", "A5", "THERMAL_80", "THERMAL_58"] as const;

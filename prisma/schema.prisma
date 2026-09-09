@@ -124,6 +124,7 @@ model Organization {
   costCenters             CostCenter[]
   dischargeSummaries      DischargeSummary[]
   wristbands              PatientWristband[]
+  medicationLabels        MedicationLabel[]
 }
 
 model Facility {
@@ -206,6 +207,7 @@ model Facility {
   dischargeRecords              DischargeRecord[]
   dischargeSummaries            DischargeSummary[]
   wristbands                    PatientWristband[]
+  medicationLabels              MedicationLabel[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -630,6 +632,10 @@ model User {
   wristbandsFirstPrinted       PatientWristband[]    @relation("wristbandFirstPrintedBy")
   wristbandsLastPrinted        PatientWristband[]    @relation("wristbandLastPrintedBy")
   wristbandsReplaced           PatientWristband[]    @relation("wristbandReplacedBy")
+  // --- Medication Label back-relations (Phase 9 CDSS) ---
+  medLabelsFirstPrinted        MedicationLabel[]     @relation("medLabelFirstPrintedBy")
+  medLabelsLastPrinted         MedicationLabel[]     @relation("medLabelLastPrintedBy")
+  medLabelsVoided              MedicationLabel[]     @relation("medLabelVoidedBy")
 }
 
 model Staff {
@@ -1042,6 +1048,7 @@ model Patient {
   insuranceAuthorizations       InsuranceAuthorization[]
   dischargeSummaries            DischargeSummary[]
   wristbands                    PatientWristband[]
+  medicationLabels              MedicationLabel[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -2090,7 +2097,8 @@ model PrescriptionItem {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  administrations MedicationAdministration[]
+  administrations   MedicationAdministration[]
+  medicationLabels  MedicationLabel[]
 }
 
 model MedicationAdministration {
@@ -2113,6 +2121,75 @@ model MedicationAdministration {
   createdAt          DateTime          @default(now())
 
   @@index([patientId, administeredAt])
+}
+
+// =====================================================================
+// MEDICATION LABEL — pharmacy dispense label with QR + lot/expiry
+// =====================================================================
+// A MedicationLabel is minted at dispense time and printed on a thermal
+// label printer. Each label has an opaque token (QR code) that bedside
+// staff can scan to verify the right drug / right dose / right patient /
+// right lot / right expiry (the "5 Rights of medication administration").
+//
+// One PrescriptionItem dispense event → one MedicationLabel row (the
+// label is minted once at dispense, and reprinted as needed without
+// minting a new token).
+// =====================================================================
+
+model MedicationLabel {
+  id              String    @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility  @relation(fields: [facilityId], references: [id])
+  patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  prescriptionItemId String?
+  prescriptionItem   PrescriptionItem? @relation(fields: [prescriptionItemId], references: [id])
+  prescriptionId    String?
+  inventoryBatchId  String?
+  inventoryBatch    InventoryBatch? @relation(fields: [inventoryBatchId], references: [id])
+
+  // Opaque token encoded in the QR code (NOT the patientId)
+  token           String   @unique // crypto.randomUUID()
+
+  // Print tracking
+  printCount      Int      @default(0)
+  firstPrintedAt   DateTime?
+  lastPrintedAt    DateTime?
+  firstPrintedById String?
+  firstPrintedBy   User?    @relation("medLabelFirstPrintedBy", fields: [firstPrintedById], references: [id])
+  lastPrintedById  String?
+  lastPrintedBy    User?    @relation("medLabelLastPrintedBy", fields: [lastPrintedById], references: [id])
+  replacementReason String?
+
+  // Label content snapshot (assembled at mint time; preserved for
+  // reprint even if the underlying prescription/batch is later edited
+  // or deleted)
+  content         String   @db.Text // JSON: MedicationLabelContent
+
+  // Snapshot of the medication's key safety flags at mint time
+  medicationName  String?
+  genericName     String?
+  isHighAlert     Boolean  @default(false)
+  controlledStatus String?
+
+  // Lifecycle
+  status          String   @default("active") // active | voided
+  voidedById      String?
+  voidedBy        User?    @relation("medLabelVoidedBy", fields: [voidedById], references: [id])
+  voidedAt        DateTime?
+  voidReason      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, facilityId])
+  @@index([patientId])
+  @@index([prescriptionItemId])
+  @@index([inventoryBatchId])
+  @@index([token])
+  @@index([status])
 }
 
 // ---------------------------------------------------------------------
@@ -5429,6 +5506,7 @@ model InventoryBatch {
   updatedAt           DateTime          @updatedAt
 
   transactions InventoryTransaction[]
+  medicationLabels MedicationLabel[]
 
   @@index([facilityInventoryId, expiryDate])
   @@index([status, expiryDate])

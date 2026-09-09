@@ -141,7 +141,8 @@ export type DocumentType =
   | "stock_transfer"
   | "intake_output"
   | "report"
-  | "wristband";
+  | "wristband"
+  | "medication_label";
 
 export interface DocumentTypeConfig {
   id: DocumentType;
@@ -300,6 +301,14 @@ export const DOCUMENT_TYPES: Record<DocumentType, DocumentTypeConfig> = {
     allowedPapers: ["THERMAL_58", "THERMAL_80"],
     supportsLandscape: false,
     description: "Patient identification wristband with QR code, MRN, blood group, and allergy alert. Designed for thermal wristband printers.",
+  },
+  medication_label: {
+    id: "medication_label",
+    label: "Medication Label",
+    defaultPaper: "THERMAL_58",
+    allowedPapers: ["THERMAL_58", "THERMAL_80"],
+    supportsLandscape: false,
+    description: "Pharmacy dispense label with patient identity, medication, dose, lot/batch, expiry, prescriber, and QR code for bedside verification (5 Rights). Designed for thermal label printers.",
   },
 };
 
