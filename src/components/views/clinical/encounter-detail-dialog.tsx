@@ -11,6 +11,7 @@ import {
   ClipboardList, ScanLine, Scissors, FileCode2, AlertTriangle, Loader2,
 } from "lucide-react";
 import { StatusBadge, formatDate, formatRelative, formatCurrency, safeJson } from "@/components/ui-helpers";
+import { WristbandPrintButton } from "@/components/clinical/wristband-print-button";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -106,7 +107,7 @@ export function EncounterDetailDialog({
                 )}
 
                 {/* Quick Actions */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                   <QuickAction label="Triage" icon={Stethoscope} color="amber" onClick={() => onNavigate("triage")} />
                   <QuickAction label="Consultation" icon={FileText} color="blue" onClick={() => onNavigate("consultations")} />
                   <QuickAction label="Prescribe" icon={Pill} color="teal" onClick={() => onNavigate("prescriptions")} />
@@ -123,6 +124,15 @@ export function EncounterDetailDialog({
                   )}
                   {canClose && !isTerminal && (
                     <QuickAction label="Cancel" icon={XCircle} color="rose" onClick={() => onCancelled(enc)} />
+                  )}
+                  {/* Wristband print — inline premium button */}
+                  {enc.patientId && (
+                    <WristbandPrintButton
+                      patientId={enc.patientId}
+                      encounterId={enc.id}
+                      patientName={enc.patient ? `${enc.patient.firstName} ${enc.patient.lastName}` : undefined}
+                      compact
+                    />
                   )}
                 </div>
 

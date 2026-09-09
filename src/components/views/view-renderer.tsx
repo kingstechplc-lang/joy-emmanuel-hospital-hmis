@@ -73,6 +73,7 @@ import { MortuaryView } from "@/components/views/extended/mortuary-view";
 import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import { ClinicalAlertCenterView } from "@/components/views/clinical/clinical-alert-center-view";
 import { DischargeSummaryView } from "@/components/views/clinical/discharge-summary-view";
+import { WristbandsView } from "@/components/views/clinical/wristbands-view";
 import { ITSupportView } from "@/components/views/extended/it-support-view";
 import { SupportServicesView } from "@/components/views/extended/support-services-view";
 import { AmbulanceView } from "@/components/views/extended/ambulance-view";
@@ -182,6 +183,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   internal_audit: InternalAuditView,
   clinical_alerts: ClinicalAlertCenterView,
   discharge_summaries: DischargeSummaryView,
+  wristbands: WristbandsView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
@@ -276,6 +278,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   internal_audit: "audit.view",
   clinical_alerts: "clinical_alert.view",
   discharge_summaries: "discharge_summary.view",
+  wristbands: "wristband.print",
 };
 
 export function ViewRenderer({ view }: { view: ViewKey }) {

@@ -140,7 +140,8 @@ export type DocumentType =
   | "purchase_order"
   | "stock_transfer"
   | "intake_output"
-  | "report";
+  | "report"
+  | "wristband";
 
 export interface DocumentTypeConfig {
   id: DocumentType;
@@ -291,6 +292,14 @@ export const DOCUMENT_TYPES: Record<DocumentType, DocumentTypeConfig> = {
     allowedPapers: ["A4"],
     supportsLandscape: true,
     description: "Generic system / KPI report.",
+  },
+  wristband: {
+    id: "wristband",
+    label: "Patient Wristband",
+    defaultPaper: "THERMAL_58",
+    allowedPapers: ["THERMAL_58", "THERMAL_80"],
+    supportsLandscape: false,
+    description: "Patient identification wristband with QR code, MRN, blood group, and allergy alert. Designed for thermal wristband printers.",
   },
 };
 

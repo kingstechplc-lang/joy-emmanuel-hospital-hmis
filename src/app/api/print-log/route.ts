@@ -46,6 +46,7 @@ const ALLOWED_DOCUMENT_TYPES = [
   "stock_transfer",
   "intake_output",
   "report",
+  "wristband",
 ] as const;
 
 const ALLOWED_PAPER_SIZES = ["A4", "A5", "THERMAL_80", "THERMAL_58"] as const;

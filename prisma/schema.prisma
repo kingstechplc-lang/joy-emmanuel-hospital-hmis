@@ -123,6 +123,7 @@ model Organization {
   statutoryRules          StatutoryRule[]
   costCenters             CostCenter[]
   dischargeSummaries      DischargeSummary[]
+  wristbands              PatientWristband[]
 }
 
 model Facility {
@@ -204,6 +205,7 @@ model Facility {
   intakeOutputAlertConfigs      IntakeOutputAlertConfig[]
   dischargeRecords              DischargeRecord[]
   dischargeSummaries            DischargeSummary[]
+  wristbands                    PatientWristband[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -624,6 +626,10 @@ model User {
   dischargeSummariesApproved   DischargeSummary[]     @relation("dischargeSummaryApprovedBy")
   dischargeSummariesFinalized  DischargeSummary[]     @relation("dischargeSummaryFinalizedBy")
   dischargeSummariesAmended    DischargeSummary[]     @relation("dischargeSummaryAmendedBy")
+  // --- Patient Wristband back-relations (Phase 8 CDSS) ---
+  wristbandsFirstPrinted       PatientWristband[]    @relation("wristbandFirstPrintedBy")
+  wristbandsLastPrinted        PatientWristband[]    @relation("wristbandLastPrintedBy")
+  wristbandsReplaced           PatientWristband[]    @relation("wristbandReplacedBy")
 }
 
 model Staff {
@@ -1035,6 +1041,7 @@ model Patient {
   creditNotes                   CreditNote[]
   insuranceAuthorizations       InsuranceAuthorization[]
   dischargeSummaries            DischargeSummary[]
+  wristbands                    PatientWristband[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -1404,6 +1411,7 @@ model Encounter {
   claimReadinessAssessments ClaimReadinessAssessment[]
   eligibilityVerifications  EligibilityVerification[]
   dischargeSummaries        DischargeSummary[]
+  wristbands                PatientWristband[]
 
   @@unique([facilityId, encounterNumber])
   @@index([patientId, facilityId])
@@ -10055,9 +10063,13 @@ model DischargeSummary {
 model PatientWristband {
   id              String    @id @default(cuid())
   organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
   facilityId      String
+  facility        Facility  @relation(fields: [facilityId], references: [id])
   patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id])
   encounterId     String?
+  encounter       Encounter? @relation(fields: [encounterId], references: [id])
 
   // Secure token (opaque, not the patientId)
   token           String   @unique // crypto.randomUUID()
@@ -10068,12 +10080,15 @@ model PatientWristband {
   firstPrintedAt  DateTime?
   lastPrintedAt   DateTime?
   firstPrintedById String?
+  firstPrintedBy   User?    @relation("wristbandFirstPrintedBy", fields: [firstPrintedById], references: [id])
   lastPrintedById  String?
+  lastPrintedBy    User?    @relation("wristbandLastPrintedBy", fields: [lastPrintedById], references: [id])
   replacementReason String?
 
   // Status
   status          String   @default("active") // active | replaced | voided
   replacedById    String?
+  replacedBy      User?     @relation("wristbandReplacedBy", fields: [replacedById], references: [id])
   replacedAt      DateTime?
 
   createdAt       DateTime @default(now())

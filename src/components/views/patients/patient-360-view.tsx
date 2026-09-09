@@ -26,6 +26,7 @@ import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-butt
 import { InsuranceProviderSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 import { GHANA_REGIONS, getDistrictsByRegion, RELATIONSHIP_TYPES } from "@/lib/ghana-reference-data";
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
+import { WristbandPrintButton } from "@/components/clinical/wristband-print-button";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -137,10 +138,14 @@ export function Patient360View() {
               )}
             </div>
             <div className="flex flex-col gap-2 md:items-end">
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button onClick={() => setView("encounters")} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                   <Activity className="w-4 h-4" /> New Encounter
                 </Button>
+                <WristbandPrintButton
+                  patientId={p.id}
+                  patientName={p.firstName && p.lastName ? `${p.firstName} ${p.lastName}` : undefined}
+                />
                 {canEdit && (
                   <Button variant="outline" onClick={() => setShowEdit(true)} className="gap-2">
                     <Edit className="w-4 h-4" /> Edit Patient
