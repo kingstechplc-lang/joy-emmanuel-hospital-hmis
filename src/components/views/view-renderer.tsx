@@ -75,6 +75,7 @@ import { ClinicalAlertCenterView } from "@/components/views/clinical/clinical-al
 import { DischargeSummaryView } from "@/components/views/clinical/discharge-summary-view";
 import { WristbandsView } from "@/components/views/clinical/wristbands-view";
 import { MedicationLabelsView } from "@/components/views/pharmacy/medication-labels-view";
+import { CDSSHealthCenterView } from "@/components/views/clinical/cdss-health-center-view";
 import { ITSupportView } from "@/components/views/extended/it-support-view";
 import { SupportServicesView } from "@/components/views/extended/support-services-view";
 import { AmbulanceView } from "@/components/views/extended/ambulance-view";
@@ -186,6 +187,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   discharge_summaries: DischargeSummaryView,
   wristbands: WristbandsView,
   medication_labels: MedicationLabelsView,
+  cdss_health: CDSSHealthCenterView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
@@ -282,6 +284,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   discharge_summaries: "discharge_summary.view",
   wristbands: "wristband.print",
   medication_labels: "medication_label.print",
+  cdss_health: "cdss.view",
 };
 
 export function ViewRenderer({ view }: { view: ViewKey }) {

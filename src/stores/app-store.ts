@@ -99,7 +99,8 @@ export type ViewKey =
   | "clinical_alerts"
   | "discharge_summaries"
   | "wristbands"
-  | "medication_labels";
+  | "medication_labels"
+  | "cdss_health";
 
 type AppState = {
   view: ViewKey;
@@ -236,6 +237,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", category: "Overview" },
   { key: "workflow_dashboard", label: "Workflow & Notifications", icon: "BellRing", category: "Overview" },
   { key: "clinical_alerts", label: "Clinical Alert Center", icon: "ShieldAlert", permission: "clinical_alert.view", category: "Overview" },
+  { key: "cdss_health", label: "CDSS Health Center", icon: "Activity", permission: "cdss.view", category: "Overview" },
   { key: "records_desk", label: "Records Desk", icon: "ClipboardCheck", permission: "patient.view", category: "Clinical" },
   { key: "nhis_workflow", label: "NHIS Workflow", icon: "ShieldCheck", permission: "encounter_coverage.view", category: "Clinical" },
   { key: "opd", label: "Outpatient (OPD)", icon: "Stethoscope", permission: "encounter.view", category: "Clinical" },
