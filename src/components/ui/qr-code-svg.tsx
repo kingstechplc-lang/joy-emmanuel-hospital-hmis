@@ -3,24 +3,32 @@
 // =====================================================================
 // QrCodeSvg — React wrapper around the `qrcode` library that produces
 // a self-contained inline SVG. Works both:
-//   - On-screen in the live app (uses useEffect + state)
+//   - On-screen in the live app (synchronous — no useEffect)
 //   - In the print popup (renderToStaticMarkup produces a real SVG
 //     string that the popup window renders without hydration)
 //
-// Why SVG and not canvas?
-//   - renderToStaticMarkup cannot serialize a <canvas> element's
-//     drawn pixels to the popup window. SVG survives the round-trip
-//     intact and renders crisp at any printer DPI.
+// WHY SYNCHRONOUS:
+//   - The `qrcode` library exposes a low-level `QRCode.create(text, opts)`
+//     API that is SYNCHRONOUS and returns a `QrCode` object with a
+//     `modules` property we can iterate over.
+//   - We use this to build the SVG path string during render, avoiding
+//     any useEffect/useState. This is critical because `PrintButton`
+//     serializes the React tree via `renderToStaticMarkup`, which
+//     does NOT run effects — so any async-only QR generator would
+//     produce a blank box in the print popup.
+//   - The QR matrix is small (typically 25x25 to 33x33 modules), so
+//     building the SVG string on every render is cheap (~1ms).
+//
+// WHY SVG (not canvas):
+//   - renderToStaticMarkup cannot serialize a <canvas>'s drawn pixels
+//     to the popup window. SVG survives the round-trip intact and
+//     renders crisp at any printer DPI.
 //   - Thermal printers (Zebra, Brother, etc.) rasterize SVG cleanly
 //     through the browser's print pipeline.
-//
-// Why server-side safe (no top-level await):
-//   - We generate the QR string in a useEffect so SSR / static render
-//     doesn't try to call the qrcode library at import time.
 // =====================================================================
 
-import { useEffect, useState, useMemo } from "react";
-import QR from "qrcode";
+import { useMemo } from "react";
+import QRCode from "qrcode";
 
 type QrCodeSvgProps = {
   /** The data to encode (URL, token, text — anything). */
@@ -48,36 +56,44 @@ export function QrCodeSvg({
   margin = 0,
   className,
 }: QrCodeSvgProps) {
-  const [svg, setSvg] = useState<string>("");
-
-  useEffect(() => {
-    if (!value) {
-      // Skip generation entirely; svg state remains empty.
-      return;
-    }
-    let cancelled = false;
-    QR.toString(value, {
-      type: "svg",
-      margin,
-      errorCorrectionLevel: level,
-      color: { dark: fg, light: bg },
-    })
-      .then((s) => {
-        if (!cancelled) setSvg(s);
-      })
-      .catch(() => {
-        if (!cancelled) setSvg("");
+  // Build the SVG string synchronously from the QR matrix.
+  // QRCode.create is the synchronous low-level API; we then iterate
+  // over its modules to construct an SVG with one <rect> per dark module.
+  const svgMarkup = useMemo(() => {
+    if (!value) return "";
+    try {
+      const qr = QRCode.create(value, {
+        errorCorrectionLevel: level,
+        margin,
       });
-    return () => {
-      cancelled = true;
-    };
+      const moduleCount = qr.modules.size;
+      // viewBox = total modules + margin on each side
+      const totalSize = moduleCount + margin * 2;
+
+      // Build SVG path using a single <path> with one M+h+v command per
+      // dark module (more efficient than many <rect> elements).
+      // Each dark module becomes a 1x1 square at (col+margin, row+margin).
+      let pathData = "";
+      for (let row = 0; row < moduleCount; row++) {
+        for (let col = 0; col < moduleCount; col++) {
+          if (qr.modules.get(row, col)) {
+            const x = col + margin;
+            const y = row + margin;
+            // M = move to, h = horizontal lineto, v = vertical, z = close
+            pathData += `M${x},${y}h1v1h-1z`;
+          }
+        }
+      }
+
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" preserveAspectRatio="xMidYMid meet"><rect width="${totalSize}" height="${totalSize}" fill="${bg}"/><path d="${pathData}" fill="${fg}"/></svg>`;
+    } catch {
+      return "";
+    }
   }, [value, fg, bg, level, margin]);
 
-  // Memo a consistent key for React's reconciliation
-  const containerKey = useMemo(() => `${value}-${size}-${level}`, [value, size, level]);
-
-  if (!svg) {
-    // Skeleton placeholder while generating (avoids layout shift)
+  if (!svgMarkup) {
+    // Empty value OR generation failed — render an empty placeholder
+    // so the container keeps its size for layout stability.
     return (
       <div
         className={className}
@@ -86,26 +102,18 @@ export function QrCodeSvg({
           height: size,
           background: bg,
           borderRadius: 2,
-          opacity: 0.4,
         }}
-        aria-label="Generating QR code"
+        aria-label="QR code unavailable"
       />
     );
   }
 
-  // We wrap the SVG in a sized container so consumers can size it
-  // without manipulating the inner viewBox. The inner <svg> takes
-  // width/height 100% so it scales to the container.
   return (
     <div
-      key={containerKey}
       className={className}
       style={{ width: size, height: size, display: "inline-block" }}
       aria-label={`QR code for ${value}`}
-      // Render the SVG markup directly. React will treat this as a
-      // controlled string; since the qrcode library output is stable
-      // for the same input, this is safe.
-      dangerouslySetInnerHTML={{ __html: svg.replace(/<svg /, `<svg width="100%" height="100%" `) }}
+      dangerouslySetInnerHTML={{ __html: svgMarkup }}
     />
   );
 }

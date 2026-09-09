@@ -53,6 +53,9 @@ export interface WristbandContent {
     name: string;
     code?: string | null;
     phone?: string | null;
+    /** Organization-level logo URL (the source of truth for branding).
+     *  Rendered on the wristband header next to the facility name. */
+    logoUrl?: string | null;
   };
   organization: {
     id: string;
@@ -168,7 +171,15 @@ export async function assembleWristbandContent(
       where: { id: encounterId },
       include: {
         department: { select: { id: true, name: true, code: true } },
-        facility: { select: { id: true, name: true, code: true, phone: true } },
+        facility: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            phone: true,
+            organization: { select: { logoUrl: true } },
+          },
+        },
       },
     });
     if (!encounter) {
@@ -183,7 +194,16 @@ export async function assembleWristbandContent(
   if (facilityId) {
     facility = await db.facility.findUnique({
       where: { id: facilityId },
-      select: { id: true, name: true, code: true, phone: true },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        phone: true,
+        // Pull the organization's logoUrl — the source of truth for
+        // facility branding (the Facility model itself has no logoUrl
+        // column; the logo lives on Organization.logoUrl per schema).
+        organization: { select: { logoUrl: true } },
+      },
     });
   }
 
@@ -247,6 +267,11 @@ export async function assembleWristbandContent(
       name: facility.name,
       code: facility.code,
       phone: facility.phone,
+      // Logo: the Facility model itself has no logoUrl column — logos
+      // live on the Organization. The query above already pulled
+      // `facility.organization.logoUrl`, so we use that. Fallback to
+      // the patient's organization.logoUrl (which we always have).
+      logoUrl: facility.organization?.logoUrl || patient.organization.logoUrl || null,
     },
     organization: {
       id: patient.organization.id,

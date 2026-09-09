@@ -481,11 +481,16 @@ function WristbandReprintContent({ wristband }: { wristband: any }) {
       name: wristband.facility?.name || "Facility",
       code: wristband.facility?.code,
       phone: wristband.facility?.phone,
+      // Logo: pulled from organization.logoUrl when available (the
+      // Facility model has no logoUrl column). For the list-row
+      // fallback path we don't always have this, so null is OK — the
+      // template will simply omit the logo image.
+      logoUrl: (wristband.facility as any)?.organization?.logoUrl || null,
     },
     organization: {
       id: "",
       name: "",
-      logoUrl: null,
+      logoUrl: (wristband.facility as any)?.organization?.logoUrl || null,
     },
     allergies: [],
     hasAllergyAlert: false,

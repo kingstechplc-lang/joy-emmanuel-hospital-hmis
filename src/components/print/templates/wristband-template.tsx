@@ -133,13 +133,36 @@ export function WristbandTemplate({
           borderBottom: "1.5pt solid #000000",
           paddingBottom: `${4 * fontScale}pt`,
           marginBottom: `${4 * fontScale}pt`,
+          gap: `${4 * fontScale}pt`,
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: `${baseFont}pt`, lineHeight: 1.1 }}>
-          {c.facility.name}
+        <div style={{ display: "flex", alignItems: "center", gap: `${4 * fontScale}pt`, minWidth: 0, flex: 1 }}>
+          {/* Facility / Organization logo — sourced from Organization.logoUrl
+              (the Facility model itself has no logoUrl column). Sized to
+              fit on a 58mm thermal wristband without dominating the layout. */}
+          {(c.facility.logoUrl || c.organization.logoUrl) && (
+            <img
+              src={c.facility.logoUrl || c.organization.logoUrl || ""}
+              alt={`${c.facility.name} logo`}
+              style={{
+                height: `${20 * fontScale}pt`,
+                width: "auto",
+                maxWidth: `${50 * fontScale}pt`,
+                objectFit: "contain",
+                flexShrink: 0,
+              }}
+              // Cross-origin images: keep them anonymous so the print
+              // popup's renderer doesn't taint the canvas / refuse to
+              // rasterize. (Important for branded logos hosted on S3/CDN.)
+              crossOrigin="anonymous"
+            />
+          )}
+          <div style={{ fontWeight: 700, fontSize: `${baseFont}pt`, lineHeight: 1.1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+            {c.facility.name}
+          </div>
         </div>
         {c.facility.code && (
-          <div style={{ fontSize: `${smallFont}pt`, color: "#4b5563" }}>
+          <div style={{ fontSize: `${smallFont}pt`, color: "#4b5563", flexShrink: 0 }}>
             [{c.facility.code}]
           </div>
         )}
@@ -235,24 +258,51 @@ export function WristbandTemplate({
         </div>
       </div>
 
-      {/* QR code block — large, central */}
+      {/* QR code block — large, central, with white quiet zone for scannability.
+          The QR container is sized so the QR + quiet zone fits comfortably
+          inside the wristband width. Pure white background ensures reliable
+          scanning on any thermal printer. */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           margin: `${4 * fontScale}pt 0`,
-          padding: `${4 * fontScale}pt`,
-          border: `${1 * fontScale}pt solid #000000`,
+          padding: `${6 * fontScale}pt`,
+          background: "#ffffff",
+          border: `${1.5 * fontScale}pt solid #000000`,
           borderRadius: "2pt",
         }}
       >
-        <QrCodeSvg
-          value={c.qrPayload}
-          size={qrSize}
-          level="M"
-          margin={0}
-        />
+        {/* The QR itself — synchronous SVG so it survives
+            renderToStaticMarkup in the print popup. */}
+        {c.qrPayload ? (
+          <QrCodeSvg
+            value={c.qrPayload}
+            size={qrSize}
+            level="M"
+            margin={0}
+          />
+        ) : (
+          // Fallback if qrPayload is empty (should never happen in
+          // production but defensive)
+          <div
+            style={{
+              width: qrSize,
+              height: qrSize,
+              background: "#f3f4f6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#9ca3af",
+              fontSize: `${smallFont}pt`,
+              textAlign: "center",
+              padding: "8pt",
+            }}
+          >
+            QR unavailable
+          </div>
+        )}
         <div
           style={{
             marginTop: `${3 * fontScale}pt`,

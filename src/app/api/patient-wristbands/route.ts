@@ -75,6 +75,14 @@ export async function GET(req: Request) {
         encounter: {
           select: { id: true, encounterNumber: true, encounterType: true, status: true, startAt: true },
         },
+        // Include facility.organization.logoUrl so reprints of existing
+        // wristbands can render the brand logo.
+        facility: {
+          select: {
+            id: true, name: true, code: true, phone: true,
+            organization: { select: { logoUrl: true } },
+          },
+        },
         firstPrintedBy: { select: { id: true, firstName: true, lastName: true } },
         lastPrintedBy: { select: { id: true, firstName: true, lastName: true } },
         replacedBy: { select: { id: true, firstName: true, lastName: true } },
@@ -157,6 +165,12 @@ export async function POST(req: Request) {
       include: {
         patient: { select: { id: true, patientNumber: true, firstName: true, lastName: true, dateOfBirth: true, sex: true, bloodGroup: true } },
         encounter: { select: { id: true, encounterNumber: true, encounterType: true, status: true, startAt: true } },
+        facility: {
+          select: {
+            id: true, name: true, code: true, phone: true,
+            organization: { select: { logoUrl: true } },
+          },
+        },
         firstPrintedBy: { select: { id: true, firstName: true, lastName: true } },
         lastPrintedBy: { select: { id: true, firstName: true, lastName: true } },
       },

@@ -51,7 +51,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         firstPrintedBy: { select: { id: true, firstName: true, lastName: true } },
         lastPrintedBy: { select: { id: true, firstName: true, lastName: true } },
         replacedBy: { select: { id: true, firstName: true, lastName: true } },
-        facility: { select: { id: true, name: true, code: true, phone: true } },
+        facility: {
+          select: {
+            id: true, name: true, code: true, phone: true,
+            organization: { select: { logoUrl: true } },
+          },
+        },
       },
     });
 
