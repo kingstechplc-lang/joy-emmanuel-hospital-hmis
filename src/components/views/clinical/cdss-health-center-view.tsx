@@ -155,7 +155,16 @@ export function CDSSHealthCenterView() {
       setRegressionSummary(null);
       const res = await fetch("/api/cdss/regression-test", { method: "POST" });
       const data = await safeJson(res);
-      if (!res.ok) throw new Error(data.error || "Regression test failed");
+      if (!res.ok) {
+        // Extract as much diagnostic info as possible from the error
+        // response so the toast shows something actionable instead of
+        // the generic "Regression test failed" string.
+        const errMsg =
+          data?.error ||
+          data?.message ||
+          `Regression test failed (HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""})`;
+        throw new Error(errMsg);
+      }
       return data;
     },
     onSuccess: (data) => {
@@ -572,9 +581,11 @@ export function CDSSHealthCenterView() {
           )}
 
           {!regressionResults && !regressionRunning && (
-            <div className="text-center py-8 text-slate-400 text-sm">
+            <div className="text-center py-8 px-2 text-slate-400 text-sm leading-relaxed">
               <Play className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              Click <strong>Run All Tests</strong> to verify the CDSS engine, schema, permissions, RBAC matrix, database queries, audit log, and print system.
+              <p className="max-w-md mx-auto">
+                Click <strong>Run All Tests</strong> to verify the CDSS engine, schema, permissions, RBAC matrix, database queries, audit log, and print system.
+              </p>
             </div>
           )}
         </CardContent>

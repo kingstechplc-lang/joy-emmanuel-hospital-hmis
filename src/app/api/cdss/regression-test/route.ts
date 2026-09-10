@@ -99,7 +99,7 @@ async function runTest(
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!hasPermission(session, PERMISSIONS.CDSS_VIEW)) {
@@ -110,18 +110,26 @@ export async function POST() {
   const results: TestResult[] = [];
   const startedAt = Date.now();
 
-  // ── 1. CDSS engine module sanity ─────────────────────────────
-  results.push(
-    await runTest(
-      "engine-exports",
-      "CDSS engine exports required functions",
-      "engine",
-      async () => {
-        try {
-          const engine = await import("@/lib/cdss/engine");
-          const required = [
-            "evaluateVitals",
-            "checkDrugAllergy",
+  // Wrap the entire test runner body in a top-level try/catch so that
+  // any UNHANDLED exception (e.g., DB connection timeout, env var
+  // issue, missing model in the schema) is converted into a
+  // structured 500 response with an `error` field, rather than
+  // bubbling up to Next.js's default error page (which has no
+  // `error` field and would surface as a generic "Regression test
+  // failed" toast in the UI).
+  try {
+    // ── 1. CDSS engine module sanity ─────────────────────────────
+    results.push(
+      await runTest(
+        "engine-exports",
+        "CDSS engine exports required functions",
+        "engine",
+        async () => {
+          try {
+            const engine = await import("@/lib/cdss/engine");
+            const required = [
+              "evaluateVitals",
+              "checkDrugAllergy",
             "checkDrugDrugInteractions",
             "checkCriticalLabResult",
             "persistAlert",
@@ -743,4 +751,28 @@ export async function POST() {
       name: session.user.name,
     },
   });
+  } catch (e: any) {
+    // Top-level safety net: any unhandled exception during the test run
+    // is converted into a structured 500 response with an `error`
+    // field so the client UI can show a meaningful toast instead of
+    // the generic "Regression test failed" fallback.
+    console.error("[POST /api/cdss/regression-test] UNHANDLED exception:", e);
+    return NextResponse.json(
+      {
+        error: `Regression test runner error: ${e?.message || "Unknown error"}`,
+        errorType: e?.constructor?.name || "Error",
+        // Partial results if we have any (so the UI can show what got run)
+        partialResults: results,
+        partialSummary: {
+          total: results.length,
+          pass: results.filter((r) => r.status === "pass").length,
+          fail: results.filter((r) => r.status === "fail").length,
+          warn: results.filter((r) => r.status === "warn").length,
+          allPass: false,
+          crashed: true,
+        },
+      },
+      { status: 500 },
+    );
+  }
 }
