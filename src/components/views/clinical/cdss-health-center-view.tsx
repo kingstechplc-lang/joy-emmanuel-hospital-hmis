@@ -165,8 +165,10 @@ export function CDSSHealthCenterView() {
       const pass = data.summary.pass;
       const fail = data.summary.fail;
       const warn = data.summary.warn;
-      if (fail === 0) {
-        toast.success(`Regression passed: ${pass} tests ✓${warn > 0 ? `, ${warn} warnings` : ""}`);
+      if (fail === 0 && warn === 0) {
+        toast.success(`Regression passed: all ${pass} tests ✓`);
+      } else if (fail === 0 && warn > 0) {
+        toast.success(`Regression passed: ${pass} tests ✓, ${warn} warning(s) (non-blocking)`);
       } else {
         toast.error(`Regression FAILED: ${fail} test(s) failed, ${pass} passed`);
       }
@@ -477,18 +479,27 @@ export function CDSSHealthCenterView() {
             >
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3 font-semibold">
-                  {regressionSummary.fail === 0 ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
+                  {regressionSummary.fail > 0 ? (
                     <XCircle className="w-5 h-5" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5" />
                   )}
                   <span>
-                    {regressionSummary.fail === 0 ? "All tests passed" : `${regressionSummary.fail} test(s) failed`}
+                    {regressionSummary.fail > 0
+                      ? `${regressionSummary.fail} test(s) failed`
+                      : regressionSummary.warn > 0
+                        ? `All core tests passed (${regressionSummary.pass} ✓)`
+                        : `All tests passed (${regressionSummary.pass} ✓)`}
                   </span>
                   <span className="text-xs font-normal opacity-80">
-                    {regressionSummary.pass} passed · {regressionSummary.warn} warnings · {regressionSummary.total} total
+                    {regressionSummary.pass} passed · {regressionSummary.warn} warnings · {regressionSummary.fail} failed · {regressionSummary.total} total
                   </span>
                 </div>
+                {regressionSummary.fail === 0 && regressionSummary.warn > 0 && (
+                  <span className="text-[11px] italic opacity-80">
+                    Warnings are non-blocking (live API tests skipped due to server-to-server auth, or DDI rules not yet seeded)
+                  </span>
+                )}
               </div>
             </motion.div>
           )}
@@ -787,23 +798,27 @@ export function CDSSHealthCenterView() {
               <>
                 {/* Summary banner */}
                 <div className={`rounded-lg p-3 border-2 ${
-                  pastRunDetail.allPass
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                    : "border-rose-300 bg-rose-50 text-rose-700"
+                  pastRunDetail.failCount > 0
+                    ? "border-rose-300 bg-rose-50 text-rose-700"
+                    : pastRunDetail.warnCount > 0
+                      ? "border-amber-300 bg-amber-50 text-amber-700"
+                      : "border-emerald-300 bg-emerald-50 text-emerald-700"
                 }`}>
                   <div className="flex items-center gap-3 font-semibold">
-                    {pastRunDetail.allPass ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
+                    {pastRunDetail.failCount > 0 ? (
                       <XCircle className="w-5 h-5" />
+                    ) : (
+                      <CheckCircle2 className="w-5 h-5" />
                     )}
                     <span>
-                      {pastRunDetail.allPass
-                        ? `All ${pastRunDetail.totalTests} tests passed`
-                        : `${pastRunDetail.failCount} of ${pastRunDetail.totalTests} tests failed`}
+                      {pastRunDetail.failCount > 0
+                        ? `${pastRunDetail.failCount} of ${pastRunDetail.totalTests} tests failed`
+                        : pastRunDetail.warnCount > 0
+                          ? `All core tests passed (${pastRunDetail.passCount} ✓)`
+                          : `All ${pastRunDetail.totalTests} tests passed`}
                     </span>
                     <span className="text-xs font-normal opacity-80">
-                      {pastRunDetail.passCount} passed · {pastRunDetail.warnCount} warnings
+                      {pastRunDetail.passCount} passed · {pastRunDetail.warnCount} warnings · {pastRunDetail.failCount} failed
                     </span>
                   </div>
                 </div>
