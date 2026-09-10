@@ -52,7 +52,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -438,22 +438,251 @@ export async function POST() {
     ),
   );
 
+  // ── 13. Public wristband verify endpoint rejects invalid tokens ─
+  // Build an absolute URL for the fetch (the verify endpoint is public,
+  // but we still need an absolute URL since fetch in the server runtime
+  // doesn't have a relative URL base).
+  const origin = new URL(req.url).origin;
+  results.push(
+    await runTest(
+      "verify-wristband-invalid-token",
+      "Public wristband verify endpoint rejects invalid tokens with 400",
+      "api-live",
+      async () => {
+        try {
+          // Use a short token (3 chars) — should fail the length check
+          // and return 400 Bad Request.
+          const res = await fetch(`${origin}/api/patient-wristbands/verify/short`, {
+            // No credentials — endpoint is public
+            cache: "no-store",
+          });
+          if (res.status === 400) {
+            return {
+              status: "pass",
+              message: `GET /api/patient-wristbands/verify/short → 400 (correctly rejected)`,
+              details: { status: res.status },
+            };
+          }
+          return {
+            status: "fail",
+            message: `Expected 400, got ${res.status}`,
+            details: { status: res.status },
+          };
+        } catch (e: any) {
+          return { status: "fail", message: `Fetch failed: ${e.message}` };
+        }
+      },
+    ),
+  );
+
+  // ── 14. Public medication-label verify endpoint rejects invalid tokens
+  results.push(
+    await runTest(
+      "verify-label-invalid-token",
+      "Public medication-label verify endpoint rejects invalid tokens with 400",
+      "api-live",
+      async () => {
+        try {
+          const res = await fetch(`${origin}/api/medication-labels/verify/short`, {
+            cache: "no-store",
+          });
+          if (res.status === 400) {
+            return {
+              status: "pass",
+              message: `GET /api/medication-labels/verify/short → 400 (correctly rejected)`,
+              details: { status: res.status },
+            };
+          }
+          return {
+            status: "fail",
+            message: `Expected 400, got ${res.status}`,
+            details: { status: res.status },
+          };
+        } catch (e: any) {
+          return { status: "fail", message: `Fetch failed: ${e.message}` };
+        }
+      },
+    ),
+  );
+
+  // ── 15. Public verify endpoints return 404 for well-formed but unknown tokens ─
+  results.push(
+    await runTest(
+      "verify-wristband-unknown-token",
+      "Public wristband verify endpoint returns 404 for unknown (well-formed) token",
+      "api-live",
+      async () => {
+        try {
+          // A 36-char UUID that doesn't exist in the DB
+          const fakeToken = "00000000-0000-4000-8000-000000000000";
+          const res = await fetch(`${origin}/api/patient-wristbands/verify/${fakeToken}`, {
+            cache: "no-store",
+          });
+          if (res.status === 404) {
+            return {
+              status: "pass",
+              message: `GET /api/patient-wristbands/verify/<unknown-uuid> → 404 (correctly not found)`,
+              details: { status: res.status },
+            };
+          }
+          return {
+            status: "fail",
+            message: `Expected 404, got ${res.status}`,
+            details: { status: res.status },
+          };
+        } catch (e: any) {
+          return { status: "fail", message: `Fetch failed: ${e.message}` };
+        }
+      },
+    ),
+  );
+
+  // ── 16. RBAC matrix endpoint returns all expected roles ────────
+  results.push(
+    await runTest(
+      "rbac-matrix-roles-count",
+      "RBAC matrix endpoint returns all 13 expected roles",
+      "api-live",
+      async () => {
+        try {
+          const res = await fetch(`${origin}/api/cdss/rbac-matrix`, {
+            headers: { cookie: req.headers.get("cookie") || "" },
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            return {
+              status: "fail",
+              message: `GET /api/cdss/rbac-matrix → ${res.status}`,
+              details: { status: res.status },
+            };
+          }
+          const data = await res.json();
+          const roleCount = data?.roles?.length || 0;
+          const permCount = data?.permissions?.length || 0;
+          if (roleCount === 13 && permCount === 14) {
+            return {
+              status: "pass",
+              message: `RBAC matrix returned ${roleCount} roles × ${permCount} CDSS permissions`,
+              details: { roleCount, permCount },
+            };
+          }
+          return {
+            status: "fail",
+            message: `Expected 13 roles × 14 perms, got ${roleCount} × ${permCount}`,
+            details: { roleCount, permCount },
+          };
+        } catch (e: any) {
+          return { status: "fail", message: `Fetch failed: ${e.message}` };
+        }
+      },
+    ),
+  );
+
+  // ── 17. CDSS health endpoint is reachable ─────────────────────
+  results.push(
+    await runTest(
+      "health-endpoint-reachable",
+      "CDSS health endpoint returns live subsystem stats",
+      "api-live",
+      async () => {
+        try {
+          const res = await fetch(`${origin}/api/cdss/health`, {
+            headers: { cookie: req.headers.get("cookie") || "" },
+            cache: "no-store",
+          });
+          if (!res.ok) {
+            return {
+              status: "fail",
+              message: `GET /api/cdss/health → ${res.status}`,
+              details: { status: res.status },
+            };
+          }
+          const data = await res.json();
+          // Verify the response has all 4 expected subsystem sections
+          const requiredSections = ["clinicalAlerts", "dischargeSummaries", "wristbands", "medicationLabels"];
+          const missing = requiredSections.filter((s) => !(s in data));
+          if (missing.length === 0) {
+            return {
+              status: "pass",
+              message: `Health endpoint returned all 4 subsystem sections + ${data?.recentAuditLogs?.length || 0} recent audit logs`,
+              details: {
+                alertsActive: data.clinicalAlerts?.active || 0,
+                summariesDraft: data.dischargeSummaries?.drafts || 0,
+                wristbandsActive: data.wristbands?.active || 0,
+                labelsActive: data.medicationLabels?.active || 0,
+              },
+            };
+          }
+          return {
+            status: "fail",
+            message: `Missing subsystem sections: ${missing.join(", ")}`,
+            details: { missing },
+          };
+        } catch (e: any) {
+          return { status: "fail", message: `Fetch failed: ${e.message}` };
+        }
+      },
+    ),
+  );
+
   // ── Aggregate summary ──────────────────────────────────────
   const passCount = results.filter((r) => r.status === "pass").length;
   const failCount = results.filter((r) => r.status === "fail").length;
   const warnCount = results.filter((r) => r.status === "warn").length;
   const totalMs = Date.now() - startedAt;
 
+  const summary = {
+    total: results.length,
+    pass: passCount,
+    fail: failCount,
+    warn: warnCount,
+    allPass: failCount === 0,
+  };
+
+  // ── Persist the run to RegressionTestRun table ─────────────
+  // This lets the CDSS Health Center show a pass-rate trend over time
+  // and a history of past runs for audit / compliance purposes.
+  let runId: string | null = null;
+  try {
+    const run = await db.regressionTestRun.create({
+      data: {
+        organizationId,
+        facilityId: session.user.facilityId || null,
+        userId: session.user.id,
+        startedAt: new Date(startedAt),
+        durationMs: totalMs,
+        totalTests: results.length,
+        passCount,
+        failCount,
+        warnCount,
+        allPass: failCount === 0,
+        source: "manual",
+        results: JSON.stringify(results),
+        summary: JSON.stringify(summary),
+      },
+      select: { id: true },
+    });
+    runId = run.id;
+
+    await auditLog({
+      userId: session.user.id,
+      organizationId,
+      facilityId: session.user.facilityId || undefined,
+      action: "CDSS_REGRESSION_TEST_RUN",
+      resourceType: "RegressionTestRun",
+      resourceId: runId,
+      newValues: summary,
+    });
+  } catch (e: any) {
+    // Don't fail the test run if persistence fails — just log it
+    console.error("[POST /api/cdss/regression-test] failed to persist run:", e);
+  }
+
   return NextResponse.json({
+    id: runId,
     startedAt: new Date(startedAt).toISOString(),
     durationMs: totalMs,
-    summary: {
-      total: results.length,
-      pass: passCount,
-      fail: failCount,
-      warn: warnCount,
-      allPass: failCount === 0,
-    },
+    summary,
     results,
     ranBy: {
       userId: session.user.id,

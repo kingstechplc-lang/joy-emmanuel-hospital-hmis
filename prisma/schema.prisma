@@ -208,6 +208,7 @@ model Facility {
   dischargeSummaries            DischargeSummary[]
   wristbands                    PatientWristband[]
   medicationLabels              MedicationLabel[]
+  regressionTestRuns            RegressionTestRun[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -636,6 +637,8 @@ model User {
   medLabelsFirstPrinted        MedicationLabel[]     @relation("medLabelFirstPrintedBy")
   medLabelsLastPrinted         MedicationLabel[]     @relation("medLabelLastPrintedBy")
   medLabelsVoided              MedicationLabel[]     @relation("medLabelVoidedBy")
+  // --- Regression Test Run back-relation (Phase 11) ---
+  regressionTestRuns           RegressionTestRun[]   @relation("regressionTestRunUser")
 }
 
 model Staff {
@@ -10177,4 +10180,51 @@ model PatientWristband {
   @@index([encounterId])
   @@index([token])
   @@index([status])
+}
+
+// =====================================================================
+// REGRESSION TEST RUN — Phase 11
+// =====================================================================
+// Stores each CDSS regression test run with its full results payload,
+// so the CDSS Health Center can show a pass-rate trend over time,
+// test-duration trends, and a history of past runs for audit /
+// compliance purposes.
+//
+// One row per /api/cdss/regression-test POST. The `summary` and
+// `results` columns store JSON strings (Postgres TEXT).
+// =====================================================================
+
+model RegressionTestRun {
+  id              String    @id @default(cuid())
+  organizationId  String
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  userId          String?
+  user            User?     @relation("regressionTestRunUser", fields: [userId], references: [id])
+
+  // Snapshot of the run
+  startedAt       DateTime  @default(now())
+  durationMs     Int       @default(0)
+
+  // Aggregate counts (mirrors the runner's `summary` object)
+  totalTests     Int       @default(0)
+  passCount      Int       @default(0)
+  failCount      Int       @default(0)
+  warnCount      Int       @default(0)
+  allPass        Boolean   @default(false)
+
+  // Source of the run
+  source         String    @default("manual") // manual | scheduled | ci
+
+  // Full results JSON (array of {id, name, category, status, durationMs, message, details})
+  results        String    @db.Text
+  // Compact summary JSON (same shape as the runner's `summary` object)
+  summary        String    @db.Text
+
+  createdAt      DateTime  @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([facilityId, createdAt])
+  @@index([userId, createdAt])
+  @@index([allPass])
 }

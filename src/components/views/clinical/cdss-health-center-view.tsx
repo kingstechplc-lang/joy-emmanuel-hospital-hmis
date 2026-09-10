@@ -31,10 +31,13 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import {
   ShieldAlert, Activity, FileText, QrCode, Pill,
   RefreshCcw, CheckCircle2, XCircle, AlertTriangle,
   Play, Clock, User, Award, Eye, Loader2,
-  HeartPulse, FlaskConical,
+  HeartPulse, FlaskConical, TrendingUp, TrendingDown, History, X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -89,6 +92,7 @@ const AUDIT_ACTION_LABEL: Record<string, string> = {
   TRIAGE_RECORDED: "Triage recorded",
   PRESCRIPTION_CREATED: "Prescription created",
   LAB_CRITICAL_RESULT_ACKNOWLEDGED: "Critical lab acknowledged",
+  CDSS_REGRESSION_TEST_RUN: "Regression test run",
 };
 
 export function CDSSHealthCenterView() {
@@ -101,6 +105,7 @@ export function CDSSHealthCenterView() {
   const [regressionResults, setRegressionResults] = useState<any[] | null>(null);
   const [regressionRunning, setRegressionRunning] = useState(false);
   const [regressionSummary, setRegressionSummary] = useState<any | null>(null);
+  const [viewPastRunId, setViewPastRunId] = useState<string | null>(null);
 
   // ─── Fetch live health ──────────────────────────────────────────
   const { data: health, isLoading, isError, isFetching, refetch } = useQuery({
@@ -115,6 +120,31 @@ export function CDSSHealthCenterView() {
     queryKey: ["cdss-rbac-matrix"],
     queryFn: () => fetchJson("/api/cdss/rbac-matrix"),
     enabled: canView,
+  });
+
+  // ─── Fetch regression test history (last 30 runs) ───────────────
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    refetch: refetchHistory,
+  } = useQuery({
+    queryKey: ["cdss-regression-history"],
+    queryFn: () => fetchJson("/api/cdss/regression-test/history?limit=30"),
+    enabled: canView,
+  });
+  const pastRuns: any[] = historyData?.items || [];
+  const historyTrend: any = historyData?.trend || {
+    passRate: 0,
+    failRate: 0,
+    avgDurationMs: 0,
+    totalRuns: 0,
+  };
+
+  // ─── Fetch the selected past run (for the detail dialog) ───────
+  const { data: pastRunDetail, isLoading: pastRunLoading } = useQuery({
+    queryKey: ["cdss-regression-run", viewPastRunId],
+    queryFn: () => fetchJson(`/api/cdss/regression-test/runs/${viewPastRunId}`),
+    enabled: !!viewPastRunId && canView,
   });
 
   // ─── Regression test runner ──────────────────────────────────────
@@ -140,6 +170,11 @@ export function CDSSHealthCenterView() {
       } else {
         toast.error(`Regression FAILED: ${fail} test(s) failed, ${pass} passed`);
       }
+      // Refresh the history so the new run appears in the trend chart
+      refetchHistory();
+      // Refresh the audit log feed so the new "CDSS_REGRESSION_TEST_RUN"
+      // entry appears in the recent activity panel
+      qc.invalidateQueries({ queryKey: ["cdss-health"] });
     },
     onError: (e: Error) => {
       setRegressionRunning(false);
@@ -533,6 +568,292 @@ export function CDSSHealthCenterView() {
           )}
         </CardContent>
       </Card>
+
+      {/* ─── Test History panel (Phase 11) ─────────────────────── */}
+      <Card className="w-full">
+        <CardContent className="p-4 w-full">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <History className="w-4 h-4" /> Test Run History
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetchHistory()}
+              disabled={historyLoading}
+              className="h-7 text-xs gap-1"
+            >
+              <RefreshCcw className={`w-3 h-3 ${historyLoading ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+          </div>
+
+          {/* Trend cards (pass rate, avg duration, total runs) */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0 }}
+              className={`rounded-lg p-3 border-2 ${
+                historyTrend.passRate >= 80
+                  ? "border-emerald-200 bg-emerald-50"
+                  : historyTrend.passRate >= 50
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-rose-200 bg-rose-50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                {historyTrend.passRate >= 80 ? (
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <TrendingDown className="w-3.5 h-3.5 text-rose-600" />
+                )}
+                <span className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">Pass rate</span>
+              </div>
+              <div className={`text-2xl font-bold ${
+                historyTrend.passRate >= 80 ? "text-emerald-700" :
+                historyTrend.passRate >= 50 ? "text-amber-700" : "text-rose-700"
+              }`}>
+                {historyTrend.passRate}%
+              </div>
+              <div className="text-[10px] text-slate-500">
+                {historyTrend.totalRuns} run{historyTrend.totalRuns !== 1 ? "s" : ""} total
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="rounded-lg p-3 border-2 border-slate-200 bg-slate-50"
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">Avg duration</span>
+              </div>
+              <div className="text-2xl font-bold text-slate-900">
+                {historyTrend.avgDurationMs > 0 ? `${(historyTrend.avgDurationMs / 1000).toFixed(1)}s` : "—"}
+              </div>
+              <div className="text-[10px] text-slate-500">across all runs</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.16 }}
+              className={`rounded-lg p-3 border-2 ${
+                historyTrend.failRate > 0
+                  ? "border-rose-200 bg-rose-50"
+                  : "border-emerald-200 bg-emerald-50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <XCircle className={`w-3.5 h-3.5 ${historyTrend.failRate > 0 ? "text-rose-600" : "text-emerald-600"}`} />
+                <span className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">Fail rate</span>
+              </div>
+              <div className={`text-2xl font-bold ${historyTrend.failRate > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                {historyTrend.failRate}%
+              </div>
+              <div className="text-[10px] text-slate-500">runs with failures</div>
+            </motion.div>
+          </div>
+
+          {/* Pass-rate sparkline (visual trend of last 30 runs, oldest to newest) */}
+          {pastRuns.length > 1 && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-slate-500 font-medium">Pass-rate trend (last {pastRuns.length} runs)</span>
+                <span className="text-[10px] text-slate-400">oldest → newest</span>
+              </div>
+              <div className="flex items-end gap-1 h-12 px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-200 overflow-x-auto">
+                {[...pastRuns].reverse().map((run: any, idx: number) => {
+                  const passRateForRun = run.totalTests > 0 ? (run.passCount / run.totalTests) * 100 : 0;
+                  const barHeight = Math.max(4, (passRateForRun / 100) * 36);
+                  const isPass = run.allPass;
+                  return (
+                    <motion.div
+                      key={run.id}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: barHeight, opacity: 1 }}
+                      transition={{ duration: 0.4, delay: Math.min(idx * 0.03, 1) }}
+                      title={`${formatDate(run.startedAt, true)} · ${run.passCount}/${run.totalTests} passed`}
+                      className={`w-2 rounded-t shrink-0 cursor-pointer ${
+                        isPass ? "bg-emerald-500 hover:bg-emerald-600" :
+                        run.failCount > 0 ? "bg-rose-500 hover:bg-rose-600" :
+                        "bg-amber-400 hover:bg-amber-500"
+                      }`}
+                      onClick={() => setViewPastRunId(run.id)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Past runs table */}
+          {pastRuns.length === 0 ? (
+            <EmptyState
+              title="No regression runs yet"
+              description="Click 'Run All Tests' above to start tracking CDSS health over time."
+              icon={History}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700">
+                    <th className="text-left p-2">When</th>
+                    <th className="text-left p-2">Run by</th>
+                    <th className="text-center p-2">Pass</th>
+                    <th className="text-center p-2">Fail</th>
+                    <th className="text-center p-2">Warn</th>
+                    <th className="text-right p-2">Duration</th>
+                    <th className="text-center p-2">Status</th>
+                    <th className="text-right p-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  <AnimatePresence>
+                    {pastRuns.slice(0, 15).map((run: any, idx: number) => (
+                      <motion.tr
+                        key={run.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, delay: Math.min(idx * 0.025, 0.5) }}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => setViewPastRunId(run.id)}
+                      >
+                        <td className="p-2 text-slate-700">{formatRelative(run.startedAt)}</td>
+                        <td className="p-2 text-slate-700">{run.userName}</td>
+                        <td className="p-2 text-center font-medium text-emerald-700">{run.passCount}</td>
+                        <td className="p-2 text-center font-medium text-rose-700">{run.failCount}</td>
+                        <td className="p-2 text-center font-medium text-amber-700">{run.warnCount}</td>
+                        <td className="p-2 text-right text-slate-600 font-mono text-[11px]">
+                          {(run.durationMs / 1000).toFixed(1)}s
+                        </td>
+                        <td className="p-2 text-center">
+                          {run.allPass ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-rose-600 mx-auto" />
+                          )}
+                        </td>
+                        <td className="p-2 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewPastRunId(run.id);
+                            }}
+                          >
+                            <Eye className="w-3 h-3" /> View
+                          </Button>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+              {pastRuns.length > 15 && (
+                <p className="text-[10px] text-slate-500 text-center mt-2">
+                  Showing 15 most recent of {pastRuns.length} total runs
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── View past run detail dialog (Phase 11) ────────────── */}
+      <Dialog open={!!viewPastRunId} onOpenChange={(o) => !o && setViewPastRunId(null)}>
+        <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
+          <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 text-white">
+            <DialogTitle className="text-white flex items-center gap-2">
+              <History className="w-5 h-5" /> Past Regression Test Run
+            </DialogTitle>
+            <DialogDescription className="text-white/80">
+              {pastRunDetail
+                ? `${formatDate(pastRunDetail.startedAt, true)} · ${pastRunDetail.user?.name || "Unknown"} · ${(pastRunDetail.durationMs / 1000).toFixed(1)}s`
+                : "Loading..."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4 bg-slate-50">
+            {pastRunLoading ? (
+              <LoadingState rows={4} />
+            ) : !pastRunDetail ? (
+              <EmptyState title="Run not found" icon={History} />
+            ) : (
+              <>
+                {/* Summary banner */}
+                <div className={`rounded-lg p-3 border-2 ${
+                  pastRunDetail.allPass
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-rose-300 bg-rose-50 text-rose-700"
+                }`}>
+                  <div className="flex items-center gap-3 font-semibold">
+                    {pastRunDetail.allPass ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <XCircle className="w-5 h-5" />
+                    )}
+                    <span>
+                      {pastRunDetail.allPass
+                        ? `All ${pastRunDetail.totalTests} tests passed`
+                        : `${pastRunDetail.failCount} of ${pastRunDetail.totalTests} tests failed`}
+                    </span>
+                    <span className="text-xs font-normal opacity-80">
+                      {pastRunDetail.passCount} passed · {pastRunDetail.warnCount} warnings
+                    </span>
+                  </div>
+                </div>
+
+                {/* Test results list (compact) */}
+                <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+                  {(pastRunDetail.results || []).map((r: any, idx: number) => (
+                    <motion.div
+                      key={r.id || idx}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.25, delay: Math.min(idx * 0.02, 0.4) }}
+                      className={`flex items-start gap-3 p-2.5 rounded-lg border ${
+                        r.status === "pass" ? "border-emerald-200 bg-emerald-50" :
+                        r.status === "fail" ? "border-rose-300 bg-rose-50" :
+                        "border-amber-200 bg-amber-50"
+                      }`}
+                    >
+                      <div className="shrink-0 mt-0.5">
+                        {r.status === "pass" ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        ) : r.status === "fail" ? (
+                          <XCircle className="w-4 h-4 text-rose-600" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-900">{r.name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 uppercase tracking-wide">
+                            {r.category}
+                          </span>
+                          <span className="text-[10px] text-slate-400">{r.durationMs}ms</span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-0.5">{r.message}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="p-4 pt-3 shrink-0 border-t bg-white flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setViewPastRunId(null)}>
+              <X className="w-4 h-4 mr-1" /> Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── Recent audit log + top contributors (2 cols) ─────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
