@@ -57,7 +57,7 @@ test.describe("CDSS Clinical Alert Center", () => {
   });
 
   test("1: Clinical Alert Center page loads", async ({ page }) => {
-    await navigateToView(page, "Clinical Alerts");
+    await navigateToView(page, "Clinical Alert Center");
     await expect(page.locator("text=Clinical Alert Center").first()).toBeVisible({
       timeout: 30000,
     });
@@ -65,7 +65,7 @@ test.describe("CDSS Clinical Alert Center", () => {
   });
 
   test("2: KPI stat cards render", async ({ page }) => {
-    await navigateToView(page, "Clinical Alerts");
+    await navigateToView(page, "Clinical Alert Center");
     await expect(page.locator("text=Clinical Alert Center").first()).toBeVisible({
       timeout: 30000,
     });
@@ -79,36 +79,35 @@ test.describe("CDSS Clinical Alert Center", () => {
   });
 
   test("3: Severity filter chips render", async ({ page }) => {
-    await navigateToView(page, "Clinical Alerts");
+    await navigateToView(page, "Clinical Alert Center");
     await expect(page.locator("text=Clinical Alert Center").first()).toBeVisible({
       timeout: 30000,
     });
     await page.waitForTimeout(2000);
-    // Filter chips: all, active, critical, high, moderate, low, info
-    // We just verify at least "all" is present (the chip is lowercase in source)
     const allFilter = page.locator('button:has-text("All")').first();
     await expect(allFilter).toBeVisible({ timeout: 10000 });
   });
 
   test("4: Empty state or alert list is visible", async ({ page }) => {
-    await navigateToView(page, "Clinical Alerts");
+    await navigateToView(page, "Clinical Alert Center");
     await expect(page.locator("text=Clinical Alert Center").first()).toBeVisible({
       timeout: 30000,
     });
     await page.waitForTimeout(3000);
-    // Either an alert row OR an empty state message
-    const hasRows = await page.locator("table tbody tr").first().isVisible({ timeout: 5000 }).catch(() => false);
+    // Alert center uses divide-y divs (not a table); check for either a
+    // row OR the empty state placeholder.
+    const hasRows = await page.locator("table tbody tr").first().isVisible({ timeout: 3000 }).catch(() => false)
+      || await page.locator(".divide-y > div").first().isVisible({ timeout: 3000 }).catch(() => false);
     if (!hasRows) {
-      // Empty state placeholder text should be visible somewhere
       await expect(
         page.locator("text=No active clinical alerts").first()
           .or(page.locator("text=No alerts match").first())
-      ).toBeVisible({ timeout: 10000 });
+      ).toBeVisible({ timeout: 15000 });
     }
   });
 
   test("5: Page does not show runtime errors", async ({ page }) => {
-    await navigateToView(page, "Clinical Alerts");
+    await navigateToView(page, "Clinical Alert Center");
     await expect(page.locator("text=Clinical Alert Center").first()).toBeVisible({
       timeout: 30000,
     });

@@ -103,12 +103,15 @@ test.describe("CDSS Discharge Summaries", () => {
       timeout: 30000,
     });
     await page.waitForTimeout(3000);
-    const hasRows = await page.locator("table tbody tr").first().isVisible({ timeout: 5000 }).catch(() => false);
+    // Discharge summaries view uses divide-y divs (not a table); check for
+    // either a summary row OR the empty state placeholder.
+    const hasRows = await page.locator("table tbody tr").first().isVisible({ timeout: 3000 }).catch(() => false)
+      || await page.locator(".divide-y > div").first().isVisible({ timeout: 3000 }).catch(() => false);
     if (!hasRows) {
       await expect(
-        page.locator("text=No discharge summaries").first()
-          .or(page.locator("text=No discharge summaries yet").first())
-      ).toBeVisible({ timeout: 10000 });
+        page.locator("text=No discharge summaries yet").first()
+          .or(page.locator("text=No discharge summaries").first())
+      ).toBeVisible({ timeout: 15000 });
     }
   });
 

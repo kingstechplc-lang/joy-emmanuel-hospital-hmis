@@ -89,14 +89,12 @@ export async function GET(req: Request) {
         db.clinicalAlert.groupBy({
           by: ["alertType"],
           where,
-          _count: { _all: true },
-          orderBy: { _count: { _all: "desc" } },
+          _count: true,
         }),
         db.clinicalAlert.groupBy({
           by: ["severity"],
           where,
-          _count: { _all: true },
-          orderBy: { _count: { _all: "desc" } },
+          _count: true,
         }),
       ]);
 
@@ -231,8 +229,8 @@ export async function GET(req: Request) {
         critical: alertsCritical,
         last24h: alertsLast24h,
         mttaMinutes,
-        byType: alertsByType.map((t) => ({ type: t.alertType, count: t._count._all })),
-        bySeverity: alertsBySeverity.map((s) => ({ severity: s.severity, count: s._count._all })),
+        byType: alertsByType.map((t) => ({ type: t.alertType, count: t._count })),
+        bySeverity: alertsBySeverity.map((s) => ({ severity: s.severity, count: s._count })),
       },
       // Discharge summaries subsystem
       dischargeSummaries: {
