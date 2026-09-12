@@ -31,7 +31,11 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.local
+.env.*.local
+# .env.example IS committed so new deploys know what to fill in
+!.env.example
 
 # vercel
 .vercel
