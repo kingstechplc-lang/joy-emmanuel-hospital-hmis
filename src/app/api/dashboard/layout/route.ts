@@ -33,11 +33,19 @@ import {
   defaultLayoutForPermissions,
   type WidgetPlacement,
 } from "@/lib/dashboard/widget-registry";
+import { defaultLayoutForRole } from "@/lib/dashboard/role-defaults";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
 // ─── GET /api/dashboard/layout ──────────────────────────────────────
-// Returns: { layout: WidgetPlacement[], source: "saved" | "default" }
+// Fallback chain (in priority order):
+//   1. User's saved personal layout (scope="personal", matching facilityId)
+//   2. User's saved personal layout (scope="personal", facilityId=null — org-wide)
+//   3. DB-saved role default (scope="role", isDefault=true, matching role)
+//   4. Code-defined role default (from role-defaults.ts)
+//   5. Global DEFAULT_LAYOUT (from widget-registry.ts, filtered by perms)
+//
+// Returns: { layout: WidgetPlacement[], source, layoutId?, savedAt?, roleCode? }
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -49,12 +57,14 @@ export async function GET(req: Request) {
   const facilityId = url.searchParams.get("facilityId") || session.user.facilityId || null;
   const organizationId = session.user.organizationId;
   const userId = session.user.id;
+  const perms = session.user.permissions || [];
+  const isSuperAdmin = session.user.roles?.includes("super_admin");
+  // Use the user's first role code (users can have multiple roles; the first
+  // is their primary role for dashboard defaults purposes)
+  const roleCode = session.user.roles?.[0] || "user";
 
   try {
-    // Look for the user's personal layout for this (org, facility) combo.
-    // If they have no personal layout for this facility, fall back to their
-    // org-wide personal layout (facilityId=null). If that also doesn't
-    // exist, fall back to the default layout for their permissions.
+    // ── 1 & 2. Look for the user's personal layout ─────────────────
     let saved: Awaited<ReturnType<typeof db.dashboardLayout.findFirst>> = null;
     if (facilityId) {
       saved = await db.dashboardLayout.findFirst({
@@ -74,14 +84,8 @@ export async function GET(req: Request) {
       try {
         layout = JSON.parse(saved.layout);
       } catch {
-        // Corrupt layout in DB — fall through to default
         layout = [];
       }
-      // Re-validate against current permissions (in case the user's
-      // permissions changed since they last saved the layout — widgets
-      // they no longer have permission for are silently dropped)
-      const perms = session.user.permissions || [];
-      const isSuperAdmin = session.user.roles?.includes("super_admin");
       const { sanitized } = validateLayout(layout, perms, !!isSuperAdmin);
       return NextResponse.json({
         layout: sanitized,
@@ -91,11 +95,75 @@ export async function GET(req: Request) {
       });
     }
 
-    // No saved layout — return the default for the user's permissions
-    const perms = session.user.permissions || [];
-    const isSuperAdmin = session.user.roles?.includes("super_admin");
+    // ── 3. Look for a DB-saved role default ────────────────────────
+    // A role default is a DashboardLayout with scope="role", isDefault=true,
+    // matching the user's roleCode, scoped to the same org (and optionally
+    // the same facility). We prefer facility-scoped role defaults over
+    // org-wide ones.
+    let roleDefault: Awaited<ReturnType<typeof db.dashboardLayout.findFirst>> = null;
+    if (facilityId) {
+      roleDefault = await db.dashboardLayout.findFirst({
+        where: {
+          organizationId,
+          facilityId,
+          scope: "role",
+          roleCode,
+          isDefault: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+    }
+    if (!roleDefault) {
+      roleDefault = await db.dashboardLayout.findFirst({
+        where: {
+          organizationId,
+          facilityId: null,
+          scope: "role",
+          roleCode,
+          isDefault: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+    }
+
+    if (roleDefault) {
+      let layout: WidgetPlacement[] = [];
+      try {
+        layout = JSON.parse(roleDefault.layout);
+      } catch {
+        layout = [];
+      }
+      const { sanitized } = validateLayout(layout, perms, !!isSuperAdmin);
+      return NextResponse.json({
+        layout: sanitized,
+        source: "role_default",
+        layoutId: roleDefault.id,
+        roleCode,
+        savedAt: roleDefault.updatedAt,
+      });
+    }
+
+    // ── 4. Code-defined role default ──────────────────────────────
+    const roleLayout = defaultLayoutForRole(roleCode);
+    if (roleLayout.length > 0) {
+      const { sanitized } = validateLayout(roleLayout, perms, !!isSuperAdmin);
+      if (sanitized.length > 0) {
+        return NextResponse.json({
+          layout: sanitized,
+          source: "role_default",
+          layoutId: null,
+          roleCode,
+        });
+      }
+    }
+
+    // ── 5. Global default (filtered by permissions) ──────────────
     const layout = defaultLayoutForPermissions(perms, !!isSuperAdmin);
-    return NextResponse.json({ layout, source: "default", layoutId: null });
+    return NextResponse.json({
+      layout,
+      source: "default",
+      layoutId: null,
+    });
   } catch (e: any) {
     console.error("[GET /api/dashboard/layout]", e);
     return NextResponse.json(
