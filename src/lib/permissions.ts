@@ -444,6 +444,12 @@ export const PERMISSIONS = {
 
   // Internal Audit (extends existing AUDIT_VIEW)
   AUDIT_MANAGE: "audit.manage",
+
+  // ────────────────────────────────────────────────────────────────
+  // Tier 2 — Workflow Efficiency (Phase 2+)
+  // ────────────────────────────────────────────────────────────────
+  // Dashboard widgets & KPI customization
+  DASHBOARD_CUSTOMIZE: "dashboard.customize",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -572,6 +578,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.HISTOPATHOLOGY_VIEW, PERMISSIONS.HISTOPATHOLOGY_MANAGE,
     PERMISSIONS.RECOVERY_VIEW, PERMISSIONS.RECOVERY_MANAGE,
     PERMISSIONS.AUDIT_MANAGE,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   facility_admin: [
@@ -654,6 +662,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.HOME_CARE_VIEW, PERMISSIONS.HOME_CARE_MANAGE,
     PERMISSIONS.HISTOPATHOLOGY_VIEW,
     PERMISSIONS.RECOVERY_VIEW, PERMISSIONS.RECOVERY_MANAGE,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   doctor: [
@@ -698,6 +708,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.RECOVERY_VIEW,
     PERMISSIONS.HOME_CARE_VIEW,
     PERMISSIONS.PATIENT_RELATIONS_VIEW,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   nurse: [
@@ -750,6 +762,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.PATIENT_RELATIONS_VIEW,
     PERMISSIONS.RECOVERY_VIEW, PERMISSIONS.RECOVERY_MANAGE,
     PERMISSIONS.HOME_CARE_VIEW, PERMISSIONS.HOME_CARE_MANAGE,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   pharmacist: [
@@ -772,6 +786,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     // acknowledge drug-allergy / DDI alerts they triggered.
     PERMISSIONS.CDSS_VIEW, PERMISSIONS.CLINICAL_ALERT_VIEW,
     PERMISSIONS.CLINICAL_ALERT_ACKNOWLEDGE,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   laboratory_scientist: [
@@ -797,6 +813,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.REPORT_VIEW,
     PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
     PERMISSIONS.DOCUMENT_UPLOAD, PERMISSIONS.DOCUMENT_VIEW,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   radiographer: [
@@ -808,6 +826,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.REPORT_VIEW,
     PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
     PERMISSIONS.DOCUMENT_UPLOAD, PERMISSIONS.DOCUMENT_VIEW,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   receptionist: [
@@ -822,6 +842,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.WRISTBAND_PRINT, PERMISSIONS.WRISTBAND_REPRINT,
     // Pharmacy Medication Labels — front desk can print labels for pickup (Phase 9 CDSS)
     PERMISSIONS.MEDICATION_LABEL_PRINT,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   cashier: [
@@ -836,6 +858,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.CLAIM_READINESS_VIEW,
     PERMISSIONS.REPORT_VIEW,
     PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   accountant: [
@@ -860,6 +884,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     // Payroll permissions (read-only for accounting review)
     PERMISSIONS.PAYROLL_VIEW, PERMISSIONS.PAYROLL_REVIEW,
     PERMISSIONS.PAYSLIP_VIEW,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   records_officer: [
@@ -882,6 +908,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.WRISTBAND_PRINT, PERMISSIONS.WRISTBAND_REPRINT,
     // Pharmacy Medication Labels — records officers can print (Phase 9 CDSS)
     PERMISSIONS.MEDICATION_LABEL_PRINT,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 
   inventory_officer: [
@@ -890,6 +918,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.PROCUREMENT_MANAGE,
     PERMISSIONS.REPORT_VIEW,
     PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
+    // Tier 2 — Dashboard customization
+    PERMISSIONS.DASHBOARD_CUSTOMIZE,
   ],
 };
 

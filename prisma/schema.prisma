@@ -125,6 +125,8 @@ model Organization {
   dischargeSummaries      DischargeSummary[]
   wristbands              PatientWristband[]
   medicationLabels        MedicationLabel[]
+  // Tier 2: Dashboard layouts (org-scoped default + role/department/facility defaults)
+  dashboardLayouts       DashboardLayout[]
 }
 
 model Facility {
@@ -209,6 +211,8 @@ model Facility {
   wristbands                    PatientWristband[]
   medicationLabels              MedicationLabel[]
   regressionTestRuns            RegressionTestRun[]
+  // Tier 2: Dashboard layouts (facility-scoped defaults)
+  dashboardLayouts             DashboardLayout[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -639,6 +643,8 @@ model User {
   medLabelsVoided              MedicationLabel[]     @relation("medLabelVoidedBy")
   // --- Regression Test Run back-relation (Phase 11) ---
   regressionTestRuns           RegressionTestRun[]   @relation("regressionTestRunUser")
+  // --- Tier 2 Dashboard Layout back-relation (Phase 2) ---
+  dashboardLayouts             DashboardLayout[]     @relation("userDashboardLayout")
 }
 
 model Staff {
@@ -10227,4 +10233,72 @@ model RegressionTestRun {
   @@index([facilityId, createdAt])
   @@index([userId, createdAt])
   @@index([allPass])
+}
+
+// ---------------------------------------------------------------------
+// TIER 2 — DASHBOARD WIDGETS & KPI CUSTOMIZATION (Phase 2)
+// ---------------------------------------------------------------------
+// Per-user, per-facility dashboard layout persistence.
+//
+// A "widget" is defined in src/lib/dashboard/widget-registry.ts (not the
+// DB) — the registry declares the widget's id, name, category, supported
+// sizes, required permission, and the data fetcher. The DB only stores
+// WHICH widgets the user has placed WHERE on their dashboard and the
+// per-instance configuration (e.g., date range, max items).
+//
+// Layout JSON shape (stored in `layout` column):
+//   [
+//     {
+//       "widgetId": "my_patients_today",
+//       "x": 0, "y": 0, "w": 2, "h": 1,
+//       "config": { "maxItems": 10, "dateRange": "today" }
+//     },
+//     ...
+//   ]
+//
+// Scope rules (enforced server-side in /api/dashboard/layout):
+//   personal   — only the owning user can read/write
+//   role       — only users with the same roleCode can read; only
+//                org_admin / super_admin can write defaults
+//   department — only users in the same department can read; only
+//                org_admin / facility_admin can write defaults
+//   facility   — only users in the same facility can read; only
+//                facility_admin / org_admin can write defaults
+//
+// All queries enforce organizationId server-side. facilityId is
+// optional (null = organization-wide default; non-null = facility-specific).
+// ---------------------------------------------------------------------
+model DashboardLayout {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation("userDashboardLayout", fields: [userId], references: [id])
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  // Scope: who is this layout for?
+  //   personal  → only userId (facilityId may be set for facility-specific personal layout)
+  //   role      → roleCode identifies the role (userId is still the author)
+  //   department → departmentId identifies the department
+  //   facility  → facilityId identifies the facility (org-wide if null)
+  scope           String   @default("personal") // personal | role | department | facility
+  roleCode        String?
+  departmentId    String?
+  // isDefault=true marks this as the auto-applied layout for new users in
+  // the scope. Only one isDefault=true row per (scope, facilityId, roleCode,
+  // departmentId) combination — enforced in app code, not via DB constraint
+  // (the uniqueness matrix is sparse so @@unique would reject null combos).
+  isDefault       Boolean  @default(false)
+  // Human-readable name for non-personal layouts ("Doctor Default",
+  // "Emergency Department Default", etc.). Personal layouts are unnamed.
+  name            String?
+  // JSON array of widget placements: [{widgetId, x, y, w, h, config}]
+  layout          String   @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, organizationId, facilityId, scope])
+  @@index([organizationId, scope, roleCode, isDefault])
+  @@index([organizationId, scope, departmentId, isDefault])
+  @@index([organizationId, scope, facilityId, isDefault])
 }
