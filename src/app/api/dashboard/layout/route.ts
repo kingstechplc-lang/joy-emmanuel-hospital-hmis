@@ -302,15 +302,66 @@ export async function DELETE(req: Request) {
       newValues: { deletedCount: deleted.count, facilityId },
     });
 
-    // Return the default layout so the client can re-render immediately
+    // Return the role-default layout (matching the GET fallback chain) so
+    // the client re-renders with the same layout the user would see on
+    // next visit. Previously this returned defaultLayoutForPermissions
+    // (the global DEFAULT_LAYOUT) which had different widgets than the
+    // role default — causing the "empty gaps after reset" bug where the
+    // user saw a different widget set than what GET would return.
     const perms = session.user.permissions || [];
     const isSuperAdmin = session.user.roles?.includes("super_admin");
-    const layout = defaultLayoutForPermissions(perms, !!isSuperAdmin);
+    const roleCode = session.user.roles?.[0] || "user";
+
+    // Try DB-saved role default first (facility-scoped, then org-wide)
+    let roleDefault: Awaited<ReturnType<typeof db.dashboardLayout.findFirst>> = null;
+    if (facilityId) {
+      roleDefault = await db.dashboardLayout.findFirst({
+        where: { organizationId, facilityId, scope: "role", roleCode, isDefault: true },
+        orderBy: { updatedAt: "desc" },
+      });
+    }
+    if (!roleDefault) {
+      roleDefault = await db.dashboardLayout.findFirst({
+        where: { organizationId, facilityId: null, scope: "role", roleCode, isDefault: true },
+        orderBy: { updatedAt: "desc" },
+      });
+    }
+
+    let layout: WidgetPlacement[];
+    let source: string;
+    if (roleDefault) {
+      try {
+        layout = JSON.parse(roleDefault.layout);
+      } catch {
+        layout = [];
+      }
+      const { sanitized } = validateLayout(layout, perms, !!isSuperAdmin);
+      layout = sanitized;
+      source = "role_default";
+    } else {
+      // Fall back to code-defined role default
+      const roleLayout = defaultLayoutForRole(roleCode);
+      if (roleLayout.length > 0) {
+        const { sanitized } = validateLayout(roleLayout, perms, !!isSuperAdmin);
+        if (sanitized.length > 0) {
+          layout = sanitized;
+          source = "role_default";
+        } else {
+          layout = defaultLayoutForPermissions(perms, !!isSuperAdmin);
+          source = "default";
+        }
+      } else {
+        layout = defaultLayoutForPermissions(perms, !!isSuperAdmin);
+        source = "default";
+      }
+    }
+
     return NextResponse.json({
       reset: true,
       deletedCount: deleted.count,
       layout,
-      source: "default",
+      source,
+      roleCode,
     });
   } catch (e: any) {
     console.error("[DELETE /api/dashboard/layout]", e);
