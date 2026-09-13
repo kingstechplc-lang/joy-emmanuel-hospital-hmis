@@ -26,6 +26,7 @@ import {
   calculateAge, safeJson, PageHeader, MiniStatCard,
 } from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BulkPrescriptionView } from "./bulk-prescription-view";
 
 // =====================================================================
 // Helpers
@@ -142,6 +143,7 @@ export function PrescriptionsView() {
   const returnToConsultation = useAppStore((s) => s.returnToConsultation);
   const returnToView = useAppStore((s) => s.returnToView);
   const [tab, setTab] = useState("prescriptions");
+  const canBulkProcess = can("prescription.bulk_process");
 
   return (
     <div className="space-y-4">
@@ -159,6 +161,11 @@ export function PrescriptionsView() {
               <TabsTrigger value="prescriptions" className="data-[state=active]:bg-white data-[state=active]:text-amber-700 text-white gap-1.5">
                 <FileText className="w-4 h-4" /> Prescriptions
               </TabsTrigger>
+              {canBulkProcess && (
+                <TabsTrigger value="bulk" className="data-[state=active]:bg-white data-[state=active]:text-amber-700 text-white gap-1.5">
+                  <Pill className="w-4 h-4" /> Batch Approve
+                </TabsTrigger>
+              )}
             </TabsList>
           </Tabs>
         }
@@ -201,6 +208,11 @@ export function PrescriptionsView() {
             defaultEncounterId={selectedEncounterId}
           />
         </TabsContent>
+        {canBulkProcess && (
+          <TabsContent value="bulk">
+            <BulkPrescriptionView facilityId={activeFacilityId} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
