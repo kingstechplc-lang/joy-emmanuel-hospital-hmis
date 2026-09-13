@@ -287,62 +287,89 @@ export function DashboardCustomizer({
       return;
     }
 
-    // ── First-fit packing ───────────────────────────────────────────
-    // Find the FIRST empty grid slot (top-to-bottom, left-to-right) that
-    // can fit the new widget (w x h). This avoids the previous bug where
-    // new widgets were always appended at the bottom (y = maxY) — even
-    // when there was empty space earlier in the grid (e.g., after a
-    // partial KPI row).
+    // ── Type-aware placement ────────────────────────────────────────
+    // KPI widgets (kpi_*) should stay together at the TOP of the
+    // dashboard. When a new KPI is added:
+    //   1. Try to fill an empty slot in the existing KPI rows.
+    //   2. If no empty slot, INSERT a new row right after the last KPI
+    //      row, shifting all non-KPI widgets (panel_*, list_*) DOWN by
+    //      the new KPI's height.
     //
-    // Algorithm: scan rows from y=0 upward. For each row, try every
-    // column x=0..(12-w). A slot (x, y) is "free" if none of the cells
-    // (x..x+w-1, y..y+h-1) are occupied by an existing widget.
-    //
-    // We cap the scan at maxY + 2 so we don't loop forever if the grid
-    // is mostly full (in which case we just append below the last row).
+    // Non-KPI widgets (panel_*, list_*) are appended at the BOTTOM
+    // (after all existing widgets).
     // ─────────────────────────────────────────────────────────────────
-    const occupied = new Set<string>();
-    for (const p of layout) {
-      for (let dy = 0; dy < p.h; dy++) {
-        for (let dx = 0; dx < p.w; dx++) {
-          occupied.add(`${p.x + dx},${p.y + dy}`);
-        }
-      }
-    }
-    const maxY = layout.reduce((max, p) => Math.max(max, p.y + p.h), 0);
-    const scanLimit = maxY + 3; // scan up to 3 rows past the current bottom
+    const isKpi = widgetId.startsWith("kpi_");
 
-    let placedX = -1;
-    let placedY = -1;
-    for (let y = 0; y <= scanLimit && placedX < 0; y++) {
-      for (let x = 0; x + w <= 12; x++) {
-        // Check if all cells (x..x+w-1, y..y+h-1) are free
-        let free = true;
-        for (let dy = 0; dy < h && free; dy++) {
-          for (let dx = 0; dx < w && free; dx++) {
-            if (occupied.has(`${x + dx},${y + dy}`)) {
-              free = false;
-            }
+    if (isKpi) {
+      // Find the KPI section: the y-range occupied by all kpi_* widgets.
+      // kpiSectionEnd = max(kpi.y + kpi.h) across all KPI widgets.
+      const kpiWidgets = layout.filter((p) => p.widgetId.startsWith("kpi_"));
+      const kpiSectionEnd =
+        kpiWidgets.length > 0
+          ? kpiWidgets.reduce((max, p) => Math.max(max, p.y + p.h), 0)
+          : 0;
+
+      // Build occupied-cell set for the KPI section only (rows 0..kpiSectionEnd-1)
+      const occupied = new Set<string>();
+      for (const p of layout) {
+        for (let dy = 0; dy < p.h; dy++) {
+          for (let dx = 0; dx < p.w; dx++) {
+            occupied.add(`${p.x + dx},${p.y + dy}`);
           }
         }
-        if (free) {
-          placedX = x;
-          placedY = y;
-          break;
+      }
+
+      // Try to find an empty slot within the KPI section (y < kpiSectionEnd)
+      let placedX = -1;
+      let placedY = -1;
+      for (let y = 0; y < kpiSectionEnd && placedX < 0; y++) {
+        for (let x = 0; x + w <= 12; x++) {
+          let free = true;
+          for (let dy = 0; dy < h && free; dy++) {
+            for (let dx = 0; dx < w && free; dx++) {
+              if (occupied.has(`${x + dx},${y + dy}`)) {
+                free = false;
+              }
+            }
+          }
+          if (free) {
+            placedX = x;
+            placedY = y;
+            break;
+          }
         }
       }
-    }
 
-    // If no slot found in the scan range, append below the last row
-    if (placedX < 0) {
-      placedX = 0;
-      placedY = maxY;
+      if (placedX >= 0) {
+        // Found an empty slot in the KPI section — place there, no shift needed
+        setLayout([
+          ...layout,
+          { widgetId, x: placedX, y: placedY, w, h, config: {} },
+        ]);
+      } else {
+        // No empty slot in the KPI section — insert a new row at
+        // y = kpiSectionEnd, shifting all non-KPI widgets DOWN by h.
+        const insertY = kpiSectionEnd;
+        const shiftedLayout = layout.map((p) => {
+          // Shift non-KPI widgets that are at or below insertY
+          if (!p.widgetId.startsWith("kpi_") && p.y >= insertY) {
+            return { ...p, y: p.y + h };
+          }
+          return p;
+        });
+        setLayout([
+          ...shiftedLayout,
+          { widgetId, x: 0, y: insertY, w, h, config: {} },
+        ]);
+      }
+    } else {
+      // Non-KPI widget (panel_*, list_*) — append at the bottom
+      const maxY = layout.reduce((max, p) => Math.max(max, p.y + p.h), 0);
+      setLayout([
+        ...layout,
+        { widgetId, x: 0, y: maxY, w, h, config: {} },
+      ]);
     }
-
-    setLayout([
-      ...layout,
-      { widgetId, x: placedX, y: placedY, w, h, config: {} },
-    ]);
   };
 
   // ─── Render ────────────────────────────────────────────────────────
