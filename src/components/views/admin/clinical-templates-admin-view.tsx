@@ -1308,6 +1308,18 @@ function OrderListEditor({
     onChange(updated);
   };
 
+  // Batch update — updates multiple fields on a single item in one
+  // onChange call. This is critical for EntitySelect where we need to
+  // set both the ID and the display name simultaneously (calling
+  // updateItem twice would lose the first update because both calls
+  // start from the same `items` array).
+  const updateItemFields = (index: number, fields: Record<string, any>) => {
+    const updated = items.map((item, i) =>
+      i === index ? { ...item, ...fields } : item
+    );
+    onChange(updated);
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -1363,26 +1375,27 @@ function OrderListEditor({
                         getId={f.entityGetId!}
                         getSubtitle={f.entityGetSubtitle}
                         getCode={f.entityGetCode}
-                        value={item[f.key] ? { id: item[f.key], label: item[f.entityCopyFields ? Object.values(f.entityCopyFields)[0] : f.key] || item[f.key] } : null}
+                        value={item[f.key] ? { id: item[f.key], label: item[f.entityCopyFields ? Object.keys(f.entityCopyFields)[0] : "label"] || item[f.key] } as EntitySelectValue : null}
                         onChange={(val) => {
                           if (val) {
-                            // Update the main field
-                            updateItem(index, f.key, val.id);
-                            // Copy additional fields from the selected entity
+                            // Batch update: set both the ID and the display
+                            // name in a single onChange call so neither is lost.
+                            const fields: Record<string, any> = {};
+                            fields[f.key] = val.id;
                             if (f.entityCopyFields) {
-                              // We need to fetch the entity to get its fields.
-                              // The EntitySelect already has the label; for other fields,
-                              // we store the id now and resolve names on the server (apply/preview).
-                              // But for display, we store the label in the copy field.
                               const copyKey = Object.keys(f.entityCopyFields)[0];
-                              updateItem(index, copyKey, val.label);
+                              fields[copyKey] = val.label;
                             }
+                            updateItemFields(index, fields);
                           } else {
-                            updateItem(index, f.key, "");
+                            // Clear both fields
+                            const fields: Record<string, any> = {};
+                            fields[f.key] = "";
                             if (f.entityCopyFields) {
                               const copyKey = Object.keys(f.entityCopyFields)[0];
-                              updateItem(index, copyKey, "");
+                              fields[copyKey] = "";
                             }
+                            updateItemFields(index, fields);
                           }
                         }}
                         placeholder={f.placeholder || "Search..."}
