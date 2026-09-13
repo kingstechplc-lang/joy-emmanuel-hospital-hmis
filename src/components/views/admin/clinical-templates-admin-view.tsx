@@ -54,6 +54,7 @@ import {
 } from "@/components/ui-helpers";
 import { GradientDialogHeader } from "@/components/ui/gradient-dialog-header";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EntitySelect, type EntitySelectValue } from "@/components/ui/entity-select";
 import { FieldLabel } from "@/components/ui/required-label";
 import { getDialogContentClasses, DIALOG_BODY_SHELL } from "@/lib/ui/dialog-sizes";
 import {
@@ -1043,7 +1044,17 @@ function ContentEditor({
             items={content.labOrders || []}
             onChange={(items) => update("labOrders", items)}
             fields={[
-              { key: "laboratoryTestId", label: "Lab Test ID", placeholder: "e.g., test_cbc", required: true },
+              {
+                key: "laboratoryTestId", label: "Lab Test", placeholder: "Search lab tests...",
+                required: true, type: "entitySelect",
+                entityEndpoint: "/api/lab-tests",
+                entityQueryParams: { status: "active" },
+                entityGetLabel: (item: any) => item.name || item.code || "",
+                entityGetId: (item: any) => item.id,
+                entityGetSubtitle: (item: any) => item.code || null,
+                entityGetCode: (item: any) => item.code || null,
+                entityCopyFields: { testName: "name" },
+              },
               { key: "priority", label: "Priority", placeholder: "routine / urgent / stat", type: "select", options: ["routine", "urgent", "stat"] },
               { key: "clinicalNote", label: "Clinical Note", placeholder: "e.g., Fasting sample" },
             ]}
@@ -1059,7 +1070,17 @@ function ContentEditor({
             items={content.imagingOrders || []}
             onChange={(items) => update("imagingOrders", items)}
             fields={[
-              { key: "procedureCatalogId", label: "Imaging Procedure ID", placeholder: "e.g., proc_xray_chest", required: true },
+              {
+                key: "procedureCatalogId", label: "Imaging Procedure", placeholder: "Search imaging procedures...",
+                required: true, type: "entitySelect",
+                entityEndpoint: "/api/procedures-catalog",
+                entityQueryParams: { status: "active", category: "diagnostic" },
+                entityGetLabel: (item: any) => item.name || "",
+                entityGetId: (item: any) => item.id,
+                entityGetSubtitle: (item: any) => item.code || null,
+                entityGetCode: (item: any) => item.code || null,
+                entityCopyFields: { procedureName: "name" },
+              },
               { key: "priority", label: "Priority", placeholder: "routine / urgent / stat", type: "select", options: ["routine", "urgent", "stat"] },
               { key: "clinicalNote", label: "Clinical Note", placeholder: "e.g., Suspected pneumonia" },
             ]}
@@ -1075,7 +1096,17 @@ function ContentEditor({
             items={content.prescriptions || []}
             onChange={(items) => update("prescriptions", items)}
             fields={[
-              { key: "medicationId", label: "Medication ID", placeholder: "e.g., med_amoxicillin", required: true },
+              {
+                key: "medicationId", label: "Medication", placeholder: "Search medications...",
+                required: true, type: "entitySelect",
+                entityEndpoint: "/api/medications",
+                entityQueryParams: { status: "active" },
+                entityGetLabel: (item: any) => `${item.genericName} (${item.brandName || "generic"}) ${item.strength || ""}`.trim(),
+                entityGetId: (item: any) => item.id,
+                entityGetSubtitle: (item: any) => `${item.dosageForm || ""} ${item.route || ""}`.trim() || null,
+                entityGetCode: (item: any) => item.brandName ? null : "generic",
+                entityCopyFields: { medicationName: "genericName" },
+              },
               { key: "dosage", label: "Dosage", placeholder: "e.g., 500mg", required: true },
               { key: "frequency", label: "Frequency", placeholder: "e.g., TDS (3x daily)", required: true },
               { key: "route", label: "Route", placeholder: "PO / IM / IV", type: "select", options: ["PO", "IM", "IV", "SC", "PR", "SL", "TOP"] },
@@ -1095,7 +1126,17 @@ function ContentEditor({
             items={content.procedures || []}
             onChange={(items) => update("procedures", items)}
             fields={[
-              { key: "procedureCatalogId", label: "Procedure ID", placeholder: "e.g., proc_wound_dressing", required: true },
+              {
+                key: "procedureCatalogId", label: "Procedure", placeholder: "Search procedures...",
+                required: true, type: "entitySelect",
+                entityEndpoint: "/api/procedures-catalog",
+                entityQueryParams: { status: "active" },
+                entityGetLabel: (item: any) => item.name || "",
+                entityGetId: (item: any) => item.id,
+                entityGetSubtitle: (item: any) => item.code || null,
+                entityGetCode: (item: any) => item.code || null,
+                entityCopyFields: { procedureName: "name" },
+              },
               { key: "priority", label: "Priority", placeholder: "routine / urgent / stat", type: "select", options: ["routine", "urgent", "stat"] },
               { key: "clinicalNote", label: "Clinical Note", placeholder: "e.g., Sterile technique" },
             ]}
@@ -1111,7 +1152,17 @@ function ContentEditor({
             items={content.services || []}
             onChange={(items) => update("services", items)}
             fields={[
-              { key: "serviceId", label: "Service ID", placeholder: "e.g., svc_consultation", required: true },
+              {
+                key: "serviceId", label: "Service", placeholder: "Search services...",
+                required: true, type: "entitySelect",
+                entityEndpoint: "/api/services",
+                entityQueryParams: { status: "active" },
+                entityGetLabel: (item: any) => item.name || "",
+                entityGetId: (item: any) => item.id,
+                entityGetSubtitle: (item: any) => item.code || null,
+                entityGetCode: (item: any) => item.code || null,
+                entityCopyFields: { serviceName: "name" },
+              },
               { key: "quantity", label: "Quantity", placeholder: "1", type: "number" },
             ]}
           />
@@ -1215,8 +1266,19 @@ interface EditorField {
   label: string;
   placeholder?: string;
   required?: boolean;
-  type?: "text" | "number" | "select";
+  type?: "text" | "number" | "select" | "entitySelect";
   options?: string[];
+  // EntitySelect config (when type === "entitySelect")
+  entityEndpoint?: string;       // e.g., "/api/lab-tests"
+  entityQueryParam?: string;      // default: "q"
+  entityQueryParams?: Record<string, string>; // e.g., { status: "active" }
+  entityGetLabel?: (item: any) => string;
+  entityGetId?: (item: any) => string;
+  entityGetSubtitle?: (item: any) => string | null;
+  entityGetCode?: (item: any) => string | null;
+  // When the entity is selected, also store these fields from the selected item
+  // e.g., { testName: "name", testCode: "code" } copies item.name → row.testName
+  entityCopyFields?: Record<string, string>;
 }
 
 function OrderListEditor({
@@ -1288,11 +1350,46 @@ function OrderListEditor({
               </button>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
                 {fields.map((f) => (
-                  <div key={f.key} className="space-y-0.5">
+                  <div key={f.key} className={f.type === "entitySelect" ? "space-y-0.5 sm:col-span-2" : "space-y-0.5"}>
                     <Label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
                       {f.label}{f.required && <span className="text-rose-500"> *</span>}
                     </Label>
-                    {f.type === "select" ? (
+                    {f.type === "entitySelect" ? (
+                      <EntitySelect
+                        endpoint={f.entityEndpoint!}
+                        queryParam={f.entityQueryParam || "q"}
+                        queryParams={f.entityQueryParams}
+                        getLabel={f.entityGetLabel!}
+                        getId={f.entityGetId!}
+                        getSubtitle={f.entityGetSubtitle}
+                        getCode={f.entityGetCode}
+                        value={item[f.key] ? { id: item[f.key], label: item[f.entityCopyFields ? Object.values(f.entityCopyFields)[0] : f.key] || item[f.key] } : null}
+                        onChange={(val) => {
+                          if (val) {
+                            // Update the main field
+                            updateItem(index, f.key, val.id);
+                            // Copy additional fields from the selected entity
+                            if (f.entityCopyFields) {
+                              // We need to fetch the entity to get its fields.
+                              // The EntitySelect already has the label; for other fields,
+                              // we store the id now and resolve names on the server (apply/preview).
+                              // But for display, we store the label in the copy field.
+                              const copyKey = Object.keys(f.entityCopyFields)[0];
+                              updateItem(index, copyKey, val.label);
+                            }
+                          } else {
+                            updateItem(index, f.key, "");
+                            if (f.entityCopyFields) {
+                              const copyKey = Object.keys(f.entityCopyFields)[0];
+                              updateItem(index, copyKey, "");
+                            }
+                          }
+                        }}
+                        placeholder={f.placeholder || "Search..."}
+                        required={f.required}
+                        className=""
+                      />
+                    ) : f.type === "select" ? (
                       <Select
                         value={item[f.key] || ""}
                         onValueChange={(v) => updateItem(index, f.key, v)}

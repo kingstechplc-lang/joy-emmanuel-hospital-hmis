@@ -279,6 +279,11 @@ export function ConsultationsView() {
           onClose={() => setShowNew(false)}
           onCreated={() => {
             setShowNew(false);
+            // Clear the encounter filter so the list shows ALL facility
+            // consultations — not just the one that was selected when
+            // the New dialog was opened. This prevents the old
+            // consultations from disappearing after creating a new one.
+            selectEncounter(null);
             qc.invalidateQueries({ queryKey: ["consultations"] });
             qc.invalidateQueries({ queryKey: ["consultations-stats"] });
           }}
