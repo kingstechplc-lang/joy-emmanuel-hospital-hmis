@@ -163,13 +163,21 @@ export function DashboardView() {
   const handleReset = useCallback(async () => {
     try {
       const result = await sendJson(`/api/dashboard/layout${layoutParam}`, "DELETE", {});
+      // Update React Query cache immediately so the init useEffect
+      // doesn't overwrite our just-reset layout with stale cached data.
+      // Without this, the user would see the OLD layout flash back
+      // after reset (the "empty gaps" bug).
+      queryClient.setQueryData(
+        ["dashboard-layout", activeFacilityId],
+        { layout: result.layout, source: result.source || "role_default", layoutId: null }
+      );
       setLayout(result.layout);
       setEditMode(false);
       toast.success("Dashboard reset to default");
     } catch (e: any) {
       toast.error("Failed to reset dashboard", { description: e.message });
     }
-  }, [layoutParam]);
+  }, [layoutParam, activeFacilityId, queryClient]);
 
   // ─── Toggle edit mode ──────────────────────────────────────────────
   const handleToggleEdit = useCallback(() => {

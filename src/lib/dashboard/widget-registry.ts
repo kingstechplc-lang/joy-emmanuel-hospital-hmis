@@ -281,7 +281,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     category: "WORKFLOW",
     requiredPermissions: ["task.assign"],
     dataSourceKey: "pendingTasks",
-    defaultSize: { w: 6, h: 2 },
+    defaultSize: { w: 12, h: 2 },
     supportedSizes: ["md", "lg", "xl"],
     configSchema: {
       maxItems: { type: "number", min: 1, max: 20, default: 5 },
