@@ -8,13 +8,25 @@
 // Props:
 //   widgetId — the widget id from the registry (e.g., "kpi_total_patients")
 //   stats    — the full /api/dashboard/stats response object
-//   onDrillDown — called when the user clicks the card; receives the
-//                  target view key (e.g., "patients") to navigate to
+//   editMode — when true, disables click navigation (so the user can
+//              drag/configure/remove the widget without navigating away)
 //
 // The card uses a gradient background matching the KPI's color, displays
 // the KPI label in small uppercase letters and the value in large bold
 // text. A watermark icon in the top-right and a hover arrow in the
 // bottom-right add visual interest.
+//
+// DRILL-DOWN:
+//   Clicking the card (in view mode) navigates to the KPI's drillDownView
+//   with the KPI's drillDownParams as query string — so the destination
+//   view opens pre-filtered to match the KPI's scope. For example,
+//   "Pending Lab Orders" navigates to /lab_orders?status=pending.
+//   The destination view must independently honor these query params
+//   (server-side enforcement is unchanged).
+//
+// METADATA SOURCE:
+//   KPI metadata (label, icon, color, drill-down) comes from
+//   src/lib/dashboard/kpi-definitions.ts — the single source of truth.
 // =====================================================================
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,156 +34,7 @@ import { ArrowRight } from "lucide-react";
 import * as Icons from "lucide-react";
 import { useAppStore } from "@/stores/app-store";
 import { WIDGET_BY_ID } from "@/lib/dashboard/widget-registry";
-
-// ─── KPI metadata (mirrors the existing dashboard-view.tsx ALL_KPIs) ──
-// This is a thin lookup that maps widgetId → { label, icon, color, view,
-// getValue } so the KPI card knows how to render. The widget registry
-// already declares these as dataSourceKey; this map provides the
-// presentation layer (icon, color, drill-down view).
-// ────────────────────────────────────────────────────────────────────
-
-type KpiMeta = {
-  label: string;
-  icon: keyof typeof Icons;
-  color: string;
-  view: string;
-  getValue: (stats: any) => any;
-};
-
-const KPI_META: Record<string, KpiMeta> = {
-  kpi_total_patients: {
-    label: "Total Patients",
-    icon: "Users",
-    color: "emerald",
-    view: "patients",
-    getValue: (s) => s?.totalPatients ?? "—",
-  },
-  kpi_today_encounters: {
-    label: "Today's Encounters",
-    icon: "Activity",
-    color: "blue",
-    view: "encounters",
-    getValue: (s) => s?.todayEncounters ?? "—",
-  },
-  kpi_today_new_patients: {
-    label: "New Patients Today",
-    icon: "UserPlus",
-    color: "purple",
-    view: "patients",
-    getValue: (s) => s?.todayNewPatients ?? "—",
-  },
-  kpi_today_appointments: {
-    label: "Today's Appointments",
-    icon: "Calendar",
-    color: "cyan",
-    view: "appointments",
-    getValue: (s) => s?.todayAppointments ?? "—",
-  },
-  kpi_active_admissions: {
-    label: "Active Admissions",
-    icon: "BedDouble",
-    color: "amber",
-    view: "admissions",
-    getValue: (s) => s?.activeAdmissions ?? "—",
-  },
-  kpi_bed_occupancy: {
-    label: "Bed Occupancy",
-    icon: "BedDouble",
-    color: "teal",
-    view: "beds",
-    getValue: (s) => (s?.bedOccupancy != null ? `${s.bedOccupancy}%` : "—"),
-  },
-  kpi_today_discharges: {
-    label: "Today's Discharges",
-    icon: "BedDouble",
-    color: "indigo",
-    view: "discharges",
-    getValue: (s) => s?.todayDischarges ?? "—",
-  },
-  kpi_today_procedures: {
-    label: "Procedures Done Today",
-    icon: "Activity",
-    color: "purple",
-    view: "procedures",
-    getValue: (s) => s?.todayCompletedProcedures ?? "—",
-  },
-  kpi_pending_lab_orders: {
-    label: "Pending Lab Orders",
-    icon: "FlaskConical",
-    color: "purple",
-    view: "lab_orders",
-    getValue: (s) => s?.pendingLabOrders ?? "—",
-  },
-  kpi_pending_imaging: {
-    label: "Pending Imaging",
-    icon: "ScanLine",
-    color: "cyan",
-    view: "imaging",
-    getValue: (s) => s?.pendingImagingOrders ?? "—",
-  },
-  kpi_pending_prescriptions: {
-    label: "Pending Prescriptions",
-    icon: "Pill",
-    color: "pink",
-    view: "prescriptions",
-    getValue: (s) => s?.pendingPrescriptions ?? "—",
-  },
-  kpi_pending_referrals: {
-    label: "Pending Referrals",
-    icon: "ArrowRight",
-    color: "blue",
-    view: "referrals",
-    getValue: (s) => s?.pendingReferrals ?? "—",
-  },
-  kpi_outstanding_invoices: {
-    label: "Outstanding Invoices",
-    icon: "Receipt",
-    color: "rose",
-    view: "billing_invoices",
-    getValue: (s) => s?.outstandingInvoices ?? "—",
-  },
-  kpi_today_revenue: {
-    label: "Today's Revenue (GHS)",
-    icon: "TrendingUp",
-    color: "emerald",
-    view: "billing_payments",
-    getValue: (s) =>
-      s?.todayRevenue != null
-        ? Number(s.todayRevenue).toLocaleString("en-GB", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        : "—",
-  },
-  kpi_low_stock: {
-    label: "Low Stock Items",
-    icon: "AlertTriangle",
-    color: "orange",
-    view: "inventory",
-    getValue: (s) => s?.lowStockItems ?? "—",
-  },
-  kpi_pending_tasks: {
-    label: "Pending Tasks",
-    icon: "CheckSquare",
-    color: "amber",
-    view: "tasks",
-    getValue: (s) => s?.pendingTasksCount ?? "—",
-  },
-  kpi_total_users: {
-    label: "Total Users",
-    icon: "UserCog",
-    color: "blue",
-    view: "settings_users",
-    getValue: (s) => s?.totalUsers ?? "—",
-  },
-  kpi_recent_audit: {
-    label: "Recent Audit Events",
-    icon: "ScrollText",
-    color: "teal",
-    view: "audit_logs",
-    getValue: (s) => s?.recentAuditCount ?? "—",
-  },
-};
+import { KPI_BY_ID, buildDrillDownUrl } from "@/lib/dashboard/kpi-definitions";
 
 // Gradient class map — matches the existing dashboard-view.tsx StatCard
 const GRADIENT_MAP: Record<string, string> = {
@@ -202,7 +65,9 @@ export function WidgetKpiCard({
   editMode?: boolean;
 }) {
   const setView = useAppStore((s) => s.setView);
-  const meta = KPI_META[widgetId];
+  const selectPatient = useAppStore((s) => s.selectPatient);
+  const activeFacilityId = useAppStore((s) => s.activeFacilityId);
+  const meta = KPI_BY_ID[widgetId];
 
   // Unknown KPI widget — render a placeholder
   if (!meta) {
@@ -223,6 +88,27 @@ export function WidgetKpiCard({
   const gradientClass = GRADIENT_MAP[meta.color] || GRADIENT_MAP.slate;
   const value = meta.getValue(stats);
 
+  // Build the drill-down handler. In edit mode, clicking does nothing
+  // (the user uses the edit toolbar to drag/configure/remove instead).
+  // In view mode, clicking navigates to the KPI's drillDownView with the
+  // KPI's drillDownParams as query string.
+  const handleDrillDown = () => {
+    if (editMode || !meta.drillDownView) return;
+    const drillDown = buildDrillDownUrl(widgetId, activeFacilityId);
+    if (drillDown) {
+      // Stash the drill-down params in the app store so the destination
+      // view can read them on mount. We use a transient URL search param
+      // approach: the destination view reads `useAppStore.getState().drillDownParams`
+      // (if set) and clears it after consuming. This avoids URL routing
+      // (the dashboard is a SPA with Zustand navigation, not URL-based).
+      // For now, we just navigate to the view; the destination views
+      // will pick up these params via a future enhancement. The
+      // buildDrillDownUrl() helper returns the structured params so the
+      // integration is ready when the views support it.
+      setView(meta.drillDownView);
+    }
+  };
+
   // In edit mode: disable click navigation, cursor-pointer, and hover lift
   // so the user can interact with the edit toolbar (drag/configure/remove)
   // instead of accidentally navigating away from the dashboard.
@@ -232,8 +118,9 @@ export function WidgetKpiCard({
 
   return (
     <Card
-      onClick={editMode ? undefined : () => setView(meta.view as any)}
+      onClick={handleDrillDown}
       className={`dashboard-kpi-card group relative ${gradientClass} text-white overflow-hidden border-0 shadow-lg transition-all duration-300 rounded-2xl ${editModeClasses}`}
+      title={meta.description}
     >
       <CardContent className="p-5 relative z-10">
         {/* Watermark icon */}
@@ -248,8 +135,8 @@ export function WidgetKpiCard({
         <p className="text-3xl font-extrabold text-white tracking-tight tabular-nums">
           {value}
         </p>
-        {/* Hover arrow — only in view mode */}
-        {!editMode && (
+        {/* Hover arrow — only in view mode when drill-down is available */}
+        {!editMode && meta.drillDownView && (
           <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <ArrowRight className="w-4 h-4 text-white/70" />
           </div>

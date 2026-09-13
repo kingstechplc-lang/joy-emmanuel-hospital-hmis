@@ -62,7 +62,7 @@ export type WidgetConfigSchema = {
   facilityScope?: {
     type: "enum";
     options: ("all" | "current")[];
-    default: "current";
+    default: "all" | "current";
   };
 };
 
@@ -138,6 +138,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d", "month", "quarter"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -150,6 +157,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d", "month"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -162,6 +176,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -198,6 +219,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 60_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d", "month"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -210,6 +238,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 60_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d", "month"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -222,6 +257,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
 
@@ -236,6 +278,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -248,6 +297,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -260,6 +316,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -272,6 +335,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 30_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -301,6 +371,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 60_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d", "month"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
   {
@@ -313,6 +390,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 60_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d", "month", "quarter", "year"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
 
@@ -327,6 +411,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 120_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d", "30d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
 
@@ -385,6 +476,13 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultSize: { w: 3, h: 1 },
     supportedSizes: ["sm", "md"],
     defaultRefreshMs: 60_000,
+    configSchema: {
+      dateRange: {
+        type: "enum",
+        options: ["today", "7d"],
+        default: "today",
+      },
+    },
     enabled: true,
   },
 
