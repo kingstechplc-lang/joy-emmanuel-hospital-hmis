@@ -62,7 +62,7 @@ export async function GET(
           select: {
             id: true, versionNumber: true, status: true,
             changeSummary: true, approvedAt: true, createdAt: true,
-            effectiveDate: true,
+            effectiveDate: true, content: true,
           },
         },
         favorites: {

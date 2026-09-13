@@ -771,24 +771,78 @@ function TemplateFormDialog({
   onSaved: () => void;
 }) {
   const isEdit = !!editItem;
-  const [name, setName] = useState(editItem?.name || "");
-  const [description, setDescription] = useState(editItem?.description || "");
-  const [templateType, setTemplateType] = useState<TemplateType>(editItem?.templateType || "order_set");
-  const [category, setCategory] = useState(editItem?.category || "");
-  const [specialty, setSpecialty] = useState(editItem?.specialty || "");
-  const [scope, setScope] = useState<TemplateScope>(editItem?.scope || "organization");
 
-  // Visual content editor state (user-friendly — no JSON required)
-  // The editor builds the content object from individual fields per type.
-  const [contentState, setContentState] = useState<any>(() => {
-    if (editItem?.content && typeof editItem.content === "object") return editItem.content;
-    if (editItem?.content && typeof editItem.content === "string") {
-      try { return JSON.parse(editItem.content); } catch { return {}; }
-    }
-    return {};
+  // When editing, fetch the FULL template detail (including the current
+  // version's content) — the list endpoint only returns metadata, not
+  // the content. Without this, the content editor would start empty
+  // and all previously saved items would be lost.
+  const { data: fullTemplate, isLoading: loadingTemplate } = useQuery({
+    queryKey: ["clinical-template-edit", editItem?.id],
+    queryFn: () => fetchJson(`/api/clinical-templates/${editItem.id}`),
+    enabled: isEdit && open,
+    staleTime: 0,
   });
 
+  // The effective edit item — use the full template (with content) when
+  // available, fall back to the list item (metadata only) while loading.
+  const effectiveEditItem = fullTemplate?.item || editItem;
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [templateType, setTemplateType] = useState<TemplateType>("order_set");
+  const [category, setCategory] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [scope, setScope] = useState<TemplateScope>("organization");
+  const [contentState, setContentState] = useState<any>({});
   const [changeSummary, setChangeSummary] = useState("");
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize form fields from the full template once it's loaded
+  useEffect(() => {
+    if (isEdit && fullTemplate?.item && !initialized) {
+      const t = fullTemplate.item;
+      setName(t.name || "");
+      setDescription(t.description || "");
+      setTemplateType(t.templateType || "order_set");
+      setCategory(t.category || "");
+      setSpecialty(t.specialty || "");
+      setScope(t.scope || "organization");
+
+      // Parse the content from the current version
+      // The detail endpoint returns versions array; the current version
+      // is the one whose id matches currentVersionId, or the first version.
+      const currentVersion = t.versions?.find((v: any) => v.id === t.currentVersionId) || t.versions?.[0];
+      if (currentVersion?.content) {
+        try {
+          const parsed = typeof currentVersion.content === "string"
+            ? JSON.parse(currentVersion.content)
+            : currentVersion.content;
+          setContentState(parsed);
+        } catch {
+          setContentState({});
+        }
+      }
+      setInitialized(true);
+    } else if (!isEdit && !initialized) {
+      // For new templates, initialize with defaults
+      setInitialized(true);
+    }
+  }, [isEdit, fullTemplate, initialized]);
+
+  // Reset when the dialog closes
+  useEffect(() => {
+    if (!open) {
+      setInitialized(false);
+      setName("");
+      setDescription("");
+      setTemplateType("order_set");
+      setCategory("");
+      setSpecialty("");
+      setScope("organization");
+      setContentState({});
+      setChangeSummary("");
+    }
+  }, [open]);
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -826,6 +880,14 @@ function TemplateFormDialog({
           onClose={() => onOpenChange(false)}
         />
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {isEdit && loadingTemplate && (
+            <div className="py-8 text-center">
+              <Loader2 className="w-6 h-6 mx-auto animate-spin text-purple-500" />
+              <p className="text-sm text-slate-500 mt-2">Loading template...</p>
+            </div>
+          )}
+          {(!isEdit || !loadingTemplate) && initialized && (
+            <>
           {/* Name */}
           <div className="space-y-1.5">
             <FieldLabel htmlFor="name" required>Template Name</FieldLabel>
@@ -938,6 +1000,8 @@ function TemplateFormDialog({
                 Describes what changed in this version. Required when updating content.
               </p>
             </div>
+          )}
+            </>
           )}
         </div>
 
