@@ -61,6 +61,7 @@ export type ViewKey =
   | "settings_lab_tests"
   | "settings_medications"
   | "settings_diagnoses"
+  | "clinical_templates"
   | "settings_insurance_providers"
   | "settings_system"
   | "records_desk"
@@ -308,6 +309,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "settings_lab_tests", label: "Lab Test Catalog", icon: "Beaker", permission: "settings.view", category: "Administration" },
   { key: "settings_medications", label: "Medications", icon: "Pill", permission: "settings.view", category: "Administration" },
   { key: "settings_diagnoses", label: "Diagnosis Engine", icon: "Stethoscope", permission: "diagnosis.view", category: "Administration" },
+  { key: "clinical_templates", label: "Clinical Templates", icon: "FileText", permission: "clinical_template.view", category: "Administration" },
   { key: "settings_insurance_providers", label: "Insurance Providers", icon: "Building", permission: "settings.view", category: "Administration" },
   { key: "settings_system", label: "System Settings", icon: "Settings", permission: "settings.view", category: "Administration" },
 
