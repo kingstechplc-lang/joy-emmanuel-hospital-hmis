@@ -450,6 +450,14 @@ export const PERMISSIONS = {
   // ────────────────────────────────────────────────────────────────
   // Dashboard widgets & KPI customization
   DASHBOARD_CUSTOMIZE: "dashboard.customize",
+
+  // Clinical Templates & Order Sets (Phase 6)
+  CLINICAL_TEMPLATE_VIEW: "clinical_template.view",
+  CLINICAL_TEMPLATE_CREATE: "clinical_template.create",
+  CLINICAL_TEMPLATE_UPDATE: "clinical_template.update",
+  CLINICAL_TEMPLATE_APPROVE: "clinical_template.approve",
+  CLINICAL_TEMPLATE_ACTIVATE: "clinical_template.activate",
+  CLINICAL_TEMPLATE_APPLY: "clinical_template.apply",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -580,6 +588,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.AUDIT_MANAGE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Tier 2 — Clinical Templates: org admins can manage the full lifecycle
+    PERMISSIONS.CLINICAL_TEMPLATE_VIEW, PERMISSIONS.CLINICAL_TEMPLATE_CREATE,
+    PERMISSIONS.CLINICAL_TEMPLATE_UPDATE, PERMISSIONS.CLINICAL_TEMPLATE_APPROVE,
+    PERMISSIONS.CLINICAL_TEMPLATE_ACTIVATE, PERMISSIONS.CLINICAL_TEMPLATE_APPLY,
   ],
 
   facility_admin: [
@@ -664,6 +676,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.RECOVERY_VIEW, PERMISSIONS.RECOVERY_MANAGE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Tier 2 — Clinical Templates: facility admins can manage + apply
+    PERMISSIONS.CLINICAL_TEMPLATE_VIEW, PERMISSIONS.CLINICAL_TEMPLATE_CREATE,
+    PERMISSIONS.CLINICAL_TEMPLATE_UPDATE, PERMISSIONS.CLINICAL_TEMPLATE_ACTIVATE,
+    PERMISSIONS.CLINICAL_TEMPLATE_APPLY,
   ],
 
   doctor: [
@@ -710,6 +726,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.PATIENT_RELATIONS_VIEW,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Tier 2 — Clinical Templates: doctors can create personal templates,
+    // view all, and apply. Cannot approve/activate (admin-only).
+    PERMISSIONS.CLINICAL_TEMPLATE_VIEW, PERMISSIONS.CLINICAL_TEMPLATE_CREATE,
+    PERMISSIONS.CLINICAL_TEMPLATE_APPLY,
   ],
 
   nurse: [
@@ -764,6 +784,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.HOME_CARE_VIEW, PERMISSIONS.HOME_CARE_MANAGE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Tier 2 — Clinical Templates: nurses can view + apply care templates
+    PERMISSIONS.CLINICAL_TEMPLATE_VIEW, PERMISSIONS.CLINICAL_TEMPLATE_APPLY,
   ],
 
   pharmacist: [

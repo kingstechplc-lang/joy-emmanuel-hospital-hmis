@@ -127,6 +127,8 @@ model Organization {
   medicationLabels        MedicationLabel[]
   // Tier 2: Dashboard layouts (org-scoped default + role/department/facility defaults)
   dashboardLayouts       DashboardLayout[]
+  // Tier 2: Clinical Templates (org-scoped templates)
+  clinicalTemplates      ClinicalTemplate[]
 }
 
 model Facility {
@@ -213,6 +215,8 @@ model Facility {
   regressionTestRuns            RegressionTestRun[]
   // Tier 2: Dashboard layouts (facility-scoped defaults)
   dashboardLayouts             DashboardLayout[]
+  // Tier 2: Clinical Templates (facility-scoped templates)
+  clinicalTemplates            ClinicalTemplate[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -325,6 +329,8 @@ model Department {
   allowances             Allowance[]
   deductions             Deduction[]
   costCenters            CostCenter[]
+  // Tier 2: Clinical Templates (department-scoped templates)
+  clinicalTemplates      ClinicalTemplate[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -645,6 +651,11 @@ model User {
   regressionTestRuns           RegressionTestRun[]   @relation("regressionTestRunUser")
   // --- Tier 2 Dashboard Layout back-relation (Phase 2) ---
   dashboardLayouts             DashboardLayout[]     @relation("userDashboardLayout")
+  // --- Tier 2 Clinical Template back-relations (Phase 6) ---
+  clinicalTemplatesCreated     ClinicalTemplate[]    @relation("clinicalTemplateCreator")
+  clinicalTemplatesApproved    ClinicalTemplate[]    @relation("clinicalTemplateApprover")
+  clinicalTemplateFavorites    ClinicalTemplateFavorite[]
+  clinicalTemplateApplications ClinicalTemplateApplication[]
 }
 
 model Staff {
@@ -1058,6 +1069,8 @@ model Patient {
   dischargeSummaries            DischargeSummary[]
   wristbands                    PatientWristband[]
   medicationLabels              MedicationLabel[]
+  // Tier 2: Clinical Template Applications (templates applied to this patient)
+  clinicalTemplateApplications  ClinicalTemplateApplication[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -1428,6 +1441,8 @@ model Encounter {
   eligibilityVerifications  EligibilityVerification[]
   dischargeSummaries        DischargeSummary[]
   wristbands                PatientWristband[]
+  // Tier 2: Clinical Template Applications (templates applied to this encounter)
+  clinicalTemplateApplications ClinicalTemplateApplication[]
 
   @@unique([facilityId, encounterNumber])
   @@index([patientId, facilityId])
@@ -10301,4 +10316,174 @@ model DashboardLayout {
   @@index([organizationId, scope, roleCode, isDefault])
   @@index([organizationId, scope, departmentId, isDefault])
   @@index([organizationId, scope, facilityId, isDefault])
+}
+
+// ---------------------------------------------------------------------
+// TIER 2 — CLINICAL TEMPLATES & ORDER SETS (Phase 6)
+// ---------------------------------------------------------------------
+// Reusable clinical templates that reduce repetitive work while preserving
+// clinical judgment. Templates can be:
+//   - CONSULTATION_TEMPLATE  — pre-fills the consultation structure (HPI, PE, etc.)
+//   - ORDER_SET             — bundles lab + imaging + Rx + procedure + services
+//   - LAB_ORDER_SET         — lab-only order set
+//   - IMAGING_ORDER_SET     — imaging-only order set
+//   - MEDICATION_TEMPLATE   — prescription-only template
+//   - PROCEDURE_TEMPLATE    — procedure-only template
+//   - CARE_TEMPLATE         — care plan / nursing-focused template
+//
+// SAFETY: Templates NEVER auto-submit orders. The clinician must review,
+// modify, and confirm before any orders are created (Phase 8 workflow).
+//
+// SCOPING: Templates can be scoped to system (shared across orgs),
+// organization, facility, department, or personal. The scope determines
+// which users can see and apply the template.
+//
+// LIFECYCLE: draft → under_review → approved → active → inactive → archived
+// Only 'active' templates can be applied. 'approved' is the approved
+// state but not yet activated. 'inactive' means the template is paused
+// (no new applications) but existing applications are preserved.
+//
+// VERSIONING: Each template has multiple versions (ClinicalTemplateVersion).
+// The 'content' field is a JSON blob with the template's items. When a
+// template is applied to an encounter, the ClinicalTemplateApplication
+// records the templateVersionId — so historical encounters remain
+// traceable to the version used, even after the template is updated.
+// ---------------------------------------------------------------------
+
+model ClinicalTemplate {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  // Ownership — who created the template
+  creatorId       String
+  creator         User         @relation("clinicalTemplateCreator", fields: [creatorId], references: [id])
+  // Human-readable metadata
+  name            String
+  description     String?
+  // Type — what kind of template this is
+  templateType    String   // consultation | order_set | lab | imaging | medication | procedure | care
+  // Categorization for search/filtering
+  category        String?  // e.g., "fever_workup", "hypertension_followup", "antenatal_review"
+  specialty       String?  // e.g., "general_medicine", "cardiology", "paediatrics"
+  // Scope — who can see and apply this template
+  scope           String   @default("organization") // system | organization | facility | department | personal
+  // Lifecycle status
+  status          String   @default("draft") // draft | under_review | approved | active | inactive | archived
+  // Approval — who approved and when
+  approverId      String?
+  approver        User?       @relation("clinicalTemplateApprover", fields: [approverId], references: [id])
+  approvedAt      DateTime?
+  // The current active version of this template (points to the latest
+  // approved/active version; null if no version has been approved yet)
+  currentVersionId String?
+  // Metadata for search
+  tags            String? // JSON array of strings, e.g., ["fever","malaria","adult"]
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  versions        ClinicalTemplateVersion[]
+  favorites       ClinicalTemplateFavorite[]
+  applications    ClinicalTemplateApplication[]
+
+  @@index([organizationId, status, templateType])
+  @@index([organizationId, scope, status])
+  @@index([organizationId, facilityId, status])
+  @@index([organizationId, departmentId, status])
+  @@index([organizationId, category, status])
+  @@index([organizationId, specialty, status])
+}
+
+model ClinicalTemplateVersion {
+  id              String   @id @default(cuid())
+  templateId      String
+  template        ClinicalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  // Version number (1, 2, 3, ...) — monotonically increasing per template
+  versionNumber   Int
+  // The actual template content as a JSON blob.
+  //
+  // For consultation templates:
+  //   { chiefComplaint?, hpi?, pmh?, psh?, fh?, sh?, ros?, pe?, assessment?, plan?, followUp? }
+  //
+  // For order sets / lab / imaging / medication / procedure templates:
+  //   {
+  //     labOrders: [{ laboratoryTestId, priority?, clinicalNote? }],
+  //     imagingOrders: [{ procedureCatalogId, priority?, clinicalNote? }],
+  //     prescriptions: [{ medicationId, dosage, frequency, route, duration, quantity?, instructions? }],
+  //     procedures: [{ procedureCatalogId, priority?, clinicalNote? }],
+  //     services: [{ serviceId, quantity? }],
+  //     instructions?: string, // patient instructions / follow-up notes
+  //     diagnoses?: [{ diagnosisCatalogId, type }], // suggested diagnoses
+  //   }
+  //
+  // The 'content' is stored as JSON (not structured columns) because
+  // different template types have different shapes. The /apply endpoint
+  // (Phase 8) parses this JSON and routes each item through the existing
+  // order-creation endpoints (lab-orders, prescriptions, imaging, procedures).
+  content         String   @db.Text
+  // Lifecycle
+  effectiveDate   DateTime @default(now())
+  // Approval for THIS version
+  approvedById    String?
+  approvedAt      DateTime?
+  status          String   @default("draft") // draft | approved | active | archived
+  // Change log
+  changeSummary   String? // what changed in this version
+  createdAt       DateTime @default(now())
+
+  applications    ClinicalTemplateApplication[]
+
+  @@unique([templateId, versionNumber])
+  @@index([templateId, versionNumber])
+  @@index([templateId, status])
+}
+
+model ClinicalTemplateFavorite {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId      String
+  template        ClinicalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  // Pinned templates appear at the top of the user's "favorites" list
+  pinned          Boolean  @default(false)
+  // Last-used timestamp — for the "recently used" sort
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, templateId])
+  @@index([userId, pinned, lastUsedAt])
+}
+
+model ClinicalTemplateApplication {
+  id              String   @id @default(cuid())
+  templateId      String
+  template        ClinicalTemplate @relation(fields: [templateId], references: [id])
+  // Which version was applied — for historical traceability
+  templateVersionId String
+  templateVersion ClinicalTemplateVersion @relation(fields: [templateVersionId], references: [id])
+  // Encounter context — where the template was applied
+  encounterId     String
+  encounter       Encounter @relation(fields: [encounterId], references: [id])
+  patientId       String
+  patient        Patient   @relation(fields: [patientId], references: [id])
+  // Who applied the template
+  appliedById     String
+  appliedBy       User     @relation(fields: [appliedById], references: [id])
+  appliedAt       DateTime @default(now())
+  // What was created from this template application (JSON)
+  //   { labOrders: [...], imagingOrders: [...], prescriptions: [...], procedures: [...], services: [...] }
+  itemsCreated    String?  @db.Text
+  // Whether the clinician modified the proposed items before confirming
+  // (true = they removed or added items beyond what the template suggested)
+  modified        Boolean  @default(false)
+  // Whether the application is still active or has been superseded
+  status          String   @default("active") // active | superseded | cancelled
+
+  @@index([templateId, appliedAt])
+  @@index([encounterId])
+  @@index([patientId, appliedAt])
 }
