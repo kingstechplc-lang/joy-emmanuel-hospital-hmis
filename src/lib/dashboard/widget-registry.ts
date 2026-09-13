@@ -503,6 +503,19 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
   // Phase 5+ will add Critical Alerts panel widget (CDSS ClinicalAlert
   // count from active+critical) — placeholder for now so the registry
   // is extensible without touching the existing dashboard view.
+
+  // ─── BATCH OPERATIONS (Phase 12 — Cross-Feature Integration) ───────
+  {
+    id: "panel_batch_operations",
+    name: "Batch Operations",
+    description: "Pending items ready for bulk processing (lab results, invoices, prescriptions)",
+    category: "WORKFLOW",
+    requiredPermissions: [], // visible to anyone with at least one batch perm; the widget itself filters
+    defaultSize: { w: 4, h: 2 },
+    supportedSizes: ["md", "lg"],
+    defaultRefreshMs: 60_000,
+    enabled: true,
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────

@@ -151,6 +151,7 @@ export const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
     "kpi_pending_tasks",
     "kpi_today_encounters",
     "panel_quick_actions",
+    "panel_batch_operations",
     "list_pending_tasks",
   ],
 
@@ -160,6 +161,7 @@ export const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
     "kpi_pending_tasks",
     "kpi_today_encounters",
     "panel_quick_actions",
+    "panel_batch_operations",
     "list_pending_tasks",
   ],
 
@@ -191,6 +193,7 @@ export const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
     "kpi_pending_tasks",
     "kpi_today_encounters",
     "panel_quick_actions",
+    "panel_batch_operations",
     "list_pending_tasks",
   ],
 
@@ -202,6 +205,7 @@ export const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
     "kpi_low_stock",
     "kpi_total_patients",
     "panel_quick_actions",
+    "panel_batch_operations",
     "list_pending_tasks",
   ],
 

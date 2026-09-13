@@ -29,6 +29,7 @@ import { WidgetRecentPatients } from "./widget-recent-patients";
 import { WidgetWardOccupancy } from "./widget-ward-occupancy";
 import { WidgetPendingTasks } from "./widget-pending-tasks";
 import { WidgetQuickActions } from "./widget-quick-actions";
+import { WidgetBatchOperations } from "./widget-batch-operations";
 import { Card, CardContent } from "@/components/ui/card";
 import { WIDGET_BY_ID } from "@/lib/dashboard/widget-registry";
 
@@ -87,6 +88,16 @@ export function WidgetRenderer({
 
   if (widgetId === "panel_quick_actions") {
     return <WidgetQuickActions />;
+  }
+
+  if (widgetId === "panel_batch_operations") {
+    return (
+      <WidgetBatchOperations
+        stats={stats}
+        isLoading={isLoading}
+        config={config}
+      />
+    );
   }
 
   // Unknown widget — placeholder
