@@ -44,7 +44,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Stethoscope, Plus, Search, RefreshCcw, Eye, AlertCircle, Edit, Star,
   FileText, CheckCircle2, Clock, Archive, Send, ToggleLeft, ToggleRight,
-  GitBranch, Heart, Filter, X, Loader2, ChevronRight, Sparkles,
+  GitBranch, Heart, Filter, X, Loader2, ChevronRight, Sparkles, Pill,
+  FlaskConical, ScanLine, Activity, Trash2, ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -78,7 +79,8 @@ async function sendJson(url: string, method: string, body?: any) {
   return safeJson(res);
 }
 
-// Status badge color mapping
+// Status badge color mapping — use full static class strings (not dynamically
+// constructed) so Tailwind doesn't purge them.
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
   under_review: "bg-amber-100 text-amber-700 border-amber-200",
@@ -88,16 +90,86 @@ const STATUS_COLORS: Record<string, string> = {
   archived: "bg-rose-100 text-rose-700 border-rose-200",
 };
 
-// Type icon + color mapping
-const TYPE_META: Record<string, { icon: any; color: string; gradient: string }> = {
-  consultation: { icon: FileText, color: "text-blue-600", gradient: "from-blue-500 to-indigo-600" },
-  order_set: { icon: GitBranch, color: "text-purple-600", gradient: "from-purple-500 to-violet-600" },
-  lab: { icon: Stethoscope, color: "text-cyan-600", gradient: "from-cyan-500 to-blue-600" },
-  imaging: { icon: Eye, color: "text-violet-600", gradient: "from-violet-500 to-purple-600" },
-  medication: { icon: Plus, color: "text-emerald-600", gradient: "from-emerald-500 to-teal-600" },
-  procedure: { icon: Sparkles, color: "text-amber-600", gradient: "from-amber-500 to-orange-600" },
-  care: { icon: Heart, color: "text-rose-600", gradient: "from-rose-500 to-pink-600" },
+// Type icon + color mapping — full static class strings.
+const TYPE_META: Record<string, { icon: any; gradient: string; bg: string; text: string }> = {
+  consultation: { icon: FileText, gradient: "from-blue-500 to-indigo-600", bg: "bg-blue-100", text: "text-blue-700" },
+  order_set:    { icon: GitBranch, gradient: "from-purple-500 to-violet-600", bg: "bg-purple-100", text: "text-purple-700" },
+  lab:          { icon: Stethoscope, gradient: "from-cyan-500 to-blue-600", bg: "bg-cyan-100", text: "text-cyan-700" },
+  imaging:      { icon: Eye, gradient: "from-violet-500 to-purple-600", bg: "bg-violet-100", text: "text-violet-700" },
+  medication:    { icon: Pill, gradient: "from-emerald-500 to-teal-600", bg: "bg-emerald-100", text: "text-emerald-700" },
+  procedure:     { icon: Sparkles, gradient: "from-amber-500 to-orange-600", bg: "bg-amber-100", text: "text-amber-700" },
+  care:          { icon: Heart, gradient: "from-rose-500 to-pink-600", bg: "bg-rose-100", text: "text-rose-700" },
 };
+
+// Common clinical template categories (selectable in the form)
+const TEMPLATE_CATEGORIES = [
+  "fever_workup",
+  "hypertension_followup",
+  "diabetes_followup",
+  "antenatal_review",
+  "chest_pain_evaluation",
+  "malaria_investigation",
+  "preoperative_assessment",
+  "postoperative_care",
+  "sepsis_protocol",
+  "asthma_exacerbation",
+  "copd_exacerbation",
+  "uti_workup",
+  "trauma_assessment",
+  "pediatric_assessment",
+  "geriatric_assessment",
+  "mental_health_screening",
+  "well_woman_check",
+  "well_man_check",
+  "std_screening",
+  "tb_screening",
+  "hiv_care",
+  "renal_function_panel",
+  "liver_function_panel",
+  "thyroid_panel",
+  "cardiac_panel",
+  "anaemia_workup",
+  "dehydration_management",
+  "pain_management",
+  "end_of_life_care",
+  "discharge_planning",
+  "general",
+  "other",
+];
+
+// Common specialties (selectable in the form)
+const TEMPLATE_SPECIALTIES = [
+  "general_medicine",
+  "general_surgery",
+  "paediatrics",
+  "obstetrics",
+  "gynaecology",
+  "internal_medicine",
+  "cardiology",
+  "dermatology",
+  "ent",
+  "ophthalmology",
+  "orthopaedics",
+  "psychiatry",
+  "neurology",
+  "urology",
+  "nephrology",
+  "endocrinology",
+  "gastroenterology",
+  "pulmonology",
+  "oncology",
+  "haematology",
+  "infectious_diseases",
+  "emergency_medicine",
+  "anaesthesia",
+  "radiology",
+  "pathology",
+  "family_medicine",
+  "community_health",
+  "nursing",
+  "pharmacy",
+  "other",
+];
 
 // ─── Main View ───────────────────────────────────────────────────────
 
@@ -571,22 +643,23 @@ function QuickTransitionDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Available transitions based on current status
-  const TRANSITIONS: Record<string, { status: string; label: string; icon: any; color: string; perm: string }[]> = {
+  // Available transitions based on current status — uses static icon+color
+  // (not dynamic construction) so Tailwind doesn't purge the classes.
+  const TRANSITIONS: Record<string, { status: string; label: string; icon: any; classes: string; perm: string }[]> = {
     draft: [
-      { status: "under_review", label: "Submit for Review", icon: Send, color: "amber", perm: "update" },
+      { status: "under_review", label: "Submit for Review", icon: Send, classes: "text-amber-600 border-amber-200 hover:bg-amber-50", perm: "update" },
     ],
     under_review: [
-      { status: "approved", label: "Approve", icon: CheckCircle2, color: "blue", perm: "approve" },
+      { status: "approved", label: "Approve", icon: CheckCircle2, classes: "text-blue-600 border-blue-200 hover:bg-blue-50", perm: "approve" },
     ],
     approved: [
-      { status: "active", label: "Activate", icon: ToggleRight, color: "emerald", perm: "activate" },
+      { status: "active", label: "Activate", icon: ToggleRight, classes: "text-emerald-600 border-emerald-200 hover:bg-emerald-50", perm: "activate" },
     ],
     active: [
-      { status: "inactive", label: "Deactivate", icon: ToggleLeft, color: "orange", perm: "activate" },
+      { status: "inactive", label: "Deactivate", icon: ToggleLeft, classes: "text-orange-600 border-orange-200 hover:bg-orange-50", perm: "activate" },
     ],
     inactive: [
-      { status: "active", label: "Reactivate", icon: ToggleRight, color: "emerald", perm: "activate" },
+      { status: "active", label: "Reactivate", icon: ToggleRight, classes: "text-emerald-600 border-emerald-200 hover:bg-emerald-50", perm: "activate" },
     ],
   };
 
@@ -619,11 +692,11 @@ function QuickTransitionDialog({
                 <Button
                   key={a.status}
                   variant="outline"
-                  className="w-full justify-start gap-2 h-10"
+                  className={`w-full justify-start gap-2 h-10 ${a.classes}`}
                   disabled={mut.isPending}
                   onClick={() => mut.mutate({ status: a.status })}
                 >
-                  <Icon className={`w-4 h-4 text-${a.color}-600`} />
+                  <Icon className="w-4 h-4" />
                   {a.label}
                 </Button>
               );
@@ -667,25 +740,29 @@ function TemplateFormDialog({
   const [category, setCategory] = useState(editItem?.category || "");
   const [specialty, setSpecialty] = useState(editItem?.specialty || "");
   const [scope, setScope] = useState<TemplateScope>(editItem?.scope || "organization");
-  const [content, setContent] = useState(editItem?.content || "");
+
+  // Visual content editor state (user-friendly — no JSON required)
+  // The editor builds the content object from individual fields per type.
+  const [contentState, setContentState] = useState<any>(() => {
+    if (editItem?.content && typeof editItem.content === "object") return editItem.content;
+    if (editItem?.content && typeof editItem.content === "string") {
+      try { return JSON.parse(editItem.content); } catch { return {}; }
+    }
+    return {};
+  });
+
   const [changeSummary, setChangeSummary] = useState("");
 
   const mut = useMutation({
     mutationFn: async () => {
-      let parsedContent: any = content;
-      if (typeof content === "string" && content.trim()) {
-        try {
-          parsedContent = JSON.parse(content);
-        } catch {
-          throw new Error("Content must be valid JSON");
-        }
-      }
+      // Build the content from the visual editor state
+      const content = contentState;
       const body: any = {
         name, description, templateType,
         category: category || undefined,
         specialty: specialty || undefined,
         scope,
-        content: parsedContent,
+        content,
         changeSummary: changeSummary || (isEdit ? "Updated content" : "Initial version"),
       };
       if (isEdit) {
@@ -771,44 +848,44 @@ function TemplateFormDialog({
             </div>
           </div>
 
-          {/* Category + Specialty row */}
+          {/* Category + Specialty row — now SELECTABLE dropdowns */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <FieldLabel htmlFor="category">Category (optional)</FieldLabel>
-              <Input
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g., fever_workup, antenatal, pre_op"
-              />
+              <FieldLabel htmlFor="category">Category</FieldLabel>
+              <Select value={category || "none"} onValueChange={(v) => setCategory(v === "none" ? "" : v)}>
+                <SelectTrigger id="category"><SelectValue placeholder="Select a category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {TEMPLATE_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c} className="capitalize">
+                      {c.replace(/_/g, " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <FieldLabel htmlFor="specialty">Specialty (optional)</FieldLabel>
-              <Input
-                id="specialty"
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                placeholder="e.g., general_medicine, cardiology, paediatrics"
-              />
+              <FieldLabel htmlFor="specialty">Specialty</FieldLabel>
+              <Select value={specialty || "none"} onValueChange={(v) => setSpecialty(v === "none" ? "" : v)}>
+                <SelectTrigger id="specialty"><SelectValue placeholder="Select a specialty" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {TEMPLATE_SPECIALTIES.map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">
+                      {s.replace(/_/g, " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Content (JSON) */}
-          <div className="space-y-1.5">
-            <FieldLabel htmlFor="content" required={!isEdit}>Content (JSON)</FieldLabel>
-            <Textarea
-              id="content"
-              value={typeof content === "string" ? content : JSON.stringify(content, null, 2)}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={`{\n  "labOrders": [\n    { "laboratoryTestId": "...", "priority": "routine" }\n  ],\n  "instructions": "..."\n}`}
-              rows={10}
-              className="font-mono text-xs"
-            />
-            <p className="text-xs text-slate-500">
-              The template content as a JSON object. See the template registry for the expected shape per type.
-              {isEdit && " Leave blank to keep the existing content."}
-            </p>
-          </div>
+          {/* Content editor — visual, user-friendly, no JSON required */}
+          <ContentEditor
+            templateType={templateType}
+            content={contentState}
+            onChange={setContentState}
+          />
 
           {/* Change summary (required when editing + changing content) */}
           {isEdit && (
@@ -840,6 +917,376 @@ function TemplateFormDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Content Editor — user-friendly visual editor (no JSON) ──────────
+//
+// Renders different fields based on the template type:
+//   - consultation: text fields (chief complaint, HPI, PE, assessment, plan, etc.)
+//   - order_set / lab / imaging / medication / procedure: list-based order
+//     editors (add/remove rows, each row has type-specific fields)
+//   - care: care plan fields (goals, nursing tasks, vitals monitoring, etc.)
+// ────────────────────────────────────────────────────────────────────
+
+function ContentEditor({
+  templateType, content, onChange,
+}: {
+  templateType: TemplateType;
+  content: any;
+  onChange: (newContent: any) => void;
+}) {
+  // Helper to update a single field
+  const update = (field: string, value: any) => {
+    onChange({ ...content, [field]: value });
+  };
+
+  // ─── Consultation Template ─────────────────────────────────────────
+  if (templateType === "consultation") {
+    const fields: { key: string; label: string; placeholder?: string; rows?: number }[] = [
+      { key: "chiefComplaint", label: "Chief Complaint", placeholder: "e.g., Fever for 3 days" },
+      { key: "historyPresentingIllness", label: "History of Presenting Illness (HPI)", placeholder: "Detailed history of the current complaint...", rows: 3 },
+      { key: "pastMedicalHistory", label: "Past Medical History", placeholder: "Relevant past medical conditions...", rows: 2 },
+      { key: "pastSurgicalHistory", label: "Past Surgical History", placeholder: "Previous surgeries...", rows: 2 },
+      { key: "familyHistory", label: "Family History", placeholder: "Relevant family history...", rows: 2 },
+      { key: "socialHistory", label: "Social History", placeholder: "Smoking, alcohol, occupation...", rows: 2 },
+      { key: "reviewOfSystems", label: "Review of Systems", placeholder: "ROS findings...", rows: 3 },
+      { key: "physicalExamination", label: "Physical Examination", placeholder: "PE findings...", rows: 3 },
+      { key: "assessment", label: "Assessment", placeholder: "Clinical assessment / impression...", rows: 3 },
+      { key: "treatmentPlan", label: "Treatment Plan", placeholder: "Plan of management...", rows: 3 },
+      { key: "followUpPlan", label: "Follow-up Plan", placeholder: "Follow-up instructions...", rows: 2 },
+      { key: "disposition", label: "Disposition", placeholder: "e.g., home, admission, referral" },
+      { key: "patientInstructions", label: "Patient Instructions", placeholder: "Instructions for the patient...", rows: 3 },
+    ];
+    return (
+      <div className="space-y-3 p-4 rounded-lg border border-slate-200 bg-slate-50/30">
+        <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <FileText className="w-4 h-4 text-blue-600" /> Consultation Content
+        </p>
+        <p className="text-xs text-slate-500">These fields will pre-fill the consultation form when the template is applied. Leave blank any field you don&apos;t want to pre-fill.</p>
+        <div className="space-y-3">
+          {fields.map((f) => (
+            <div key={f.key} className="space-y-1">
+              <Label className="text-xs font-medium text-slate-600">{f.label}</Label>
+              {f.rows ? (
+                <Textarea
+                  value={content[f.key] || ""}
+                  onChange={(e) => update(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                  rows={f.rows}
+                />
+              ) : (
+                <Input
+                  value={content[f.key] || ""}
+                  onChange={(e) => update(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Order Set / Lab / Imaging / Medication / Procedure ────────────
+  if (["order_set", "lab", "imaging", "medication", "procedure"].includes(templateType)) {
+    return (
+      <div className="space-y-4 p-4 rounded-lg border border-slate-200 bg-slate-50/30">
+        <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <GitBranch className="w-4 h-4 text-purple-600" /> Order Set Content
+        </p>
+        <p className="text-xs text-slate-500">Add the orders that this template will create. Each row becomes an order when the template is applied.</p>
+
+        {/* Lab Orders — show for order_set, lab, medication (medication-only won't have lab, but order_set does) */}
+        {(templateType === "order_set" || templateType === "lab") && (
+          <OrderListEditor
+            title="Lab Orders"
+            icon={FlaskConical}
+            iconColor="text-cyan-600"
+            items={content.labOrders || []}
+            onChange={(items) => update("labOrders", items)}
+            fields={[
+              { key: "laboratoryTestId", label: "Lab Test ID", placeholder: "e.g., test_cbc", required: true },
+              { key: "priority", label: "Priority", placeholder: "routine / urgent / stat", type: "select", options: ["routine", "urgent", "stat"] },
+              { key: "clinicalNote", label: "Clinical Note", placeholder: "e.g., Fasting sample" },
+            ]}
+          />
+        )}
+
+        {/* Imaging Orders — show for order_set, imaging */}
+        {(templateType === "order_set" || templateType === "imaging") && (
+          <OrderListEditor
+            title="Imaging Orders"
+            icon={ScanLine}
+            iconColor="text-violet-600"
+            items={content.imagingOrders || []}
+            onChange={(items) => update("imagingOrders", items)}
+            fields={[
+              { key: "procedureCatalogId", label: "Imaging Procedure ID", placeholder: "e.g., proc_xray_chest", required: true },
+              { key: "priority", label: "Priority", placeholder: "routine / urgent / stat", type: "select", options: ["routine", "urgent", "stat"] },
+              { key: "clinicalNote", label: "Clinical Note", placeholder: "e.g., Suspected pneumonia" },
+            ]}
+          />
+        )}
+
+        {/* Prescriptions — show for order_set, medication */}
+        {(templateType === "order_set" || templateType === "medication") && (
+          <OrderListEditor
+            title="Prescriptions"
+            icon={Pill}
+            iconColor="text-emerald-600"
+            items={content.prescriptions || []}
+            onChange={(items) => update("prescriptions", items)}
+            fields={[
+              { key: "medicationId", label: "Medication ID", placeholder: "e.g., med_amoxicillin", required: true },
+              { key: "dosage", label: "Dosage", placeholder: "e.g., 500mg", required: true },
+              { key: "frequency", label: "Frequency", placeholder: "e.g., TDS (3x daily)", required: true },
+              { key: "route", label: "Route", placeholder: "PO / IM / IV", type: "select", options: ["PO", "IM", "IV", "SC", "PR", "SL", "TOP"] },
+              { key: "duration", label: "Duration", placeholder: "e.g., 7 days" },
+              { key: "quantity", label: "Quantity", placeholder: "e.g., 21", type: "number" },
+              { key: "instructions", label: "Instructions", placeholder: "e.g., Take with food" },
+            ]}
+          />
+        )}
+
+        {/* Procedures — show for order_set, procedure */}
+        {(templateType === "order_set" || templateType === "procedure") && (
+          <OrderListEditor
+            title="Procedures"
+            icon={Sparkles}
+            iconColor="text-amber-600"
+            items={content.procedures || []}
+            onChange={(items) => update("procedures", items)}
+            fields={[
+              { key: "procedureCatalogId", label: "Procedure ID", placeholder: "e.g., proc_wound_dressing", required: true },
+              { key: "priority", label: "Priority", placeholder: "routine / urgent / stat", type: "select", options: ["routine", "urgent", "stat"] },
+              { key: "clinicalNote", label: "Clinical Note", placeholder: "e.g., Sterile technique" },
+            ]}
+          />
+        )}
+
+        {/* Services — show for order_set only */}
+        {templateType === "order_set" && (
+          <OrderListEditor
+            title="Billable Services"
+            icon={Activity}
+            iconColor="text-blue-600"
+            items={content.services || []}
+            onChange={(items) => update("services", items)}
+            fields={[
+              { key: "serviceId", label: "Service ID", placeholder: "e.g., svc_consultation", required: true },
+              { key: "quantity", label: "Quantity", placeholder: "1", type: "number" },
+            ]}
+          />
+        )}
+
+        {/* Instructions — shared by all order-set types */}
+        <div className="space-y-1.5">
+          <FieldLabel htmlFor="instructions">Patient Instructions</FieldLabel>
+          <Textarea
+            id="instructions"
+            value={content.instructions || ""}
+            onChange={(e) => update("instructions", e.target.value)}
+            placeholder="e.g., Collect samples before antibiotic administration. Patient should fast for 8 hours before blood draw."
+            rows={3}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Care Template ─────────────────────────────────────────────────
+  if (templateType === "care") {
+    return (
+      <div className="space-y-4 p-4 rounded-lg border border-slate-200 bg-slate-50/30">
+        <p className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Heart className="w-4 h-4 text-rose-600" /> Care Plan Content
+        </p>
+
+        <div className="space-y-1.5">
+          <FieldLabel htmlFor="carePlanGoals">Care Plan Goals</FieldLabel>
+          <Textarea
+            id="carePlanGoals"
+            value={content.carePlanGoals || ""}
+            onChange={(e) => update("carePlanGoals", e.target.value)}
+            placeholder="e.g., Maintain hydration, monitor vitals q4h, prevent pressure ulcers"
+            rows={3}
+          />
+        </div>
+
+        <OrderListEditor
+          title="Nursing Tasks"
+          icon={ClipboardList}
+          iconColor="text-rose-600"
+          items={content.nursingTasks || []}
+          onChange={(items) => update("nursingTasks", items)}
+          fields={[
+            { key: "description", label: "Task", placeholder: "e.g., Turn patient every 2 hours", required: true },
+            { key: "frequency", label: "Frequency", placeholder: "e.g., q2h, daily, PRN" },
+          ]}
+        />
+
+        <OrderListEditor
+          title="Vitals Monitoring"
+          icon={Activity}
+          iconColor="text-emerald-600"
+          items={content.vitalsMonitoring || []}
+          onChange={(items) => update("vitalsMonitoring", items)}
+          fields={[
+            { key: "vitalType", label: "Vital Type", placeholder: "e.g., BP, Temp, HR", required: true },
+            { key: "frequency", label: "Frequency", placeholder: "e.g., q4h, daily", required: true },
+          ]}
+        />
+
+        <div className="space-y-1.5">
+          <FieldLabel htmlFor="patientEducation">Patient Education</FieldLabel>
+          <Textarea
+            id="patientEducation"
+            value={content.patientEducation || ""}
+            onChange={(e) => update("patientEducation", e.target.value)}
+            placeholder="Education topics to cover with the patient/family..."
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <FieldLabel htmlFor="dischargeCriteria">Discharge Criteria</FieldLabel>
+          <Textarea
+            id="dischargeCriteria"
+            value={content.dischargeCriteria || ""}
+            onChange={(e) => update("dischargeCriteria", e.target.value)}
+            placeholder="Criteria that must be met before discharge..."
+            rows={2}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── Order List Editor — add/remove rows for order items ──────────────
+//
+// A reusable component for editing a list of items (lab orders,
+// prescriptions, nursing tasks, etc.). Each row has the fields defined
+// by the `fields` prop. The user can add/remove rows with the +/X buttons.
+// ────────────────────────────────────────────────────────────────────
+
+interface EditorField {
+  key: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  type?: "text" | "number" | "select";
+  options?: string[];
+}
+
+function OrderListEditor({
+  title, icon: Icon, iconColor, items, onChange, fields,
+}: {
+  title: string;
+  icon: any;
+  iconColor: string;
+  items: any[];
+  onChange: (items: any[]) => void;
+  fields: EditorField[];
+}) {
+  const addItem = () => {
+    const newItem: any = {};
+    fields.forEach((f) => { newItem[f.key] = ""; });
+    onChange([...items, newItem]);
+  };
+
+  const removeItem = (index: number) => {
+    onChange(items.filter((_, i) => i !== index));
+  };
+
+  const updateItem = (index: number, key: string, value: any) => {
+    const updated = items.map((item, i) =>
+      i === index ? { ...item, [key]: value } : item
+    );
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+          <Icon className={`w-4 h-4 ${iconColor}`} />
+          {title}
+          {items.length > 0 && (
+            <Badge variant="secondary" className="text-[10px] ml-1">{items.length}</Badge>
+          )}
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={addItem}
+          className="h-7 gap-1 text-xs"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add
+        </Button>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-xs text-slate-400 italic py-2 text-center">
+          No {title.toLowerCase()} added yet. Click &quot;Add&quot; to create one.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-slate-200 bg-white p-3 space-y-2 relative"
+            >
+              <button
+                type="button"
+                onClick={() => removeItem(index)}
+                className="absolute top-2 right-2 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                title="Remove this item"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
+                {fields.map((f) => (
+                  <div key={f.key} className="space-y-0.5">
+                    <Label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+                      {f.label}{f.required && <span className="text-rose-500"> *</span>}
+                    </Label>
+                    {f.type === "select" ? (
+                      <Select
+                        value={item[f.key] || ""}
+                        onValueChange={(v) => updateItem(index, f.key, v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder={f.placeholder || "Select..."} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {f.options?.map((opt) => (
+                            <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        type={f.type === "number" ? "number" : "text"}
+                        value={item[f.key] || ""}
+                        onChange={(e) => updateItem(index, f.key, e.target.value)}
+                        placeholder={f.placeholder}
+                        className="h-8 text-xs"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
