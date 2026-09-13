@@ -257,34 +257,72 @@ export function DashboardCustomizer({
   const handleAddWidget = (widgetId: string) => {
     const widget = WIDGET_BY_ID[widgetId];
     if (!widget) return;
-    // Add to the end of the layout, auto-flowing coordinates.
-    // Find the y-position right after the last row's tallest widget.
+
+    const w = widget.defaultSize.w;
+    const h = widget.defaultSize.h;
+
     if (layout.length === 0) {
       setLayout([
-        {
-          widgetId,
-          x: 0,
-          y: 0,
-          w: widget.defaultSize.w,
-          h: widget.defaultSize.h,
-          config: {},
-        },
+        { widgetId, x: 0, y: 0, w, h, config: {} },
       ]);
       return;
     }
-    // Find the maximum y+h across all placed widgets — that's the next
-    // available row.
+
+    // ── First-fit packing ───────────────────────────────────────────
+    // Find the FIRST empty grid slot (top-to-bottom, left-to-right) that
+    // can fit the new widget (w x h). This avoids the previous bug where
+    // new widgets were always appended at the bottom (y = maxY) — even
+    // when there was empty space earlier in the grid (e.g., after a
+    // partial KPI row).
+    //
+    // Algorithm: scan rows from y=0 upward. For each row, try every
+    // column x=0..(12-w). A slot (x, y) is "free" if none of the cells
+    // (x..x+w-1, y..y+h-1) are occupied by an existing widget.
+    //
+    // We cap the scan at maxY + 2 so we don't loop forever if the grid
+    // is mostly full (in which case we just append below the last row).
+    // ─────────────────────────────────────────────────────────────────
+    const occupied = new Set<string>();
+    for (const p of layout) {
+      for (let dy = 0; dy < p.h; dy++) {
+        for (let dx = 0; dx < p.w; dx++) {
+          occupied.add(`${p.x + dx},${p.y + dy}`);
+        }
+      }
+    }
     const maxY = layout.reduce((max, p) => Math.max(max, p.y + p.h), 0);
+    const scanLimit = maxY + 3; // scan up to 3 rows past the current bottom
+
+    let placedX = -1;
+    let placedY = -1;
+    for (let y = 0; y <= scanLimit && placedX < 0; y++) {
+      for (let x = 0; x + w <= 12; x++) {
+        // Check if all cells (x..x+w-1, y..y+h-1) are free
+        let free = true;
+        for (let dy = 0; dy < h && free; dy++) {
+          for (let dx = 0; dx < w && free; dx++) {
+            if (occupied.has(`${x + dx},${y + dy}`)) {
+              free = false;
+            }
+          }
+        }
+        if (free) {
+          placedX = x;
+          placedY = y;
+          break;
+        }
+      }
+    }
+
+    // If no slot found in the scan range, append below the last row
+    if (placedX < 0) {
+      placedX = 0;
+      placedY = maxY;
+    }
+
     setLayout([
       ...layout,
-      {
-        widgetId,
-        x: 0,
-        y: maxY,
-        w: widget.defaultSize.w,
-        h: widget.defaultSize.h,
-        config: {},
-      },
+      { widgetId, x: placedX, y: placedY, w, h, config: {} },
     ]);
   };
 
