@@ -495,6 +495,7 @@ function NewConsultationDialog({
   const [patientQuery, setPatientQuery] = useState("");
   const [patientId, setPatientId] = useState(defaultPatientId || "");
   const [encounterId, setEncounterId] = useState(defaultEncounterId || "");
+  const [showApplyTemplate, setShowApplyTemplate] = useState(false);
   const [form, setForm] = useState({
     chiefComplaint: "", historyPresentingIllness: "", pastMedicalHistory: "",
     pastSurgicalHistory: "", medicationHistory: "", familyHistory: "",
@@ -893,6 +894,12 @@ function NewConsultationDialog({
                 title="Save draft + navigate to Prescription with patient/encounter/prescriber pre-filled">
                 <Pill className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Prescription"}</span>
               </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-purple-600 hover:bg-purple-50"
+                disabled={autoSaving || saving}
+                onClick={() => setShowApplyTemplate(true)}
+                title="Apply Clinical Template / Order Set — saves draft first">
+                <Stethoscope className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Template"}</span>
+              </Button>
             </div>
           )}
         </div>
@@ -908,6 +915,17 @@ function NewConsultationDialog({
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Apply Template Dialog — Phase 8 (also available in new consultations) */}
+      {showApplyTemplate && patientId && encounterId && (
+        <ApplyTemplateDialog
+          open={showApplyTemplate}
+          onOpenChange={setShowApplyTemplate}
+          encounterId={encounterId}
+          patientId={patientId}
+          onApplied={() => onCreated()}
+        />
+      )}
     </Dialog>
   );
 }
