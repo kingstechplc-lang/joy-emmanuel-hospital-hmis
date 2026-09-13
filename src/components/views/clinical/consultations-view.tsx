@@ -15,7 +15,7 @@ import {
   Plus, ClipboardList, PenSquare, Save, Check, X, Lock, Share2, Eye,
   Clock, StickyNote, LayoutDashboard, ListChecks, Pill, FlaskConical,
   Image as ImageIcon, BedDouble, CalendarClock, RotateCw, Activity,
-  AlertTriangle,
+  AlertTriangle, Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -24,6 +24,7 @@ import {
 import { SpecialtyReferralButton } from "@/components/ui/specialty-referral-button";
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 import { FieldLabel } from "@/components/ui/required-label";
+import { ApplyTemplateDialog } from "@/components/clinical/apply-template-dialog";
 
 // =====================================================================
 // CLINICAL FIELDS — the set of fields that can be "dirty" (changed by
@@ -942,6 +943,8 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
   const [showAddendum, setShowAddendum] = useState(false);
   const [addendumText, setAddendumText] = useState("");
   const [addingAddendum, setAddingAddendum] = useState(false);
+  const [showApplyTemplate, setShowApplyTemplate] = useState(false);
+  const canApplyTemplate = user?.roles?.includes("super_admin") || perms.includes("clinical_template.apply");
   // Auto-save state: when a Quick Action triggers an auto-save before
   // navigation, we track it here so the buttons show "Saving..." and rapid
   // double-clicks don't fire duplicate saves.  The ref is the source of
@@ -1255,6 +1258,13 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
                   <Activity className="w-3.5 h-3.5" /> <span className="text-xs">Procedure</span>
                 </Button>
               )}
+              {canApplyTemplate && c.patientId && c.encounterId && (
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-purple-600 hover:bg-purple-50"
+                  disabled={autoSaving || saving || signing}
+                  onClick={() => setShowApplyTemplate(true)} title="Apply Clinical Template / Order Set">
+                  <Stethoscope className="w-3.5 h-3.5" /> <span className="text-xs">{autoSaving ? "Saving..." : "Template"}</span>
+                </Button>
+              )}
             </div>
 
             {/* Consultation duration display */}
@@ -1433,6 +1443,17 @@ function ViewConsultationDialog({ consultation: c, onClose, onChanged }: { consu
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Apply Template Dialog — Phase 8 */}
+      {showApplyTemplate && c.patientId && c.encounterId && (
+        <ApplyTemplateDialog
+          open={showApplyTemplate}
+          onOpenChange={setShowApplyTemplate}
+          encounterId={c.encounterId}
+          patientId={c.patientId}
+          onApplied={() => onChanged()}
+        />
+      )}
     </>
   );
 }
