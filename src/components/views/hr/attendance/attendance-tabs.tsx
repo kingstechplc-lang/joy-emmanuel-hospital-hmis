@@ -27,6 +27,7 @@ import {
 } from "./attendance-helpers";
 import { EmptyState, LoadingState, ErrorState, ClearableSearch, usePagination, Pagination } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // =====================================================================
 // TODAY TAB — Live check-in/out board
@@ -329,6 +330,7 @@ export function ExceptionsTab() {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
   const [status, setStatus] = useState("all");
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
@@ -410,9 +412,13 @@ export function ExceptionsTab() {
                         Escalate
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => {
-                        if (confirm("Ignore this exception? A reason is recommended.")) {
-                          resolveMutation.mutate({ id: e.id, action: "ignore", note: "Ignored by supervisor" });
-                        }
+                        confirmAction({
+                          title: "Ignore this exception?",
+                          description: "A reason is recommended for ignored exceptions. The exception will be marked as ignored and will no longer appear in active exception lists.",
+                          confirmText: "Yes, ignore",
+                          variant: "info",
+                          onConfirm: () => resolveMutation.mutate({ id: e.id, action: "ignore", note: "Ignored by supervisor" }),
+                        });
                       }} className="h-7 text-xs text-slate-500">
                         Ignore
                       </Button>
@@ -424,6 +430,7 @@ export function ExceptionsTab() {
           ))}
         </div>
       )}
+      {confirmDialogEl}
     </div>
   );
 }
@@ -655,6 +662,7 @@ export function PeriodsTab() {
   const { can } = usePermissions();
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["attendance-periods"],
@@ -731,9 +739,13 @@ export function PeriodsTab() {
                 <div className="flex gap-1 mt-2">
                   {can(["shift.manage", "attendance_period.lock"]) && p.status !== "locked" && (
                     <Button size="sm" onClick={() => {
-                      if (confirm(`Lock period "${p.name}"? This will lock all attendance records in the date range.`)) {
-                        lockMutation.mutate(p.id);
-                      }
+                      confirmAction({
+                        title: `Lock period "${p.name}"?`,
+                        description: "This will lock all attendance records in the date range. Once locked, records cannot be modified until the period is unlocked.",
+                        confirmText: "Yes, lock",
+                        variant: "warning",
+                        onConfirm: () => lockMutation.mutate(p.id),
+                      });
                     }} className="bg-slate-600 hover:bg-slate-700">
                       <Lock className="w-3 h-3 mr-1" /> Lock
                     </Button>
@@ -754,6 +766,7 @@ export function PeriodsTab() {
       )}
 
       {showNew && <NewPeriodDialog onClose={() => setShowNew(false)} />}
+      {confirmDialogEl}
     </div>
   );
 }
@@ -829,6 +842,7 @@ export function SettingsTab() {
   const { can } = usePermissions();
   const qc = useQueryClient();
   const [showNewPolicy, setShowNewPolicy] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const { data, isLoading } = useQuery({
     queryKey: ["attendance-policies"],
@@ -863,7 +877,15 @@ export function SettingsTab() {
                 <div key={p.id} className="p-3 bg-slate-50 rounded text-sm">
                   <div className="flex items-center justify-between">
                     <div className="font-medium">{p.name}</div>
-                    {can(["attendance_policy.manage", "shift.manage"]) && <Button size="sm" variant="ghost" onClick={() => { if (confirm("Deactivate this policy?")) deletePolicy.mutate(p.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
+                    {can(["attendance_policy.manage", "shift.manage"]) && <Button size="sm" variant="ghost" onClick={() => {
+                      confirmAction({
+                        title: "Deactivate this policy?",
+                        description: "This attendance policy will be deactivated. Historical records that used this policy will be retained. You can create a new policy later if needed.",
+                        confirmText: "Yes, deactivate",
+                        variant: "warning",
+                        onConfirm: () => deletePolicy.mutate(p.id),
+                      });
+                    }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
                   </div>
                   <div className="text-xs text-slate-500 mt-1">{p.facility?.name || "All facilities"} • {p.department?.name || "All departments"}</div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mt-2">
@@ -901,6 +923,7 @@ export function SettingsTab() {
         </CardContent>
       </Card>
       {showNewPolicy && <NewAttendancePolicyDialog onClose={() => setShowNewPolicy(false)} />}
+      {confirmDialogEl}
     </div>
   );
 }

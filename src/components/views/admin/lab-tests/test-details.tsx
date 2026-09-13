@@ -29,6 +29,7 @@ import {
 import { formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers"
 import { FieldLabel } from "@/components/ui/required-label";
 import { MasterCombobox } from "./master-combobox";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function TestDetailsDialog({ testId, onClose }: { testId: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -396,6 +397,7 @@ function SpecimenTab({ testId, items, onChanged }: { testId: string; items: any[
     timingRequired: "", specialPreparation: "", collectionNotes: "",
   });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     if (!form.specimenType) { toast.error("Specimen type is required"); return; }
@@ -414,12 +416,20 @@ function SpecimenTab({ testId, items, onChanged }: { testId: string; items: any[
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   const remove = async (id: string) => {
-    if (!confirm("Remove this specimen configuration?")) return;
-    const res = await fetch(`/api/lab-tests/${testId}/specimens?specimenId=${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Remove this specimen configuration?",
+      description: "This specimen configuration will be permanently removed from the test. Historical results referencing this specimen configuration will be retained.",
+      confirmText: "Yes, remove",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/lab-tests/${testId}/specimens?specimenId=${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -512,7 +522,8 @@ function SpecimenTab({ testId, items, onChanged }: { testId: string; items: any[
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================
@@ -523,6 +534,7 @@ function ComponentsTab({ testId, items, panelMembers, onChanged }: { testId: str
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>({ componentName: "", componentCode: "", resultType: "numeric", unit: "", referenceRange: "", criticalLow: "", criticalHigh: "", decimalPrecision: "", displayOrder: 0 });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const [memberSearch, setMemberSearch] = useState("");
   const [memberResults, setMemberResults] = useState<any[]>([]);
@@ -551,9 +563,16 @@ function ComponentsTab({ testId, items, panelMembers, onChanged }: { testId: str
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   const removeComponent = async (id: string) => {
-    if (!confirm("Remove this component?")) return;
-    const res = await fetch(`/api/lab-tests/${testId}/components?componentId=${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Remove this component?",
+      description: "This inline component definition will be permanently removed. Historical results that include this component will be retained.",
+      confirmText: "Yes, remove",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/lab-tests/${testId}/components?componentId=${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
   const removeMember = async (componentTestId: string) => {
     const res = await fetch(`/api/lab-tests/${testId}/panel-members?componentTestId=${componentTestId}`, { method: "DELETE" });
@@ -693,6 +712,7 @@ function ComponentsTab({ testId, items, panelMembers, onChanged }: { testId: str
           )}
         </CardContent>
       </Card>
+      {confirmDialogEl}
     </div>
   );
 }
@@ -709,6 +729,7 @@ function ReferenceRangesTab({ testId, items, onChanged }: { testId: string; item
     criticalLowText: "", criticalHighText: "", notes: "", supersede: true,
   });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     setSaving(true);
@@ -730,12 +751,20 @@ function ReferenceRangesTab({ testId, items, onChanged }: { testId: string; item
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   const retire = async (id: string) => {
-    if (!confirm("Retire this reference range? Historical results will retain their applicable configuration.")) return;
-    const res = await fetch(`/api/lab-tests/${testId}/reference-ranges?rangeId=${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Retired"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Retire this reference range?",
+      description: "The range will be retired. Historical results will retain their applicable configuration.",
+      confirmText: "Yes, retire",
+      variant: "warning",
+      onConfirm: async () => {
+        const res = await fetch(`/api/lab-tests/${testId}/reference-ranges?rangeId=${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Retired"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -826,7 +855,8 @@ function ReferenceRangesTab({ testId, items, onChanged }: { testId: string; item
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================
@@ -840,6 +870,7 @@ function CriticalValuesTab({ testId, items, onChanged }: { testId: string; items
     notificationBehavior: "notify_clinician", notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     setSaving(true);
@@ -863,12 +894,20 @@ function CriticalValuesTab({ testId, items, onChanged }: { testId: string; items
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   const retire = async (id: string) => {
-    if (!confirm("Retire this critical value threshold?")) return;
-    const res = await fetch(`/api/lab-tests/${testId}/critical-values?criticalId=${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Retired"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Retire this critical value threshold?",
+      description: "The threshold will be retired. Historical results that triggered this critical value will retain their records.",
+      confirmText: "Yes, retire",
+      variant: "warning",
+      onConfirm: async () => {
+        const res = await fetch(`/api/lab-tests/${testId}/critical-values?criticalId=${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Retired"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -953,7 +992,8 @@ function CriticalValuesTab({ testId, items, onChanged }: { testId: string; items
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================
@@ -963,6 +1003,7 @@ function ResultOptionsTab({ testId, items, onChanged }: { testId: string; items:
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>({ optionValue: "", optionLabel: "", isCritical: false, displayOrder: 0 });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     if (!form.optionValue) { toast.error("Option value is required"); return; }
@@ -981,12 +1022,20 @@ function ResultOptionsTab({ testId, items, onChanged }: { testId: string; items:
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   const remove = async (id: string) => {
-    if (!confirm("Remove this result option?")) return;
-    const res = await fetch(`/api/lab-tests/${testId}/result-options?optionId=${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Remove this result option?",
+      description: "This result option will be permanently removed. Historical results that used this option will be retained.",
+      confirmText: "Yes, remove",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/lab-tests/${testId}/result-options?optionId=${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -1022,7 +1071,8 @@ function ResultOptionsTab({ testId, items, onChanged }: { testId: string; items:
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================
@@ -1032,6 +1082,7 @@ function FacilityAvailabilityTab({ testId, items, onChanged }: { testId: string;
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>({ facilityId: "", availability: "available", performingDepartmentId: "", facilityTatMinutes: "", facilityReferralLab: "", facilityNotes: "" });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     if (!form.facilityId) { toast.error("Facility ID is required"); return; }
@@ -1050,12 +1101,20 @@ function FacilityAvailabilityTab({ testId, items, onChanged }: { testId: string;
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
   const remove = async (facilityId: string) => {
-    if (!confirm("Remove this facility override?")) return;
-    const res = await fetch(`/api/lab-tests/${testId}/facility-availability?facilityId=${facilityId}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Remove this facility override?",
+      description: "This facility availability override will be permanently removed. The test will revert to being available organization-wide by default for this facility.",
+      confirmText: "Yes, remove",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/lab-tests/${testId}/facility-availability?facilityId=${facilityId}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -1109,7 +1168,8 @@ function FacilityAvailabilityTab({ testId, items, onChanged }: { testId: string;
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================

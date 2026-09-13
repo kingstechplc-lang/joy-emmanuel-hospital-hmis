@@ -28,6 +28,7 @@ import {
 import { EmptyState, LoadingState, ErrorState, ClearableSearch, MiniStatCard } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
 import { StaffSearchableSelect } from "@/components/ui/staff-searchable-select";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // =====================================================================
 // SHIFT SWAPS TAB
@@ -1517,6 +1518,7 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const year = String(new Date().getFullYear());
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const { data, isLoading } = useQuery({
     queryKey: ["holidays-settings", year],
     queryFn: () => fetchJson(`/api/holidays?year=${year}`),
@@ -1537,6 +1539,7 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
   });
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Public Holidays ({year}) — {items.length}</CardTitle>
@@ -1557,7 +1560,15 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
                   <Badge variant="outline" className="text-xs capitalize">{h.type}</Badge>
                   {h.isRecurring && <Badge variant="outline" className="text-xs">Annual</Badge>}
                   {canManage && (
-                    <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Delete holiday "${h.name}"?`)) deleteHoliday.mutate(h.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50">
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      confirmAction({
+                        title: `Delete holiday "${h.name}"?`,
+                        description: "This holiday will be permanently removed. Existing leave requests and historical records that reference this holiday will be retained.",
+                        confirmText: "Yes, delete",
+                        variant: "destructive",
+                        onConfirm: () => deleteHoliday.mutate(h.id),
+                      });
+                    }} className="h-6 text-xs text-rose-600 hover:bg-rose-50">
                       <Ban className="w-3 h-3" />
                     </Button>
                   )}
@@ -1570,7 +1581,8 @@ function HolidaysSettings({ canManage }: { canManage: boolean }) {
       </CardContent>
       {showNew && <NewHolidayDialog onClose={() => setShowNew(false)} />}
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 function NewHolidayDialog({ onClose }: { onClose: () => void }) {
@@ -1652,6 +1664,7 @@ function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const { data, isLoading } = useQuery({
     queryKey: ["staffing-req-settings", activeFacilityId],
     queryFn: () => fetchJson(`/api/staffing-requirements${activeFacilityId ? `?facilityId=${activeFacilityId}` : ""}`),
@@ -1670,6 +1683,7 @@ function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
   });
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Staffing Requirements ({items.length})</CardTitle>
@@ -1692,7 +1706,15 @@ function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
                   <Badge variant="outline">{r.profession || "Any"}</Badge>
                   <Badge variant="outline">Min: {r.minCount}</Badge>
                   {r.idealCount && <Badge variant="outline">Ideal: {r.idealCount}</Badge>}
-                  {canManage && <Button size="sm" variant="ghost" onClick={() => { if (confirm("Deactivate this requirement?")) deleteMutation.mutate(r.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
+                  {canManage && <Button size="sm" variant="ghost" onClick={() => {
+                    confirmAction({
+                      title: "Deactivate this requirement?",
+                      description: "This staffing requirement will be deactivated. Historical shortage alerts that referenced this requirement will be retained. You can create a new requirement later if needed.",
+                      confirmText: "Yes, deactivate",
+                      variant: "warning",
+                      onConfirm: () => deleteMutation.mutate(r.id),
+                    });
+                  }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
                 </div>
               </div>
             ))}
@@ -1701,7 +1723,8 @@ function StaffingRequirementsSettings({ canManage }: { canManage: boolean }) {
       </CardContent>
       {showNew && <NewStaffingReqDialog onClose={() => setShowNew(false)} />}
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
@@ -1800,6 +1823,7 @@ function NewStaffingReqDialog({ onClose }: { onClose: () => void }) {
 function LeavePoliciesSettings({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const { data, isLoading } = useQuery({
     queryKey: ["leave-policies-settings"],
     queryFn: () => fetchJson(`/api/leave-policies`),
@@ -1817,6 +1841,7 @@ function LeavePoliciesSettings({ canManage }: { canManage: boolean }) {
   });
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-sm">Leave Policies ({items.length})</CardTitle>
@@ -1831,7 +1856,15 @@ function LeavePoliciesSettings({ canManage }: { canManage: boolean }) {
               <div key={p.id} className="p-3 bg-slate-50 rounded text-sm">
                 <div className="flex items-center justify-between">
                   <div className="font-medium">{p.name}</div>
-                  {canManage && <Button size="sm" variant="ghost" onClick={() => { if (confirm("Deactivate this policy?")) deleteMutation.mutate(p.id); }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
+                  {canManage && <Button size="sm" variant="ghost" onClick={() => {
+                    confirmAction({
+                      title: "Deactivate this policy?",
+                      description: "This leave policy will be deactivated. Existing leave requests that referenced this policy will be retained. You can create a new policy later if needed.",
+                      confirmText: "Yes, deactivate",
+                      variant: "warning",
+                      onConfirm: () => deleteMutation.mutate(p.id),
+                    });
+                  }} className="h-6 text-xs text-rose-600 hover:bg-rose-50"><Ban className="w-3 h-3" /></Button>}
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {p.leaveType?.name} • {p.facility?.name || "All facilities"} • {p.department?.name || "All depts"}
@@ -1846,7 +1879,8 @@ function LeavePoliciesSettings({ canManage }: { canManage: boolean }) {
       </CardContent>
       {showNew && <NewLeavePolicyDialog onClose={() => setShowNew(false)} />}
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 function NewLeavePolicyDialog({ onClose }: { onClose: () => void }) {

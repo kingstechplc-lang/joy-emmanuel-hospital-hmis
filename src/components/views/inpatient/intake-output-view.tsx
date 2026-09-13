@@ -29,6 +29,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, ReferenceLine,
 } from "recharts";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // =====================================================================
 // Helpers
@@ -2652,6 +2653,7 @@ function AlertConfigPanel({ facilityId }: { facilityId: string | null }) {
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [editTarget, setEditTarget] = useState<any | null>(null);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["io-alert-configs", facilityId],
@@ -2673,13 +2675,20 @@ function AlertConfigPanel({ facilityId }: { facilityId: string | null }) {
   };
 
   const deleteConfig = async (cfg: any) => {
-    if (!confirm(`Deactivate alert config "${cfg.name}"?`)) return;
-    try {
-      const res = await fetch(`/api/intake-output/alert-configs?configId=${cfg.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Config deactivated");
-      qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] });
-    } catch (e: any) { toast.error(e.message); }
+    confirmAction({
+      title: `Deactivate alert config "${cfg.name}"?`,
+      description: "This alert config will be deactivated. Historical alerts raised by this config will be retained for audit. You can reactivate it later if needed.",
+      confirmText: "Yes, deactivate",
+      variant: "warning",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/intake-output/alert-configs?configId=${cfg.id}`, { method: "DELETE" });
+          if (!res.ok) throw new Error("Failed");
+          toast.success("Config deactivated");
+          qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] });
+        } catch (e: any) { toast.error(e.message); }
+      },
+    });
   };
 
   if (!facilityId) return <Card><CardContent className="p-6"><EmptyState title="Select a facility" icon={AlertCircle} /></CardContent></Card>;
@@ -2753,6 +2762,7 @@ function AlertConfigPanel({ facilityId }: { facilityId: string | null }) {
 
       {showNew && <AlertConfigDialog facilityId={facilityId} onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] }); }} />}
       {editTarget && <AlertConfigDialog facilityId={facilityId} existing={editTarget} onClose={() => setEditTarget(null)} onSaved={() => { setEditTarget(null); qc.invalidateQueries({ queryKey: ["io-alert-configs", facilityId] }); }} />}
+      {confirmDialogEl}
     </div>
   );
 }

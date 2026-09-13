@@ -19,6 +19,7 @@ import {
   EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, MiniStatCard, ClearableSearch } from "@/components/ui-helpers"
 import { DataTable } from "@/components/ui/data-table";
 import { FieldLabel } from "@/components/ui/required-label";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -105,6 +106,7 @@ function CatalogTab({ canManage, canImport }: { canManage: boolean; canImport: b
   const [activeFilter, setActiveFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const params = new URLSearchParams();
   if (search) params.set("q", search);
@@ -240,9 +242,17 @@ function CatalogTab({ canManage, canImport }: { canManage: boolean; canImport: b
                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => toggleActiveMut.mutate({ id: item.id, isActive: !item.isActive })} title={item.isActive ? "Deactivate" : "Activate"}>
                            {item.isActive ? <ToggleRight className="w-3.5 h-3.5 text-emerald-600" /> : <ToggleLeft className="w-3.5 h-3.5 text-slate-400" />}
                          </Button>
-                         <Button size="sm" variant="ghost" className="h-7 px-2 text-rose-600" onClick={() => { if (confirm(`Delete "${item.name}" (${item.code})?`)) deleteMut.mutate(item.id); }} title="Delete">
-                           <Trash2 className="w-3.5 h-3.5" />
-                         </Button>
+                         <Button size="sm" variant="ghost" className="h-7 px-2 text-rose-600" onClick={() => {
+                          confirmAction({
+                            title: `Delete "${item.name}" (${item.code})?`,
+                            description: "This will permanently remove the diagnosis from the catalog. Existing records that reference this diagnosis will be retained for historical accuracy.",
+                            confirmText: "Yes, delete",
+                            variant: "destructive",
+                            onConfirm: () => deleteMut.mutate(item.id),
+                          });
+                        }} title="Delete">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                        </>
                      )}
                    </div>,
@@ -263,6 +273,7 @@ function CatalogTab({ canManage, canImport }: { canManage: boolean; canImport: b
           onSaved={() => { setShowForm(false); setEditItem(null); qc.invalidateQueries({ queryKey: ["diagnosis-catalog"] }); }}
         />
       )}
+      {confirmDialogEl}
     </div>
   );
 }

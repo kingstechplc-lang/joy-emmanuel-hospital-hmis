@@ -26,6 +26,7 @@ import {
 } from "./shared";
 import { formatDate, safeJson } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function ProviderDetailsDialog({ providerId, onClose }: { providerId: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -355,6 +356,7 @@ function ContactsTab({ providerId, items, onChanged }: { providerId: string; ite
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>({ contactType: "general", name: "", position: "", phone: "", email: "", notes: "" });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     if (!form.name) { toast.error("Name is required"); return; }
@@ -374,12 +376,20 @@ function ContactsTab({ providerId, items, onChanged }: { providerId: string; ite
   };
 
   const remove = async (contactId: string) => {
-    if (!confirm("Remove this contact?")) return;
-    const res = await fetch(`/api/insurance-providers/${providerId}/contacts?contactId=${contactId}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Remove this contact?",
+      description: "This contact will be permanently removed from this insurance provider. Existing claims referencing this contact will be retained for historical accuracy.",
+      confirmText: "Yes, remove",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/insurance-providers/${providerId}/contacts?contactId=${contactId}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -432,7 +442,8 @@ function ContactsTab({ providerId, items, onChanged }: { providerId: string; ite
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================
@@ -442,6 +453,7 @@ function FacilitiesTab({ providerId, items, onChanged }: { providerId: string; i
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<any>({ facilityId: "", availability: "available", contractReference: "", effectiveDate: "", endDate: "", notes: "" });
   const [saving, setSaving] = useState(false);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const add = async () => {
     if (!form.facilityId) { toast.error("Facility ID is required"); return; }
@@ -461,12 +473,20 @@ function FacilitiesTab({ providerId, items, onChanged }: { providerId: string; i
   };
 
   const remove = async (facilityId: string) => {
-    if (!confirm("Remove this facility relationship?")) return;
-    const res = await fetch(`/api/insurance-providers/${providerId}/facilities?facilityId=${facilityId}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+    confirmAction({
+      title: "Remove this facility relationship?",
+      description: "This facility relationship will be permanently removed. The provider will revert to being available organization-wide by default for this facility.",
+      confirmText: "Yes, remove",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await fetch(`/api/insurance-providers/${providerId}/facilities?facilityId=${facilityId}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Removed"); onChanged(); } else { toast.error("Failed"); }
+      },
+    });
   };
 
   return (
+    <>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
@@ -516,7 +536,8 @@ function FacilitiesTab({ providerId, items, onChanged }: { providerId: string; i
         )}
       </CardContent>
     </Card>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================

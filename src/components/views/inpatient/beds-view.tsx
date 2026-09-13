@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BedDouble, RefreshCw, Sparkles, Wrench, Brush, LogOut, ArrowRightLeft, X, Activity, Search, Ban, Shield, History, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, formatRelative, calculateAge, safeJson, PageHeader, MiniStatCard} from "@/components/ui-helpers";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -669,6 +670,7 @@ function BedDashboard({ facilityId }: { facilityId: string | null }) {
 // ============================================================
 function ManageTab(props: any) {
   const { facilityId, canCreate, canEdit, canRetire, onShowWardDialog, onEditWard, onShowRoomDialog, onEditRoom, onShowBedDialog, onChanged } = props;
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
   const { data: wardsData, isLoading } = useQuery({
     queryKey: ["wards-manage", facilityId],
     queryFn: () => fetchJson(`/api/wards?facilityId=${facilityId || ""}`),
@@ -676,14 +678,28 @@ function ManageTab(props: any) {
   });
   const wards = wardsData?.items || [];
   const deleteWard = async (id: string) => {
-    if (!confirm("Deactivate this ward?")) return;
-    const res = await fetch(`/api/wards/${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Ward deactivated"); onChanged(); } else { const e = await safeJson(res); toast.error(e.error || "Failed"); }
+    confirmAction({
+      title: "Deactivate this ward?",
+      description: "This ward will be deactivated. Existing rooms, beds, and historical admissions under this ward will be retained. You can reactivate it later if needed.",
+      confirmText: "Yes, deactivate",
+      variant: "warning",
+      onConfirm: async () => {
+        const res = await fetch(`/api/wards/${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Ward deactivated"); onChanged(); } else { const e = await safeJson(res); toast.error(e.error || "Failed"); }
+      },
+    });
   };
   const deleteRoom = async (id: string) => {
-    if (!confirm("Deactivate this room?")) return;
-    const res = await fetch(`/api/rooms/${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Room deactivated"); onChanged(); } else { const e = await safeJson(res); toast.error(e.error || "Failed"); }
+    confirmAction({
+      title: "Deactivate this room?",
+      description: "This room will be deactivated. Existing beds and historical admissions under this room will be retained. You can reactivate it later if needed.",
+      confirmText: "Yes, deactivate",
+      variant: "warning",
+      onConfirm: async () => {
+        const res = await fetch(`/api/rooms/${id}`, { method: "DELETE" });
+        if (res.ok) { toast.success("Room deactivated"); onChanged(); } else { const e = await safeJson(res); toast.error(e.error || "Failed"); }
+      },
+    });
   };
   return (
     <div className="space-y-4">
@@ -761,6 +777,7 @@ function ManageTab(props: any) {
           <div className="text-xs text-slate-500 mt-2">Use the Bed Board tab to view all beds. Click any bed to edit or retire it.</div>
         </CardContent></Card>
       )}
+      {confirmDialogEl}
     </div>
   );
 }

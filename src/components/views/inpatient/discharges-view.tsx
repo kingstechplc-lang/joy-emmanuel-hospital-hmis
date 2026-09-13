@@ -26,6 +26,7 @@ import {
 import { PrintButton } from "@/components/print/print-layout";
 import { DischargeTemplate } from "@/components/print/templates/discharge-template";
 import { FieldLabel } from "@/components/ui/required-label";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -730,6 +731,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
   });
   const [detailTab, setDetailTab] = useState("overview");
   const d = data?.item;
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const lifecycle = async (action: string, extra: any = {}) => {
     try {
@@ -751,6 +753,7 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
   const ba = d.admission?.bedAssignments?.[0];
 
   return (
+    <>
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="h-[92vh] flex flex-col p-0 gap-0 overflow-hidden" size="2xl">
         <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
@@ -795,8 +798,13 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
             )}
             {canDischarge && (
               <Button size="sm" onClick={() => {
-                if (!confirm("Finalize this discharge? This will close the admission, release the bed (set to cleaning), and create the final discharge record. This cannot be undone.")) return;
-                lifecycle("finalize");
+                confirmAction({
+                  title: "Finalize this discharge?",
+                  description: "This will close the admission, release the bed (set to cleaning), and create the final discharge record. This cannot be undone.",
+                  confirmText: "Yes, finalize",
+                  variant: "warning",
+                  onConfirm: () => lifecycle("finalize"),
+                });
               }} className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 ml-auto h-8"><LogOut className="w-3.5 h-3.5" /> Finalize Discharge</Button>
             )}
           </div>
@@ -869,7 +877,8 @@ function DischargeDetailDialog({ dischargeId, onClose, onChanged, canEdit, canDi
         </div>
       </DialogContent>
     </Dialog>
-  );
+    {confirmDialogEl}
+  </>);
 }
 
 // =====================================================================

@@ -1725,15 +1725,21 @@ function ReferralDetailDialog({
                           color="rose"
                           loading={actionLoading}
                           onClick={() => {
-                            if (window.confirm("Permanently delete this draft referral? This cannot be undone.")) {
-                              fetch(`/api/referrals/${referralId}`, { method: "DELETE" })
-                                .then(() => {
-                                  toast.success("Draft deleted");
-                                  onClose();
-                                  onUpdated();
-                                })
-                                .catch((e) => toast.error(e.message));
-                            }
+                            confirmAction({
+                              title: "Permanently delete this draft referral?",
+                              description: "This action cannot be undone. The draft referral and all its contents will be permanently removed.",
+                              confirmText: "Yes, delete draft",
+                              variant: "destructive",
+                              onConfirm: async () => {
+                                await fetch(`/api/referrals/${referralId}`, { method: "DELETE" })
+                                  .then(() => {
+                                    toast.success("Draft deleted");
+                                    onClose();
+                                    onUpdated();
+                                  })
+                                  .catch((e) => toast.error(e.message));
+                              },
+                            });
                           }}
                           description="Permanently remove draft"
                         />

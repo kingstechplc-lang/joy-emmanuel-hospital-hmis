@@ -20,6 +20,7 @@ import {
 } from "./workforce-helpers";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui-helpers";
 import { FieldLabel } from "@/components/ui/required-label";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function RosterTab() {
   const { can } = usePermissions();
@@ -27,6 +28,7 @@ export function RosterTab() {
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [viewRoster, setViewRoster] = useState<any>(null);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const params = new URLSearchParams();
   if (activeFacilityId) params.set("facilityId", activeFacilityId);
@@ -125,9 +127,13 @@ export function RosterTab() {
                   )}
                   {can(["shift.manage", "roster.manage"]) && r.status !== "published" && !r.lockedAt && (
                     <Button size="sm" variant="ghost" onClick={() => {
-                      if (confirm(`Delete roster "${r.name}"? This will detach ${r._count?.shifts || 0} shifts (they will be preserved).`)) {
-                        actionMutation.mutate({ id: r.id, action: "delete" });
-                      }
+                      confirmAction({
+                        title: `Delete roster "${r.name}"?`,
+                        description: `This will detach ${r._count?.shifts || 0} shifts from this roster. The shifts themselves will be preserved and can be assigned to a different roster.`,
+                        confirmText: "Yes, delete",
+                        variant: "destructive",
+                        onConfirm: () => actionMutation.mutate({ id: r.id, action: "delete" }),
+                      });
                     }} className="h-7 text-xs text-rose-600 hover:bg-rose-50">
                       <Trash2 className="w-3 h-3" />
                     </Button>
@@ -141,6 +147,7 @@ export function RosterTab() {
 
       {showNew && <NewRosterDialog onClose={() => setShowNew(false)} />}
       {viewRoster && <ViewRosterDialog roster={viewRoster} onClose={() => setViewRoster(null)} />}
+      {confirmDialogEl}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import { PatientPicker, type PatientPickerValue } from "@/components/ui/patient-
 import { DepartmentSelect, type EntitySelectValue } from "@/components/ui/entity-select";
 import { DiagnosisPicker } from "@/components/ui/diagnosis-picker";
 import { useAppStore } from "@/stores/app-store";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -1126,6 +1127,7 @@ function ClinicsTab({ canManage }: { canManage: boolean }) {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["specialty-clinics"],
@@ -1207,7 +1209,15 @@ function ClinicsTab({ canManage }: { canManage: boolean }) {
                      <Button size="sm" variant="outline" onClick={() => toggleActiveMut.mutate({ id: c.id, isActive: !c.isActive })}>
                        {c.isActive ? "Deactivate" : "Activate"}
                      </Button>
-                     <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700" onClick={() => { if (confirm("Delete this clinic configuration?")) deleteMut.mutate(c.id); }}>
+                     <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700" onClick={() => {
+                       confirmAction({
+                         title: "Delete this clinic configuration?",
+                         description: "This clinic configuration will be permanently removed. Existing appointments and encounters will be retained for historical accuracy.",
+                         confirmText: "Yes, delete",
+                         variant: "destructive",
+                         onConfirm: () => deleteMut.mutate(c.id),
+                       });
+                     }}>
                        <Trash2 className="w-3 h-3" />
                      </Button>
                    </div>
@@ -1225,6 +1235,7 @@ function ClinicsTab({ canManage }: { canManage: boolean }) {
           onSaved={() => { setShowForm(false); setEditItem(null); qc.invalidateQueries({ queryKey: ["specialty-clinics"] }); }}
         />
       )}
+      {confirmDialogEl}
     </div>
   );
 }
