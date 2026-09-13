@@ -27,7 +27,7 @@
 //   saveState          — "idle" | "saving" | "saved" | "error"
 // =====================================================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, type DragEndEvent,
@@ -170,12 +170,24 @@ export function DashboardCustomizer({
     })
   );
 
-  // ── Drag end handler — reorder the layout ────────────────────────
+  // ── Track whether the last layout change was from a drag.
+  // The reflow useEffect should only re-pack widgets after a DRAG
+  // (reorder). It should NOT re-pack after an ADD or REMOVE — those
+  // operations already compute correct coordinates (first-fit for add,
+  // and remove doesn't change other widgets' positions).
+  // Without this guard, adding a widget to an empty grid slot would
+  // trigger the reflow, which re-packs everything sequentially and
+  // pushes the new widget to the bottom — defeating the first-fit
+  // placement.
+  // ─────────────────────────────────────────────────────────────────
+  const lastChangeWasDragRef = useRef(false);
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
 
+      lastChangeWasDragRef.current = true;
       setLayout(
         arrayMove(
           layout,
@@ -193,9 +205,15 @@ export function DashboardCustomizer({
   // using the same algorithm as arrangeWidgets(). But for visual
   // smoothness during the drag, we keep the original x/y until the
   // user releases the mouse. After release, we re-flow.
+  //
+  // IMPORTANT: This reflow only runs after a DRAG (not after add/remove).
+  // The `lastChangeWasDragRef` guard ensures add/remove operations
+  // preserve their carefully computed coordinates (first-fit for add).
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!editMode) return;
+    if (!lastChangeWasDragRef.current) return; // skip if not from a drag
+
     // Re-flow coordinates based on the current order, packing widgets
     // by their defaultSize (KPIs are w=3 = 4 per row; list/panel widgets
     // get their own rows). This keeps the grid visually clean after a drag.
@@ -231,6 +249,7 @@ export function DashboardCustomizer({
     if (changed) {
       setLayout(reflowed);
     }
+    lastChangeWasDragRef.current = false; // reset the flag
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editMode, layout.map((p) => p.widgetId).join(",")]);
 
