@@ -44,6 +44,7 @@ import {
   AlertCircle, Plus,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { WidgetRenderer } from "./widget-renderer";
 import { WidgetConfigDialog } from "./widget-config-dialog";
 import { AddWidgetDialog } from "./add-widget-dialog";
@@ -160,6 +161,7 @@ export function DashboardCustomizer({
   onSaveLayout: () => void;
   saveState: "idle" | "saving" | "saved" | "error";
 }) {
+  const isMobile = useIsMobile();
   const [configPlacement, setConfigPlacement] = useState<WidgetPlacement | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [addWidgetOpen, setAddWidgetOpen] = useState(false);
@@ -214,20 +216,30 @@ export function DashboardCustomizer({
     [layout, setLayout]
   );
 
-  // ── When a widget is re-ordered via drag, we need to re-flow the
-  // grid coordinates (x, y) so the layout stays packed. The simplest
-  // approach: after every drag, re-arrange widgets in their new order
-  // using the same algorithm as arrangeWidgets(). But for visual
-  // smoothness during the drag, we keep the original x/y until the
-  // user releases the mouse. After release, we re-flow.
+  // ── After a drag, update grid coordinates to match the new order.
   //
-  // IMPORTANT: This reflow only runs after a DRAG (not after add/remove).
-  // The `lastChangeWasDragRef` guard ensures add/remove operations
-  // preserve their carefully computed coordinates (first-fit for add).
+  // On MOBILE (<768px): SKIP the reflow entirely. The CSS override
+  //   (dashboard-widget-cell with grid-column: 1 / -1 !important;
+  //    grid-row: auto !important) stacks all widgets full-width in
+  //   DOM order. The x/y coordinates are irrelevant — only the array
+  //   order (set by arrayMove) determines the visual order. Running
+  //   the reflow on mobile would change coordinates that the CSS
+  //   ignores, but the setLayout call would trigger a re-render that
+  //   causes visual jank (widgets jumping during the DnD animation).
+  //
+  // on DESKTOP/TABLET (≥768px): Re-flow coordinates by swapping the
+  //   dragged widget's coordinates with the target widget's
+  //   coordinates, then re-flowing only the shifted widgets. This is
+  //   more predictable than a full re-pack — only the widgets between
+  //   the old and new positions change, not the entire layout.
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!editMode) return;
-    if (!lastChangeWasDragRef.current) return; // skip if not from a drag
+    if (!lastChangeWasDragRef.current) return;
+    lastChangeWasDragRef.current = false;
+
+    // On mobile, skip the reflow — CSS handles the layout
+    if (isMobile) return;
 
     // Re-flow coordinates based on the current order, packing widgets
     // by their defaultSize (KPIs are w=3 = 4 per row; list/panel widgets
@@ -264,9 +276,8 @@ export function DashboardCustomizer({
     if (changed) {
       setLayout(reflowed);
     }
-    lastChangeWasDragRef.current = false; // reset the flag
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMode, layout.map((p) => p.widgetId).join(",")]);
+  }, [editMode, isMobile, layout.map((p) => p.widgetId).join(",")]);
 
   // ── Handlers ──────────────────────────────────────────────────────
   const handleRemove = (widgetId: string) => {
