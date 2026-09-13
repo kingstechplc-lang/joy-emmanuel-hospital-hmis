@@ -328,6 +328,19 @@ function TemplatesList({
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // ── Bug fix: "All Templates" tab was only showing ACTIVE templates
+  // because the API defaults to status=active when no status param is
+  // sent. The statusFilter was "all" (the initial state) which meant
+  // the condition `if (statusFilter !== "all")` was FALSE — so no
+  // status param was sent, and the API returned only active templates.
+  //
+  // Fix: When the "All Templates" tab is active (showAll=true), we
+  // explicitly send status=all so the API returns ALL templates
+  // (including draft, under_review, approved, inactive, archived).
+  // ─────────────────────────────────────────────────────────────────
+  const effectiveStatusFilter = showAll && statusFilter === "all" ? "all" : statusFilter;
+
   const [scopeFilter, setScopeFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
@@ -337,10 +350,11 @@ function TemplatesList({
   const params = new URLSearchParams();
   if (search) params.set("search", search);
   if (typeFilter !== "all") params.set("type", typeFilter);
-  if (statusFilter !== "all") params.set("status", statusFilter);
+  // Always send status param: "all" shows all statuses, specific
+  // status filters to that status.
+  params.set("status", effectiveStatusFilter);
   if (scopeFilter !== "all") params.set("scope", scopeFilter);
   if (favoritesOnly) params.set("favoriteOnly", "true");
-  if (mineOnly) params.set("status", "all"); // show all my templates including drafts
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["clinical-templates", params.toString()],
@@ -590,11 +604,12 @@ function TemplateCard({
               <Edit className="w-3.5 h-3.5" /> Edit
             </Button>
           )}
-          {/* Status switcher (transition) — show for ALL non-archived statuses.
+          {/* Status switcher (transition) — show for ALL statuses.
               The button is visible to anyone with update, approve, or activate
               permission. The dialog itself filters which transitions are
-              available based on the user's specific permissions. */}
-          {t.status !== "archived" && (canUpdate || canApprove || canActivate) && (
+              available based on the user's specific permissions.
+              For archived templates, the dialog shows "Restore to Draft". */}
+          {(canUpdate || canApprove || canActivate) && (
             <Button
               size="sm"
               variant="outline"
@@ -668,6 +683,9 @@ function QuickTransitionDialog({
     inactive: [
       { status: "active", label: "Reactivate", icon: ToggleRight, classes: "text-emerald-600 border-emerald-200 hover:bg-emerald-50", perm: "activate" },
     ],
+    archived: [
+      { status: "draft", label: "Restore to Draft", icon: Archive, classes: "text-slate-600 border-slate-200 hover:bg-slate-50", perm: "update" },
+    ],
   };
 
   const actions = TRANSITIONS[t.status] || [];
@@ -680,7 +698,7 @@ function QuickTransitionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={getDialogContentClasses("compact", DIALOG_BODY_SHELL)}>
+      <DialogContent className={getDialogContentClasses("compact", DIALOG_BODY_SHELL)} showCloseButton={false}>
         <GradientDialogHeader
           icon={ChevronRight}
           title="Lifecycle Transition"
@@ -788,7 +806,7 @@ function TemplateFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={getDialogContentClasses("xl", DIALOG_BODY_SHELL)}>
+      <DialogContent className={getDialogContentClasses("xl", DIALOG_BODY_SHELL)} showCloseButton={false}>
         <GradientDialogHeader
           icon={isEdit ? Edit : Plus}
           title={isEdit ? "Edit Template" : "New Clinical Template"}
@@ -1333,7 +1351,7 @@ function TemplateDetailDialog({
   if (isLoading) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent className={getDialogContentClasses("large", DIALOG_BODY_SHELL)}>
+        <DialogContent className={getDialogContentClasses("large", DIALOG_BODY_SHELL)} showCloseButton={false}>
           <div className="p-12 text-center">
             <Loader2 className="w-6 h-6 mx-auto animate-spin text-slate-400" />
           </div>
@@ -1351,7 +1369,7 @@ function TemplateDetailDialog({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className={getDialogContentClasses("large", DIALOG_BODY_SHELL)}>
+      <DialogContent className={getDialogContentClasses("large", DIALOG_BODY_SHELL)} showCloseButton={false}>
         <GradientDialogHeader
           icon={Icon}
           title={t.name}
@@ -1453,9 +1471,10 @@ function TemplateDetailDialog({
 
           <div className="flex-1" />
 
-          {/* Lifecycle button — visible for ALL non-archived templates,
-              to anyone with update/approve/activate permission. */}
-          {t.status !== "archived" && (canUpdate || canApprove || canActivate) && (
+          {/* Lifecycle button — visible for ALL templates (including archived),
+              to anyone with update/approve/activate permission. For archived
+              templates, the dialog shows "Restore to Draft". */}
+          {(canUpdate || canApprove || canActivate) && (
             <Button
               variant="outline"
               size="sm"
