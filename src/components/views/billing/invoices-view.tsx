@@ -28,6 +28,7 @@ import {
   ClearableSearch, usePagination, Pagination, ModuleHelp,
 } from "@/components/ui-helpers";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BulkInvoiceView } from "./bulk-invoice-view";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { FieldLabel } from "@/components/ui/required-label";
 
@@ -276,6 +277,7 @@ export function InvoicesView() {
   const canCancel = can("billing.cancel");
   const canDiscount = can("billing.discount");
   const canRefund = can("billing.refund");
+  const canBulkGenerate = can("invoice.bulk_generate");
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
@@ -330,6 +332,11 @@ export function InvoicesView() {
           <TabsTrigger value="reports" className="gap-1.5">
             <FileSpreadsheet className="w-3.5 h-3.5" /> Reports
           </TabsTrigger>
+          {canBulkGenerate && (
+            <TabsTrigger value="bulk" className="gap-1.5">
+              <FilePlus className="w-3.5 h-3.5" /> Bulk Generate
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -348,6 +355,11 @@ export function InvoicesView() {
         <TabsContent value="reports">
           <ReportsTab facilityId={activeFacilityId} />
         </TabsContent>
+        {canBulkGenerate && (
+          <TabsContent value="bulk">
+            <BulkInvoiceView facilityId={activeFacilityId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <NewInvoiceDialog
