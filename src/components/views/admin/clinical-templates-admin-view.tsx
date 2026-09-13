@@ -53,6 +53,7 @@ import {
   formatDate, safeJson,
 } from "@/components/ui-helpers";
 import { GradientDialogHeader } from "@/components/ui/gradient-dialog-header";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FieldLabel } from "@/components/ui/required-label";
 import { getDialogContentClasses, DIALOG_BODY_SHELL } from "@/lib/ui/dialog-sizes";
 import {
@@ -653,6 +654,8 @@ function QuickTransitionDialog({
   onDone: () => void;
 }) {
   const qc = useQueryClient();
+  const { confirm: confirmAction, dialog: confirmDialogEl } = useConfirmDialog();
+
   const mut = useMutation({
     mutationFn: ({ status, reason }: { status: string; reason?: string }) =>
       sendJson(`/api/clinical-templates/${t.id}/transition`, "POST", { status, reason }),
@@ -735,9 +738,15 @@ function QuickTransitionDialog({
               className="w-full justify-start gap-2 h-10 text-rose-600 border-rose-200 hover:bg-rose-50"
               disabled={mut.isPending}
               onClick={() => {
-                if (confirm("Archive this template? It will be hidden from the picker but existing applications are preserved.")) {
-                  mut.mutate({ status: "archived", reason: "Archived from admin UI" });
-                }
+                confirmAction({
+                  title: "Archive Template",
+                  description: "This template will be hidden from the picker but existing applications are preserved. You can restore it later via 'Restore to Draft'.",
+                  confirmText: "Archive",
+                  variant: "destructive",
+                  onConfirm: () => {
+                    mut.mutate({ status: "archived", reason: "Archived from admin UI" });
+                  },
+                });
               }}
             >
               <Archive className="w-4 h-4" /> Archive
@@ -745,6 +754,7 @@ function QuickTransitionDialog({
           )}
         </div>
       </DialogContent>
+      {confirmDialogEl}
     </Dialog>
   );
 }
