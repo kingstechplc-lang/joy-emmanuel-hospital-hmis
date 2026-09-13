@@ -12,10 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, AlertTriangle, History, TestTube, CheckCircle2, Gauge, RefreshCw, FlaskConical, Send, Clock, MoreHorizontal, Printer, FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle, History, TestTube, CheckCircle2, Gauge, RefreshCw, FlaskConical, Send, Clock, MoreHorizontal, Printer, FileText, Upload } from "lucide-react";
 import { PrintButton, PrintLayout } from "@/components/print/print-layout";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, MiniStatCard} from "@/components/ui-helpers";
+import { BulkLabResultView } from "./bulk-lab-result-view";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -55,6 +56,8 @@ export function LabResultsView() {
 
   const activeFacilityId = useAppStore((s) => s.activeFacilityId);
   const qc = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"results" | "bulk">("results");
+  const canBulkEntry = can("lab_result.bulk_entry");
   const [statusFilter, setStatusFilter] = useState("all");
   const [abnormalOnly, setAbnormalOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -114,6 +117,34 @@ export function LabResultsView() {
         gradient="from-cyan-500 to-blue-600"
       />
 
+      {/* Tabs: Results vs Bulk Entry */}
+      {activeFacilityId && (
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+          <button
+            onClick={() => setActiveTab("results")}
+            className={`text-xs whitespace-nowrap px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-1.5 ${activeTab === "results" ? "bg-white text-cyan-700 shadow-sm" : "text-slate-600 hover:bg-slate-200"}`}
+          >
+            <FlaskConical className="w-3.5 h-3.5" /> Results
+          </button>
+          {canBulkEntry && (
+            <button
+              onClick={() => setActiveTab("bulk")}
+              className={`text-xs whitespace-nowrap px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-1.5 ${activeTab === "bulk" ? "bg-white text-cyan-700 shadow-sm" : "text-slate-600 hover:bg-slate-200"}`}
+            >
+              <Upload className="w-3.5 h-3.5" /> Bulk Entry
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Bulk Entry tab */}
+      {activeFacilityId && activeTab === "bulk" && canBulkEntry && (
+        <BulkLabResultView facilityId={activeFacilityId} />
+      )}
+
+      {/* Results tab (existing content) */}
+      {activeTab === "results" && (
+        <>
       {!activeFacilityId && (
         <Card><CardContent className="p-4 text-sm text-amber-700 bg-amber-50">Select a facility to view lab results.</CardContent></Card>
       )}
@@ -646,6 +677,8 @@ export function LabResultsView() {
 
       {amendResult && (
         <AmendResultDialog result={amendResult} onClose={() => setAmendResult(null)} onAmended={() => { setAmendResult(null); invalidate(); }} />
+      )}
+      </>
       )}
     </div>
   );
