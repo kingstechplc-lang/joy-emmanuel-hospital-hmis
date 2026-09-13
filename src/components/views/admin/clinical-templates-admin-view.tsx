@@ -585,19 +585,24 @@ function TemplateCard({
           <Button size="sm" variant="outline" onClick={onView} className="flex-1 gap-1 text-xs h-7">
             <Eye className="w-3.5 h-3.5" /> View
           </Button>
-          {canUpdate && (
+          {canUpdate && t.status !== "archived" && (
             <Button size="sm" variant="outline" onClick={onEdit} className="gap-1 text-xs h-7">
               <Edit className="w-3.5 h-3.5" /> Edit
             </Button>
           )}
-          {(canApprove || canActivate) && (t.status === "under_review" || t.status === "approved" || t.status === "active" || t.status === "inactive") && (
+          {/* Status switcher (transition) — show for ALL non-archived statuses.
+              The button is visible to anyone with update, approve, or activate
+              permission. The dialog itself filters which transitions are
+              available based on the user's specific permissions. */}
+          {t.status !== "archived" && (canUpdate || canApprove || canActivate) && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => setShowTransition(true)}
               className="gap-1 text-xs h-7 border-purple-200 text-purple-700 hover:bg-purple-50"
+              title="Change status"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3.5 h-3.5" /> Status
             </Button>
           )}
         </div>
@@ -611,6 +616,7 @@ function TemplateCard({
           onOpenChange={setShowTransition}
           canApprove={canApprove}
           canActivate={canActivate}
+          canUpdate={canUpdate}
           onDone={() => { setShowTransition(false); onTransition(); }}
         />
       )}
@@ -621,13 +627,14 @@ function TemplateCard({
 // ─── Quick Transition Dialog ────────────────────────────────────────
 
 function QuickTransitionDialog({
-  template: t, open, onOpenChange, canApprove, canActivate, onDone,
+  template: t, open, onOpenChange, canApprove, canActivate, canUpdate, onDone,
 }: {
   template: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canApprove: boolean;
   canActivate: boolean;
+  canUpdate: boolean;
   onDone: () => void;
 }) {
   const qc = useQueryClient();
@@ -667,7 +674,8 @@ function QuickTransitionDialog({
   const filteredActions = actions.filter((a) => {
     if (a.perm === "approve") return canApprove;
     if (a.perm === "activate") return canActivate;
-    return true; // "update" is checked by the API
+    if (a.perm === "update") return canUpdate;
+    return true;
   });
 
   return (
@@ -1445,7 +1453,9 @@ function TemplateDetailDialog({
 
           <div className="flex-1" />
 
-          {(canApprove || canActivate) && (t.status === "under_review" || t.status === "approved" || t.status === "active" || t.status === "inactive") && (
+          {/* Lifecycle button — visible for ALL non-archived templates,
+              to anyone with update/approve/activate permission. */}
+          {t.status !== "archived" && (canUpdate || canApprove || canActivate) && (
             <Button
               variant="outline"
               size="sm"
@@ -1466,6 +1476,7 @@ function TemplateDetailDialog({
           onOpenChange={setShowTransition}
           canApprove={canApprove}
           canActivate={canActivate}
+          canUpdate={canUpdate}
           onDone={() => { setShowTransition(false); onTransition(); }}
         />
       )}

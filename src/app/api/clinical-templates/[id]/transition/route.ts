@@ -33,6 +33,7 @@ import { apiRouteConfig } from "@/lib/api-route-config";
 import {
   isValidTransition,
   TEMPLATE_STATUSES,
+  VALID_TRANSITIONS,
   type TemplateStatus,
 } from "@/lib/clinical-templates/template-registry";
 
@@ -126,10 +127,10 @@ export async function POST(
     if (!isValidTransition(currentStatus, target)) {
       return NextResponse.json(
         {
-          error: `Invalid transition: '${currentStatus}' → '${target}'. Valid transitions from '${currentStatus}': ${(isValidTransition(currentStatus, currentStatus) ? [] : []).join(", ") || "see VALID_TRANSITIONS"}`,
+          error: `Invalid transition: '${currentStatus}' → '${target}'. Valid transitions: ${VALID_TRANSITIONS[currentStatus]?.join(", ") || "none"}`,
           currentStatus,
           targetStatus: target,
-          validTransitions: require("@/lib/clinical-templates/template-registry").VALID_TRANSITIONS[currentStatus],
+          validTransitions: VALID_TRANSITIONS[currentStatus] || [],
         },
         { status: 400 }
       );
