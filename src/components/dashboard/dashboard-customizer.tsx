@@ -199,21 +199,28 @@ export function DashboardCustomizer({
     // Re-flow coordinates based on the current order, packing widgets
     // by their defaultSize (KPIs are w=3 = 4 per row; list/panel widgets
     // get their own rows). This keeps the grid visually clean after a drag.
+    // IMPORTANT: when wrapping to a new row, advance y by the TALLEST
+    // widget on the previous row (not just y+1) — otherwise widgets with
+    // h>1 (like Quick Actions h=2) overlap with the next row's widgets.
     let x = 0;
     let y = 0;
+    let rowMaxH = 1;
     const reflowed = layout.map((p) => {
       const widget = WIDGET_BY_ID[p.widgetId];
       const w = widget?.defaultSize.w || 3;
       const h = widget?.defaultSize.h || 1;
       if (x + w > 12) {
         x = 0;
-        y += 1;
+        y += rowMaxH;
+        rowMaxH = 1;
       }
       const placement = { ...p, x, y, w, h };
       x += w;
+      rowMaxH = Math.max(rowMaxH, h);
       if (x >= 12) {
         x = 0;
-        y += 1;
+        y += rowMaxH;
+        rowMaxH = 1;
       }
       return placement;
     });
@@ -250,25 +257,30 @@ export function DashboardCustomizer({
   const handleAddWidget = (widgetId: string) => {
     const widget = WIDGET_BY_ID[widgetId];
     if (!widget) return;
-    // Add to the end of the layout, auto-flowing coordinates
-    let x = 0;
-    let y = 0;
-    if (layout.length > 0) {
-      // Place after the last widget
-      const last = layout[layout.length - 1];
-      x = last.x + last.w;
-      y = last.y;
-      if (x + widget.defaultSize.w > 12) {
-        x = 0;
-        y = last.y + last.h;
-      }
+    // Add to the end of the layout, auto-flowing coordinates.
+    // Find the y-position right after the last row's tallest widget.
+    if (layout.length === 0) {
+      setLayout([
+        {
+          widgetId,
+          x: 0,
+          y: 0,
+          w: widget.defaultSize.w,
+          h: widget.defaultSize.h,
+          config: {},
+        },
+      ]);
+      return;
     }
+    // Find the maximum y+h across all placed widgets — that's the next
+    // available row.
+    const maxY = layout.reduce((max, p) => Math.max(max, p.y + p.h), 0);
     setLayout([
       ...layout,
       {
         widgetId,
-        x,
-        y,
+        x: 0,
+        y: maxY,
         w: widget.defaultSize.w,
         h: widget.defaultSize.h,
         config: {},

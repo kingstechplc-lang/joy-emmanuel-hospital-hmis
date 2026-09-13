@@ -240,6 +240,7 @@ export function arrangeWidgets(widgetIds: string[]): WidgetPlacement[] {
   const placements: WidgetPlacement[] = [];
   let x = 0;
   let y = 0;
+  let rowMaxH = 1; // track the tallest widget on the current row
 
   for (const widgetId of widgetIds) {
     const widget = WIDGET_BY_ID[widgetId];
@@ -251,16 +252,19 @@ export function arrangeWidgets(widgetIds: string[]): WidgetPlacement[] {
     // If this widget doesn't fit in the remaining row space, wrap
     if (x + w > 12) {
       x = 0;
-      y += 1;
+      y += rowMaxH; // advance by the tallest widget on the previous row
+      rowMaxH = 1; // reset for the new row
     }
 
     placements.push({ widgetId, x, y, w, h, config: {} });
     x += w;
+    rowMaxH = Math.max(rowMaxH, h); // track the tallest widget on this row
 
     // If we filled the row exactly, wrap
     if (x >= 12) {
       x = 0;
-      y += 1;
+      y += rowMaxH;
+      rowMaxH = 1;
     }
   }
 
