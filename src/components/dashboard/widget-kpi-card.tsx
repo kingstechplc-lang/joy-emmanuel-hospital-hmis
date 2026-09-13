@@ -195,9 +195,11 @@ const GRADIENT_MAP: Record<string, string> = {
 export function WidgetKpiCard({
   widgetId,
   stats,
+  editMode = false,
 }: {
   widgetId: string;
   stats: any;
+  editMode?: boolean;
 }) {
   const setView = useAppStore((s) => s.setView);
   const meta = KPI_META[widgetId];
@@ -221,12 +223,19 @@ export function WidgetKpiCard({
   const gradientClass = GRADIENT_MAP[meta.color] || GRADIENT_MAP.slate;
   const value = meta.getValue(stats);
 
+  // In edit mode: disable click navigation, cursor-pointer, and hover lift
+  // so the user can interact with the edit toolbar (drag/configure/remove)
+  // instead of accidentally navigating away from the dashboard.
+  const editModeClasses = editMode
+    ? "cursor-default"
+    : "cursor-pointer hover:shadow-2xl hover:-translate-y-1";
+
   return (
     <Card
-      onClick={() => setView(meta.view as any)}
-      className={`group relative ${gradientClass} text-white cursor-pointer overflow-hidden border-0 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl h-full`}
+      onClick={editMode ? undefined : () => setView(meta.view as any)}
+      className={`dashboard-kpi-card group relative ${gradientClass} text-white overflow-hidden border-0 shadow-lg transition-all duration-300 rounded-2xl ${editModeClasses}`}
     >
-      <CardContent className="p-5 relative z-10 h-full">
+      <CardContent className="p-5 relative z-10">
         {/* Watermark icon */}
         <div className="absolute top-4 right-4 text-white/20 pointer-events-none">
           <Icon className="w-12 h-12" strokeWidth={1.5} />
@@ -239,10 +248,12 @@ export function WidgetKpiCard({
         <p className="text-3xl font-extrabold text-white tracking-tight tabular-nums">
           {value}
         </p>
-        {/* Hover arrow */}
-        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <ArrowRight className="w-4 h-4 text-white/70" />
-        </div>
+        {/* Hover arrow — only in view mode */}
+        {!editMode && (
+          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <ArrowRight className="w-4 h-4 text-white/70" />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

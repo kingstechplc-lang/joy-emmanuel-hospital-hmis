@@ -37,17 +37,19 @@ export function WidgetRenderer({
   stats,
   isLoading,
   config,
+  editMode = false,
   onConfigure,
 }: {
   widgetId: string;
   stats: any;
   isLoading: boolean;
   config: { maxItems?: number; dateRange?: string; facilityScope?: string };
+  editMode?: boolean;
   onConfigure?: () => void;
 }) {
   // Dispatch based on widgetId prefix / exact match
   if (widgetId.startsWith("kpi_")) {
-    return <WidgetKpiCard widgetId={widgetId} stats={stats} />;
+    return <WidgetKpiCard widgetId={widgetId} stats={stats} editMode={editMode} />;
   }
 
   if (widgetId === "list_recent_patients") {

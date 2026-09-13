@@ -84,10 +84,11 @@ function SortableWidget({
   const widget = WIDGET_BY_ID[placement.widgetId];
 
   return (
-    <div ref={setNodeRef} style={style} className={`relative ${editMode ? "ring-2 ring-emerald-300/50 rounded-2xl" : ""}`}>
-      {/* Edit-mode toolbar */}
+    <div ref={setNodeRef} style={style} className={`dashboard-widget-cell relative ${editMode ? "ring-2 ring-emerald-300/50 rounded-2xl" : ""}`}>
+      {/* Edit-mode toolbar — positioned INSIDE the widget top-right corner
+          to avoid clipping at the grid edge and overlap with the row above */}
       {editMode && (
-        <div className="absolute -top-3 right-2 z-20 flex items-center gap-1 bg-white rounded-md shadow-md border border-slate-200 px-1 py-0.5">
+        <div className="absolute top-1 right-1 z-30 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm rounded-md shadow-md border border-slate-200 px-1 py-0.5">
           {/* Drag handle */}
           <button
             {...attributes}
@@ -123,6 +124,7 @@ function SortableWidget({
           stats={stats}
           isLoading={isLoading}
           config={placement.config}
+          editMode={editMode}
           onConfigure={editMode ? onConfigure : undefined}
         />
       </div>
@@ -194,14 +196,14 @@ export function DashboardCustomizer({
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!editMode) return;
-    // Re-flow coordinates based on the current order, packing 2-wide
-    // KPIs in rows of 6 and giving list/panel widgets their own rows.
-    // This keeps the grid visually clean after a drag.
+    // Re-flow coordinates based on the current order, packing widgets
+    // by their defaultSize (KPIs are w=3 = 4 per row; list/panel widgets
+    // get their own rows). This keeps the grid visually clean after a drag.
     let x = 0;
     let y = 0;
     const reflowed = layout.map((p) => {
       const widget = WIDGET_BY_ID[p.widgetId];
-      const w = widget?.defaultSize.w || 2;
+      const w = widget?.defaultSize.w || 3;
       const h = widget?.defaultSize.h || 1;
       if (x + w > 12) {
         x = 0;
@@ -362,7 +364,12 @@ export function DashboardCustomizer({
       )}
 
       {/* Grid — uses CSS Grid with 12 columns and dynamic row spans.
-          In edit mode, the grid is wrapped in a DndContext + SortableContext. */}
+          In edit mode, the grid is wrapped in a DndContext + SortableContext.
+          gridAutoRows is "auto" so rows size to their tallest widget's
+          natural content height — KPI rows are short, list rows are tall.
+          On mobile (<768px), the .dashboard-widget-cell CSS class in
+          globals.css overrides gridColumn/gridRow to stack all widgets
+          full-width. */}
       {editMode ? (
         <DndContext
           sensors={sensors}
@@ -377,7 +384,7 @@ export function DashboardCustomizer({
               className="grid gap-3 md:gap-4"
               style={{
                 gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
-                gridAutoRows: "minmax(120px, auto)",
+                gridAutoRows: "auto",
               }}
             >
               {layout.map((placement) => (
@@ -400,12 +407,13 @@ export function DashboardCustomizer({
           className="grid gap-3 md:gap-4"
           style={{
             gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
-            gridAutoRows: "minmax(120px, auto)",
+            gridAutoRows: "auto",
           }}
         >
           {layout.map((placement) => (
             <div
               key={placement.widgetId}
+              className="dashboard-widget-cell"
               style={{
                 gridColumn: `${placement.x + 1} / span ${placement.w}`,
                 gridRow: `${placement.y + 1} / span ${placement.h}`,

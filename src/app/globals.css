@@ -345,3 +345,26 @@ table td.wrap, table td .wrap,
 .fade-in-up {
   animation: fadeInUp 0.3s ease-out;
 }
+
+/* ===================================================================== */
+/* TIER 2 — DASHBOARD GRID RESPONSIVE OVERRIDES                            */
+/* ===================================================================== */
+/* On mobile (below 768px), the 12-column dashboard grid is too narrow    */
+/* for KPI cards (w=2 = 16.67% of screen). This override stacks ALL       */
+/* widgets full-width on mobile, ignoring the inline gridColumn/gridRow  */
+/* styles. On tablet+ (md:), the inline styles take effect and the user's  */
+/* saved layout is respected.                                              */
+/* ===================================================================== */
+@media (max-width: 767px) {
+  .dashboard-widget-cell {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+}
+
+/* KPI card — prevent stretching when the grid row is taller than the
+   card content. The card sizes to its content instead of filling the
+   grid row. */
+.dashboard-kpi-card {
+  height: auto !important;
+}
