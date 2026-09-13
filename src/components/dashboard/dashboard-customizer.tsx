@@ -29,7 +29,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor,
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
   useSensor, useSensors, type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -89,11 +89,14 @@ function SortableWidget({
           to avoid clipping at the grid edge and overlap with the row above */}
       {editMode && (
         <div className="absolute top-1 right-1 z-30 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm rounded-md shadow-md border border-slate-200 px-1 py-0.5">
-          {/* Drag handle */}
+          {/* Drag handle — touch-action: none prevents the browser from
+              intercepting touch gestures for page scrolling, so the drag
+              handler receives the full touch sequence. */}
           <button
             {...attributes}
             {...listeners}
             className="p-1 text-slate-500 hover:text-emerald-600 cursor-grab active:cursor-grabbing"
+            style={{ touchAction: "none" }}
             title="Drag to reorder"
           >
             <GripVertical className="w-4 h-4" />
@@ -161,9 +164,21 @@ export function DashboardCustomizer({
   const [configOpen, setConfigOpen] = useState(false);
   const [addWidgetOpen, setAddWidgetOpen] = useState(false);
 
+  // ── Drag sensors ─────────────────────────────────────────────────
+  // PointerSensor: for desktop mouse + modern touch (Pointer Events API).
+  //   - activation distance 8px (distinguishes click from drag on desktop)
+  // TouchSensor: for older tablets/mobiles that don't support Pointer Events.
+  //   - delay 200ms + tolerance 8px: the user must hold for 200ms without
+  //     moving more than 8px before the drag starts. This distinguishes a
+  //     drag from a tap/scroll on touch devices.
+  // KeyboardSensor: for accessibility (arrow keys to move, Space to drop).
+  // ─────────────────────────────────────────────────────────────────
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
