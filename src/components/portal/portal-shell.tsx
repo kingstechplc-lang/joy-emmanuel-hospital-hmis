@@ -6,10 +6,39 @@
 // Dark sidebar (slate-900) with teal/emerald accent (patient-facing
 // variant of the staff app's rose/red accent). Topbar with patient
 // name + logout. Main content area renders the active portal view.
+//
+// v2 — search + filters + detail dialogs
+//   • Lab Results: search (order # / test name), status filter
+//     (All / Resulted / Verified / Released), date-range filter,
+//     "View Full Details" dialog with clinician comments, reference
+//     ranges, and ordering clinician's name.
+//     BUG FIX: LabOrderItem.testName never existed — the test name
+//     comes from item.laboratoryTest?.name. All references updated.
+//   • Appointments: search (reason / appointment #), type filter
+//     (All / New / Follow-up / Walk-in / Telemedicine), "View
+//     Details" dialog with full appointment info.
+//   • Invoices: search (invoice #), type filter (Patient / Outpatient
+//     / Inpatient / Emergency / Pharmacy / Lab / Imaging), date-range
+//     filter, "View Details" dialog with full invoice info + a Print
+//     button (window.print()).
+//   • Search input debounces 300ms; filters fire immediately on
+//     change. The dark sidebar + gradient banners + card-hover-lift
+//     + fade-in-up design language is preserved.
 // =====================================================================
 import { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
+import {
+  Search, Filter, X, Eye, Printer, ChevronDown, ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +50,108 @@ import {
 } from "@/lib/patient-portal/client";
 import { formatDate, safeJson } from "@/components/ui-helpers";
 
+// =====================================================================
+// SHARED HOOKS / HELPERS
+// =====================================================================
+
+// Debounce any value — used for search inputs (300ms default).
+function useDebouncedValue<T>(value: T, delayMs = 300): T {
+  const [debounced, setDebounced] = useState<T>(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+// Build a query string from a params object, skipping empty / "all"
+// values so the URL stays clean and the API can use sensible defaults.
+function buildQuery(params: Record<string, string | undefined>): string {
+  const usp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v && v !== "all") usp.set(k, v);
+  }
+  const s = usp.toString();
+  return s ? `?${s}` : "";
+}
+
+// A small labelled key-value row used inside detail dialogs.
+function DetailRow({
+  label, value, valueClassName = "",
+}: {
+  label: string;
+  value: string | number | null | undefined;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5 truncate">
+        {label}
+      </p>
+      <p className={`text-sm font-medium text-slate-900 break-words ${valueClassName}`}>
+        {value === null || value === undefined || value === "" ? "—" : value}
+      </p>
+    </div>
+  );
+}
+
+// A wider block (full-width) used for reason / notes / comments.
+function DetailBlock({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-sm text-slate-700 italic bg-slate-50 rounded-md px-2.5 py-1.5 border border-slate-100">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+// A clearable search input with the Search icon on the left and an X
+// on the right. Used at the top of every filterable portal view.
+function FilterSearchInput({
+  value, onChange, placeholder, className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="pl-9 pr-9"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full p-0.5 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Field label used above filter inputs / selects.
+function FilterLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+      {children}
+    </Label>
+  );
+}
+
+// =====================================================================
+// PORTAL SHELL
+// =====================================================================
 export function PortalShell() {
   const view = usePortalStore((s) => s.view);
   const setView = usePortalStore((s) => s.setView);
@@ -269,7 +400,7 @@ function QuickStatCard({ title, icon, onClick, gradient }: { title: string; icon
     <button onClick={onClick} className={`text-left rounded-xl bg-gradient-to-br ${gradient} text-white p-4 hover:shadow-lg transition-all duration-200 card-hover-lift`}>
       <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 backdrop-blur mb-2">{icon}</div>
       <p className="text-sm font-medium">{title}</p>
-      <p className="text-xs text-white/70 mt-1 inline-flex items-center gap-0.5">View <Icons.ChevronRight className="w-3 h-3" /></p>
+      <p className="text-xs text-white/70 mt-1 inline-flex items-center gap-0.5">View <ChevronRight className="w-3 h-3" /></p>
     </button>
   );
 }
@@ -279,19 +410,59 @@ function QuickLinkRow({ icon, title, onClick }: { icon: React.ReactNode; title: 
     <button onClick={onClick} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 text-left transition-colors">
       {icon}
       <span className="text-sm text-slate-700 flex-1">{title}</span>
-      <Icons.ChevronRight className="w-4 h-4 text-slate-400" />
+      <ChevronRight className="w-4 h-4 text-slate-400" />
     </button>
   );
 }
 
-// --- Lab Results ---
+// =====================================================================
+// LAB RESULTS VIEW — search + status + date range + detail dialog
+// =====================================================================
 function PortalLabResultsView() {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [detailOrder, setDetailOrder] = useState<any | null>(null);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const query = buildQuery({
+    search: debouncedSearch,
+    status,
+    dateFrom,
+    dateTo,
+  });
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["portal-lab-results"],
-    queryFn: () => portalFetchJson("/api/portal/lab-results"),
+    queryKey: ["portal-lab-results", debouncedSearch, status, dateFrom, dateTo],
+    queryFn: () => portalFetchJson(`/api/portal/lab-results${query}`),
   });
   const items: any[] = data?.items || [];
+
+  const hasActiveFilters = !!(search || status !== "all" || dateFrom || dateTo);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("all");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  // Flatten order.items[].results[] into a single list of result rows
+  // for the inline preview. NOTE: the test name now correctly comes
+  // from item.laboratoryTest?.name (the API no longer returns testName).
+  const flattenResults = (order: any) =>
+    (order.items || []).flatMap((item: any) =>
+      (item.results || []).map((r: any) => ({
+        ...r,
+        testName: item.laboratoryTest?.name,
+        testCode: item.laboratoryTest?.code,
+        unit: r.unit || item.laboratoryTest?.unit,
+        referenceRange: r.referenceRange || item.laboratoryTest?.referenceRange,
+      }))
+    );
 
   return (
     <div className="space-y-4 fade-in-up">
@@ -299,6 +470,45 @@ function PortalLabResultsView() {
         <Icons.FlaskConical className="absolute top-3 right-4 w-16 h-16 text-white/15" strokeWidth={1.5} />
         <h2 className="text-xl font-bold">Lab Results</h2>
         <p className="text-sm text-white/80 mt-1">Results your doctor has reviewed and released to you.</p>
+      </div>
+
+      {/* Filter bar */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3 flex flex-wrap items-end gap-3 shadow-sm">
+        <div className="flex-1 min-w-[200px]">
+          <FilterLabel>Search</FilterLabel>
+          <FilterSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Order number or test name"
+          />
+        </div>
+        <div>
+          <FilterLabel>Status</FilterLabel>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="resulted">Resulted</SelectItem>
+              <SelectItem value="verified">Verified</SelectItem>
+              <SelectItem value="released">Released</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <FilterLabel>From</FilterLabel>
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+        </div>
+        <div>
+          <FilterLabel>To</FilterLabel>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
+        </div>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50">
+            <X className="w-4 h-4 mr-1" /> Clear
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -311,16 +521,14 @@ function PortalLabResultsView() {
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
           <Icons.FlaskConical className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-          <p className="text-sm font-medium text-slate-900">No lab results available yet</p>
-          <p className="text-xs text-slate-500 mt-1">Results that your doctor has released will appear here.</p>
+          <p className="text-sm font-medium text-slate-900">No lab results match your filters</p>
+          <p className="text-xs text-slate-500 mt-1">Try adjusting your search or filters. Results your doctor has released will appear here.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((order: any) => {
             const isExpanded = expanded === order.id;
-            const allResults = (order.items || []).flatMap((item: any) =>
-              (item.results || []).map((r: any) => ({ ...r, testName: item.testName }))
-            );
+            const allResults = flattenResults(order);
             return (
               <div key={order.id} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden card-hover-lift">
                 <button onClick={() => setExpanded(isExpanded ? null : order.id)} className="w-full text-left p-4 hover:bg-slate-50 transition-colors">
@@ -333,7 +541,7 @@ function PortalLabResultsView() {
                       </div>
                       <p className="text-xs text-slate-500">Ordered {formatDate(order.orderedAt, true)} • Released {formatDate(order.releasedToPatientAt, true)}</p>
                     </div>
-                    {isExpanded ? <Icons.ChevronDown className="w-5 h-5 text-slate-400" /> : <Icons.ChevronRight className="w-5 h-5 text-slate-400" />}
+                    {isExpanded ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
                   </div>
                 </button>
                 {isExpanded && allResults.length > 0 && (
@@ -362,6 +570,11 @@ function PortalLabResultsView() {
                         })}
                       </tbody>
                     </table>
+                    <div className="px-3 py-2 bg-white border-t border-slate-200">
+                      <Button size="sm" variant="outline" onClick={() => setDetailOrder(order)}>
+                        <Eye className="w-4 h-4 mr-1.5" /> View Full Details
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {isExpanded && allResults.length === 0 && (
@@ -372,6 +585,96 @@ function PortalLabResultsView() {
           })}
         </div>
       )}
+
+      {/* Detail dialog */}
+      <Dialog open={!!detailOrder} onOpenChange={(o) => !o && setDetailOrder(null)}>
+        {detailOrder && (
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Icons.FlaskConical className="w-5 h-5 text-purple-600" />
+                Lab Order {detailOrder.orderNumber}
+              </DialogTitle>
+              <DialogDescription>
+                Ordered {formatDate(detailOrder.orderedAt, true)} • Released {formatDate(detailOrder.releasedToPatientAt, true)}
+              </DialogDescription>
+            </DialogHeader>
+
+            {detailOrder.orderingClinician && (
+              <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-sm flex items-center gap-2">
+                <Icons.Stethoscope className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="text-slate-500">Ordering Clinician:</span>
+                <span className="font-medium text-slate-900">
+                  {detailOrder.orderingClinician.firstName} {detailOrder.orderingClinician.lastName}
+                </span>
+                <LabStatusPill status={detailOrder.status} />
+              </div>
+            )}
+
+            <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+              {(detailOrder.items || []).map((item: any) => (
+                <div key={item.id} className="rounded-lg border border-slate-200 overflow-hidden">
+                  <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-slate-900 text-sm">{item.laboratoryTest?.name || "Test"}</p>
+                      {item.laboratoryTest?.code && <p className="text-[10px] text-slate-500 font-mono">{item.laboratoryTest.code}</p>}
+                    </div>
+                    <LabStatusPill status={item.status} />
+                  </div>
+                  {(item.results || []).length === 0 ? (
+                    <p className="px-3 py-2 text-sm text-slate-500">No results recorded for this test.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {item.results.map((r: any) => {
+                        const critical = r.criticalFlag;
+                        const abnormal = r.abnormalFlag && r.abnormalFlag !== "normal";
+                        const refRange = r.referenceRange || item.laboratoryTest?.referenceRange;
+                        const unit = r.unit || item.laboratoryTest?.unit;
+                        return (
+                          <div key={r.id} className="px-3 py-2 text-sm">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900">{r.componentName || item.laboratoryTest?.name}</p>
+                                <p className="text-slate-700">
+                                  {r.resultValue || (r.numericValue != null ? r.numericValue : "—")}
+                                  {unit && <span className="text-slate-500 text-xs ml-1">{unit}</span>}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                {critical ? <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-rose-600 text-white">CRITICAL</span>
+                                  : abnormal ? <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-200 text-amber-800 uppercase">{r.abnormalFlag.replace(/_/g, " ")}</span>
+                                  : <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Normal</span>}
+                              </div>
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500">
+                              <span className="font-medium">Reference:</span> {refRange || "—"}
+                              {r.releasedAt && <span className="ml-3">Released {formatDate(r.releasedAt, true)}</span>}
+                            </div>
+                            {(r.clinicianComment || r.resultNotes) && (
+                              <div className="mt-1.5 text-xs text-slate-600 bg-slate-50 rounded px-2 py-1.5 border border-slate-100 space-y-1">
+                                {r.clinicianComment && (
+                                  <p><span className="font-medium not-italic text-slate-700">Clinician note:</span> <span className="italic">{r.clinicianComment}</span></p>
+                                )}
+                                {r.resultNotes && (
+                                  <p><span className="font-medium not-italic text-slate-700">Result notes:</span> <span className="italic">{r.resultNotes}</span></p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetailOrder(null)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
@@ -382,14 +685,36 @@ function LabStatusPill({ status }: { status: string }) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${cls}`}>{status}</span>;
 }
 
-// --- Appointments ---
+// =====================================================================
+// APPOINTMENTS VIEW — search + type filter + detail dialog
+// (keeps the existing upcoming/past/all segmented control)
+// =====================================================================
 function PortalAppointmentsView() {
   const [filter, setFilter] = useState<"upcoming" | "past" | "all">("upcoming");
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("all");
+  const [detailApt, setDetailApt] = useState<any | null>(null);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const query = buildQuery({
+    status: filter,
+    search: debouncedSearch,
+    type,
+  });
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["portal-appointments", filter],
-    queryFn: () => portalFetchJson(`/api/portal/appointments?status=${filter}`),
+    queryKey: ["portal-appointments", filter, debouncedSearch, type],
+    queryFn: () => portalFetchJson(`/api/portal/appointments${query}`),
   });
   const items: any[] = data?.items || [];
+
+  const hasActiveFilters = !!(search || type !== "all");
+
+  const clearFilters = () => {
+    setSearch("");
+    setType("all");
+  };
 
   return (
     <div className="space-y-4 fade-in-up">
@@ -399,10 +724,44 @@ function PortalAppointmentsView() {
         <p className="text-sm text-white/80 mt-1">Your upcoming and past visits.</p>
       </div>
 
-      <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 w-full max-w-xs">
-        {(["upcoming", "past", "all"] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`flex-1 py-1.5 px-2 text-xs font-medium rounded transition-colors capitalize ${filter === f ? "bg-teal-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{f}</button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 w-full max-w-xs">
+          {(["upcoming", "past", "all"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} className={`flex-1 py-1.5 px-2 text-xs font-medium rounded transition-colors capitalize ${filter === f ? "bg-teal-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{f}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3 flex flex-wrap items-end gap-3 shadow-sm">
+        <div className="flex-1 min-w-[200px]">
+          <FilterLabel>Search</FilterLabel>
+          <FilterSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Reason or appointment number"
+          />
+        </div>
+        <div>
+          <FilterLabel>Type</FilterLabel>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="follow_up">Follow-up</SelectItem>
+              <SelectItem value="walk_in">Walk-in</SelectItem>
+              <SelectItem value="telemedicine">Telemedicine</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50">
+            <X className="w-4 h-4 mr-1" /> Clear
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -415,7 +774,7 @@ function PortalAppointmentsView() {
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
           <Icons.Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-          <p className="text-sm font-medium text-slate-900">{filter === "upcoming" ? "No upcoming appointments" : "No appointments found"}</p>
+          <p className="text-sm font-medium text-slate-900">{filter === "upcoming" ? "No upcoming appointments" : "No appointments match your filters"}</p>
           <p className="text-xs text-slate-500 mt-1">To book an appointment, please call the hospital front desk.</p>
         </div>
       ) : (
@@ -429,21 +788,63 @@ function PortalAppointmentsView() {
                     <p className="text-2xl font-bold text-teal-800">{new Date(apt.scheduledStart).getDate()}</p>
                   </div>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <p className="font-semibold text-slate-900 capitalize">{apt.appointmentType?.replace(/_/g, " ") || "Appointment"}</p>
                     <AptStatusPill status={apt.status} />
                   </div>
                   <p className="text-sm text-slate-700">{formatDate(apt.scheduledStart, true)}</p>
+                  {apt.appointmentNumber && <p className="text-[10px] text-slate-500 font-mono mt-0.5">{apt.appointmentNumber}</p>}
                   {apt.department && <p className="text-xs text-slate-500">{apt.department.name}</p>}
                   {apt.facility && <p className="text-xs text-slate-500">{apt.facility.name}</p>}
-                  {apt.reason && <p className="text-xs text-slate-600 mt-2 italic">Reason: {apt.reason}</p>}
+                  {apt.reason && <p className="text-xs text-slate-600 mt-2 italic line-clamp-2">Reason: {apt.reason}</p>}
                 </div>
+                <Button size="sm" variant="outline" onClick={() => setDetailApt(apt)} className="shrink-0">
+                  <Eye className="w-4 h-4 mr-1.5" /> Details
+                </Button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Detail dialog */}
+      <Dialog open={!!detailApt} onOpenChange={(o) => !o && setDetailApt(null)}>
+        {detailApt && (
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Icons.Calendar className="w-5 h-5 text-blue-600" />
+                Appointment Details
+              </DialogTitle>
+              <DialogDescription>
+                {detailApt.appointmentNumber || "Appointment"}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-2 gap-3">
+              <DetailRow label="Date" value={formatDate(detailApt.scheduledStart)} />
+              <DetailRow
+                label="Time"
+                value={detailApt.scheduledStart
+                  ? new Date(detailApt.scheduledStart).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                  : "—"}
+              />
+              <DetailRow label="Type" value={(detailApt.appointmentType || "").replace(/_/g, " ")} valueClassName="capitalize" />
+              <DetailRow label="Status" value={(detailApt.status || "").replace(/_/g, " ")} valueClassName="capitalize" />
+              <DetailRow label="Department" value={detailApt.department?.name} />
+              <DetailRow label="Facility" value={detailApt.facility?.name} />
+            </div>
+
+            {detailApt.reason && <DetailBlock label="Reason" value={detailApt.reason} />}
+            {detailApt.notes && <DetailBlock label="Notes" value={detailApt.notes} />}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetailApt(null)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
@@ -454,15 +855,43 @@ function AptStatusPill({ status }: { status: string }) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${cls}`}>{status.replace(/_/g, " ")}</span>;
 }
 
-// --- Invoices ---
+// =====================================================================
+// INVOICES VIEW — search + type + date range + detail dialog (w/ Print)
+// (keeps the existing unpaid/paid/all segmented control)
+// =====================================================================
 function PortalInvoicesView() {
   const [filter, setFilter] = useState<"unpaid" | "paid" | "all">("all");
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [detailInv, setDetailInv] = useState<any | null>(null);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const query = buildQuery({
+    status: filter,
+    search: debouncedSearch,
+    type,
+    dateFrom,
+    dateTo,
+  });
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["portal-invoices", filter],
-    queryFn: () => portalFetchJson(`/api/portal/invoices?status=${filter}`),
+    queryKey: ["portal-invoices", filter, debouncedSearch, type, dateFrom, dateTo],
+    queryFn: () => portalFetchJson(`/api/portal/invoices${query}`),
   });
   const items: any[] = data?.items || [];
   const totalOutstanding: number = data?.totalOutstanding || 0;
+
+  const hasActiveFilters = !!(search || type !== "all" || dateFrom || dateTo);
+
+  const clearFilters = () => {
+    setSearch("");
+    setType("all");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   return (
     <div className="space-y-4 fade-in-up">
@@ -483,10 +912,55 @@ function PortalInvoicesView() {
         </div>
       )}
 
-      <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 w-full max-w-xs">
-        {(["all", "unpaid", "paid"] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`flex-1 py-1.5 px-2 text-xs font-medium rounded transition-colors capitalize ${filter === f ? "bg-teal-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{f}</button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-2 bg-white p-1 rounded-lg border border-slate-200 w-full max-w-xs">
+          {(["all", "unpaid", "paid"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} className={`flex-1 py-1.5 px-2 text-xs font-medium rounded transition-colors capitalize ${filter === f ? "bg-teal-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{f}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3 flex flex-wrap items-end gap-3 shadow-sm">
+        <div className="flex-1 min-w-[200px]">
+          <FilterLabel>Search</FilterLabel>
+          <FilterSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Invoice number"
+          />
+        </div>
+        <div>
+          <FilterLabel>Type</FilterLabel>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="patient">Patient</SelectItem>
+              <SelectItem value="outpatient">Outpatient</SelectItem>
+              <SelectItem value="inpatient">Inpatient</SelectItem>
+              <SelectItem value="emergency">Emergency</SelectItem>
+              <SelectItem value="pharmacy">Pharmacy</SelectItem>
+              <SelectItem value="lab">Lab</SelectItem>
+              <SelectItem value="imaging">Imaging</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <FilterLabel>From</FilterLabel>
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+        </div>
+        <div>
+          <FilterLabel>To</FilterLabel>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
+        </div>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50">
+            <X className="w-4 h-4 mr-1" /> Clear
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -499,14 +973,14 @@ function PortalInvoicesView() {
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
           <Icons.Receipt className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-          <p className="text-sm font-medium text-slate-900">{filter === "unpaid" ? "No outstanding invoices" : "No invoices found"}</p>
+          <p className="text-sm font-medium text-slate-900">{filter === "unpaid" ? "No outstanding invoices" : "No invoices match your filters"}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((inv: any) => (
             <div key={inv.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 card-hover-lift">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <p className="font-semibold text-slate-900">{inv.invoiceNumber}</p>
                     <InvStatusPill status={inv.status} />
@@ -515,7 +989,7 @@ function PortalInvoicesView() {
                   {inv.facility && <p className="text-xs text-slate-500">{inv.facility.name}</p>}
                   <p className="text-xs text-slate-500 capitalize">Type: {inv.invoiceType?.replace(/_/g, " ") || "patient"}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="text-xs text-slate-500">Total</p>
                   <p className="font-semibold text-slate-900">GHS {inv.total.toFixed(2)}</p>
                   {inv.balance > 0 ? (
@@ -524,12 +998,59 @@ function PortalInvoicesView() {
                       <p className="text-sm font-medium text-rose-600">GHS {inv.balance.toFixed(2)}</p>
                     </div>
                   ) : <p className="text-[10px] text-emerald-600 font-medium mt-1">✓ Paid in full</p>}
+                  <Button size="sm" variant="outline" onClick={() => setDetailInv(inv)} className="mt-2">
+                    <Eye className="w-4 h-4 mr-1.5" /> Details
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Detail dialog */}
+      <Dialog open={!!detailInv} onOpenChange={(o) => !o && setDetailInv(null)}>
+        {detailInv && (
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Icons.Receipt className="w-5 h-5 text-emerald-600" />
+                Invoice {detailInv.invoiceNumber}
+              </DialogTitle>
+              <DialogDescription>
+                View invoice details. Use Print to print this invoice.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-2 gap-3">
+              <DetailRow label="Invoice #" value={detailInv.invoiceNumber} />
+              <DetailRow label="Type" value={(detailInv.invoiceType || "").replace(/_/g, " ")} valueClassName="capitalize" />
+              <DetailRow label="Status" value={(detailInv.status || "").replace(/_/g, " ")} valueClassName="capitalize" />
+              <DetailRow label="Facility" value={detailInv.facility?.name} />
+              <DetailRow label="Issued" value={formatDate(detailInv.issuedAt || detailInv.createdAt, true)} />
+              <DetailRow label="Due" value={formatDate(detailInv.dueAt)} />
+              <DetailRow label="Total" value={`GHS ${(detailInv.total || 0).toFixed(2)}`} />
+              <DetailRow label="Amount Paid" value={`GHS ${(detailInv.amountPaid || 0).toFixed(2)}`} />
+              <DetailRow
+                label="Balance"
+                value={`GHS ${(detailInv.balance || 0).toFixed(2)}`}
+                valueClassName={detailInv.balance > 0 ? "text-rose-600 font-semibold" : "text-emerald-600 font-semibold"}
+              />
+              <DetailRow
+                label="Currency"
+                value={detailInv.currency || "GHS"}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetailInv(null)}>Close</Button>
+              <Button onClick={() => window.print()}>
+                <Printer className="w-4 h-4 mr-1.5" /> Print
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
