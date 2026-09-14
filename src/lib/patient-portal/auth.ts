@@ -155,33 +155,72 @@ export async function loginWithGhanaCard(params: {
   // several formats: "GHA-123456789-1", "GHA1234567891", "123456789-1",
   // "1234567891", etc. Our canonical form is digits-only ("1234567891").
   //
-  // To match regardless of how it was stored, we query with contains
-  // semantics on the canonical digits. The unique constraint on
-  // (identifierType, identifierValue) ensures that at most ONE row will
-  // contain those digits, so we don't get false positives.
+  // Strategy: try FAST exact match first (uses the unique index on
+  // (identifierType, identifierValue)), then fall back to SLOWER contains
+  // match only if exact fails. This avoids a slow ILIKE scan on every
+  // login attempt.
   //
-  // We also try the raw input as-is in case the DB happens to store it
-  // in exactly the form the user typed (e.g., if they entered
-  // "GHA-123456789-1" verbatim and the DB has it that way).
-  const identifier = await db.patientIdentifier.findFirst({
-    where: {
-      identifierType: "ghana_card",
-      OR: [
-        // Canonical digits embedded in the stored value
-        { identifierValue: { contains: ghanaCard } },
-        // Raw input as-typed (case-insensitive)
-        { identifierValue: { contains: params.ghanaCardNumber, mode: "insensitive" as any } },
-        // Exact canonical match (rare — only if DB already stores digits-only)
-        { identifierValue: ghanaCard },
-      ],
-    },
-    select: {
-      id: true,
-      patientId: true,
-      verified: true,
-      identifierValue: true,
-    },
-  });
+  // We try 4 variants in order:
+  //   1. Exact canonical digits ("1234567891")
+  //   2. Raw input as-typed (in case DB stored it verbatim)
+  //   3. Contains canonical digits (catches "GHA-123456789-1" etc.)
+  //   4. Contains raw input (case-insensitive, catches unusual formats)
+  const identifier = await (async () => {
+    // Variant 1: exact canonical match — fast (uses unique index)
+    let id = await db.patientIdentifier.findFirst({
+      where: {
+        identifierType: "ghana_card",
+        identifierValue: ghanaCard,
+      },
+      select: { id: true, patientId: true, verified: true, identifierValue: true },
+    });
+    if (id) {
+      console.log(`[portal login] Ghana Card matched via exact canonical: "${id.identifierValue}"`);
+      return id;
+    }
+
+    // Variant 2: exact raw input match — also fast (uses unique index)
+    id = await db.patientIdentifier.findFirst({
+      where: {
+        identifierType: "ghana_card",
+        identifierValue: params.ghanaCardNumber,
+      },
+      select: { id: true, patientId: true, verified: true, identifierValue: true },
+    });
+    if (id) {
+      console.log(`[portal login] Ghana Card matched via exact raw input: "${id.identifierValue}"`);
+      return id;
+    }
+
+    // Variant 3: contains canonical digits — slow (ILIKE scan) but catches
+    // all format variants like "GHA-123456789-1"
+    id = await db.patientIdentifier.findFirst({
+      where: {
+        identifierType: "ghana_card",
+        identifierValue: { contains: ghanaCard },
+      },
+      select: { id: true, patientId: true, verified: true, identifierValue: true },
+    });
+    if (id) {
+      console.log(`[portal login] Ghana Card matched via contains(canonical): "${id.identifierValue}"`);
+      return id;
+    }
+
+    // Variant 4: contains raw input (case-insensitive) — catches edge cases
+    id = await db.patientIdentifier.findFirst({
+      where: {
+        identifierType: "ghana_card",
+        identifierValue: { contains: params.ghanaCardNumber, mode: "insensitive" as any },
+      },
+      select: { id: true, patientId: true, verified: true, identifierValue: true },
+    });
+    if (id) {
+      console.log(`[portal login] Ghana Card matched via contains(raw): "${id.identifierValue}"`);
+      return id;
+    }
+
+    return null;
+  })();
 
   if (!identifier) {
     // Debug log — helps troubleshoot without exposing data to the client

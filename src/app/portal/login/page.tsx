@@ -64,29 +64,54 @@ export default function PortalLoginPage() {
           patientNumber,
         }),
       });
-      const json = await res.json();
 
-      if (res.ok && json.token) {
+      // ── Robust JSON parsing ───────────────────────────────────────
+      // The server might return:
+      //   - valid JSON (the normal case)
+      //   - empty body (if something went very wrong in the server runtime)
+      //   - HTML (if Next.js returned an error page)
+      // We need to handle all three gracefully so the user always sees
+      // a helpful message instead of a JavaScript console error.
+      let json: any = null;
+      try {
+        const text = await res.text();
+        if (text && text.trim()) {
+          json = JSON.parse(text);
+        }
+      } catch (parseErr) {
+        // Body wasn't valid JSON — could be HTML error page or empty
+        console.error("[portal login] response parse failed:", parseErr);
+      }
+
+      if (res.ok && json?.token) {
         localStorage.setItem("patientPortalToken", json.token);
         toast.success("Welcome back!");
-        // Show a brief success state before redirect
         setSubmitting(false);
         setTimeout(() => router.push("/portal/dashboard"), 400);
       } else if (res.status === 429) {
-        setError(json.error || "Too many attempts. Please try again later.");
+        setError(json?.error || "Too many attempts. Please try again in an hour.");
       } else if (res.status === 403) {
-        setError(json.error || "Your account has been suspended. Please contact the hospital.");
+        setError(json?.error || "Your account has been suspended. Please contact the hospital.");
       } else if (res.status === 400) {
-        setError(json.error || "Please check your input and try again.");
-      } else {
-        // 401 — generic mismatch error (don't reveal which factor)
+        setError(json?.error || "Please check your input and try again.");
+      } else if (res.status === 500) {
+        setError(json?.error || "A server error occurred. Please try again in a moment.");
+      } else if (res.status === 401) {
+        // Generic mismatch error (don't reveal which factor was wrong)
         setError(
-          json.error ||
+          json?.error ||
             "The credentials you entered don't match our records. Please verify your Ghana Card number, date of birth, and patient number, then try again."
+        );
+      } else {
+        // Any other status code
+        setError(
+          json?.error ||
+            `Login failed (${res.status}). Please try again or contact the hospital.`
         );
       }
     } catch (e: any) {
-      setError(e.message || "Network error — please try again.");
+      console.error("[portal login] network error:", e);
+      setError(e.message || "Network error — please check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
