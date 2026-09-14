@@ -83,7 +83,10 @@ export async function signPortalToken(params: {
     .setIssuedAt()
     .setExpirationTime(`${ttl}s`)
     .setJti()
-    .protect(getSecret());
+    // ⚠️ jose v4 uses .sign() not .protect() — the .protect() call was
+    // the root cause of the 500 error during login. Signed with HS256
+    // by default (no need to set the alg header explicitly).
+    .sign(getSecret());
   return jwt;
 }
 
