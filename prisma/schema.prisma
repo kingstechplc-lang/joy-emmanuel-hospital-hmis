@@ -6767,34 +6767,56 @@ model AuditLog {
 }
 
 // =====================================================================
-// PATIENT PORTAL — OTP-based authentication + SMS dev-mode log
+// PATIENT PORTAL — authentication (Ghana Card v1 + SMS-OTP ready for v2)
 // =====================================================================
-// Patients authenticate to the public portal (/portal/*) using a 6-digit
-// OTP delivered via SMS to their registered phone number. The portal uses
-// a separate JWT secret from the staff NextAuth so patient tokens can't
-// be used to access staff APIs and vice versa. An account is auto-linked
-// to a Patient record at first OTP-verify time, by matching the phone
-// number against Patient.phone — if exactly one Patient matches, auto-
-// link; if zero, the account stays in 'pending_identity' state (patient
-// must register in person); if multiple match, admin reviews.
+// v1 auth: patients log in with 3 factors — Ghana Card # + DOB + patient
+// number (JEM-XXXXXXX). All three must match the same Patient row. No SMS
+// required. The Ghana Card # is looked up via PatientIdentifier where
+// identifierType='ghana_card'.
+//
+// v2 (architecture-ready): SMS OTP auth via the request-otp / verify-otp
+// endpoints. The SmsService + PatientOtp + SmsLog models stay in place
+// for future activation — when SMS_PROVIDER is set to a real gateway and
+// the login UI gains an "Authenticate via SMS" tab.
+//
+// An account is auto-created on first successful Ghana Card login, with
+// ghanaCardNumber set + patientId linked. The phone field is nullable
+// (only populated when the patient later uses SMS auth).
 model PatientPortalAccount {
-  id              String    @id @default(cuid())
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  phone           String    // E.164 or local format; canonicalized before lookup
-  patientId       String?   // nullable until identity is resolved
-  patient         Patient?  @relation(fields: [patientId], references: [id])
-  status          String    @default("active") // active | suspended | pending_identity | pending_admin_review
-  lastLoginAt     DateTime?
-  lastOtpSentAt   DateTime?
+  id                String    @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  // Primary identifier — Ghana Card number (canonicalized: digits only,
+  // GHA prefix stripped). Unique per org. NULL only for accounts created
+  // via future SMS auth before Ghana Card is linked.
+  ghanaCardNumber   String?
+  // Phone — used when SMS auth is activated in v2. Nullable so Ghana
+  // Card-only accounts can exist without a phone on file.
+  phone             String?
+  patientId         String?   // nullable until identity is resolved
+  patient           Patient?  @relation(fields: [patientId], references: [id])
+  status            String    @default("active") // active | suspended | pending_identity | pending_admin_review
+  lastLoginAt       DateTime?
+  lastOtpSentAt     DateTime?
   failedOtpAttempts Int     @default(0) // increments on wrong code; locked after 5
-  lockedUntil     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  lockedUntil       DateTime?
+  // Track which auth method the patient last used (ghana_card | sms_otp)
+  // so the audit log can distinguish v1 Ghana Card logins from future v2
+  // SMS-based logins.
+  lastAuthMethod    String? // ghana_card | sms_otp
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
+  // Both phone and ghanaCardNumber are nullable individually, but at least
+  // one must be set. Postgres NULL-distinct semantics means multiple NULLs
+  // are allowed in a unique constraint — so Ghana Card-less accounts
+  // (created via SMS in v2) don't conflict, and phone-less accounts
+  // (created via Ghana Card in v1) don't conflict either.
   @@unique([organizationId, phone])
+  @@unique([organizationId, ghanaCardNumber])
   @@index([patientId])
   @@index([phone])
+  @@index([ghanaCardNumber])
 }
 
 // OTP codes — stored as bcrypt hashes (never plaintext). One active code
