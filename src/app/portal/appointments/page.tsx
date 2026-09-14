@@ -1,13 +1,5 @@
 "use client";
 
-// =====================================================================
-// PATIENT PORTAL — Appointments page
-// =====================================================================
-// Lists upcoming + past appointments. v1 is read-only — patients
-// cannot book or cancel from the portal (must call the hospital).
-// Future v2 may add a "request cancellation" feature that goes to
-// a staff queue for approval.
-// =====================================================================
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -84,13 +76,13 @@ export default function PortalAppointmentsPage() {
                     <div className="text-center min-w-[64px]">
                       <div className="bg-teal-50 rounded-lg p-2">
                         <p className="text-xs text-teal-700 font-semibold uppercase">
-                          {new Date(apt.startAt).toLocaleDateString("en", { month: "short" })}
+                          {new Date(apt.scheduledStart).toLocaleDateString("en", { month: "short" })}
                         </p>
                         <p className="text-2xl font-bold text-teal-800">
-                          {new Date(apt.startAt).getDate()}
+                          {new Date(apt.scheduledStart).getDate()}
                         </p>
                         <p className="text-[10px] text-teal-600">
-                          {new Date(apt.startAt).getFullYear()}
+                          {new Date(apt.scheduledStart).getFullYear()}
                         </p>
                       </div>
                     </div>
@@ -103,13 +95,8 @@ export default function PortalAppointmentsPage() {
                         <StatusPill status={apt.status} />
                       </div>
                       <p className="text-sm text-slate-700">
-                        {formatDate(apt.startAt, true)}
+                        {formatDate(apt.scheduledStart, true)}
                       </p>
-                      {apt.clinician && (
-                        <p className="text-xs text-slate-600 mt-1">
-                          Dr. {apt.clinician.firstName} {apt.clinician.lastName}
-                        </p>
-                      )}
                       {apt.department && (
                         <p className="text-xs text-slate-500">{apt.department.name}</p>
                       )}
@@ -119,11 +106,6 @@ export default function PortalAppointmentsPage() {
                       {apt.reason && (
                         <p className="text-xs text-slate-600 mt-2 italic">
                           Reason: {apt.reason}
-                        </p>
-                      )}
-                      {apt.cancelReason && (
-                        <p className="text-xs text-rose-600 mt-2">
-                          Cancelled: {apt.cancelReason}
                         </p>
                       )}
                     </div>
@@ -165,6 +147,9 @@ function FilterTab({
 function StatusPill({ status }: { status: string }) {
   const colors: Record<string, string> = {
     scheduled: "bg-emerald-100 text-emerald-700",
+    confirmed: "bg-blue-100 text-blue-700",
+    checked_in: "bg-cyan-100 text-cyan-700",
+    in_progress: "bg-indigo-100 text-indigo-700",
     completed: "bg-blue-100 text-blue-700",
     cancelled: "bg-rose-100 text-rose-700",
     no_show: "bg-amber-100 text-amber-700",

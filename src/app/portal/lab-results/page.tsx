@@ -1,13 +1,5 @@
 "use client";
 
-// =====================================================================
-// PATIENT PORTAL — Lab Results page
-// =====================================================================
-// Lists all lab orders that have been released to the patient by the
-// ordering clinician. Patient can expand an order to see individual
-// test results with values, flags, reference ranges, and abnormal/
-// critical highlighting.
-// =====================================================================
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +38,6 @@ export default function PortalLabResultsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-sky-50">
-      {/* Top app bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -77,7 +68,7 @@ export default function PortalLabResultsPage() {
           <Card><CardContent className="p-6">
             <EmptyState
               title="No lab results available yet"
-              description="Results that your doctor has reviewed and released will appear here. New results typically appear 1-2 days after the lab completes testing."
+              description="Results that your doctor has reviewed and released will appear here."
               icon={FlaskConical}
             />
           </CardContent></Card>
@@ -86,6 +77,10 @@ export default function PortalLabResultsPage() {
             {items.map((order: any) => {
               const isExpanded = expanded === order.id;
               const hasItems = (order.items || []).length > 0;
+              // Flatten all results across all items for display
+              const allResults = (order.items || []).flatMap((item: any) =>
+                (item.results || []).map((r: any) => ({ ...r, testName: item.testName }))
+              );
               return (
                 <Card key={order.id} className="overflow-hidden">
                   <button
@@ -109,8 +104,10 @@ export default function PortalLabResultsPage() {
                         </p>
                         {hasItems && (
                           <p className="text-xs text-slate-500 mt-1">
-                            {order.items.length} test{order.items.length === 1 ? "" : "s"} —
-                            {isExpanded ? " tap to collapse" : " tap to view"}
+                            {order.items.length} test{order.items.length === 1 ? "" : "s"}
+                            {allResults.length > 0 && ` • ${allResults.length} result${allResults.length === 1 ? "" : "s"}`}
+                            {" — "}
+                            {isExpanded ? "tap to collapse" : "tap to view"}
                           </p>
                         )}
                       </div>
@@ -121,7 +118,7 @@ export default function PortalLabResultsPage() {
                       )}
                     </div>
                   </button>
-                  {isExpanded && hasItems && (
+                  {isExpanded && hasItems && allResults.length > 0 && (
                     <div className="border-t bg-slate-50">
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -134,22 +131,23 @@ export default function PortalLabResultsPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y">
-                            {order.items.map((item: any) => {
-                              const result = item.result;
-                              const isCritical = result?.isCritical;
-                              const isAbnormal = result?.abnormalFlag && result.abnormalFlag !== "normal";
+                            {allResults.map((result: any, i: number) => {
+                              const isCritical = result.criticalFlag;
+                              const isAbnormal = result.abnormalFlag && result.abnormalFlag !== "normal";
                               return (
                                 <tr
-                                  key={item.id}
+                                  key={result.id || i}
                                   className={
                                     isCritical ? "bg-rose-50" :
                                     isAbnormal ? "bg-amber-50" : "bg-white"
                                   }
                                 >
-                                  <td className="p-3 text-slate-900">{item.testName}</td>
+                                  <td className="p-3 text-slate-900">{result.testName}</td>
                                   <td className="p-3 font-medium text-slate-900">
-                                    {result?.resultValue ? (
+                                    {result.resultValue ? (
                                       <>{result.resultValue} {result.unit && <span className="text-slate-500 text-xs">{result.unit}</span>}</>
+                                    ) : result.numericValue != null ? (
+                                      <>{result.numericValue} {result.unit && <span className="text-slate-500 text-xs">{result.unit}</span>}</>
                                     ) : (
                                       <span className="text-slate-400 italic">Pending</span>
                                     )}
@@ -163,7 +161,7 @@ export default function PortalLabResultsPage() {
                                       <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-200 text-amber-800 uppercase">
                                         {result.abnormalFlag.replace(/_/g, " ")}
                                       </span>
-                                    ) : result?.resultValue ? (
+                                    ) : result.resultValue || result.numericValue != null ? (
                                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                                         Normal
                                       </span>
@@ -172,7 +170,7 @@ export default function PortalLabResultsPage() {
                                     )}
                                   </td>
                                   <td className="p-3 text-slate-500 text-xs">
-                                    {result?.referenceRange || "—"}
+                                    {result.referenceRange || "—"}
                                   </td>
                                 </tr>
                               );
@@ -181,9 +179,9 @@ export default function PortalLabResultsPage() {
                         </table>
                       </div>
                       {(() => {
-                        const hasCritical = order.items.some((i: any) => i.result?.isCritical);
-                        const hasAbnormal = order.items.some((i: any) =>
-                          i.result?.abnormalFlag && i.result.abnormalFlag !== "normal" && !i.result.isCritical
+                        const hasCritical = allResults.some((r: any) => r.criticalFlag);
+                        const hasAbnormal = allResults.some((r: any) =>
+                          r.abnormalFlag && r.abnormalFlag !== "normal" && !r.criticalFlag
                         );
                         if (!hasCritical && !hasAbnormal) return null;
                         return (
@@ -198,12 +196,14 @@ export default function PortalLabResultsPage() {
                                 Some results are outside the normal range. This may not always indicate a problem — your doctor will explain what these mean for you.
                               </p>
                             )}
-                            <p className="mt-1 text-[11px]">
-                              These results have been reviewed by Dr. {order.orderingClinician?.firstName} {order.orderingClinician?.lastName}. For questions, please contact the hospital.
-                            </p>
                           </div>
                         );
                       })()}
+                    </div>
+                  )}
+                  {isExpanded && hasItems && allResults.length === 0 && (
+                    <div className="border-t bg-slate-50 p-4 text-center text-sm text-slate-500">
+                      Results pending — the lab is still processing this order.
                     </div>
                   )}
                 </Card>
