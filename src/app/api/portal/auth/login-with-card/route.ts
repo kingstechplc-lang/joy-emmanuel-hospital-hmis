@@ -35,10 +35,11 @@ export async function POST(req: Request) {
       {
         error: "A server error occurred during login. Please try again. If the problem persists, contact the hospital.",
         code: "SERVER_ERROR",
-        // Include the error message in dev for debugging — safe because
-        // patients already see the error in the UI and it's their own
-        // authentication attempt
-        detail: process.env.NODE_ENV === "production" ? undefined : (e?.message || String(e)),
+        // TEMPORARY DEBUG: always include the error detail so we can
+        // see what's failing from the UI without checking Vercel logs.
+        // Revert this once the issue is resolved.
+        detail: e?.message || String(e),
+        stack: e?.stack?.split("\n").slice(0, 5).join("\n"),
       },
       { status: 500 }
     );
