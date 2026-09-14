@@ -133,6 +133,8 @@ model Organization {
   patientPortalAccounts  PatientPortalAccount[]
   patientOtps             PatientOtp[]
   smsLogs                 SmsLog[]
+  // Tier 3 #9: Telemedicine
+  telemedicineRooms       TelemedicineRoom[]
 }
 
 model Facility {
@@ -221,6 +223,8 @@ model Facility {
   dashboardLayouts             DashboardLayout[]
   // Tier 2: Clinical Templates (facility-scoped templates)
   clinicalTemplates            ClinicalTemplate[]
+  // Tier 3 #9: Telemedicine rooms
+  telemedicineRooms            TelemedicineRoom[]
   creditNotes                   CreditNote[]
   stockAdjustments              StockAdjustment[]
   supplierEvaluations           SupplierEvaluation[]
@@ -483,6 +487,9 @@ model User {
   prescriptions              Prescription[]             @relation("rxPrescriber")
   labOrders                  LabOrder[]                 @relation("labOrderClinician")
   labOrdersReleasedToPatient LabOrder[]                 @relation("labOrderReleasedToPatientBy")
+  // Tier 3 #9: Telemedicine — clinician + created-by back-relations
+  telemedicineAsClinician   TelemedicineRoom[]          @relation("telemedicineClinician")
+  telemedicineCreatedBy     TelemedicineRoom[]          @relation("telemedicineCreatedBy")
   imagingOrders              ImagingOrder[]             @relation("imagingOrderClinician")
   procedures                 Procedure[]                @relation("procedurePerformer")
   admissions                 Admission[]                @relation("admissionAdmittedBy")
@@ -1080,6 +1087,8 @@ model Patient {
   // have been linked to this patient (one patient could have multiple
   // portal accounts over time, e.g., if they change phones)
   portalAccounts                PatientPortalAccount[]
+  // Tier 3 #9: Telemedicine
+  telemedicineRooms             TelemedicineRoom[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -1452,6 +1461,8 @@ model Encounter {
   wristbands                PatientWristband[]
   // Tier 2: Clinical Template Applications (templates applied to this encounter)
   clinicalTemplateApplications ClinicalTemplateApplication[]
+  // Tier 3 #9: Telemedicine rooms linked to this encounter
+  telemedicineRooms        TelemedicineRoom[]
 
   @@unique([facilityId, encounterNumber])
   @@index([patientId, facilityId])
@@ -1484,6 +1495,8 @@ model Appointment {
   updatedAt         DateTime    @updatedAt
 
   history AppointmentHistory[]
+  // Tier 3 #9: Telemedicine room linked to this appointment
+  telemedicineRooms TelemedicineRoom[]
 
   @@unique([facilityId, appointmentNumber])
   @@index([patientId])
@@ -6862,6 +6875,75 @@ model SmsLog {
 
   @@index([toPhone, createdAt])
   @@index([status, createdAt])
+}
+
+// =====================================================================
+// TELEMEDICINE — virtual consultations via Daily.co iframe embed
+// =====================================================================
+// A TelemedicineRoom is created when the doctor starts a virtual visit.
+// The room has a unique Daily.co URL that both doctor + patient join.
+// Flow: doctor creates room → patient joins waiting room → doctor admits
+// patient → video call → doctor ends call → doctor creates Consultation.
+model TelemedicineRoom {
+  id              String    @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String
+  facility        Facility  @relation(fields: [facilityId], references: [id])
+  appointmentId   String?   // linked Appointment (if scheduled)
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
+  encounterId     String?   // linked Encounter (if created from encounter)
+  encounter       Encounter? @relation(fields: [encounterId], references: [id])
+  patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  clinicianId     String?   // the doctor who will/has joined
+  clinician       User?     @relation("telemedicineClinician", fields: [clinicianId], references: [id])
+  roomName        String    @unique // Daily.co room name, e.g. "jem-{cuid}"
+  roomUrl         String    // full Daily.co URL: https://{domain}/{roomName}
+  // Room state: created → patient_waiting → in_progress → ended
+  status          String    @default("created")
+  patientJoinedAt DateTime?
+  patientWaitingAt DateTime?
+  admittedAt      DateTime? // when doctor admitted the patient
+  callStartedAt   DateTime?
+  callEndedAt     DateTime?
+  callDurationSec Int?     // computed on end
+  // Billing — invoice generated when consultation is created
+  invoiceId       String?
+  // Consultation created from this call
+  consultationId  String?
+  // Metadata
+  createdById     String
+  createdBy       User      @relation("telemedicineCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  participants    TelemedicineParticipant[]
+
+  @@index([organizationId, facilityId])
+  @@index([patientId, createdAt])
+  @@index([clinicianId, status])
+  @@index([status, createdAt])
+}
+
+model TelemedicineParticipant {
+  id              String    @id @default(cuid())
+  roomId          String
+  room            TelemedicineRoom @relation(fields: [roomId], references: [id])
+  userId          String?   // staff user who joined (null for patient)
+  patientId       String?   // patient who joined (null for staff)
+  role            String    // doctor | patient
+  joinToken       String?   // Daily.co meeting token (if using private rooms)
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  durationSec     Int?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([patientId])
 }
 
 model PatientAccessLog {

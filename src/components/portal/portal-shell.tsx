@@ -46,9 +46,10 @@ import {
   PORTAL_NAV_ITEMS, PORTAL_NAV_CATEGORIES, usePortalStore,
 } from "@/stores/portal-store";
 import {
-  getPortalToken, portalFetchJson, portalLogout,
+  getPortalToken, portalFetch, portalFetchJson, portalLogout,
 } from "@/lib/patient-portal/client";
 import { formatDate, safeJson } from "@/components/ui-helpers";
+import { toast } from "sonner";
 
 // =====================================================================
 // SHARED HOOKS / HELPERS
@@ -197,6 +198,8 @@ export function PortalShell() {
         return <PortalAppointmentsView />;
       case "invoices":
         return <PortalInvoicesView />;
+      case "telemedicine":
+        return <PortalTelemedicineView />;
       default:
         return <PortalDashboardView patient={patient} onNavigate={setView} />;
     }
@@ -1063,4 +1066,195 @@ function InvStatusPill({ status }: { status: string }) {
   const colors: Record<string, string> = { issued: "bg-blue-100 text-blue-700", partially_paid: "bg-amber-100 text-amber-700", paid: "bg-emerald-100 text-emerald-700", overdue: "bg-rose-100 text-rose-700", cancelled: "bg-slate-100 text-slate-600", refunded: "bg-violet-100 text-violet-700" };
   const cls = colors[status] || "bg-slate-100 text-slate-600";
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${cls}`}>{status.replace(/_/g, " ")}</span>;
+}
+
+// =====================================================================
+// TELEMEDICINE VIEW — patient-side video consultations
+// =====================================================================
+function PortalTelemedicineView() {
+  const [activeRoom, setActiveRoom] = useState<any | null>(null);
+  const [joining, setJoining] = useState<string | null>(null);
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["portal-telemedicine"],
+    queryFn: () => portalFetchJson("/api/portal/telemedicine"),
+  });
+
+  const upcoming: any[] = data?.upcoming || [];
+  const past: any[] = data?.past || [];
+
+  const handleJoin = async (roomId: string) => {
+    setJoining(roomId);
+    try {
+      const res = await portalFetch(`/api/telemedicine/rooms/${roomId}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ as: "patient" }),
+      });
+      const json = await res.json();
+      if (res.ok && json.roomUrl) {
+        setActiveRoom({ id: roomId, roomUrl: json.roomUrl, status: "patient_waiting" });
+      } else {
+        toast.error(json.error || "Failed to join");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to join");
+    } finally {
+      setJoining(null);
+    }
+  };
+
+  // If we have an active room with a URL, show the video embed
+  if (activeRoom?.roomUrl) {
+    return (
+      <div className="space-y-4 fade-in-up">
+        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-5 shadow-lg relative overflow-hidden">
+          <Icons.Video className="absolute top-3 right-4 w-16 h-16 text-white/15" strokeWidth={1.5} />
+          <h2 className="text-xl font-bold">Video Consultation</h2>
+          <p className="text-sm text-white/80 mt-1">
+            {activeRoom.status === "patient_waiting"
+              ? "Waiting for the doctor to admit you..."
+              : "Your call is in progress."}
+          </p>
+        </div>
+
+        <div className="rounded-xl overflow-hidden border border-slate-200 shadow-lg" style={{ height: "60vh" }}>
+          {/* Use a simple iframe for the portal — no need for the full embed component */}
+          <iframe
+            src={activeRoom.roomUrl}
+            allow="camera; microphone; fullscreen; display-capture; autoplay"
+            className="w-full h-full border-0"
+            title="Video Consultation"
+          />
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setActiveRoom(null);
+              refetch();
+            }}
+            className="border-rose-300 text-rose-700 hover:bg-rose-50"
+          >
+            Leave Call
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 fade-in-up">
+      <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-5 shadow-lg relative overflow-hidden">
+        <Icons.Video className="absolute top-3 right-4 w-16 h-16 text-white/15" strokeWidth={1.5} />
+        <h2 className="text-xl font-bold">Video Consultations</h2>
+        <p className="text-sm text-white/80 mt-1">Join your scheduled virtual appointments with your doctor.</p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Icons.Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
+        </div>
+      ) : isError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-center">
+          <p className="text-sm text-rose-700 mb-2">Failed to load video consultations</p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>Try again</Button>
+        </div>
+      ) : upcoming.length === 0 && past.length === 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+          <Icons.Video className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+          <p className="text-sm font-medium text-slate-900">No video consultations scheduled</p>
+          <p className="text-xs text-slate-500 mt-1">When your doctor schedules a virtual appointment, it will appear here.</p>
+        </div>
+      ) : (
+        <>
+          {/* Upcoming */}
+          {upcoming.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Upcoming</h3>
+              {upcoming.map((room: any) => (
+                <div key={room.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 card-hover-lift">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icons.Video className="w-4 h-4 text-indigo-600" />
+                        <p className="font-semibold text-slate-900">Video Consultation</p>
+                        <TeleStatusPill status={room.status} />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {room.appointment
+                          ? formatDate(room.appointment.scheduledStart, true)
+                          : formatDate(room.createdAt, true)}
+                      </p>
+                      {room.clinician && (
+                        <p className="text-xs text-slate-500">
+                          Dr. {room.clinician.firstName} {room.clinician.lastName}
+                        </p>
+                      )}
+                      {room.appointment?.department && (
+                        <p className="text-xs text-slate-500">{room.appointment.department.name}</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleJoin(room.id)}
+                      disabled={joining === room.id}
+                      className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
+                    >
+                      {joining === room.id ? (
+                        <><Icons.Loader2 className="w-3.5 h-3.5 animate-spin" /> Joining...</>
+                      ) : (
+                        <><Icons.Video className="w-3.5 h-3.5" /> Join Call</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Past */}
+          {past.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mt-6">Past Consultations</h3>
+              {past.map((room: any) => (
+                <div key={room.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 opacity-75">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">Video Consultation</p>
+                      <p className="text-xs text-slate-500">
+                        {room.callEndedAt ? formatDate(room.callEndedAt, true) : formatDate(room.createdAt, true)}
+                      </p>
+                      {room.callDurationSec && (
+                        <p className="text-xs text-slate-500">Duration: {Math.round(room.callDurationSec / 60)} min</p>
+                      )}
+                    </div>
+                    <TeleStatusPill status={room.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TeleStatusPill({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    created: "bg-slate-100 text-slate-600",
+    patient_waiting: "bg-amber-100 text-amber-700",
+    in_progress: "bg-emerald-100 text-emerald-700",
+    ended: "bg-slate-100 text-slate-500",
+  };
+  const cls = colors[status] || "bg-slate-100 text-slate-600";
+  const labels: Record<string, string> = {
+    created: "Scheduled",
+    patient_waiting: "Waiting",
+    in_progress: "In Progress",
+    ended: "Completed",
+  };
+  return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${cls}`}>{labels[status] || status}</span>;
 }

@@ -74,6 +74,7 @@ import { MortuaryView } from "@/components/views/extended/mortuary-view";
 import { WorkflowDashboardView } from "@/components/views/extended/workflow-dashboard-view";
 import { ClinicalAlertCenterView } from "@/components/views/clinical/clinical-alert-center-view";
 import { DischargeSummaryView } from "@/components/views/clinical/discharge-summary-view";
+import { TelemedicineView } from "@/components/views/clinical/telemedicine-view";
 import { WristbandsView } from "@/components/views/clinical/wristbands-view";
 import { MedicationLabelsView } from "@/components/views/pharmacy/medication-labels-view";
 import { CDSSHealthCenterView } from "@/components/views/clinical/cdss-health-center-view";
@@ -190,6 +191,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   wristbands: WristbandsView,
   medication_labels: MedicationLabelsView,
   cdss_health: CDSSHealthCenterView,
+  telemedicine: TelemedicineView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {

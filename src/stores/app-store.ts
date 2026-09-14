@@ -101,7 +101,8 @@ export type ViewKey =
   | "discharge_summaries"
   | "wristbands"
   | "medication_labels"
-  | "cdss_health";
+  | "cdss_health"
+  | "telemedicine";
 
 type AppState = {
   view: ViewKey;
@@ -255,6 +256,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "immunizations", label: "Immunizations", icon: "Syringe", permission: "immunization.view", category: "Clinical" },
   { key: "maternity", label: "Maternity", icon: "Baby", permission: "maternity.view", category: "Clinical" },
   { key: "discharge_summaries", label: "Discharge Summaries", icon: "FileText", permission: "discharge_summary.view", category: "Clinical" },
+  { key: "telemedicine", label: "Telemedicine", icon: "Video", permission: "clinical.view", category: "Clinical" },
   { key: "wristbands", label: "Wristbands", icon: "QrCode", permission: "wristband.print", category: "Clinical" },
   { key: "medication_labels", label: "Medication Labels", icon: "Tag", permission: "medication_label.print", category: "Clinical" },
 

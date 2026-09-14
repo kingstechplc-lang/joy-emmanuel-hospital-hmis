@@ -12,7 +12,8 @@ export type PortalViewKey =
   | "dashboard"
   | "lab_results"
   | "appointments"
-  | "invoices";
+  | "invoices"
+  | "telemedicine";
 
 type PortalState = {
   view: PortalViewKey;
@@ -30,6 +31,7 @@ export const PORTAL_NAV_ITEMS: Array<{
   { key: "dashboard", label: "Dashboard", icon: "LayoutDashboard", category: "Overview" },
   { key: "appointments", label: "Appointments", icon: "Calendar", category: "My Health" },
   { key: "lab_results", label: "Lab Results", icon: "FlaskConical", category: "My Health" },
+  { key: "telemedicine", label: "Video Consultations", icon: "Video", category: "My Health" },
   { key: "invoices", label: "Invoices & Receipts", icon: "Receipt", category: "My Health" },
 ];
 
