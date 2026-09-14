@@ -77,15 +77,17 @@ export async function signPortalToken(params: {
     ph: params.phone,
     org: params.organizationId,
   })
+    // jose v4 requires the algorithm header to be set explicitly before
+    // .sign() is called — otherwise throws "either setProtectedHeader
+    // or setUnprotectedHeader must be called before #sign()". HS256 =
+    // HMAC-SHA256, which is the right choice for a shared-secret JWT.
+    .setProtectedHeader({ alg: "HS256" })
     .setSubject(params.accountId)
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
     .setIssuedAt()
     .setExpirationTime(`${ttl}s`)
     .setJti()
-    // ⚠️ jose v4 uses .sign() not .protect() — the .protect() call was
-    // the root cause of the 500 error during login. Signed with HS256
-    // by default (no need to set the alg header explicitly).
     .sign(getSecret());
   return jwt;
 }

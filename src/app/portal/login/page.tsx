@@ -95,14 +95,7 @@ export default function PortalLoginPage() {
       } else if (res.status === 400) {
         setError(json?.error || "Please check your input and try again.");
       } else if (res.status === 500) {
-        // TEMPORARY DEBUG: show the actual error detail so we can
-        // diagnose what's failing without checking Vercel logs.
-        const baseMsg = json?.error || "A server error occurred. Please try again in a moment.";
-        const detail = json?.detail ? `\n\nDebug detail: ${json.detail}` : "";
-        setError(baseMsg + detail);
-        if (json?.stack) {
-          console.error("[portal login] server stack:", json.stack);
-        }
+        setError(json?.error || "A server error occurred. Please try again in a moment.");
       } else if (res.status === 401) {
         // Generic mismatch error (don't reveal which factor was wrong)
         setError(
