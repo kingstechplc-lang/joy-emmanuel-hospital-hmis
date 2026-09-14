@@ -27,7 +27,7 @@
 //   - discharge_summary.print     — print (also given to viewers)
 // =====================================================================
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/stores/app-store";
 import { useSession } from "next-auth/react";
@@ -553,6 +553,7 @@ function DischargeSummaryEditorDialog({
   canPrint: boolean;
   lifecycleMut: any;
 }) {
+  const qc = useQueryClient();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["discharge-summary", id],
     queryFn: () => fetchJson(`/api/discharge-summaries/${id}`),
@@ -568,6 +569,105 @@ function DischargeSummaryEditorDialog({
   const isFinalized = summary?.status === "finalized";
   const isAmended = summary?.status === "amended";
   const isLocked = isFinalized || isAmended;
+
+  // ── Editable free-text additions ────────────────────────────────
+  // The structured content (diagnoses, labs, meds) is auto-assembled
+  // from encounter data, but the clinician often needs to add free-text
+  // notes that don't fit the structure: course-in-hospital narrative,
+  // follow-up instructions specific to this patient, response to
+  // treatment, etc. We store these as `additionalNotes` inside the
+  // content JSON so they survive the lifecycle and appear in the
+  // printed template.
+  const [additionalNotes, setAdditionalNotes] = useState("");
+  const [notesDirty, setNotesDirty] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [nhisFormat, setNhisFormat] = useState(false);
+
+  // Sync local state when the loaded content changes
+  useEffect(() => {
+    if (content?.additionalNotes !== undefined) {
+      setAdditionalNotes(content.additionalNotes || "");
+      setNotesDirty(false);
+    }
+  }, [content?.additionalNotes]);
+
+  const handleSaveNotes = async () => {
+    if (!summary) return;
+    setSavingNotes(true);
+    try {
+      const updatedContent = { ...content, additionalNotes };
+      const res = await fetch(`/api/discharge-summaries/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          content: JSON.stringify(updatedContent),
+        }),
+      });
+      const json = await safeJson(res);
+      if (!res.ok) {
+        toast.error(json.error || `Failed (${res.status})`);
+      } else {
+        toast.success("Notes saved");
+        setNotesDirty(false);
+        qc.invalidateQueries({ queryKey: ["discharge-summary", id] });
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save notes");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  // ── Refresh from encounter ──────────────────────────────────────
+  // Re-runs the assembler against the latest encounter data and
+  // previews the result. The clinician can then choose to apply it
+  // (which overwrites the structured content but preserves any
+  // additionalNotes they've already written).
+  const handleRefreshFromEncounter = async () => {
+    if (!summary?.encounterId) return;
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/discharge-summaries/assemble", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ encounterId: summary.encounterId }),
+      });
+      const json = await safeJson(res);
+      if (!res.ok) {
+        toast.error(json.error || `Failed (${res.status})`);
+        return;
+      }
+      // Merge: keep additionalNotes from current content, replace everything else
+      const mergedContent = {
+        ...(json.content || {}),
+        additionalNotes,
+      };
+      const patchRes = await fetch(`/api/discharge-summaries/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          content: JSON.stringify(mergedContent),
+          primaryDiagnosisName: json.primaryDiagnosisName,
+          primaryDiagnosisCode: json.primaryDiagnosisCode,
+          attendingClinicianId: json.attendingClinicianId,
+        }),
+      });
+      const patchJson = await safeJson(patchRes);
+      if (!patchRes.ok) {
+        toast.error(patchJson.error || `Failed (${patchRes.status})`);
+      } else {
+        toast.success("Summary refreshed from encounter");
+        qc.invalidateQueries({ queryKey: ["discharge-summary", id] });
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to refresh from encounter");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const patientName = `${summary?.patient?.firstName || ""} ${summary?.patient?.lastName || ""}`.trim() || "—";
   const attendingName = summary?.attendingClinician
@@ -842,6 +942,65 @@ function DischargeSummaryEditorDialog({
                   </CardContent>
                 </Card>
               )}
+
+              {/* ── Additional Clinical Notes (editable) ───────────────
+                  Free-text additions to the auto-assembled structured
+                  content. Stored as `additionalNotes` inside the content
+                  JSON so they survive lifecycle transitions and appear
+                  in the printed template. */}
+              <Card>
+                <CardContent className="p-4 w-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                      <FilePen className="w-4 h-4" /> Additional Clinical Notes
+                    </h3>
+                    {!isLocked && (
+                      <span className="text-[10px] text-slate-400">
+                        {notesDirty ? "Unsaved changes" : "Saved"}
+                      </span>
+                    )}
+                  </div>
+                  {isLocked ? (
+                    // Read-only display for finalized / amended summaries
+                    additionalNotes ? (
+                      <p className="text-xs text-slate-700 whitespace-pre-wrap bg-slate-50 border border-slate-200 rounded p-3">
+                        {additionalNotes}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">No additional notes recorded.</p>
+                    )
+                  ) : (
+                    <>
+                      <Textarea
+                        value={additionalNotes}
+                        onChange={(e) => {
+                          setAdditionalNotes(e.target.value);
+                          setNotesDirty(true);
+                        }}
+                        placeholder="Add free-text notes that supplement the structured content above — course in hospital, response to treatment, specific follow-up instructions, etc."
+                        className="min-h-[120px] text-xs"
+                      />
+                      {canCreate && (
+                        <div className="flex justify-end mt-2">
+                          <Button
+                            size="sm"
+                            variant={notesDirty ? "default" : "outline"}
+                            disabled={!notesDirty || savingNotes}
+                            onClick={handleSaveNotes}
+                            className="gap-2"
+                          >
+                            {savingNotes ? (
+                              <><RefreshCcw className="w-3 h-3 animate-spin" /> Saving...</>
+                            ) : (
+                              <><FilePen className="w-3 h-3" /> Save Notes</>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </>
           )}
         </div>
@@ -850,15 +1009,45 @@ function DischargeSummaryEditorDialog({
         <DialogFooter className="p-4 pt-3 shrink-0 border-t bg-white">
           <div className="flex flex-wrap gap-2 w-full justify-end">
             <Button variant="outline" onClick={onClose}>Close</Button>
+            {/* Refresh from encounter — re-runs the assembler to pull in
+                any new labs/diagnoses/meds recorded since the draft
+                was first created. Preserves any additionalNotes already
+                written by the clinician. Only available on drafts. */}
+            {canCreate && summary && summary.status === "draft" && (
+              <Button
+                variant="outline"
+                disabled={refreshing}
+                onClick={handleRefreshFromEncounter}
+                className="border-blue-200 hover:bg-blue-50 text-blue-700"
+                title="Pull the latest encounter data into this summary"
+              >
+                {refreshing ? (
+                  <><RefreshCcw className="w-4 h-4 animate-spin" /> Refreshing...</>
+                ) : (
+                  <><RefreshCcw className="w-4 h-4" /> Refresh from Encounter</>
+                )}
+              </Button>
+            )}
             {canPrint && summary && (
-              <PrintButton
-                label="Print Summary"
-                className="border-slate-200"
-                documentType="discharge"
-                recordId={summary.summaryNumber}
-                recordSummary={`${patientName} — ${summary.primaryDiagnosisName || "Discharge summary"}`}
-                renderContent={() => <DischargeSummaryTemplate summary={summary} />}
-              />
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={nhisFormat}
+                    onChange={(e) => setNhisFormat(e.target.checked)}
+                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  NHIS format
+                </label>
+                <PrintButton
+                  label={nhisFormat ? "Print NHIS Summary" : "Print Summary"}
+                  className="border-slate-200"
+                  documentType="discharge"
+                  recordId={summary.summaryNumber}
+                  recordSummary={`${patientName} — ${summary.primaryDiagnosisName || "Discharge summary"}`}
+                  renderContent={() => <DischargeSummaryTemplate summary={summary} variant={nhisFormat ? "nhis" : "standard"} />}
+                />
+              </div>
             )}
             {canCreate && summary?.status === "draft" && (
               <Button

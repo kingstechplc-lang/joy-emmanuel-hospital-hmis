@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +9,11 @@ import {
   Stethoscope, FileText, Pill, Receipt, FlaskConical, Activity, ShieldCheck,
   CheckCircle2, XCircle, Clock, User, Building2, Calendar, ArrowRight,
   ClipboardList, ScanLine, Scissors, FileCode2, AlertTriangle, Loader2,
+  ClipboardPlus,
 } from "lucide-react";
 import { StatusBadge, formatDate, formatRelative, formatCurrency, safeJson } from "@/components/ui-helpers";
 import { WristbandPrintButton } from "@/components/clinical/wristband-print-button";
+import { toast } from "sonner";
 
 async function fetchJson(url: string) {
   const res = await fetch(url);
@@ -38,6 +40,9 @@ export function EncounterDetailDialog({
   onClosed: (id: string) => void;
   onCancelled: (encounter: any) => void;
 }) {
+  const queryClient = useQueryClient();
+  const [generatingDischargeSummary, setGeneratingDischargeSummary] = useState(false);
+
   // Fetch full encounter details
   const { data, isLoading } = useQuery({
     queryKey: ["encounter-detail", initialEncounter.id],
@@ -51,6 +56,43 @@ export function EncounterDetailDialog({
 
   // Build timeline from actual DB records
   const timeline = buildTimeline(enc);
+
+  // ── One-click "Generate Discharge Summary" ─────────────────────────
+  // POSTs to /api/discharge-summaries with the current encounterId. The
+  // server auto-assembles the structured content (diagnoses, labs, meds,
+  // vitals, consultations) and creates a draft DischargeSummary row. On
+  // success, navigates to the Discharge Summaries view where the editor
+  // opens. On 409 (a draft already exists), informs the user and
+  // navigates to the existing summary.
+  const handleGenerateDischargeSummary = async () => {
+    if (!enc.id) return;
+    setGeneratingDischargeSummary(true);
+    try {
+      const res = await fetch("/api/discharge-summaries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ encounterId: enc.id }),
+      });
+      const json = await safeJson(res);
+      if (res.status === 201 && json.item?.id) {
+        toast.success(`Discharge summary ${json.item.summaryNumber} created`);
+        // Invalidate the discharge-summaries list cache so the new draft
+        // appears when the user navigates to the view.
+        queryClient.invalidateQueries({ queryKey: ["discharge-summaries"] });
+        onNavigate("discharge_summaries");
+      } else if (res.status === 409 && json.existingId) {
+        toast.info(`Draft summary already exists (${json.existingStatus})`);
+        queryClient.invalidateQueries({ queryKey: ["discharge-summaries"] });
+        onNavigate("discharge_summaries");
+      } else {
+        toast.error(json.error || `Failed (${res.status})`);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate discharge summary");
+    } finally {
+      setGeneratingDischargeSummary(false);
+    }
+  };
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -119,6 +161,20 @@ export function EncounterDetailDialog({
                   <QuickAction label="Insurance Claims" icon={FileText} color="emerald" onClick={() => onNavigate("insurance_claims")} />
                   <QuickAction label="NHIA CLAIM-it" icon={FileCode2} color="indigo" onClick={() => onNavigate("nhia_claims")} />
                   <QuickAction label="Patient 360" icon={User} color="slate" onClick={() => onNavigate("patient_360")} />
+                  {/* One-click discharge summary — auto-assembles from encounter data */}
+                  <button
+                    onClick={handleGenerateDischargeSummary}
+                    disabled={generatingDischargeSummary}
+                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors text-fuchsia-700 hover:bg-fuchsia-50 border-fuchsia-300 bg-fuchsia-50/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Auto-generate a structured discharge summary from this encounter's diagnoses, labs, prescriptions, and vitals"
+                  >
+                    {generatingDischargeSummary ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ClipboardPlus className="w-3.5 h-3.5" />
+                    )}
+                    {generatingDischargeSummary ? "Generating..." : "Discharge Summary"}
+                  </button>
                   {canClose && !isTerminal && (
                     <QuickAction label="Close" icon={CheckCircle2} color="slate" onClick={() => onClosed(enc.id)} />
                   )}

@@ -33,6 +33,11 @@ import { formatDate } from "@/components/ui-helpers";
 type DischargeSummaryTemplateProps = {
   /** The full DischargeSummary record with relations loaded. */
   summary: any;
+  /** Print variant: "standard" (default) or "nhis" for NHIS-compliant
+   *  insurance claim evidence format — adds NHIA facility code, NHIS
+   *  membership number, gDRG/tariff block placeholder, and a claim
+   *  attestation footer. */
+  variant?: "standard" | "nhis";
 };
 
 function safeParseContent(content: any): any {
@@ -45,19 +50,26 @@ function safeParseContent(content: any): any {
   }
 }
 
-export function DischargeSummaryTemplate({ summary }: DischargeSummaryTemplateProps) {
+export function DischargeSummaryTemplate({ summary, variant = "standard" }: DischargeSummaryTemplateProps) {
   if (!summary) return null;
+
+  const isNhis = variant === "nhis";
 
   const c = safeParseContent(summary.content);
   const patient = summary.patient || c.patient;
   const encounter = summary.encounter || c.encounter;
   const admission = summary.admission || c.admission;
   const dischargeRecord = summary.dischargeRecord || c.dischargeRecord;
+  const facility = summary.facility || c.facility || encounter?.facility;
   const attending = summary.attendingClinician ||
     (admission?.attendingClinician
       ? { firstName: admission.attendingClinician.firstName, lastName: admission.attendingClinician.lastName }
       : null);
   const finalizedBy = summary.finalizedBy || null;
+
+  // NHIS-specific identifiers
+  const nhisMembershipNumber = patient?.nhisNumber || null;
+  const nhiaFacilityCode = facility?.code || null;
 
   const fullName = [patient?.firstName, patient?.lastName].filter(Boolean).join(" ") || "—";
   const attendingName = attending
@@ -88,16 +100,21 @@ export function DischargeSummaryTemplate({ summary }: DischargeSummaryTemplatePr
 
   return (
     <PrintLayout
-      title="Discharge Summary"
+      title={isNhis ? "Discharge Summary (NHIS Claim Evidence)" : "Discharge Summary"}
       documentNumber={summary.summaryNumber || "—"}
       subtitle={encounter?.encounterNumber || admission?.admissionNumber || undefined}
       paperSize="A4"
       patient={patient}
+      facility={facility}
       extraPatientRows={[
         { label: "Encounter #", value: encounter?.encounterNumber },
         { label: "Admission #", value: admission?.admissionNumber },
         { label: "Discharge #", value: dischargeRecord?.dischargeNumber },
         { label: "MRN", value: patient?.patientNumber },
+        ...(isNhis ? [
+          { label: "NHIA Facility Code", value: nhiaFacilityCode || "—" },
+          { label: "NHIS Membership #", value: nhisMembershipNumber || "—" },
+        ] : []),
       ]}
       signatory={finalizerName || attendingName || undefined}
       signatoryRole={finalizerName ? "Finalizing Clinician" : "Attending Clinician"}
@@ -130,6 +147,51 @@ export function DischargeSummaryTemplate({ summary }: DischargeSummaryTemplatePr
           Version {summary.version || 1}
         </span>
       </div>
+
+      {/* NHIS-specific insurance block — shows the gDRG/tariff snapshot for
+          the primary diagnosis so this document can be attached as claim
+          evidence. Note: the authoritative gDRG/tariff values live on
+          the DiagnosisCatalog and are re-validated at claim generation
+          time; the values shown here are a snapshot from the discharge
+          summary's content payload (if captured at assembly time). */}
+      {isNhis && (
+        <div style={{
+          marginBottom: "12px",
+          padding: "10px 12px",
+          border: "1px solid #c4b5fd",
+          background: "#f5f3ff",
+          borderRadius: "4px",
+          fontSize: "11px",
+        }}>
+          <div style={{ fontWeight: 700, color: "#5b21b6", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "10px" }}>
+            National Health Insurance Scheme — Claim Evidence
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+            <div>
+              <div style={{ color: "#64748b", fontSize: "9px" }}>Primary ICD-10</div>
+              <div style={{ fontWeight: 600, color: "#1e293b" }}>
+                {summary.primaryDiagnosisCode || primaryDx?.diagnosisCode || "—"}
+              </div>
+            </div>
+            <div>
+              <div style={{ color: "#64748b", fontSize: "9px" }}>G-DRG Code</div>
+              <div style={{ fontWeight: 600, color: "#1e293b" }}>
+                {c.gDrgCode || c.nhisGdrgCode || "—"}
+              </div>
+            </div>
+            <div>
+              <div style={{ color: "#64748b", fontSize: "9px" }}>NHIS Tariff (GHS)</div>
+              <div style={{ fontWeight: 600, color: "#1e293b" }}>
+                {c.nhisTariff != null ? `GHS ${Number(c.nhisTariff).toFixed(2)}` : "—"}
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: "6px", fontSize: "9px", color: "#64748b", fontStyle: "italic" }}>
+            Tariff values are indicative — final reimbursement is determined by the NHIA claims
+            processor at submission time.
+          </div>
+        </div>
+      )}
 
       {/* Admission / Encounter meta */}
       <DocumentMeta
@@ -336,6 +398,13 @@ export function DischargeSummaryTemplate({ summary }: DischargeSummaryTemplatePr
         </DocumentSection>
       )}
 
+      {/* Additional Clinical Notes — free-text additions by the clinician */}
+      {c.additionalNotes && (
+        <DocumentSection title="Additional Clinical Notes">
+          <div style={{ whiteSpace: "pre-wrap" }}>{c.additionalNotes}</div>
+        </DocumentSection>
+      )}
+
       <PrintDivider />
 
       {/* Signatures */}
@@ -356,6 +425,28 @@ export function DischargeSummaryTemplate({ summary }: DischargeSummaryTemplatePr
           <div style={{ fontSize: "10px", color: "#64748b" }}>Acknowledgement</div>
         </div>
       </div>
+
+      {/* NHIS claim attestation footer — required for NHIA reimbursement */}
+      {isNhis && (
+        <div style={{
+          marginTop: "24px",
+          padding: "10px 12px",
+          border: "1px solid #cbd5e1",
+          background: "#f8fafc",
+          borderRadius: "4px",
+          fontSize: "9px",
+          color: "#475569",
+          lineHeight: "1.4",
+        }}>
+          <strong style={{ color: "#1e293b" }}>Claim Attestation:</strong> I certify that the
+          services documented in this discharge summary were medically necessary and were
+          rendered to the above-named patient on the dates indicated. The diagnoses and
+          procedures listed are accurate to the best of my knowledge. I understand that
+          this document may be used as supporting evidence for an NHIS reimbursement claim
+          and that misrepresentation may result in claim denial, recovery of funds, or
+          other penalties under the National Health Insurance Act and Regulations.
+        </div>
+      )}
     </PrintLayout>
   );
 }

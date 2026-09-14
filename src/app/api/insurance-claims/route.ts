@@ -87,6 +87,51 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invoice has no outstanding balance to claim against" }, { status: 400 });
   }
 
+  // ── Auto-populate from finalized DischargeSummary ───────────────
+  // When an encounterId is provided AND a finalized DischargeSummary
+  // exists for it, pre-fill the primary diagnosis code/name and the
+  // claim type (inpatient if the summary links to an admission, else
+  // outpatient). Explicitly-provided body values take precedence —
+  // this is purely a fallback for fields the caller omitted.
+  let prefilledDxCode = primaryDiagnosisCode || null;
+  let prefilledDxName = primaryDiagnosisName || null;
+  let prefilledClaimType = claimType || null;
+  let prefilledCatalogId = primaryDiagnosisCatalogId || null;
+  let dischargeSummaryId: string | null = null;
+
+  if (encounterId) {
+    const finalizedSummary = await db.dischargeSummary.findFirst({
+      where: {
+        encounterId,
+        status: "finalized",
+        facilityId,
+      },
+      orderBy: { finalizedAt: "desc" },
+      select: {
+        id: true,
+        primaryDiagnosisCode: true,
+        primaryDiagnosisName: true,
+        attendingClinicianId: true,
+        admissionId: true,
+      },
+    });
+
+    if (finalizedSummary) {
+      dischargeSummaryId = finalizedSummary.id;
+      if (!prefilledDxCode && finalizedSummary.primaryDiagnosisCode) {
+        prefilledDxCode = finalizedSummary.primaryDiagnosisCode;
+      }
+      if (!prefilledDxName && finalizedSummary.primaryDiagnosisName) {
+        prefilledDxName = finalizedSummary.primaryDiagnosisName;
+      }
+      if (!prefilledClaimType) {
+        // If the discharge summary links to an Admission record, the
+        // encounter was inpatient; otherwise it's an outpatient visit.
+        prefilledClaimType = finalizedSummary.admissionId ? "inpatient" : "outpatient";
+      }
+    }
+  }
+
   // NHIS validation — if the provider is NHIS, require ICD-10 + NHIS number
   const provider = await db.insuranceProvider.findUnique({ where: { id: insuranceProviderId } });
   const isNhis = provider?.code?.toUpperCase().includes("NHIS") || provider?.name?.toUpperCase().includes("NHIS") || false;
@@ -96,19 +141,19 @@ export async function POST(req: Request) {
 
   if (isNhis) {
     if (!nhisNumber) validationNotes.push("NHIS membership number is required for NHIS claims");
-    if (!primaryDiagnosisCode) validationNotes.push("Primary ICD-10 diagnosis code is required for NHIS claims");
-    if (!primaryDiagnosisName) validationNotes.push("Primary diagnosis name is required for NHIS claims");
+    if (!prefilledDxCode) validationNotes.push("Primary ICD-10 diagnosis code is required for NHIS claims");
+    if (!prefilledDxName) validationNotes.push("Primary diagnosis name is required for NHIS claims");
     isNhisValidated = validationNotes.length === 0;
   } else {
     // For non-NHIS, validation is optional but recommended
-    if (!primaryDiagnosisCode) validationNotes.push("Primary diagnosis code recommended (not required for non-NHIS)");
+    if (!prefilledDxCode) validationNotes.push("Primary diagnosis code recommended (not required for non-NHIS)");
     isNhisValidated = true; // non-NHIS claims pass validation
   }
 
   // If catalog ID provided, snapshot the code + name from catalog
-  let finalDxCode = primaryDiagnosisCode;
-  let finalDxName = primaryDiagnosisName;
-  let finalDxCatalogId = primaryDiagnosisCatalogId || null;
+  let finalDxCode = prefilledDxCode;
+  let finalDxName = prefilledDxName;
+  let finalDxCatalogId = prefilledCatalogId || null;
   let gdrgCode: string | null = null;
   let gdrgName: string | null = null;
   let nhisTariff: number | null = null;
@@ -121,6 +166,24 @@ export async function POST(req: Request) {
       gdrgCode = catalogEntry.nhisGdrgCode || null;
       gdrgName = catalogEntry.nhisGdrgName || null;
       nhisTariff = catalogEntry.nhisTariff || null;
+    }
+  } else if (finalDxCode && isNhis) {
+    // No catalog ID provided but we have a code from the DischargeSummary
+    // fallback — look up the catalog by code so we can still snapshot
+    // the gDRG/tariff for the claim.
+    const catalogByCode = await db.diagnosisCatalog.findFirst({
+      where: { code: finalDxCode },
+      select: {
+        id: true, code: true, name: true,
+        nhisGdrgCode: true, nhisGdrgName: true, nhisTariff: true,
+      },
+    });
+    if (catalogByCode) {
+      finalDxCatalogId = catalogByCode.id;
+      finalDxName = finalDxName || catalogByCode.name;
+      gdrgCode = catalogByCode.nhisGdrgCode || null;
+      gdrgName = catalogByCode.nhisGdrgName || null;
+      nhisTariff = catalogByCode.nhisTariff || null;
     }
   }
 
@@ -136,7 +199,7 @@ export async function POST(req: Request) {
       claimNumber,
       claimAmount: Number(claimAmount) || invoice.balance,
       approvedAmount: 0,
-      claimType: claimType || "outpatient",
+      claimType: prefilledClaimType || "outpatient",
       nhisNumber: nhisNumber || null,
       primaryDiagnosisCode: finalDxCode || null,
       primaryDiagnosisName: finalDxName || null,
@@ -176,7 +239,15 @@ export async function POST(req: Request) {
     action: "CLAIM_CREATED",
     resourceType: "insurance_claim",
     resourceId: claim.id,
-    newValues: { claimNumber, patientId, invoiceId, insuranceProviderId, claimAmount: claim.claimAmount, isNhis, isNhisValidated, primaryDiagnosisCode: finalDxCode },
+    newValues: {
+      claimNumber, patientId, invoiceId, insuranceProviderId,
+      claimAmount: claim.claimAmount, isNhis, isNhisValidated,
+      primaryDiagnosisCode: finalDxCode,
+      claimType: prefilledClaimType || "outpatient",
+      // Track whether this claim was auto-populated from a finalized
+      // DischargeSummary — useful for audit / reconciliation.
+      prepopulatedFromDischargeSummaryId: dischargeSummaryId,
+    },
   });
 
   return NextResponse.json({ item: claim }, { status: 201 });
