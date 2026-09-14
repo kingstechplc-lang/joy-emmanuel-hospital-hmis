@@ -22,7 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ShieldCheck, CreditCard, Calendar, Hash, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, ShieldCheck, CreditCard, Calendar, Hash, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PortalLoginPage() {
@@ -93,38 +93,38 @@ export default function PortalLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-teal-50 overflow-y-auto">
+      <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-8">
         {/* Brand header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-sky-600 mb-3 shadow-lg">
-            <ShieldCheck className="w-9 h-9 text-white" />
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-sky-600 mb-2 shadow-lg">
+            <ShieldCheck className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Joy Emmanuel Hospital</h1>
-          <p className="text-sm text-slate-500 mt-1">Patient Portal</p>
+          <h1 className="text-xl font-bold text-slate-900">Joy Emmanuel Hospital</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Patient Portal</p>
         </div>
 
         <Card className="shadow-xl border-slate-200">
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="text-center mb-2">
-                <h2 className="text-xl font-semibold text-slate-900">Log in</h2>
-                <p className="text-sm text-slate-500 mt-1">
+          <CardContent className="p-4 sm:p-5">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="text-center mb-1">
+                <h2 className="text-lg font-semibold text-slate-900">Log in</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
                   Enter your Ghana Card details to access your health records.
                 </p>
               </div>
 
               {/* Error banner */}
               {error && (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 flex items-start gap-2">
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                   <p>{error}</p>
                 </div>
               )}
 
               {/* Ghana Card Number */}
-              <div className="space-y-2">
-                <Label htmlFor="ghanaCard" className="text-sm font-medium text-slate-700">
+              <div className="space-y-1">
+                <Label htmlFor="ghanaCard" className="text-xs font-medium text-slate-700">
                   Ghana Card Number
                 </Label>
                 <div className="relative">
@@ -137,19 +137,19 @@ export default function PortalLoginPage() {
                     placeholder="GHA-123456789-1"
                     value={ghanaCard}
                     onChange={(e) => setGhanaCard(e.target.value)}
-                    className="pl-10 h-12 text-base"
+                    className="pl-10 h-11 text-base"
                     disabled={submitting}
                     autoFocus
                   />
                 </div>
-                <p className="text-xs text-slate-500">
-                  Found on the front of your Ghana Card. Dashes optional.
+                <p className="text-[10px] text-slate-500">
+                  On the front of your card. Dashes optional.
                 </p>
               </div>
 
               {/* Date of Birth */}
-              <div className="space-y-2">
-                <Label htmlFor="dob" className="text-sm font-medium text-slate-700">
+              <div className="space-y-1">
+                <Label htmlFor="dob" className="text-xs font-medium text-slate-700">
                   Date of Birth
                 </Label>
                 <div className="relative">
@@ -159,15 +159,15 @@ export default function PortalLoginPage() {
                     type="date"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
-                    className="pl-10 h-12 text-base"
+                    className="pl-10 h-11 text-base"
                     disabled={submitting}
                   />
                 </div>
               </div>
 
               {/* Patient Number */}
-              <div className="space-y-2">
-                <Label htmlFor="patientNumber" className="text-sm font-medium text-slate-700">
+              <div className="space-y-1">
+                <Label htmlFor="patientNumber" className="text-xs font-medium text-slate-700">
                   Patient Number
                 </Label>
                 <div className="relative">
@@ -179,20 +179,20 @@ export default function PortalLoginPage() {
                     placeholder="JEM-00000001"
                     value={patientNumber}
                     onChange={(e) => setPatientNumber(e.target.value)}
-                    className="pl-10 h-12 text-base font-mono"
+                    className="pl-10 h-11 text-base font-mono"
                     disabled={submitting}
                   />
                 </div>
                 {patientNumber && (
-                  <p className="text-xs text-slate-500">
-                    Will be matched as <span className="font-mono font-medium text-slate-700">{formatPatientNumberPreview(patientNumber)}</span>
+                  <p className="text-[10px] text-slate-500">
+                    Matched as <span className="font-mono font-medium text-slate-700">{formatPatientNumberPreview(patientNumber)}</span>
                   </p>
                 )}
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-12 text-base bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700"
+                className="w-full h-11 text-base bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 mt-1"
                 disabled={submitting || !ghanaCard.trim() || !dob || !patientNumber.trim()}
               >
                 {submitting ? (
@@ -203,25 +203,29 @@ export default function PortalLoginPage() {
               </Button>
             </form>
 
-            {/* Help section */}
-            <div className="mt-6 pt-4 border-t border-slate-200 space-y-2 text-xs text-slate-600">
-              <p className="font-semibold text-slate-700">Don't have these details?</p>
-              <p>
-                Please visit our <strong>Records Desk</strong> with your Ghana Card and a valid ID. Our staff will register you and issue your patient number.
-              </p>
-              <p className="text-slate-500 mt-2">
-                Lost your Ghana Card? Contact the National Identification Authority (NIA) at <span className="font-medium">0800-100-777</span> (toll-free).
-              </p>
-            </div>
+            {/* Help section — collapsible to save space on small screens */}
+            <details className="mt-3 pt-3 border-t border-slate-200 text-xs text-slate-600">
+              <summary className="font-semibold text-slate-700 cursor-pointer">
+                Don't have these details?
+              </summary>
+              <div className="mt-2 space-y-1.5">
+                <p>
+                  Please visit our <strong>Records Desk</strong> with your Ghana Card and a valid ID. Our staff will register you and issue your patient number.
+                </p>
+                <p className="text-slate-500">
+                  Lost your Ghana Card? Contact the National Identification Authority (NIA) at <span className="font-medium">0800-100-777</span> (toll-free).
+                </p>
+              </div>
+            </details>
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-slate-400 mt-6 px-4">
+        <p className="text-center text-[10px] text-slate-400 mt-3 px-4">
           By logging in, you agree to access only your own health records. Unauthorized access is prohibited under Ghana's Data Protection Act, 2012 (Act 843).
         </p>
 
-        <p className="text-center text-[10px] text-slate-400 mt-3">
-          🔒 All login attempts are logged for security. SMS-based authentication will be added in a future version.
+        <p className="text-center text-[10px] text-slate-400 mt-2">
+          All login attempts are logged for security.
         </p>
       </div>
     </div>

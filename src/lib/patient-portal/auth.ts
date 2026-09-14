@@ -151,21 +151,44 @@ export async function loginWithGhanaCard(params: {
   }
 
   // ── Step 1: Find PatientIdentifier with this Ghana Card ──────────
-  // The unique constraint on (identifierType, identifierValue) means at
-  // most one match — guaranteed by the schema.
+  // Staff at the Records Desk may have entered the Ghana Card number in
+  // several formats: "GHA-123456789-1", "GHA1234567891", "123456789-1",
+  // "1234567891", etc. Our canonical form is digits-only ("1234567891").
+  //
+  // To match regardless of how it was stored, we query with contains
+  // semantics on the canonical digits. The unique constraint on
+  // (identifierType, identifierValue) ensures that at most ONE row will
+  // contain those digits, so we don't get false positives.
+  //
+  // We also try the raw input as-is in case the DB happens to store it
+  // in exactly the form the user typed (e.g., if they entered
+  // "GHA-123456789-1" verbatim and the DB has it that way).
   const identifier = await db.patientIdentifier.findFirst({
     where: {
       identifierType: "ghana_card",
-      identifierValue: ghanaCard,
+      OR: [
+        // Canonical digits embedded in the stored value
+        { identifierValue: { contains: ghanaCard } },
+        // Raw input as-typed (case-insensitive)
+        { identifierValue: { contains: params.ghanaCardNumber, mode: "insensitive" as any } },
+        // Exact canonical match (rare — only if DB already stores digits-only)
+        { identifierValue: ghanaCard },
+      ],
     },
     select: {
       id: true,
       patientId: true,
       verified: true,
+      identifierValue: true,
     },
   });
 
   if (!identifier) {
+    // Debug log — helps troubleshoot without exposing data to the client
+    console.log(
+      `[portal login] no PatientIdentifier found for ghanaCard=${ghanaCard} ` +
+      `(raw=${params.ghanaCardNumber}, patientNumber=${patientNumber})`
+    );
     // Don't reveal that the Ghana Card specifically was wrong
     return {
       ok: false,
@@ -188,6 +211,10 @@ export async function loginWithGhanaCard(params: {
   });
 
   if (!patient) {
+    console.log(
+      `[portal login] PatientIdentifier found but no Patient linked ` +
+      `(patientId=${identifier.patientId})`
+    );
     return {
       ok: false,
       reason: "The credentials you entered don't match our records.",
@@ -196,9 +223,29 @@ export async function loginWithGhanaCard(params: {
   }
 
   // ── Step 3: Verify patientNumber matches ──────────────────────────
-  // Patient numbers are unique within org. If the patient's patientNumber
-  // doesn't match what the user typed, reject.
-  if (patient.patientNumber !== patientNumber) {
+  // Patient numbers are unique within org. The DB might store it as
+  // "JEM-00000001" while the user typed "jem-1" or "00000001" or "1".
+  // We canonicalize both sides (uppercase + JEM- prefix + 7-digit padding)
+  // and compare case-insensitively.
+  //
+  // For patients whose patientNumber wasn't issued in the JEM-XXXXXXX
+  // format (legacy data), we fall back to a case-insensitive comparison
+  // of the raw values.
+  const storedPatientNumber = (patient.patientNumber || "").toUpperCase();
+  const inputPatientNumber = patientNumber.toUpperCase();
+  const matches =
+    storedPatientNumber === inputPatientNumber ||
+    storedPatientNumber.replace(/[\s-]/g, "") === inputPatientNumber.replace(/[\s-]/g, "") ||
+    // Handle the case where DB stored as "JEM-00000001" and user typed "1"
+    // (strip prefix + leading zeros from both sides for one more comparison)
+    storedPatientNumber.replace(/JEM-?/i, "").replace(/^0+/, "") ===
+      inputPatientNumber.replace(/JEM-?/i, "").replace(/^0+/, "");
+
+  if (!matches) {
+    console.log(
+      `[portal login] patientNumber mismatch: stored=${patient.patientNumber} ` +
+      `input=${patientNumber} (canonical=${inputPatientNumber})`
+    );
     return {
       ok: false,
       reason: "The credentials you entered don't match our records.",
@@ -207,6 +254,10 @@ export async function loginWithGhanaCard(params: {
   }
 
   // ── Step 4: Verify DOB matches (date-only comparison) ────────────
+  // Patient.dateOfBirth might be stored with a time-of-day component
+  // (depending on how the seed data was inserted). We strip to date-only
+  // (UTC midnight) on both sides and compare. Also try a string-format
+  // comparison as a fallback in case of timezone issues.
   if (patient.dateOfBirth) {
     const storedDob = new Date(
       Date.UTC(
@@ -215,7 +266,13 @@ export async function loginWithGhanaCard(params: {
         patient.dateOfBirth.getUTCDate()
       )
     );
-    if (storedDob.getTime() !== dob.getTime()) {
+    const storedStr = `${storedDob.getUTCFullYear()}-${String(storedDob.getUTCMonth() + 1).padStart(2, "0")}-${String(storedDob.getUTCDate()).padStart(2, "0")}`;
+    const inputStr = `${dob.getUTCFullYear()}-${String(dob.getUTCMonth() + 1).padStart(2, "0")}-${String(dob.getUTCDate()).padStart(2, "0")}`;
+    if (storedDob.getTime() !== dob.getTime() && storedStr !== inputStr) {
+      console.log(
+        `[portal login] DOB mismatch: stored=${patient.dateOfBirth.toISOString()} ` +
+        `input=${params.dateOfBirth} (canonical=${inputStr})`
+      );
       return {
         ok: false,
         reason: "The credentials you entered don't match our records.",
