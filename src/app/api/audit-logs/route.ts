@@ -1,6 +1,7 @@
 // =====================================================================
 // API: /api/audit-logs
-//   GET — list audit logs with filters (date range, user, action, resourceType, facilityId)
+//   GET — list audit logs with filters (date range, user, action, actionCategory,
+//         severity, resourceType, facilityId, ipAddress, source, sessionId)
 //         Server-side pagination via ?offset=0&limit=50
 //         Read-only — no POST/PATCH/DELETE (audit logs are append-only)
 // =====================================================================
@@ -25,8 +26,13 @@ export async function GET(req: Request) {
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") || 50)));
   const userId = url.searchParams.get("userId");
   const action = url.searchParams.get("action");
+  const actionCategory = url.searchParams.get("actionCategory");
+  const severity = url.searchParams.get("severity");
+  const source = url.searchParams.get("source");
   const resourceType = url.searchParams.get("resourceType");
   const facilityId = url.searchParams.get("facilityId");
+  const ipAddress = url.searchParams.get("ipAddress");
+  const sessionId = url.searchParams.get("sessionId");
   const dateFrom = url.searchParams.get("dateFrom");
   const dateTo = url.searchParams.get("dateTo");
   const q = url.searchParams.get("q") || "";
@@ -34,8 +40,13 @@ export async function GET(req: Request) {
   const where: any = { organizationId: session.user.organizationId };
   if (userId) where.userId = userId;
   if (action) where.action = { contains: action };
+  if (actionCategory) where.actionCategory = actionCategory;
+  if (severity) where.severity = severity;
+  if (source) where.source = source;
   if (resourceType) where.resourceType = resourceType;
   if (facilityId) where.facilityId = facilityId;
+  if (ipAddress) where.ipAddress = { contains: ipAddress };
+  if (sessionId) where.sessionId = { contains: sessionId };
   if (dateFrom || dateTo) {
     where.createdAt = {};
     if (dateFrom) where.createdAt.gte = new Date(dateFrom);
@@ -47,6 +58,8 @@ export async function GET(req: Request) {
       { resourceType: { contains: q } },
       { resourceId: { contains: q } },
       { reason: { contains: q } },
+      { ipAddress: { contains: q } },
+      { source: { contains: q } },
     ];
   }
 
@@ -67,6 +80,9 @@ export async function GET(req: Request) {
   const items = logs.map((l) => ({
     id: l.id,
     action: l.action,
+    actionCategory: l.actionCategory,
+    severity: l.severity,
+    source: l.source,
     resourceType: l.resourceType,
     resourceId: l.resourceId,
     userId: l.userId,
@@ -75,8 +91,10 @@ export async function GET(req: Request) {
     facility: l.facility,
     oldValues: l.oldValues,
     newValues: l.newValues,
+    changedFields: l.changedFields,
     ipAddress: l.ipAddress,
     userAgent: l.userAgent,
+    sessionId: l.sessionId,
     reason: l.reason,
     createdAt: l.createdAt,
   }));

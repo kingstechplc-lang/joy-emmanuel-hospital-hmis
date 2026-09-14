@@ -13,7 +13,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -69,6 +69,14 @@ export async function GET(req: Request) {
   });
 
   const delimiter = format === "tsv" ? "\t" : ",";
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.DATA_EXPORTED,
+    resourceType: "insurance_claim",
+    newValues: { count: claims.length, filters: { format, facilityId, status, patientId, providerId, dateFrom, dateTo } },
+    reason: `Exported ${claims.length} insurance claim records to ${format.toUpperCase()}`,
+  });
 
   if (format === "json") {
     return NextResponse.json({

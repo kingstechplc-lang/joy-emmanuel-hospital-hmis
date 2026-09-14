@@ -6719,26 +6719,34 @@ model Notification {
 // ---------------------------------------------------------------------
 
 model AuditLog {
-  id             String        @id @default(cuid())
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  facilityId     String?
-  facility       Facility?     @relation(fields: [facilityId], references: [id])
-  userId         String?
-  user           User?         @relation(fields: [userId], references: [id])
-  action         String
-  resourceType   String?
-  resourceId     String?
-  oldValues      String? // JSON
-  newValues      String? // JSON
-  ipAddress      String?
-  userAgent      String?
-  reason         String?
-  createdAt      DateTime      @default(now())
+  id              String        @id @default(cuid())
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility?     @relation(fields: [facilityId], references: [id])
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  action          String
+  actionCategory  String? // AUTH | PATIENT | CLINICAL | PHARMACY | LAB | IMAGING | BILLING | USERS | ADMIN | SECURITY | DATA_EXPORT
+  severity        String? // info | notice | warning | critical
+  source          String? // module that emitted the event, e.g. "clinical", "billing", "auth"
+  resourceType    String?
+  resourceId      String?
+  oldValues       String? // JSON
+  newValues       String? // JSON
+  changedFields   String? // JSON array of { field, oldValue, newValue } — computed diff
+  ipAddress       String?
+  userAgent       String?
+  sessionId       String? // JWT sub or correlation ID for grouping a session's events
+  reason          String?
+  createdAt       DateTime      @default(now())
 
   @@index([userId, createdAt])
   @@index([resourceType, resourceId])
   @@index([facilityId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([action, createdAt])
+  @@index([severity, createdAt])
 }
 
 model PatientAccessLog {

@@ -14,7 +14,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -140,6 +140,14 @@ export async function GET(req: Request) {
       r.status, r.facilityName, r.storageLocation, r.lastCostPrice, r.stockValue,
     ].map(csvEscape).join(",")),
   ].join("\n");
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.DATA_EXPORTED,
+    resourceType: "inventory_item",
+    newValues: { count: rows.length, filters: { facilityId, type, category, lowStockOnly } },
+    reason: `Exported ${rows.length} inventory item records to CSV`,
+  });
 
   const stamp = new Date().toISOString().slice(0, 10);
   return new NextResponse(csv, {

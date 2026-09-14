@@ -6,9 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ScrollText, Search, Download, ChevronLeft, ChevronRight, FileJson } from "lucide-react";
+import { ScrollText, Search, Download, ChevronLeft, ChevronRight, FileJson, Shield, ArrowRight, Activity, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, formatDate, safeJson, ClearableSearch} from "@/components/ui-helpers";
 
@@ -29,9 +30,11 @@ const ACTION_PREFIXES = [
   { value: "ENCOUNTER", label: "Encounter" },
   { value: "LAB", label: "Lab" },
   { value: "IMAGING", label: "Imaging" },
-  { value: "PHARMACY", label: "Pharmacy" },
+  { value: "PRESCRIPTION", label: "Pharmacy" },
   { value: "INVOICE", label: "Invoice" },
   { value: "PAYMENT", label: "Payment" },
+  { value: "LOGIN", label: "Auth" },
+  { value: "LOGOUT", label: "Auth" },
   { value: "USER", label: "User" },
   { value: "ROLE", label: "Role" },
   { value: "PERMISSION", label: "Permission" },
@@ -43,6 +46,9 @@ const ACTION_PREFIXES = [
   { value: "DOCUMENT", label: "Document" },
   { value: "TASK", label: "Task" },
   { value: "SETTINGS", label: "Settings" },
+  { value: "DATA_EXPORTED", label: "Data Export" },
+  { value: "CLINICAL_TEMPLATE", label: "Templates" },
+  { value: "CDSS", label: "CDSS" },
 ];
 
 const RESOURCE_TYPES = [
@@ -80,6 +86,27 @@ const RESOURCE_TYPES = [
   "supplier",
 ];
 
+const CATEGORIES = ["AUTH", "PATIENT", "CLINICAL", "ENCOUNTER", "PHARMACY", "LAB", "IMAGING", "BILLING", "INSURANCE", "USERS", "ROLES", "FACILITY", "STAFF", "INVENTORY", "DOCUMENTS", "ADMIN", "SECURITY", "DATA_EXPORT", "SETTINGS", "CLINICAL_TEMPLATES", "CDSS"];
+
+const SEVERITIES = [
+  { value: "info", label: "Info", color: "bg-slate-100 text-slate-700 border-slate-200" },
+  { value: "notice", label: "Notice", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  { value: "warning", label: "Warning", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  { value: "critical", label: "Critical", color: "bg-rose-50 text-rose-700 border-rose-200" },
+];
+
+function severityBadge(sev: string | null) {
+  if (!sev) return null;
+  const meta = SEVERITIES.find((s) => s.value === sev);
+  if (!meta) return <Badge variant="outline" className="text-xs">{sev}</Badge>;
+  return <Badge variant="outline" className={`text-xs ${meta.color}`}>{meta.label}</Badge>;
+}
+
+function categoryBadge(cat: string | null) {
+  if (!cat) return null;
+  return <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">{cat}</Badge>;
+}
+
 export function AuditLogsView() {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -89,9 +116,13 @@ export function AuditLogsView() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [action, setAction] = useState("");
+  const [actionCategory, setActionCategory] = useState("");
+  const [severity, setSeverity] = useState("");
   const [resourceType, setResourceType] = useState("");
   const [facilityId, setFacilityId] = useState("");
   const [userId, setUserId] = useState("");
+  const [ipAddress, setIpAddress] = useState("");
+  const [sessionId, setSessionId] = useState("");
   const [page, setPage] = useState(0);
   const [viewing, setViewing] = useState<any | null>(null);
 
@@ -114,12 +145,16 @@ export function AuditLogsView() {
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
   if (action) params.set("action", action);
+  if (actionCategory) params.set("actionCategory", actionCategory);
+  if (severity) params.set("severity", severity);
   if (resourceType) params.set("resourceType", resourceType);
   if (facilityId) params.set("facilityId", facilityId);
   if (userId) params.set("userId", userId);
+  if (ipAddress) params.set("ipAddress", ipAddress);
+  if (sessionId) params.set("sessionId", sessionId);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["audit-logs", search, dateFrom, dateTo, action, resourceType, facilityId, userId, page],
+    queryKey: ["audit-logs", search, dateFrom, dateTo, action, actionCategory, severity, resourceType, facilityId, userId, ipAddress, sessionId, page],
     queryFn: () => fetchJson(`/api/audit-logs?${params.toString()}`),
   });
 
@@ -132,15 +167,19 @@ export function AuditLogsView() {
       toast.error("No data to export");
       return;
     }
-    const headers = ["Timestamp", "User", "Action", "Resource Type", "Resource ID", "Facility", "IP Address", "Reason"];
+    const headers = ["Timestamp", "User", "Action", "Category", "Severity", "Source", "Resource Type", "Resource ID", "Facility", "IP Address", "Session ID", "Reason"];
     const rows = items.map((l: any) => [
       new Date(l.createdAt).toISOString(),
       l.user ? `${l.user.firstName} ${l.user.lastName} (@${l.user.username})` : "—",
       l.action,
+      l.actionCategory || "",
+      l.severity || "",
+      l.source || "",
       l.resourceType || "",
       l.resourceId || "",
       l.facility?.name || "",
       l.ipAddress || "",
+      l.sessionId || "",
       (l.reason || "").replace(/"/g, '""'),
     ]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c)}"`).join(",")).join("\n");
@@ -161,9 +200,13 @@ export function AuditLogsView() {
     setDateFrom("");
     setDateTo("");
     setAction("");
+    setActionCategory("");
+    setSeverity("");
     setResourceType("");
     setFacilityId("");
     setUserId("");
+    setIpAddress("");
+    setSessionId("");
     setPage(0);
   };
 
@@ -171,8 +214,13 @@ export function AuditLogsView() {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Audit Logs</h2>
-          <p className="text-sm text-slate-500">Searchable record of all system actions. Read-only.</p>
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <Shield className="w-6 h-6 text-emerald-600" />
+            Audit Logs
+          </h2>
+          <p className="text-sm text-slate-500">
+            Forensic record of every system action — who, what, when, where, which facility, which record, before/after values.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={resetFilters} className="gap-2">
@@ -190,7 +238,7 @@ export function AuditLogsView() {
         <CardContent className="p-3 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1.5 md:col-span-1">
             <Label className="text-xs">Free-text Search</Label>
-            <ClearableSearch value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Action, resource ID, reason..." />
+            <ClearableSearch value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Action, resource ID, reason, IP, source..." />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Action</Label>
@@ -198,6 +246,26 @@ export function AuditLogsView() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ACTION_PREFIXES.map((a) => <SelectItem key={a.value || "all"} value={a.value || "all"}>{a.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Category</Label>
+            <Select value={actionCategory || undefined} onValueChange={(v) => { setActionCategory(v === "all" ? "" : v); setPage(0); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Severity</Label>
+            <Select value={severity || undefined} onValueChange={(v) => { setSeverity(v === "all" ? "" : v); setPage(0); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Severities</SelectItem>
+                {SEVERITIES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -232,6 +300,14 @@ export function AuditLogsView() {
             </Select>
           </div>
           <div className="space-y-1.5">
+            <Label className="text-xs">IP Address</Label>
+            <Input value={ipAddress} onChange={(e) => { setIpAddress(e.target.value); setPage(0); }} placeholder="e.g. 197.123.x.x" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Session ID</Label>
+            <Input value={sessionId} onChange={(e) => { setSessionId(e.target.value); setPage(0); }} placeholder="Filter by session correlation ID" />
+          </div>
+          <div className="space-y-1.5">
             <Label className="text-xs">Date From</Label>
             <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0); }} />
           </div>
@@ -258,6 +334,7 @@ export function AuditLogsView() {
                     <th className="text-left p-3 font-semibold text-slate-700">Timestamp</th>
                     <th className="text-left p-3 font-semibold text-slate-700">User</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Action</th>
+                    <th className="text-left p-3 font-semibold text-slate-700">Sev</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Resource</th>
                     <th className="text-left p-3 font-semibold text-slate-700">Facility</th>
                     <th className="text-left p-3 font-semibold text-slate-700">IP</th>
@@ -275,7 +352,13 @@ export function AuditLogsView() {
                           </div>
                         ) : <span className="text-slate-400">System</span>}
                       </td>
-                      <td className="p-3"><code className="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">{l.action}</code></td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1">
+                          <code className="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">{l.action}</code>
+                          {l.actionCategory && <span className="text-[10px] text-slate-400">{l.actionCategory}</span>}
+                        </div>
+                      </td>
+                      <td className="p-3">{severityBadge(l.severity)}</td>
                       <td className="p-3">
                         {l.resourceType ? (
                           <div>
@@ -320,6 +403,7 @@ export function AuditLogsView() {
 function LogDetailDialog({ log, onClose }: { log: any; onClose: () => void }) {
   const oldValues = log.oldValues ? safeParseJson(log.oldValues) : null;
   const newValues = log.newValues ? safeParseJson(log.newValues) : null;
+  const changedFields = log.changedFields ? safeParseJson(log.changedFields) : null;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -341,18 +425,68 @@ function LogDetailDialog({ log, onClose }: { log: any; onClose: () => void }) {
           <DetailItem label="Resource ID" value={log.resourceId || "—"} />
           <DetailItem label="IP Address" value={log.ipAddress || "—"} />
           <DetailItem label="User Agent" value={<span className="text-xs">{log.userAgent || "—"}</span>} />
-          {log.reason && <DetailItem label="Reason" value={log.reason} />}
+          <DetailItem label="Source Module" value={log.source || "—"} />
+          <DetailItem label="Session ID" value={<span className="text-xs font-mono">{log.sessionId || "—"}</span>} />
+          {log.actionCategory && (
+            <div>
+              <Label className="text-xs text-slate-500">Category</Label>
+              <div className="mt-0.5">{categoryBadge(log.actionCategory)}</div>
+            </div>
+          )}
+          {log.severity && (
+            <div>
+              <Label className="text-xs text-slate-500">Severity</Label>
+              <div className="mt-0.5">{severityBadge(log.severity)}</div>
+            </div>
+          )}
+          {log.reason && <div className="md:col-span-2"><DetailItem label="Reason" value={log.reason} /></div>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto p-6 min-h-0">
+        {changedFields && Array.isArray(changedFields) && changedFields.length > 0 && (
+          <div className="px-6 pb-3">
+            <Label className="text-xs text-slate-500 flex items-center gap-1 mb-2">
+              <Activity className="w-3 h-3" /> Field-level changes ({changedFields.length})
+            </Label>
+            <div className="border border-slate-200 rounded overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="text-left p-2 font-semibold text-slate-700">Field</th>
+                    <th className="text-left p-2 font-semibold text-slate-700">Old value</th>
+                    <th className="text-left p-2 font-semibold text-slate-700">New value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {changedFields.map((c: any, i: number) => (
+                    <tr key={i} className="border-t">
+                      <td className="p-2 font-mono text-slate-700 align-top">{c.field}</td>
+                      <td className="p-2 text-rose-700 align-top">
+                        {c.oldValue === undefined || c.oldValue === null ? <span className="text-slate-400 italic">null</span> : (
+                          <pre className="whitespace-pre-wrap break-words font-mono">{typeof c.oldValue === "object" ? JSON.stringify(c.oldValue) : String(c.oldValue)}</pre>
+                        )}
+                      </td>
+                      <td className="p-2 text-emerald-700 align-top">
+                        {c.newValue === undefined || c.newValue === null ? <span className="text-slate-400 italic">null</span> : (
+                          <pre className="whitespace-pre-wrap break-words font-mono">{typeof c.newValue === "object" ? JSON.stringify(c.newValue) : String(c.newValue)}</pre>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto p-6 pt-3 min-h-0">
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">Old Values</Label>
+            <Label className="text-xs text-slate-500">Old Values (full snapshot)</Label>
             <pre className="bg-rose-50 border border-rose-100 rounded p-3 text-xs overflow-x-auto max-h-72">
               {oldValues ? JSON.stringify(oldValues, null, 2) : <span className="text-slate-400">—</span>}
             </pre>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-slate-500">New Values</Label>
+            <Label className="text-xs text-slate-500">New Values (full snapshot)</Label>
             <pre className="bg-emerald-50 border border-emerald-100 rounded p-3 text-xs overflow-x-auto max-h-72">
               {newValues ? JSON.stringify(newValues, null, 2) : <span className="text-slate-400">—</span>}
             </pre>

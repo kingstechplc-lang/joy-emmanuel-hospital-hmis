@@ -10,7 +10,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -152,6 +152,14 @@ export async function GET(req: Request) {
     const csv = [header.map(csvEscape).join(","), ...rows].join("\r\n");
     const stamp = new Date().toISOString().slice(0, 10);
     const filename = `stock-transfers-${stamp}.csv`;
+
+    await auditLogRequest(req, {
+      session,
+      ...AUDIT_ACTIONS.DATA_EXPORTED,
+      resourceType: "stock_transfer",
+      newValues: { count: transfers.length, filters: { facilityId, direction, transferType, priority, status, from, to, q } },
+      reason: `Exported ${transfers.length} stock transfer records to CSV`,
+    });
 
     return new NextResponse(csv, {
       status: 200,

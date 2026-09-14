@@ -4,7 +4,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -86,6 +86,14 @@ export async function GET(req: Request) {
     headers.map(csvEscape).join(","),
     ...rows,
   ].join("\n");
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.DATA_EXPORTED,
+    resourceType: "transfer",
+    newValues: { count: items.length, filters: { facilityId, from, to } },
+    reason: `Exported ${items.length} transfer records to CSV`,
+  });
 
   return new NextResponse(csv, {
     headers: {

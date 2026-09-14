@@ -5,7 +5,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission, auditLog } from "@/lib/session";
+import { getSession, hasPermission, auditLog, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 
@@ -38,6 +38,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!user || user.organizationId !== session.user.organizationId) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.USER_VIEWED,
+    resourceType: "user",
+    resourceId: id,
+    newValues: { userId: id, detailView: true },
+    reason: "User detail viewed",
+  });
 
   return NextResponse.json({
     item: {

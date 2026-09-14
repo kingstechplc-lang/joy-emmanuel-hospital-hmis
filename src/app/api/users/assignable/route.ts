@@ -8,7 +8,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
@@ -99,6 +99,14 @@ export async function GET(req: Request) {
     // secondary text shown in dropdown
     secondary: u.staff?.professionalRole || u.userRoles.map((ur) => ur.role.code).join(", ") || u.username,
   }));
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.USER_VIEWED,
+    resourceType: "user",
+    newValues: { count: items.length, assignable: true },
+    reason: "Assignable user list viewed",
+  });
 
   return NextResponse.json({ items, count: items.length });
 }

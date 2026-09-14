@@ -11,7 +11,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
@@ -67,6 +67,14 @@ export async function GET(req: Request) {
       verifiedBy: { select: { firstName: true, lastName: true, username: true } },
       amendedBy: { select: { firstName: true, lastName: true, username: true } },
     },
+  });
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.DATA_EXPORTED,
+    resourceType: "intake_output",
+    newValues: { count: entries.length, filters: { patientId, admissionId, from, to, format } },
+    reason: `Exported ${entries.length} intake/output entries to ${format.toUpperCase()}`,
   });
 
   if (format === "json") {

@@ -5,7 +5,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission, auditLog } from "@/lib/session";
+import { getSession, hasPermission, auditLog, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 
@@ -75,6 +75,14 @@ export async function GET(req: Request) {
     })),
     staff: u.staff,
   }));
+
+  await auditLogRequest(req, {
+    session,
+    ...AUDIT_ACTIONS.USER_VIEWED,
+    resourceType: "user",
+    newValues: { count: users.length, listOnly: true },
+    reason: "User listing viewed",
+  });
 
   return NextResponse.json({ items, count: items.length });
 }

@@ -8,7 +8,7 @@
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession, hasPermission } from "@/lib/session";
+import { getSession, hasPermission, auditLogRequest, AUDIT_ACTIONS } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 
 import { apiRouteConfig } from "@/lib/api-route-config";
@@ -31,7 +31,7 @@ function formatDate(date: Date | string | null | undefined): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!hasPermission(session, PERMISSIONS.STAFF_VIEW)) {
@@ -93,6 +93,14 @@ export async function GET() {
     const csv = [headers, ...rows]
       .map((row) => row.map(csvEscape).join(","))
       .join("\n");
+
+    await auditLogRequest(req, {
+      session,
+      ...AUDIT_ACTIONS.DATA_EXPORTED,
+      resourceType: "staff",
+      newValues: { count: staff.length, filters: {} },
+      reason: `Exported ${staff.length} staff records to CSV`,
+    });
 
     return new NextResponse(csv, {
       status: 200,

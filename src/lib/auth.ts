@@ -6,6 +6,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { ROLE_PERMISSIONS } from "@/lib/permissions";
+import { auditLog } from "@/lib/session";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 
 /** Read session timeout (in seconds) from SystemSetting, default to 8 hours. */
 async function getSessionMaxAge(): Promise<number> {
@@ -50,13 +52,42 @@ export const authOptions: NextAuthOptions = {
         if (!valid) {
           // Track failed logins
           const attempts = user.failedLoginAttempts + 1;
-          const lockUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+          const isLockout = attempts >= 5;
+          const lockUntil = isLockout ? new Date(Date.now() + 15 * 60 * 1000) : null;
           await db.user.update({
             where: { id: user.id },
             data: {
               failedLoginAttempts: attempts,
               lockedUntil: lockUntil,
             },
+          });
+          // ── Audit: failed login attempt (and lockout when threshold reached)
+          // IP/UA are unavailable in authorize() because NextAuth v4 does
+          // not pass the Request object to the credentials provider. The
+          // successful-login event below does capture IP via the request
+          // that resumed the NextAuth callback. For lockouts, the row
+          // stands as a security event even without source attribution.
+          await auditLog({
+            userId: user.id,
+            organizationId: user.organizationId,
+            action: isLockout
+              ? AUDIT_ACTIONS.LOGIN_LOCKED.action
+              : AUDIT_ACTIONS.LOGIN_FAILED.action,
+            actionCategory: AUDIT_ACTIONS.LOGIN_FAILED.actionCategory,
+            severity: isLockout
+              ? AUDIT_ACTIONS.LOGIN_LOCKED.severity
+              : AUDIT_ACTIONS.LOGIN_FAILED.severity,
+            source: AUDIT_ACTIONS.LOGIN_FAILED.source,
+            resourceType: "user",
+            resourceId: user.id,
+            newValues: {
+              username: credentials.username,
+              failedLoginAttempts: attempts,
+              lockedUntil: lockUntil ? lockUntil.toISOString() : null,
+            },
+            reason: isLockout
+              ? "Account locked after 5 failed login attempts"
+              : "Invalid password",
           });
           return null;
         }
@@ -204,8 +235,69 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).departmentId = token.departmentId;
         (session.user as any).permissions = token.permissions;
         (session.user as any).mustChangePassword = token.mustChangePassword;
+        // Expose a stable session correlation id for audit logging. Uses
+        // the JWT jti if present, else falls back to a hash of (userId +
+        // token issue time). This lets auditLogRequest() group rows from
+        // the same login session via the sessionId column.
+        (session.user as any).sessionId = token.jti || null;
       }
       return session;
+    },
+  },
+  events: {
+    // Fires after a successful sign-in (after jwt() callback has run with
+    // the new user object). Best-effort — IP/UA are not available in
+    // NextAuth events (no Request object is passed), but the user/org
+    // metadata is captured. The previous LOGIN_ATTEMPT (if we had
+    // logged one) cannot be correlated back, but the user row's
+    // lastLoginAt provides the timestamp linkage.
+    async signIn({ user }: { user: any }) {
+      try {
+        if (!user?.id) return;
+        await auditLog({
+          userId: user.id,
+          organizationId: user.organizationId,
+          facilityId: user.facilityId || null,
+          action: AUDIT_ACTIONS.LOGIN_SUCCESS.action,
+          actionCategory: AUDIT_ACTIONS.LOGIN_SUCCESS.actionCategory,
+          severity: AUDIT_ACTIONS.LOGIN_SUCCESS.severity,
+          source: AUDIT_ACTIONS.LOGIN_SUCCESS.source,
+          resourceType: "user",
+          resourceId: user.id,
+          newValues: {
+            username: user.username,
+            roles: user.roles,
+            lastLoginAt: new Date().toISOString(),
+          },
+          reason: "Successful authentication",
+        });
+      } catch (e) {
+        // Audit failure must never break login
+        console.error("signIn audit failed:", e);
+      }
+    },
+    // Fires on explicit sign-out (user clicks "Log out") — does NOT
+    // fire on session timeout. The jwt() callback already handles
+    // session expiry by returning an empty token.
+    async signOut({ token }: { token: any }) {
+      try {
+        if (!token?.id) return;
+        await auditLog({
+          userId: token.id as string,
+          organizationId: (token.organizationId as string) || null,
+          facilityId: (token.facilityId as string) || null,
+          action: AUDIT_ACTIONS.LOGOUT.action,
+          actionCategory: AUDIT_ACTIONS.LOGOUT.actionCategory,
+          severity: AUDIT_ACTIONS.LOGOUT.severity,
+          source: AUDIT_ACTIONS.LOGOUT.source,
+          resourceType: "user",
+          resourceId: token.id as string,
+          newValues: { username: token.username, sessionId: token.jti || null },
+          reason: "User signed out",
+        });
+      } catch (e) {
+        console.error("signOut audit failed:", e);
+      }
     },
   },
   pages: {
