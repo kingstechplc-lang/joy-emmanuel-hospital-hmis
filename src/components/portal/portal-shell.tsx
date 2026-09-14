@@ -589,17 +589,18 @@ function PortalLabResultsView() {
       {/* Detail dialog */}
       <Dialog open={!!detailOrder} onOpenChange={(o) => !o && setDetailOrder(null)}>
         {detailOrder && (
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Icons.FlaskConical className="w-5 h-5 text-purple-600" />
+          <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden sm:max-w-2xl">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-purple-600 to-violet-700 text-white">
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Icons.FlaskConical className="w-5 h-5 text-emerald-300" />
                 Lab Order {detailOrder.orderNumber}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/80">
                 Ordered {formatDate(detailOrder.orderedAt, true)} • Released {formatDate(detailOrder.releasedToPatientAt, true)}
               </DialogDescription>
             </DialogHeader>
 
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
             {detailOrder.orderingClinician && (
               <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-sm flex items-center gap-2">
                 <Icons.Stethoscope className="w-4 h-4 text-slate-500 shrink-0" />
@@ -611,7 +612,7 @@ function PortalLabResultsView() {
               </div>
             )}
 
-            <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+            <div className="space-y-2">
               {(detailOrder.items || []).map((item: any) => (
                 <div key={item.id} className="rounded-lg border border-slate-200 overflow-hidden">
                   <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between gap-2">
@@ -669,7 +670,8 @@ function PortalLabResultsView() {
               ))}
             </div>
 
-            <DialogFooter>
+            </div>
+            <DialogFooter className="p-4 pt-3 shrink-0 border-t bg-white">
               <Button variant="outline" onClick={() => setDetailOrder(null)}>Close</Button>
             </DialogFooter>
           </DialogContent>
@@ -811,35 +813,37 @@ function PortalAppointmentsView() {
       {/* Detail dialog */}
       <Dialog open={!!detailApt} onOpenChange={(o) => !o && setDetailApt(null)}>
         {detailApt && (
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Icons.Calendar className="w-5 h-5 text-blue-600" />
+          <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden sm:max-w-md">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-blue-600 to-cyan-700 text-white">
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Icons.Calendar className="w-5 h-5 text-cyan-200" />
                 Appointment Details
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/80">
                 {detailApt.appointmentNumber || "Appointment"}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-2 gap-3">
-              <DetailRow label="Date" value={formatDate(detailApt.scheduledStart)} />
-              <DetailRow
-                label="Time"
-                value={detailApt.scheduledStart
-                  ? new Date(detailApt.scheduledStart).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                  : "—"}
-              />
-              <DetailRow label="Type" value={(detailApt.appointmentType || "").replace(/_/g, " ")} valueClassName="capitalize" />
-              <DetailRow label="Status" value={(detailApt.status || "").replace(/_/g, " ")} valueClassName="capitalize" />
-              <DetailRow label="Department" value={detailApt.department?.name} />
-              <DetailRow label="Facility" value={detailApt.facility?.name} />
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <DetailRow label="Date" value={formatDate(detailApt.scheduledStart)} />
+                <DetailRow
+                  label="Time"
+                  value={detailApt.scheduledStart
+                    ? new Date(detailApt.scheduledStart).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                    : "—"}
+                />
+                <DetailRow label="Type" value={(detailApt.appointmentType || "").replace(/_/g, " ")} valueClassName="capitalize" />
+                <DetailRow label="Status" value={(detailApt.status || "").replace(/_/g, " ")} valueClassName="capitalize" />
+                <DetailRow label="Department" value={detailApt.department?.name} />
+                <DetailRow label="Facility" value={detailApt.facility?.name} />
+              </div>
+
+              {detailApt.reason && <DetailBlock label="Reason" value={detailApt.reason} />}
+              {detailApt.notes && <DetailBlock label="Notes" value={detailApt.notes} />}
             </div>
 
-            {detailApt.reason && <DetailBlock label="Reason" value={detailApt.reason} />}
-            {detailApt.notes && <DetailBlock label="Notes" value={detailApt.notes} />}
-
-            <DialogFooter>
+            <DialogFooter className="p-4 pt-3 shrink-0 border-t bg-white">
               <Button variant="outline" onClick={() => setDetailApt(null)}>Close</Button>
             </DialogFooter>
           </DialogContent>
@@ -1011,18 +1015,18 @@ function PortalInvoicesView() {
       {/* Detail dialog */}
       <Dialog open={!!detailInv} onOpenChange={(o) => !o && setDetailInv(null)}>
         {detailInv && (
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Icons.Receipt className="w-5 h-5 text-emerald-600" />
+          <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden sm:max-w-md">
+            <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Icons.Receipt className="w-5 h-5 text-teal-200" />
                 Invoice {detailInv.invoiceNumber}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-white/80">
                 View invoice details. Use Print to print this invoice.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 grid grid-cols-2 gap-3">
               <DetailRow label="Invoice #" value={detailInv.invoiceNumber} />
               <DetailRow label="Type" value={(detailInv.invoiceType || "").replace(/_/g, " ")} valueClassName="capitalize" />
               <DetailRow label="Status" value={(detailInv.status || "").replace(/_/g, " ")} valueClassName="capitalize" />
@@ -1042,9 +1046,9 @@ function PortalInvoicesView() {
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="p-4 pt-3 shrink-0 border-t bg-white">
               <Button variant="outline" onClick={() => setDetailInv(null)}>Close</Button>
-              <Button onClick={() => window.print()}>
+              <Button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700">
                 <Printer className="w-4 h-4 mr-1.5" /> Print
               </Button>
             </DialogFooter>
