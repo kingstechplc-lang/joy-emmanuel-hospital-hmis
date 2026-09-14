@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FlaskConical, Search, TestTube, Microscope, CheckCircle2, Send, X, Beaker, AlertTriangle, Gauge, RefreshCw, Clock, XCircle, CalendarDays, Timer } from "lucide-react";
+import { Plus, FlaskConical, Search, TestTube, Microscope, CheckCircle2, Send, X, Beaker, AlertTriangle, Gauge, RefreshCw, Clock, XCircle, CalendarDays, Timer, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import {EmptyState, LoadingState, ErrorState, StatusBadge, formatDate, safeJson, PageHeader, ClearableSearch, MiniStatCard} from "@/components/ui-helpers"
 
@@ -364,6 +364,28 @@ export function LabOrdersView() {
                               <Send className="w-3 h-3" /> Release
                             </Button>
                           )}
+                          {/* Release to Patient Portal — separate from the
+                              lab-to-clinician release above. Only shows when the
+                              order has been released to the clinician (status =
+                              "released") AND hasn't yet been released to the patient
+                              (releasedToPatientAt is null). */}
+                          {o.status === "released" && !o.releasedToPatientAt && can("lab.view") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => releaseToPatient(o.id, invalidate)}
+                              className="gap-1 h-7 text-xs border-teal-300 text-teal-700 hover:bg-teal-50"
+                              title="Release results to the patient portal so the patient can view them"
+                            >
+                              <UserCheck className="w-3 h-3" /> Release to Patient
+                            </Button>
+                          )}
+                          {o.status === "released" && o.releasedToPatientAt && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-teal-700 bg-teal-50 border border-teal-200 px-2 py-1 rounded-full">
+                              <UserCheck className="w-3 h-3" />
+                              Released to Patient
+                            </span>
+                          )}
                           {o.status === "ordered" && can("lab.order") && (
                             <Button size="sm" variant="ghost" onClick={() => doAction(o.id, "cancel", "Order cancelled", invalidate)} className="gap-1 h-7 text-xs text-rose-600 hover:text-rose-700" title="Cancel order">
                               <X className="w-3 h-3" />
@@ -425,6 +447,32 @@ async function doAction(id: string, action: string, successMsg: string, onDone: 
       throw new Error(err.error || "Failed");
     }
     toast.success(successMsg);
+    onDone();
+  } catch (e: any) {
+    toast.error(e.message);
+  }
+}
+
+// Release the lab order's results to the patient portal — separate from
+// the lab-to-clinician release flow above. Requires that the order is at
+// least "resulted" (clinician has seen the results). Idempotent — if
+// already released to patient, server returns the existing release info.
+async function releaseToPatient(id: string, onDone: () => void) {
+  try {
+    const res = await fetch(`/api/lab-orders/${id}/release-to-patient`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "Released from lab orders view" }),
+    });
+    const json = await safeJson(res);
+    if (!res.ok) {
+      throw new Error(json.error || "Failed");
+    }
+    if (json.alreadyReleased) {
+      toast.info("Already released to patient");
+    } else {
+      toast.success("Released to patient portal — the patient can now view these results.");
+    }
     onDone();
   } catch (e: any) {
     toast.error(e.message);

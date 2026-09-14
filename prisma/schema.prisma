@@ -129,6 +129,10 @@ model Organization {
   dashboardLayouts       DashboardLayout[]
   // Tier 2: Clinical Templates (org-scoped templates)
   clinicalTemplates      ClinicalTemplate[]
+  // Tier 3: Patient Portal — OTP auth accounts + OTP codes + SMS log
+  patientPortalAccounts  PatientPortalAccount[]
+  patientOtps             PatientOtp[]
+  smsLogs                 SmsLog[]
 }
 
 model Facility {
@@ -478,6 +482,7 @@ model User {
   consultations              Consultation[]             @relation("consultationClinician")
   prescriptions              Prescription[]             @relation("rxPrescriber")
   labOrders                  LabOrder[]                 @relation("labOrderClinician")
+  labOrdersReleasedToPatient LabOrder[]                 @relation("labOrderReleasedToPatientBy")
   imagingOrders              ImagingOrder[]             @relation("imagingOrderClinician")
   procedures                 Procedure[]                @relation("procedurePerformer")
   admissions                 Admission[]                @relation("admissionAdmittedBy")
@@ -1071,6 +1076,10 @@ model Patient {
   medicationLabels              MedicationLabel[]
   // Tier 2: Clinical Template Applications (templates applied to this patient)
   clinicalTemplateApplications  ClinicalTemplateApplication[]
+  // Tier 3: Patient Portal — back-relation to portal accounts that
+  // have been linked to this patient (one patient could have multiple
+  // portal accounts over time, e.g., if they change phones)
+  portalAccounts                PatientPortalAccount[]
 
   @@unique([organizationId, patientNumber])
 }
@@ -2580,6 +2589,14 @@ model LabOrder {
   cancellationReason   String?
   // Billing integration
   serviceInvoiceItemId String? // link to the generated invoice item (if any)
+  // Patient portal release — clinician explicitly marks the result as
+  // visible to the patient via the portal. Separate from `releasedAt`
+  // above (which is the lab→clinician release). A result can be
+  // `status="released"` (clinician has seen it) without yet being
+  // `releasedToPatientAt` (clinician hasn't approved portal visibility).
+  releasedToPatientAt     DateTime?
+  releasedToPatientById    String?
+  releasedToPatientBy      User? @relation("labOrderReleasedToPatientBy", fields: [releasedToPatientById], references: [id])
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -6747,6 +6764,82 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([action, createdAt])
   @@index([severity, createdAt])
+}
+
+// =====================================================================
+// PATIENT PORTAL — OTP-based authentication + SMS dev-mode log
+// =====================================================================
+// Patients authenticate to the public portal (/portal/*) using a 6-digit
+// OTP delivered via SMS to their registered phone number. The portal uses
+// a separate JWT secret from the staff NextAuth so patient tokens can't
+// be used to access staff APIs and vice versa. An account is auto-linked
+// to a Patient record at first OTP-verify time, by matching the phone
+// number against Patient.phone — if exactly one Patient matches, auto-
+// link; if zero, the account stays in 'pending_identity' state (patient
+// must register in person); if multiple match, admin reviews.
+model PatientPortalAccount {
+  id              String    @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  phone           String    // E.164 or local format; canonicalized before lookup
+  patientId       String?   // nullable until identity is resolved
+  patient         Patient?  @relation(fields: [patientId], references: [id])
+  status          String    @default("active") // active | suspended | pending_identity | pending_admin_review
+  lastLoginAt     DateTime?
+  lastOtpSentAt   DateTime?
+  failedOtpAttempts Int     @default(0) // increments on wrong code; locked after 5
+  lockedUntil     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([organizationId, phone])
+  @@index([patientId])
+  @@index([phone])
+}
+
+// OTP codes — stored as bcrypt hashes (never plaintext). One active code
+// per phone at a time. Codes expire after 5 minutes. After 5 failed
+// verify attempts, the account is locked for 15 minutes (mirrors the
+// staff login lockout policy).
+model PatientOtp {
+  id              String    @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  phone           String
+  codeHash        String    // bcrypt hash of the 6-digit code
+  purpose         String    @default("login") // login | registration | phone_change
+  expiresAt       DateTime  // 5 minutes from creation
+  usedAt          DateTime?
+  attemptCount    Int       @default(0) // verify attempts against this code
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+
+  @@index([organizationId, phone, createdAt])
+  @@index([expiresAt])
+}
+
+// SmsLog — outbound SMS messages. In dev mode (no real SMS gateway
+// configured), the OTP service writes here + logs to console so devs
+// can retrieve the OTP for testing. In production with a real gateway
+// (Hubtel, Mnotify, Twilio), the gateway's message ID is recorded here
+// for delivery-receipt correlation.
+model SmsLog {
+  id              String    @id @default(cuid())
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  toPhone         String
+  fromProvider    String    @default("dev") // dev | hubtel | mnotify | twilio
+  messageBody     String   @db.Text
+  providerMessageId String? // gateway's message ID for delivery-receipt lookup
+  status          String    @default("queued") // queued | sent | delivered | failed
+  statusDetail    String?
+  relatedOtpId    String?   // if this SMS carried an OTP
+  ipAddress       String?   // requester IP, for audit
+  createdAt       DateTime  @default(now())
+
+  @@index([toPhone, createdAt])
+  @@index([status, createdAt])
 }
 
 model PatientAccessLog {
