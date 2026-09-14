@@ -101,17 +101,28 @@ export async function verifyPortalToken(token: string): Promise<PortalSession | 
       issuer: ISSUER,
       audience: AUDIENCE,
     });
-    if (!payload.sub || !payload.ph || !payload.org) return null;
+    // ⚠️ Don't use truthy checks on payload fields — empty string is
+    // falsy in JS but is a VALID value for `ph` (phone) on Ghana Card-
+    // only accounts where the patient has no phone on file. Using
+    // `!payload.ph` would reject valid tokens. Check for `undefined`
+    // instead, which means the field wasn't set at all.
+    if (payload.sub === undefined || payload.org === undefined) {
+      console.log("[portal jwt] verify failed: missing sub or org claim");
+      return null;
+    }
     return {
       accountId: payload.sub,
       patientId: payload.pid || null,
-      phone: payload.ph,
+      phone: payload.ph || "",  // empty string is valid for Ghana Card-only accounts
       organizationId: payload.org,
       jti: payload.jti,
       iat: payload.iat,
       exp: payload.exp,
     };
-  } catch {
+  } catch (e: any) {
+    // Log the verification error so we can diagnose via Vercel logs.
+    // Don't include the token itself in the log.
+    console.log("[portal jwt] verify threw:", e?.code || e?.name || e?.message || "unknown");
     return null;
   }
 }
