@@ -28,10 +28,13 @@ export async function portalFetch(url: string, init?: RequestInit): Promise<Resp
     headers.set("Content-Type", "application/json");
   }
   const res = await fetch(url, { ...init, headers });
-  // Auto-handle 401 — token expired or invalid
-  if (res.status === 401 && typeof window !== "undefined") {
+  // Auto-handle 401 ONLY for portal-specific endpoints (/api/portal/*).
+  // Staff endpoints (/api/telemedicine/*, /api/lab-orders/*, etc.) use
+  // NextAuth, not the portal JWT — a 401 from them means "wrong auth
+  // system", not "token expired". Redirecting on those would log the
+  // patient out unnecessarily.
+  if (res.status === 401 && typeof window !== "undefined" && url.includes("/api/portal/")) {
     clearPortalToken();
-    // Redirect to login
     window.location.href = "/portal/login";
     return res;
   }

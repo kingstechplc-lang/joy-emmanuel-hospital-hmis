@@ -1083,25 +1083,20 @@ function PortalTelemedicineView() {
   const upcoming: any[] = data?.upcoming || [];
   const past: any[] = data?.past || [];
 
-  const handleJoin = async (roomId: string) => {
-    setJoining(roomId);
-    try {
-      const res = await portalFetch(`/api/telemedicine/rooms/${roomId}/join`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ as: "patient" }),
-      });
-      const json = await res.json();
-      if (res.ok && json.roomUrl) {
-        setActiveRoom({ id: roomId, roomUrl: json.roomUrl, status: "patient_waiting" });
-      } else {
-        toast.error(json.error || "Failed to join");
-      }
-    } catch (e: any) {
-      toast.error(e.message || "Failed to join");
-    } finally {
-      setJoining(null);
+  // The portal telemedicine API (/api/portal/telemedicine) already
+  // returns roomUrl + joinToken for each active room. We just use that
+  // URL directly — no need to call the STAFF join endpoint (which uses
+  // NextAuth, not the portal JWT, and would return 401 → logout loop).
+  const handleJoin = (room: any) => {
+    if (!room.roomUrl) {
+      toast.error("Room not ready yet. Please wait for the doctor to start the call.");
+      return;
     }
+    setJoining(room.id);
+    // Use the roomUrl that was already minted by the portal API.
+    // The Daily.co iframe will handle the actual joining.
+    setActiveRoom({ id: room.id, roomUrl: room.roomUrl, status: room.status });
+    setJoining(null);
   };
 
   // If we have an active room with a URL, show the video embed
@@ -1206,7 +1201,7 @@ function PortalTelemedicineView() {
                     ) : (
                       <Button
                         size="sm"
-                        onClick={() => handleJoin(room.id)}
+                        onClick={() => handleJoin(room)}
                         disabled={joining === room.id}
                         className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
                       >
