@@ -102,7 +102,8 @@ export type ViewKey =
   | "wristbands"
   | "medication_labels"
   | "cdss_health"
-  | "telemedicine";
+  | "telemedicine"
+  | "analytics";
 
 type AppState = {
   view: ViewKey;
@@ -301,6 +302,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "audit_logs", label: "Audit Logs", icon: "ScrollText", permission: "audit.view", category: "Administration" },
   { key: "security", label: "Security", icon: "Shield", permission: "security.dashboard", category: "Administration" },
   { key: "reports", label: "Reports", icon: "BarChart3", permission: "report.view", category: "Administration" },
+  { key: "analytics", label: "Analytics", icon: "TrendingUp", permission: "report.view", category: "Administration" },
   { key: "settings_facilities", label: "Facilities", icon: "Building2", permission: "facility.manage", category: "Administration" },
   { key: "settings_departments", label: "Departments", icon: "Network", permission: "department.manage", category: "Administration" },
   { key: "department_dashboard", label: "Dept Dashboard", icon: "LayoutDashboard", permission: "department.manage", category: "Administration" },
