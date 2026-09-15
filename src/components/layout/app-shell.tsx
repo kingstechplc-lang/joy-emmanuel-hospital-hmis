@@ -26,7 +26,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { DashboardView } from "@/components/views/dashboard-view";
 import { ViewRenderer } from "@/components/views/view-renderer";
 import { Menu, LogOut, ChevronDown, Hospital, Bell, Search } from "lucide-react";
