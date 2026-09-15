@@ -168,7 +168,8 @@ export function AppShell() {
   const unread = notificationsData?.notifications?.filter((n: any) => !n.readAt) || [];
 
   // Currently active view label
-  const currentViewLabel = NAV_ITEMS.find((n) => n.key === view)?.label || "Dashboard";
+  const { t } = useI18n();
+  const currentViewLabel = t("sidebar." + view);
 
   // If facility is set, also fetch its dashboard data for context
   const activeFacility = facilities.find((f: any) => f.id === activeFacilityId);
@@ -254,13 +255,13 @@ export function AppShell() {
                 <SelectTrigger className="w-44 hidden md:flex border-slate-200 hover:border-rose-300">
                   <div className="flex items-center gap-2 truncate">
                     <Hospital className="w-4 h-4 text-rose-500 shrink-0" />
-                    <SelectValue placeholder="All Facilities">
-                      {activeFacility ? activeFacility.code : "All Facilities"}
+                    <SelectValue placeholder={t("topbar.all_facilities")}>
+                      {activeFacility ? activeFacility.code : t("topbar.all_facilities")}
                     </SelectValue>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All Facilities</SelectItem>
+                  <SelectItem value="__all__">{t("topbar.all_facilities")}</SelectItem>
                   {facilities.map((f: any) => (
                     <SelectItem key={f.id} value={f.id}>
                       <div className="flex flex-col">
@@ -316,14 +317,14 @@ export function AppShell() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setView("settings_system")}>
-                  <Icons.Settings className="w-4 h-4 mr-2" /> System Settings
+                  <Icons.Settings className="w-4 h-4 mr-2" /> {t("topbar.system_settings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setView("audit_logs")}>
                   <Icons.ScrollText className="w-4 h-4 mr-2" /> Audit Logs
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-rose-600">
-                  <LogOut className="w-4 h-4 mr-2" /> Sign out
+                  <LogOut className="w-4 h-4 mr-2" /> {t("topbar.sign_out")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -357,6 +358,9 @@ function SidebarContent({
   onSelect: (v: any) => void;
   collapsed: boolean;
 }) {
+  const { t } = useI18n();
+  // Convert category name to translation key: "Human Resources" → "sidebar.human_resources"
+  const catKey = (cat: string) => "sidebar." + cat.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
   return (
     <div className="flex flex-col h-full overflow-hidden bg-slate-900">
       {/* Logo / Brand — dark sidebar with red accent */}
@@ -381,7 +385,7 @@ function SidebarContent({
             <div key={cat} className="mb-3">
               {!collapsed && (
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-1.5 mt-4">
-                  {cat}
+                  {t(catKey(cat))}
                 </p>
               )}
               {items.map((item) => {
@@ -391,7 +395,7 @@ function SidebarContent({
                   <button
                     key={item.key}
                     onClick={() => onSelect(item.key)}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? t("sidebar." + item.key) : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 group relative mb-0.5 ${
                       isActive
                         ? "bg-gradient-to-r from-rose-500 to-red-600 text-white font-semibold shadow-lg shadow-red-900/30"
@@ -399,7 +403,7 @@ function SidebarContent({
                     }`}
                   >
                     <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} />
-                    {!collapsed && <span className="truncate text-left">{item.label}</span>}
+                    {!collapsed && <span className="truncate text-left">{t("sidebar." + item.key)}</span>}
                   </button>
                 );
               })}
