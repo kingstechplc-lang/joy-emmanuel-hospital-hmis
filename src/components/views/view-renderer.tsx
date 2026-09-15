@@ -76,6 +76,7 @@ import { ClinicalAlertCenterView } from "@/components/views/clinical/clinical-al
 import { DischargeSummaryView } from "@/components/views/clinical/discharge-summary-view";
 import { TelemedicineView } from "@/components/views/clinical/telemedicine-view";
 import { AnalyticsDashboardView } from "@/components/views/analytics/analytics-dashboard-view";
+import { InventoryAlertsView } from "@/components/views/inventory/inventory-alerts-view";
 import { WristbandsView } from "@/components/views/clinical/wristbands-view";
 import { MedicationLabelsView } from "@/components/views/pharmacy/medication-labels-view";
 import { CDSSHealthCenterView } from "@/components/views/clinical/cdss-health-center-view";
@@ -194,6 +195,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   cdss_health: CDSSHealthCenterView,
   telemedicine: TelemedicineView,
   analytics: AnalyticsDashboardView,
+  inventory_alerts: InventoryAlertsView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {

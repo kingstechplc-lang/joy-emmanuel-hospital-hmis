@@ -103,7 +103,8 @@ export type ViewKey =
   | "medication_labels"
   | "cdss_health"
   | "telemedicine"
-  | "analytics";
+  | "analytics"
+  | "inventory_alerts";
 
 type AppState = {
   view: ViewKey;
@@ -282,6 +283,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "nhia_claims", label: "NHIA CLAIM-it", icon: "FileCode2", permission: "nhia_claim.view", category: "Finance" },
 
   { key: "inventory", label: "Inventory", icon: "Boxes", permission: "inventory.view", category: "Inventory" },
+  { key: "inventory_alerts", label: "Inventory Alerts", icon: "BellRing", permission: "inventory.view", category: "Inventory" },
   { key: "suppliers", label: "Suppliers", icon: "Truck", permission: "inventory.view", category: "Inventory" },
   { key: "purchase_orders", label: "Purchase Orders", icon: "ShoppingCart", permission: "procurement.manage", category: "Inventory" },
   { key: "stock_transfers", label: "Stock Transfers", icon: "ArrowLeftRight", permission: "inventory.transfer", category: "Inventory" },
