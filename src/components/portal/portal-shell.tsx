@@ -1196,18 +1196,27 @@ function PortalTelemedicineView() {
                         <p className="text-xs text-slate-500">{room.appointment.department.name}</p>
                       )}
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleJoin(room.id)}
-                      disabled={joining === room.id}
-                      className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
-                    >
-                      {joining === room.id ? (
-                        <><Icons.Loader2 className="w-3.5 h-3.5 animate-spin" /> Joining...</>
-                      ) : (
-                        <><Icons.Video className="w-3.5 h-3.5" /> Join Call</>
-                      )}
-                    </Button>
+                    {room._pending ? (
+                      // Pending appointment — doctor hasn't created the room yet.
+                      // Show a "Not ready" badge instead of a Join button.
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+                        <Icons.Clock className="w-3.5 h-3.5" />
+                        Waiting for doctor
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleJoin(room.id)}
+                        disabled={joining === room.id}
+                        className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
+                      >
+                        {joining === room.id ? (
+                          <><Icons.Loader2 className="w-3.5 h-3.5 animate-spin" /> Joining...</>
+                        ) : (
+                          <><Icons.Video className="w-3.5 h-3.5" /> Join Call</>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1244,6 +1253,7 @@ function PortalTelemedicineView() {
 
 function TeleStatusPill({ status }: { status: string }) {
   const colors: Record<string, string> = {
+    pending: "bg-blue-100 text-blue-700",
     created: "bg-slate-100 text-slate-600",
     patient_waiting: "bg-amber-100 text-amber-700",
     in_progress: "bg-emerald-100 text-emerald-700",
@@ -1251,7 +1261,8 @@ function TeleStatusPill({ status }: { status: string }) {
   };
   const cls = colors[status] || "bg-slate-100 text-slate-600";
   const labels: Record<string, string> = {
-    created: "Scheduled",
+    pending: "Scheduled",
+    created: "Room Ready",
     patient_waiting: "Waiting",
     in_progress: "In Progress",
     ended: "Completed",

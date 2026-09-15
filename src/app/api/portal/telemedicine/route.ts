@@ -55,9 +55,7 @@ export async function GET(req: Request) {
   );
 
   try {
-    // Patient scoping — only this patient's rooms, and only within
-    // the portal account's organization (defense in depth: even if
-    // the JWT was tampered with, the patientId is constrained).
+    // ── Step 1: Fetch existing TelemedicineRoom records ────────────
     const where = {
       patientId: session.patientId,
       organizationId: session.organizationId,
@@ -93,15 +91,77 @@ export async function GET(req: Request) {
             appointmentNumber: true,
             scheduledStart: true,
             reason: true,
+            appointmentType: true,
+            department: { select: { id: true, name: true } },
           },
         },
       },
     });
 
-    // Mint a fresh patient meeting token for each ACTIVE room. Ended
-    // rooms get token=null (no point joining).
+    // ── Step 2: Fetch telemedicine-type appointments that DON'T have
+    //    a room yet — patients need to see these so they know a call
+    //    is scheduled even before the doctor creates the room. ─────
+    const roomAppointmentIds = rooms.map((r) => r.appointmentId).filter(Boolean);
+
+    const pendingAppointments = await db.appointment.findMany({
+      where: {
+        patientId: session.patientId,
+        appointmentType: "telemedicine",
+        status: { notIn: ["cancelled", "no_show"] },
+        ...(roomAppointmentIds.length > 0
+          ? { id: { notIn: roomAppointmentIds } }
+          : {}),
+      },
+      orderBy: { scheduledStart: "desc" },
+      take: limit,
+      include: {
+        facility: { select: { id: true, name: true, code: true } },
+        department: { select: { id: true, name: true } },
+      },
+    });
+
+    // Convert pending appointments to "virtual room" objects with
+    // status="pending" so the portal UI can render them uniformly.
+    // The patient sees a "Not ready yet" state instead of "Join Call".
+    const pendingRooms = pendingAppointments.map((apt) => ({
+      id: `pending-${apt.id}`,
+      _pending: true,
+      roomName: null,
+      status: "pending",
+      createdAt: apt.createdAt?.toISOString?.() || apt.createdAt,
+      patientJoinedAt: null,
+      patientWaitingAt: null,
+      admittedAt: null,
+      callStartedAt: null,
+      callEndedAt: null,
+      callDurationSec: null,
+      appointmentId: apt.id,
+      encounterId: null,
+      consultationId: null,
+      clinician: null,
+      facility: apt.facility,
+      appointment: {
+        id: apt.id,
+        appointmentNumber: apt.appointmentNumber,
+        scheduledStart: apt.scheduledStart?.toISOString?.() || apt.scheduledStart,
+        reason: apt.reason,
+        appointmentType: apt.appointmentType,
+        department: apt.department,
+      },
+      joinToken: null,
+      roomUrl: null,
+    }));
+
+    // ── Step 3: Split into upcoming + past ──────────────────────────
     const upcoming: any[] = [];
     const past: any[] = [];
+
+    // Add pending appointments to upcoming
+    for (const p of pendingRooms) {
+      upcoming.push(p);
+    }
+
+    // Process existing rooms
     for (const room of rooms) {
       const isActive = ACTIVE_STATUSES.includes(room.status);
       let joinToken: string | null = null;
@@ -110,14 +170,11 @@ export async function GET(req: Request) {
         try {
           joinToken = await createMeetingToken(
             room.roomName,
-            false, // patient is never an owner
+            false,
             "Patient"
           );
           roomUrl = getRoomUrl(room.roomName, joinToken);
         } catch (e: any) {
-          // Don't fail the whole list if one token mint fails — just
-          // exclude that room's join URL so the patient sees the call
-          // but can't join (and the portal UI shows a retry button).
           console.error(
             `[portal/telemedicine] token mint failed for room ${room.roomName}:`,
             e
@@ -129,8 +186,6 @@ export async function GET(req: Request) {
         ...room,
         joinToken,
         roomUrl,
-        // Don't expose raw Date objects that might leak timezone —
-        // ISO strings are unambiguous for the client.
         createdAt: room.createdAt?.toISOString?.() || room.createdAt,
         patientJoinedAt: room.patientJoinedAt?.toISOString?.() || null,
         patientWaitingAt: room.patientWaitingAt?.toISOString?.() || null,
@@ -146,7 +201,7 @@ export async function GET(req: Request) {
       items: upcoming,
       upcoming,
       past,
-      count: rooms.length,
+      count: upcoming.length + past.length,
     });
   } catch (e: any) {
     console.error("[GET /api/portal/telemedicine] error:", e);

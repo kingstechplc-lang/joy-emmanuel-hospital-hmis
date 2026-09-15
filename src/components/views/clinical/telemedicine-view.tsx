@@ -218,8 +218,30 @@ export function TelemedicineView() {
                     )}
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
-                    {/* Join as doctor */}
-                    {(room.status === "created" || room.status === "patient_waiting" || room.status === "in_progress") && (
+                    {/* Create Room — for pending appointments (no room yet) */}
+                    {room._pending && (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          createRoomMut.mutate({
+                            appointmentId: room.appointmentId,
+                            patientId: room.patientId,
+                            facilityId: room.facilityId,
+                          })
+                        }
+                        disabled={createRoomMut.isPending}
+                        className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
+                      >
+                        {createRoomMut.isPending ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Video className="w-3.5 h-3.5" />
+                        )}
+                        Create Room
+                      </Button>
+                    )}
+                    {/* Join as doctor — only for rooms that exist (not pending) */}
+                    {!room._pending && (room.status === "created" || room.status === "patient_waiting" || room.status === "in_progress") && (
                       <Button
                         size="sm"
                         onClick={() => joinMut.mutate({ roomId: room.id, as: "doctor" })}
@@ -307,6 +329,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
 
 function StatusPill({ status }: { status: string }) {
   const colors: Record<string, string> = {
+    pending: "bg-blue-100 text-blue-700",
     created: "bg-slate-100 text-slate-600",
     patient_waiting: "bg-amber-100 text-amber-700",
     in_progress: "bg-emerald-100 text-emerald-700",
@@ -314,7 +337,8 @@ function StatusPill({ status }: { status: string }) {
   };
   const cls = colors[status] || "bg-slate-100 text-slate-600";
   const labels: Record<string, string> = {
-    created: "Created",
+    pending: "Appointment",
+    created: "Room Ready",
     patient_waiting: "Patient Waiting",
     in_progress: "In Progress",
     ended: "Ended",
