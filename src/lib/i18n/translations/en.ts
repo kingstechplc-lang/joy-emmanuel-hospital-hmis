@@ -1,0 +1,85 @@
+// =====================================================================
+// ENGLISH TRANSLATIONS (default)
+// =====================================================================
+export const en: Record<string, string> = {
+  // ── Sidebar categories ──
+  "sidebar.overview": "Overview",
+  "sidebar.clinical": "Clinical",
+  "sidebar.diagnostics": "Diagnostics",
+  "sidebar.inpatient": "Inpatient",
+  "sidebar.finance": "Finance",
+  "sidebar.inventory": "Inventory",
+  "sidebar.human_resources": "Human Resources",
+  "sidebar.operations": "Operations",
+  "sidebar.administration": "Administration",
+  "sidebar.specialty_clinics": "Specialty Clinics",
+  "sidebar.blood_bank": "Blood Bank",
+  "sidebar.support_services": "Support Services",
+  "sidebar.governance": "Governance",
+  "sidebar.it_coding": "IT & Coding",
+
+  // ── Sidebar items (key ones) ──
+  "sidebar.dashboard": "Dashboard",
+  "sidebar.records_desk": "Records Desk",
+  "sidebar.patients": "Patients",
+  "sidebar.encounters": "Encounters",
+  "sidebar.appointments": "Appointments",
+  "sidebar.consultations": "Consultations",
+  "sidebar.prescriptions": "Prescriptions",
+  "sidebar.dispensing": "Dispensing",
+  "sidebar.lab_orders": "Lab Orders",
+  "sidebar.lab_results": "Lab Results",
+  "sidebar.imaging": "Imaging",
+  "sidebar.invoices": "Invoices",
+  "sidebar.payments": "Payments",
+  "sidebar.inventory": "Inventory",
+  "sidebar.inventory_alerts": "Inventory Alerts",
+  "sidebar.telemedicine": "Telemedicine",
+  "sidebar.analytics": "Analytics",
+  "sidebar.audit_logs": "Audit Logs",
+  "sidebar.reports": "Reports",
+  "sidebar.discharge_summaries": "Discharge Summaries",
+
+  // ── Topbar ──
+  "topbar.all_facilities": "All Facilities",
+  "topbar.sign_out": "Sign out",
+  "topbar.system_settings": "System Settings",
+
+  // ── Login ──
+  "login.welcome_back": "Welcome back",
+  "login.sign_in_to": "Sign in to access the Hospital Management Information System",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.sign_in": "Sign in",
+  "login.demo_accounts": "Quick demo accounts",
+
+  // ── Patient Portal Login ──
+  "portal.welcome_back": "Welcome back",
+  "portal.enter_details": "Enter your Ghana Card details to access your health records.",
+  "portal.ghana_card_number": "Ghana Card Number",
+  "portal.date_of_birth": "Date of Birth",
+  "portal.patient_number": "Patient Number",
+  "portal.log_in": "Log In",
+  "portal.your_health": "Your Health, In Your Hands",
+  "portal.access_records": "Access your health records anytime.",
+
+  // ── Common ──
+  "common.loading": "Loading...",
+  "common.search": "Search",
+  "common.filter": "Filter",
+  "common.export": "Export",
+  "common.print": "Print",
+  "common.close": "Close",
+  "common.cancel": "Cancel",
+  "common.save": "Save",
+  "common.delete": "Delete",
+  "common.edit": "Edit",
+  "common.view": "View",
+  "common.add": "Add",
+  "common.refresh": "Refresh",
+  "common.try_again": "Try again",
+  "common.no_data": "No data available",
+  "common.offline": "Offline",
+  "common.syncing": "Syncing...",
+  "common.pending": "pending",
+};

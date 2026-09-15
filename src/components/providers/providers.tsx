@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { useServiceWorker } from "@/components/offline/offline-indicator";
+import { I18nProvider } from "@/lib/i18n";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -13,7 +14,6 @@ export function Providers({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Register service worker for offline support
   useServiceWorker();
 
   if (!mounted) {
@@ -30,10 +30,12 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <QueryProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-        </QueryProvider>
+        <I18nProvider>
+          <QueryProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </QueryProvider>
+        </I18nProvider>
       </ThemeProvider>
     </SessionProvider>
   );

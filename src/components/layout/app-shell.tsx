@@ -1,7 +1,8 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { NAV_ITEMS, NAV_CATEGORIES, useAppStore } from "@/stores/app-store";
+import { useI18n, LANGUAGES } from "@/lib/i18n";
 import * as Icons from "lucide-react";
 import { OfflineIndicator } from "@/components/offline/offline-indicator";
 import { Button } from "@/components/ui/button";
@@ -273,6 +274,9 @@ export function AppShell() {
               </Select>
             )}
 
+            {/* Language switcher */}
+            <LanguageSwitcher />
+
             {/* Offline status indicator */}
             <OfflineIndicator />
 
@@ -418,6 +422,38 @@ function SidebarContent({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Language Switcher ──────────────────────────────────────────
+function LanguageSwitcher() {
+  const { lang, setLang } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-100"
+        title="Switch language"
+      >
+        <Icons.Languages className="w-4 h-4" />
+        <span className="hidden sm:inline">{LANGUAGES.find((l) => l.code === lang)?.flag} {LANGUAGES.find((l) => l.code === lang)?.label}</span>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
+          {LANGUAGES.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => { setLang(l.code); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-slate-50 ${lang === l.code ? "font-bold text-teal-700" : "text-slate-700"}`}
+            >
+              <span>{l.flag}</span> {l.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
