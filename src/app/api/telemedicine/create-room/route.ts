@@ -109,11 +109,10 @@ export async function POST(req: Request) {
   }
 
   // Optional: if appointmentId provided, verify it belongs to this patient.
-  let linkedClinicianId: string | undefined;
   if (appointmentId) {
     const appt = await db.appointment.findFirst({
       where: { id: appointmentId, patientId },
-      select: { id: true, staffId: true, facilityId: true },
+      select: { id: true, facilityId: true },
     });
     if (!appt) {
       return NextResponse.json(
@@ -127,15 +126,17 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    // Carry the appointment's staffId forward as the linked clinician.
-    linkedClinicianId = appt.staffId || undefined;
+    // Note: we DON'T use appt.staffId as the clinicianId because
+    // staffId is a FK to the Staff table, NOT the User table.
+    // The clinicianId on TelemedicineRoom is a FK to User.
+    // The doctor who creates the room is the doctor who will join.
   }
 
   // Optional: if encounterId provided, verify it belongs to this patient.
   if (encounterId) {
     const enc = await db.encounter.findFirst({
       where: { id: encounterId, patientId },
-      select: { id: true, facilityId: true, attendingStaffId: true },
+      select: { id: true, facilityId: true },
     });
     if (!enc) {
       return NextResponse.json(
@@ -149,8 +150,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    // Prefer attending staff of the encounter if no clinician yet.
-    linkedClinicianId = linkedClinicianId || enc.attendingStaffId || undefined;
   }
 
   try {
@@ -159,8 +158,10 @@ export async function POST(req: Request) {
     const dailyResult = await createDailyRoom(roomName, "private");
     const roomUrl = dailyResult.roomUrl;
 
-    // 2. Create the TelemedicineRoom + participants in a transaction.
-    const clinicianId = linkedClinicianId || session.user.id;
+    // 2. Create the TelemedicineRoom + participants.
+    // The clinicianId is always the calling user (the doctor who
+    // creates the room is the doctor who will join the call).
+    const clinicianId = session.user.id;
 
     const room = await db.telemedicineRoom.create({
       data: {
