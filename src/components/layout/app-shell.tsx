@@ -1,6 +1,6 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { NAV_ITEMS, NAV_CATEGORIES, useAppStore } from "@/stores/app-store";
 import * as Icons from "lucide-react";
 import { OfflineIndicator } from "@/components/offline/offline-indicator";
