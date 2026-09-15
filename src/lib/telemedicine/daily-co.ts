@@ -111,14 +111,16 @@ export async function createRoom(
   const body: Record<string, unknown> = {
     name: roomName,
     privacy,
-    // Default room properties — keep these conservative:
+    // Daily.co room properties:
     //   - exp: 4 hours from now (Daily.co requires an explicit exp for
     //     non-public rooms). 4h is enough for an outpatient consult.
-    //   - npeople: 2 (doctor + patient, hard cap)
     //   - enable_chat: true (text fallback if audio fails)
+    //   - enable_people_ui: true (show participant tiles)
+    // NOTE: 'npeople' is NOT a valid Daily.co property — it was rejected
+    // with a 400 error. Removed. Participant count is naturally limited
+    // to 2 (doctor + patient) by only minting 2 meeting tokens.
     properties: {
       exp: Math.floor(Date.now() / 1000) + 4 * 60 * 60,
-      npeople: 2,
       enable_chat: true,
       enable_people_ui: true,
       ...properties,
