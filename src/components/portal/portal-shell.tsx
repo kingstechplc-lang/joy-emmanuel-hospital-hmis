@@ -1083,20 +1083,35 @@ function PortalTelemedicineView() {
   const upcoming: any[] = data?.upcoming || [];
   const past: any[] = data?.past || [];
 
-  // The portal telemedicine API (/api/portal/telemedicine) already
-  // returns roomUrl + joinToken for each active room. We just use that
-  // URL directly — no need to call the STAFF join endpoint (which uses
-  // NextAuth, not the portal JWT, and would return 401 → logout loop).
-  const handleJoin = (room: any) => {
+  // The portal telemedicine API returns roomUrl for each active room.
+  // When the patient clicks Join Call, we:
+  //   1. Call POST /api/portal/telemedicine/[roomId]/join to update the
+  //      room status to "patient_waiting" (so the doctor sees the patient)
+  //   2. Open the Daily.co iframe with the roomUrl
+  const handleJoin = async (room: any) => {
     if (!room.roomUrl) {
       toast.error("Room not ready yet. Please wait for the doctor to start the call.");
       return;
     }
     setJoining(room.id);
-    // Use the roomUrl that was already minted by the portal API.
-    // The Daily.co iframe will handle the actual joining.
-    setActiveRoom({ id: room.id, roomUrl: room.roomUrl, status: room.status });
-    setJoining(null);
+    try {
+      // Notify the server that the patient is joining (updates status)
+      await portalFetchJson(`/api/portal/telemedicine/${room.id}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      // Open the Daily.co iframe
+      setActiveRoom({ id: room.id, roomUrl: room.roomUrl, status: "patient_waiting" });
+    } catch (e: any) {
+      // If the join endpoint fails, still open the iframe — the patient
+      // can still join the call, the doctor just won't see them as
+      // "waiting" in the queue
+      console.error("[portal telemedicine] join endpoint failed:", e);
+      setActiveRoom({ id: room.id, roomUrl: room.roomUrl, status: room.status });
+    } finally {
+      setJoining(null);
+    }
   };
 
   // If we have an active room with a URL, show the video embed
