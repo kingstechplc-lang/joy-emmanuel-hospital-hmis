@@ -44,6 +44,21 @@ export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 const CREATE_PERMS = [PERMISSIONS.CLINICAL_CREATE];
 
 export async function POST(req: Request) {
+  try {
+    return await handleCreateRoom(req);
+  } catch (e: any) {
+    console.error("[POST /api/telemedicine/create-room] UNHANDLED ERROR:", e);
+    return NextResponse.json(
+      {
+        error: "Failed to create telemedicine room",
+        detail: e?.message || String(e),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleCreateRoom(req: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -75,21 +90,17 @@ export async function POST(req: Request) {
   }
 
   // IDOR / consistency — patient must exist + belong to the caller's org.
-  // The Facility→Organization FK gives us org isolation; we additionally
-  // check the user's facilityId matches when present.
+  // ⚠️ Patient model has NO facility relation — it's org-scoped directly
+  // via organizationId. Don't try to include facility.
   const patient = await db.patient.findFirst({
     where: { id: patientId },
-    include: { facility: { select: { organizationId: true } } },
+    select: { id: true, organizationId: true, firstName: true, lastName: true, patientNumber: true },
   });
   if (!patient) {
     return NextResponse.json({ error: "Patient not found" }, { status: 404 });
   }
-  // Organization isolation: every patient row sits under a Facility which
-  // sits under an Organization. The caller's session.organizationId must
-  // match. Patients without a facility (rare legacy data) are blocked
-  // from telemedicine — they'd be unsupervised.
-  const patientOrgId = (patient as any).facility?.organizationId;
-  if (!patientOrgId || patientOrgId !== session.user.organizationId) {
+  // Organization isolation
+  if (patient.organizationId !== session.user.organizationId) {
     return NextResponse.json(
       { error: "Patient does not belong to your organization." },
       { status: 403 }

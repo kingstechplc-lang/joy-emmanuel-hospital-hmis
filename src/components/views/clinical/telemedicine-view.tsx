@@ -36,7 +36,13 @@ import { VideoCallEmbed } from "@/components/telemedicine/video-call-embed";
 async function fetchJson(url: string, opts?: RequestInit) {
   const res = await fetch(url, opts);
   const json = await safeJson(res);
-  if (!res.ok) throw new Error(json.error || `Failed: ${res.status}`);
+  if (!res.ok) {
+    // Include the server's detail field in the error so we can see
+    // the actual Prisma/API error in the toast
+    const msg = json.error || `Failed: ${res.status}`;
+    const detail = json.detail ? ` (${json.detail})` : "";
+    throw new Error(msg + detail);
+  }
   return json;
 }
 
