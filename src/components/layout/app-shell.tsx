@@ -1,8 +1,7 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect } from "react";
 import { NAV_ITEMS, NAV_CATEGORIES, useAppStore } from "@/stores/app-store";
-import { useI18n, LANGUAGES } from "@/lib/i18n";
 import * as Icons from "lucide-react";
 import { OfflineIndicator } from "@/components/offline/offline-indicator";
 import { Button } from "@/components/ui/button";
@@ -168,8 +167,7 @@ export function AppShell() {
   const unread = notificationsData?.notifications?.filter((n: any) => !n.readAt) || [];
 
   // Currently active view label
-  const { t } = useI18n();
-  const currentViewLabel = t("sidebar." + view);
+  const currentViewLabel = NAV_ITEMS.find((n) => n.key === view)?.label || "Dashboard";
 
   // If facility is set, also fetch its dashboard data for context
   const activeFacility = facilities.find((f: any) => f.id === activeFacilityId);
@@ -255,13 +253,13 @@ export function AppShell() {
                 <SelectTrigger className="w-44 hidden md:flex border-slate-200 hover:border-rose-300">
                   <div className="flex items-center gap-2 truncate">
                     <Hospital className="w-4 h-4 text-rose-500 shrink-0" />
-                    <SelectValue placeholder={t("topbar.all_facilities")}>
-                      {activeFacility ? activeFacility.code : t("topbar.all_facilities")}
+                    <SelectValue placeholder="All Facilities">
+                      {activeFacility ? activeFacility.code : "All Facilities"}
                     </SelectValue>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">{t("topbar.all_facilities")}</SelectItem>
+                  <SelectItem value="__all__">All Facilities</SelectItem>
                   {facilities.map((f: any) => (
                     <SelectItem key={f.id} value={f.id}>
                       <div className="flex flex-col">
@@ -273,9 +271,6 @@ export function AppShell() {
                 </SelectContent>
               </Select>
             )}
-
-            {/* Language switcher */}
-            <LanguageSwitcher />
 
             {/* Offline status indicator */}
             <OfflineIndicator />
@@ -317,14 +312,14 @@ export function AppShell() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setView("settings_system")}>
-                  <Icons.Settings className="w-4 h-4 mr-2" /> {t("topbar.system_settings")}
+                  <Icons.Settings className="w-4 h-4 mr-2" /> System Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setView("audit_logs")}>
                   <Icons.ScrollText className="w-4 h-4 mr-2" /> Audit Logs
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-rose-600">
-                  <LogOut className="w-4 h-4 mr-2" /> {t("topbar.sign_out")}
+                  <LogOut className="w-4 h-4 mr-2" /> Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -358,9 +353,6 @@ function SidebarContent({
   onSelect: (v: any) => void;
   collapsed: boolean;
 }) {
-  const { t } = useI18n();
-  // Convert category name to translation key: "Human Resources" → "sidebar.human_resources"
-  const catKey = (cat: string) => "sidebar." + cat.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
   return (
     <div className="flex flex-col h-full overflow-hidden bg-slate-900">
       {/* Logo / Brand — dark sidebar with red accent */}
@@ -385,7 +377,7 @@ function SidebarContent({
             <div key={cat} className="mb-3">
               {!collapsed && (
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-1.5 mt-4">
-                  {t(catKey(cat))}
+                  {cat}
                 </p>
               )}
               {items.map((item) => {
@@ -395,7 +387,7 @@ function SidebarContent({
                   <button
                     key={item.key}
                     onClick={() => onSelect(item.key)}
-                    title={collapsed ? t("sidebar." + item.key) : undefined}
+                    title={collapsed ? item.label : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 group relative mb-0.5 ${
                       isActive
                         ? "bg-gradient-to-r from-rose-500 to-red-600 text-white font-semibold shadow-lg shadow-red-900/30"
@@ -403,7 +395,7 @@ function SidebarContent({
                     }`}
                   >
                     <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`} />
-                    {!collapsed && <span className="truncate text-left">{t("sidebar." + item.key)}</span>}
+                    {!collapsed && <span className="truncate text-left">{item.label}</span>}
                   </button>
                 );
               })}
@@ -425,38 +417,6 @@ function SidebarContent({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── Language Switcher ──────────────────────────────────────────
-function LanguageSwitcher() {
-  const { lang, setLang } = useI18n();
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-100"
-        title="Switch language"
-      >
-        <Icons.Languages className="w-4 h-4" />
-        <span className="hidden sm:inline">{LANGUAGES.find((l) => l.code === lang)?.flag} {LANGUAGES.find((l) => l.code === lang)?.label}</span>
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
-          {LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => { setLang(l.code); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-slate-50 ${lang === l.code ? "font-bold text-teal-700" : "text-slate-700"}`}
-            >
-              <span>{l.flag}</span> {l.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
