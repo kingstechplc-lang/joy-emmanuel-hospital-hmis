@@ -69,7 +69,9 @@ export default function PortalLoginPage() {
         toast.success("Welcome back!");
         setSuccess(true);
         setSubmitting(false);
-        setTimeout(() => { window.location.href = "/portal/dashboard"; }, 800);
+        // 8-second delay so the patient can enjoy the welcome animation
+        // (checkmark + bouncing dots) before the redirect
+        setTimeout(() => { window.location.href = "/portal/dashboard"; }, 8000);
       } else if (res.status === 429) {
         setError(json?.error || "Too many attempts. Please try again in an hour.");
       } else if (res.status === 403) {

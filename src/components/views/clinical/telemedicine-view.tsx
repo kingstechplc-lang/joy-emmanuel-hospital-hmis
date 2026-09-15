@@ -34,11 +34,16 @@ import { EmptyState, LoadingState, ErrorState, formatDate, safeJson } from "@/co
 import { VideoCallEmbed } from "@/components/telemedicine/video-call-embed";
 
 async function fetchJson(url: string, opts?: RequestInit) {
-  const res = await fetch(url, opts);
+  let res: Response;
+  try {
+    res = await fetch(url, opts);
+  } catch (networkErr: any) {
+    // Network error — no internet, server unreachable, CORS, etc.
+    // fetch() throws TypeError "Failed to fetch" on these.
+    throw new Error("Network error — please check your internet connection and try again.");
+  }
   const json = await safeJson(res);
   if (!res.ok) {
-    // Include the server's detail field in the error so we can see
-    // the actual Prisma/API error in the toast
     const msg = json.error || `Failed: ${res.status}`;
     const detail = json.detail ? ` (${json.detail})` : "";
     throw new Error(msg + detail);
@@ -53,10 +58,19 @@ export function TelemedicineView() {
   const qc = useQueryClient();
   const [activeRoom, setActiveRoom] = useState<any | null>(null);
   const [consultDialogRoom, setConsultDialogRoom] = useState<any | null>(null);
-  // Draft notes the doctor types DURING the call — pre-filled in the
-  // post-call consultation dialog so the doctor doesn't lose their notes
-  const [draftNotes, setDraftNotes] = useState("");
+  // Structured consultation notes the doctor types DURING the call.
+  // Each field maps directly to the post-call consultation dialog,
+  // so when End Call is clicked, the values pre-fill the dialog.
+  const [draftNotes, setDraftNotes] = useState({
+    chiefComplaint: "",
+    historyPresentingIllness: "",
+    physicalExamination: "",
+    assessment: "",
+    treatmentPlan: "",
+    patientInstructions: "",
+  });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showNotesOnMobile, setShowNotesOnMobile] = useState(false);
   // Poll for room status updates so the doctor sees when the patient joins
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["telemedicine-rooms", activeFacilityId],
@@ -109,15 +123,21 @@ export function TelemedicineView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ as: "doctor" }),
       });
-      // Spread the ORIGINAL room (preserves id + patient + appointment)
-      // then add the join URL + updated status
       setActiveRoom({
         ...room,
         roomUrl: joinData.roomUrl,
         joinToken: joinData.joinToken,
-        status: room.status, // keep current status — will update via polling
+        status: room.status,
       });
-      setDraftNotes("");
+      setDraftNotes({
+        chiefComplaint: "",
+        historyPresentingIllness: "",
+        physicalExamination: "",
+        assessment: "",
+        treatmentPlan: "",
+        patientInstructions: "",
+      });
+      setShowNotesOnMobile(false);
     } catch (e: any) {
       toast.error(e.message || "Failed to join call");
     } finally {
@@ -146,11 +166,18 @@ export function TelemedicineView() {
     try {
       await fetchJson(`/api/telemedicine/rooms/${roomId}/end`, { method: "POST" });
       toast.success("Call ended");
-      // Open the consultation dialog with the draft notes pre-filled
+      // Open the consultation dialog with the structured draft notes pre-filled
       const endedRoom = rooms.find((r) => r.id === roomId) || activeRoom;
       setConsultDialogRoom({ ...endedRoom, _draftNotes: draftNotes });
       setActiveRoom(null);
-      setDraftNotes("");
+      setDraftNotes({
+        chiefComplaint: "",
+        historyPresentingIllness: "",
+        physicalExamination: "",
+        assessment: "",
+        treatmentPlan: "",
+        patientInstructions: "",
+      });
       qc.invalidateQueries({ queryKey: ["telemedicine-rooms"] });
     } catch (e: any) {
       toast.error(e.message || "Failed to end call");
@@ -167,11 +194,11 @@ export function TelemedicineView() {
     const patientNumber = activeRoom.patient?.patientNumber || "—";
 
     return (
-      <div className="space-y-4 fade-in-up">
+      <div className="space-y-3 fade-in-up">
         {/* Header with patient info */}
-        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-5 shadow-lg relative overflow-hidden">
-          <Video className="absolute top-3 right-4 w-16 h-16 text-white/15" strokeWidth={1.5} />
-          <h2 className="text-xl font-bold">Video Consultation</h2>
+        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-5 shadow-lg relative overflow-hidden">
+          <Video className="absolute top-3 right-4 w-12 h-12 md:w-16 md:h-16 text-white/15" strokeWidth={1.5} />
+          <h2 className="text-lg md:text-xl font-bold">Video Consultation</h2>
           <p className="text-sm text-white/80 mt-1">
             Patient: <span className="font-medium text-white">{patientName}</span> ({patientNumber})
           </p>
@@ -187,31 +214,57 @@ export function TelemedicineView() {
           </div>
         </div>
 
-        {/* Video iframe + consultation notes side by side on desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Video */}
-          <div className="lg:col-span-2 rounded-xl overflow-hidden border border-slate-200 shadow-lg" style={{ height: "60vh" }}>
+        {/* Video + notes — responsive: stacked on mobile, side-by-side on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* Video iframe */}
+          <div className="lg:col-span-2 rounded-xl overflow-hidden border border-slate-200 shadow-lg h-[45vh] md:h-[55vh] lg:h-[60vh]">
             <VideoCallEmbed roomUrl={activeRoom.roomUrl} />
           </div>
 
-          {/* Consultation notes during call */}
-          <div className="lg:col-span-1 flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" style={{ height: "60vh" }}>
-            <div className="px-4 py-3 border-b bg-slate-50">
+          {/* Consultation notes — structured fields that map to the post-call dialog */}
+          <div className={`lg:col-span-1 flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden ${showNotesOnMobile ? "h-[45vh]" : "hidden lg:flex"} lg:h-[60vh]`}>
+            <div className="px-3 py-2 border-b bg-slate-50 shrink-0 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-indigo-600" /> Consultation Notes
               </h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Notes are pre-filled in the consultation form after the call ends.</p>
+              <button onClick={() => setShowNotesOnMobile(false)} className="lg:hidden text-xs text-slate-500 hover:text-slate-700">✕ Close</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3">
-              <Textarea
-                value={draftNotes}
-                onChange={(e) => setDraftNotes(e.target.value)}
-                placeholder="Type consultation notes during the call...&#10;&#10;Chief complaint:&#10;History:&#10;Examination:&#10;Assessment:&#10;Plan:"
-                className="w-full h-full text-sm border-0 shadow-none resize-none focus-visible:ring-0"
-              />
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div>
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Chief Complaint</Label>
+                <Textarea value={draftNotes.chiefComplaint} onChange={(e) => setDraftNotes({ ...draftNotes, chiefComplaint: e.target.value })} rows={2} placeholder="e.g., Fever and headache for 3 days" className="mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">History of Presenting Illness</Label>
+                <Textarea value={draftNotes.historyPresentingIllness} onChange={(e) => setDraftNotes({ ...draftNotes, historyPresentingIllness: e.target.value })} rows={3} placeholder="Onset, duration, severity..." className="mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Physical Examination</Label>
+                <Textarea value={draftNotes.physicalExamination} onChange={(e) => setDraftNotes({ ...draftNotes, physicalExamination: e.target.value })} rows={3} placeholder="Vitals, system findings..." className="mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assessment</Label>
+                <Textarea value={draftNotes.assessment} onChange={(e) => setDraftNotes({ ...draftNotes, assessment: e.target.value })} rows={2} placeholder="Working diagnosis..." className="mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Treatment Plan</Label>
+                <Textarea value={draftNotes.treatmentPlan} onChange={(e) => setDraftNotes({ ...draftNotes, treatmentPlan: e.target.value })} rows={3} placeholder="Medications, follow-up..." className="mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Patient Instructions</Label>
+                <Textarea value={draftNotes.patientInstructions} onChange={(e) => setDraftNotes({ ...draftNotes, patientInstructions: e.target.value })} rows={2} placeholder="Home care advice..." className="mt-1 text-sm" />
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Mobile notes toggle button (hidden on desktop) */}
+        <button
+          onClick={() => setShowNotesOnMobile(!showNotesOnMobile)}
+          className="lg:hidden w-full py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-medium flex items-center justify-center gap-2"
+        >
+          <FileText className="w-4 h-4" /> {showNotesOnMobile ? "Hide Notes" : "Show Consultation Notes"}
+        </button>
 
         {/* Action buttons */}
         <div className="flex justify-center gap-3 flex-wrap">
@@ -429,14 +482,14 @@ function StatusPill({ status }: { status: string }) {
 // =====================================================================
 function ConsultationDialog({ room, onClose, onSuccess }: { room: any; onClose: () => void; onSuccess: () => void }) {
   const qc = useQueryClient();
-  // Pre-fill from draft notes taken during the call
-  const draftNotes: string = room?._draftNotes || "";
-  const [chiefComplaint, setChiefComplaint] = useState("");
-  const [history, setHistory] = useState("");
-  const [examination, setExamination] = useState("");
-  const [assessment, setAssessment] = useState("");
-  const [treatmentPlan, setTreatmentPlan] = useState("");
-  const [patientInstructions, setPatientInstructions] = useState(draftNotes);
+  // Pre-fill ALL fields from the structured draft notes taken during the call
+  const draft = room?._draftNotes || {};
+  const [chiefComplaint, setChiefComplaint] = useState(draft.chiefComplaint || "");
+  const [history, setHistory] = useState(draft.historyPresentingIllness || "");
+  const [examination, setExamination] = useState(draft.physicalExamination || "");
+  const [assessment, setAssessment] = useState(draft.assessment || "");
+  const [treatmentPlan, setTreatmentPlan] = useState(draft.treatmentPlan || "");
+  const [patientInstructions, setPatientInstructions] = useState(draft.patientInstructions || "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {

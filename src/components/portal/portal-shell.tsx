@@ -1075,13 +1075,26 @@ function PortalTelemedicineView() {
   const [activeRoom, setActiveRoom] = useState<any | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
 
+  // Poll for status updates when the patient is in an active call
+  // so the status badge updates when the doctor admits the patient
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["portal-telemedicine"],
     queryFn: () => portalFetchJson("/api/portal/telemedicine"),
+    // Poll every 3s when in an active call, otherwise no polling
+    refetchInterval: activeRoom ? 3000 : false,
   });
 
+  // Update the active room's status from the polling data
   const upcoming: any[] = data?.upcoming || [];
   const past: any[] = data?.past || [];
+  useEffect(() => {
+    if (activeRoom && upcoming.length > 0) {
+      const updated = upcoming.find((r) => r.id === activeRoom.id);
+      if (updated && updated.status !== activeRoom.status) {
+        setActiveRoom({ ...activeRoom, status: updated.status });
+      }
+    }
+  }, [upcoming]);
 
   // The portal telemedicine API returns roomUrl for each active room.
   // When the patient clicks Join Call, we:
@@ -1117,25 +1130,51 @@ function PortalTelemedicineView() {
   // If we have an active room with a URL, show the video embed
   if (activeRoom?.roomUrl) {
     return (
-      <div className="space-y-4 fade-in-up">
-        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-5 shadow-lg relative overflow-hidden">
-          <Icons.Video className="absolute top-3 right-4 w-16 h-16 text-white/15" strokeWidth={1.5} />
-          <h2 className="text-xl font-bold">Video Consultation</h2>
+      <div className="space-y-3 fade-in-up">
+        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-5 shadow-lg relative overflow-hidden">
+          <Icons.Video className="absolute top-3 right-4 w-12 h-12 md:w-16 md:h-16 text-white/15" strokeWidth={1.5} />
+          <h2 className="text-lg md:text-xl font-bold">Video Consultation</h2>
           <p className="text-sm text-white/80 mt-1">
-            {activeRoom.status === "patient_waiting"
+            {activeRoom.status === "patient_waiting" || activeRoom.status === "created"
               ? "Waiting for the doctor to admit you..."
-              : "Your call is in progress."}
+              : activeRoom.status === "in_progress"
+                ? "Your call is in progress with the doctor."
+                : "Call ended."}
           </p>
+          {/* Status badge */}
+          <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur text-xs">
+            {activeRoom.status === "patient_waiting" && <><Icons.Clock className="w-3 h-3 animate-pulse" /> In waiting room</>}
+            {activeRoom.status === "in_progress" && <><Icons.Video className="w-3 h-3" /> Call in progress</>}
+            {activeRoom.status === "created" && <><Icons.Clock className="w-3 h-3" /> Waiting to join</>}
+            {activeRoom.status === "ended" && <><Icons.CheckCircle2 className="w-3 h-3" /> Call ended</>}
+          </div>
         </div>
 
-        <div className="rounded-xl overflow-hidden border border-slate-200 shadow-lg" style={{ height: "60vh" }}>
-          {/* Use a simple iframe for the portal — no need for the full embed component */}
+        {/* Video iframe — responsive height + fullscreen button */}
+        <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-lg h-[45vh] md:h-[55vh] lg:h-[60vh]">
           <iframe
             src={activeRoom.roomUrl}
             allow="camera; microphone; fullscreen; display-capture; autoplay"
             className="w-full h-full border-0"
             title="Video Consultation"
           />
+          {/* Fullscreen button */}
+          <button
+            onClick={() => {
+              const container = document.querySelector('iframe[title="Video Consultation"]')?.parentElement;
+              if (container) {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                } else {
+                  (container as HTMLElement).requestFullscreen();
+                }
+              }
+            }}
+            className="absolute top-2 right-2 z-10 h-8 w-8 rounded-lg bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+            title="Toggle fullscreen"
+          >
+            <Icons.Maximize className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="flex justify-center">
