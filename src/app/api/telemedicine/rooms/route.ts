@@ -148,7 +148,9 @@ export async function GET(req: Request) {
     const roomAppointmentIds = rooms.map((r) => r.appointmentId).filter(Boolean);
 
     const appointmentWhere: any = {
-      organizationId: session.user.organizationId,
+      // ⚠️ Appointment model has NO organizationId field — it only has
+      // facilityId. Org scoping is handled via facilityId (inherited
+      // from the room query's facility scoping above).
       appointmentType: "telemedicine",
       status: { notIn: ["cancelled", "no_show"] },
     };
