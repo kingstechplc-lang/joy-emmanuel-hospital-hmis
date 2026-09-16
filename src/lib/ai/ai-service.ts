@@ -47,7 +47,6 @@ async function getAI(): Promise<any> {
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
-                  "X-Z-AI-From": "Z",
                 },
                 body: JSON.stringify({
                   model: process.env.ZAI_MODEL || body.model || "glm-4-flash",

@@ -1,66 +1,68 @@
 // =====================================================================
-// API: /api/ai/debug — tests the AI API connection + shows config
+// API: /api/ai/debug — tests the AI API connection (NO AUTH REQUIRED)
 // =====================================================================
-// GET — returns the current AI configuration (without revealing the
-//       full API key) + tests a simple API call.
+// Visit in browser:
+//   /api/ai/debug                    → uses ZAI_MODEL env var (or default)
+//   /api/ai/debug?model=glm-4-plus   → tests with a specific model
+//   /api/ai/debug?model=glm-4-flash  → tests glm-4-flash
 // =====================================================================
 import { NextResponse } from "next/server";
-import { getSession, hasPermission } from "@/lib/session";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
-export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasPermission(session, "clinical.view"))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const testModel = url.searchParams.get("model");
 
   const apiKey = process.env.ZAI_API_KEY;
   const baseUrl = process.env.ZAI_BASE_URL;
   const chatUrl = process.env.ZAI_CHAT_URL;
-  const model = process.env.ZAI_MODEL || "glm-4";
+  const envModel = process.env.ZAI_MODEL || "glm-4-flash";
+  const model = testModel || envModel;
 
-  // Mask the API key for display (show first 8 + last 4 chars)
+  // Mask the API key for display
   const maskedKey = apiKey
-    ? `${apiKey.slice(0, 8)}...${apiKey.slice(-4)} (length: ${apiKey.length})`
+    ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)} (len=${apiKey.length})`
     : "NOT SET";
 
-  // Construct the URL that would be used
-  let url = chatUrl;
-  if (!url && baseUrl) {
-    url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
+  // Construct the URL
+  let apiUrl = chatUrl;
+  if (!apiUrl && baseUrl) {
+    apiUrl = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
   }
 
-  // If no API key, return config status only
-  if (!apiKey) {
+  if (!apiKey || !apiUrl) {
     return NextResponse.json({
       status: "not_configured",
-      message: "ZAI_API_KEY is not set. Set it on Vercel → Settings → Environment Variables.",
-      config: { ZAI_API_KEY: "NOT SET", ZAI_BASE_URL: baseUrl || "NOT SET", ZAI_CHAT_URL: chatUrl || "NOT SET", ZAI_MODEL: model },
+      message: "Missing env vars. Set ZAI_API_KEY + ZAI_BASE_URL (or ZAI_CHAT_URL) on Vercel.",
+      config: {
+        ZAI_API_KEY: maskedKey,
+        ZAI_BASE_URL: baseUrl || "NOT SET",
+        ZAI_CHAT_URL: chatUrl || "NOT SET",
+        ZAI_MODEL: envModel,
+      },
     });
   }
 
-  // Try a simple test call to the API
+  // Test a simple API call with the specified model
   try {
-    const testUrl = url;
-    console.log("[AI Debug] testing URL:", testUrl);
+    const testBody = {
+      model,
+      messages: [
+        { role: "user", content: "Say 'hello' in one word." },
+      ],
+    };
 
-    const resp = await fetch(testUrl, {
+    console.log("[AI Debug] testing:", { url: apiUrl, model, body: JSON.stringify(testBody) });
+
+    const resp = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "X-Z-AI-From": "Z",
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "assistant", content: "You are a helpful assistant." },
-          { role: "user", content: "Say 'AI is working' in exactly 3 words." },
-        ],
-        thinking: { type: "disabled" },
-      }),
+      body: JSON.stringify(testBody),
     });
 
     const respText = await resp.text();
@@ -70,16 +72,22 @@ export async function GET() {
     return NextResponse.json({
       status: resp.ok ? "ok" : "error",
       httpStatus: resp.status,
+      model: model,
+      apiUrl: apiUrl,
       config: {
         ZAI_API_KEY: maskedKey,
         ZAI_BASE_URL: baseUrl || "NOT SET",
         ZAI_CHAT_URL: chatUrl || "NOT SET",
-        ZAI_MODEL: model,
-        constructedUrl: testUrl,
+        ZAI_MODEL: envModel,
+        testingModel: model,
+        note: testModel ? `Testing with ?model=${testModel} (overrides ZAI_MODEL)` : "Using ZAI_MODEL env var",
       },
       response: resp.ok
-        ? { ok: true, content: respJson?.choices?.[0]?.message?.content || "(empty)" }
-        : { ok: false, body: respText.slice(0, 500) },
+        ? { ok: true, content: respJson?.choices?.[0]?.message?.content || "(empty response)" }
+        : { ok: false, error: respJson?.error || respText.slice(0, 500) },
+      tip: resp.ok
+        ? "✅ AI is working! Try the AI Assistant view."
+        : "❌ Try: /api/ai/debug?model=glm-4-plus  or  /api/ai/debug?model=glm-4  or  /api/ai/debug?model=chatglm_turbo",
     });
   } catch (e: any) {
     return NextResponse.json({
@@ -89,8 +97,9 @@ export async function GET() {
         ZAI_API_KEY: maskedKey,
         ZAI_BASE_URL: baseUrl || "NOT SET",
         ZAI_CHAT_URL: chatUrl || "NOT SET",
-        ZAI_MODEL: model,
-        constructedUrl: url,
+        ZAI_MODEL: envModel,
+        testingModel: model,
+        apiUrl: apiUrl,
       },
     });
   }
