@@ -28,32 +28,36 @@ async function getAI(): Promise<any> {
     const msg = e?.message || String(e);
 
     // ── Fallback: direct fetch with env vars (Vercel production) ─
-    if (process.env.ZAI_API_KEY && process.env.ZAI_BASE_URL) {
+    if (process.env.ZAI_API_KEY && (process.env.ZAI_BASE_URL || process.env.ZAI_CHAT_URL)) {
       _zai = {
         chat: {
           completions: {
             create: async (body: any) => {
-              // Build the URL — ZAI_BASE_URL should include /v1
-              // The full endpoint is: {baseUrl}/chat/completions
-              const baseUrl = process.env.ZAI_BASE_URL!.replace(/\/$/, "");
-              const url = `${baseUrl}/chat/completions`;
+              // URL construction:
+              // - If ZAI_CHAT_URL is set, use it directly (full URL)
+              // - Otherwise: {ZAI_BASE_URL}/chat/completions
+              let url = process.env.ZAI_CHAT_URL;
+              if (!url) {
+                const baseUrl = process.env.ZAI_BASE_URL!.replace(/\/$/, "");
+                url = `${baseUrl}/chat/completions`;
+              }
+              console.log("[AI Service] fetch URL:", url);
               const resp = await fetch(url, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
-                  "X-Z-AI-From": "Z", // Required by Z.ai API
+                  "X-Z-AI-From": "Z",
                 },
                 body: JSON.stringify({
-                  model: body.model || "glm-4",
+                  model: process.env.ZAI_MODEL || body.model || "glm-4",
                   messages: body.messages,
                   thinking: body.thinking || { type: "disabled" },
                 }),
-              }
-              );
+              });
               if (!resp.ok) {
                 const errText = await resp.text().catch(() => "");
-                throw new Error(`AI API error: ${resp.status} — ${errText.slice(0, 200)}`);
+                throw new Error(`AI API error: ${resp.status} — ${errText.slice(0, 300)}`);
               }
               return resp.json();
             },
