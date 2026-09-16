@@ -2,33 +2,72 @@
 // AI SERVICE — pluggable interface for all AI-powered features
 // =====================================================================
 // Architecture for future expansion:
-//   - Single ZAI instance (reused across requests — best practice per
-//     the LLM skill docs)
-//   - Each AI feature is a separate module in this directory
-//   - All modules call aiChat() or aiChatJSON() — never import ZAI
-//     directly
-//   - To swap providers (e.g., add OpenAI later), only this file
-//     changes — the modules + API endpoints stay the same
-//   - All AI calls should be audited by the calling API endpoint
-//   - AI results are ADVISORY ONLY — the clinician always decides
+//   - Tries z-ai-web-dev-sdk first (works in dev sandbox where
+//     /etc/.z-ai-config exists)
+//   - Falls back to direct fetch() if ZAI_API_KEY + ZAI_BASE_URL env
+//     vars are set (works on Vercel production with a real AI key)
+//   - Returns a graceful error if neither is configured
+//   - To add new providers (OpenAI, Anthropic, etc.), just add a new
+//     branch in the getAI() function — modules + endpoints stay same
+//   - All AI results are ADVISORY ONLY
 // =====================================================================
-import ZAI from "z-ai-web-dev-sdk";
 
 let _zai: any = null;
+let _initError: string | null = null;
 
 async function getAI(): Promise<any> {
-  if (!_zai) {
+  if (_zai) return _zai;
+  if (_initError) throw new Error(_initError);
+
+  // ── Try z-ai-web-dev-sdk (dev sandbox) ────────────────────────
+  try {
+    const ZAI = (await import("z-ai-web-dev-sdk")).default;
     _zai = await ZAI.create();
+    return _zai;
+  } catch (e: any) {
+    const msg = e?.message || String(e);
+
+    // ── Fallback: direct fetch with env vars (Vercel production) ─
+    if (process.env.ZAI_API_KEY && process.env.ZAI_BASE_URL) {
+      _zai = {
+        chat: {
+          completions: {
+            create: async (body: any) => {
+              const resp = await fetch(
+                `${process.env.ZAI_BASE_URL}/chat/completions`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
+                  },
+                  body: JSON.stringify({
+                    model: body.model || "glm-4",
+                    messages: body.messages,
+                    thinking: body.thinking,
+                  }),
+                }
+              );
+              if (!resp.ok) {
+                throw new Error(`AI API error: ${resp.status}`);
+              }
+              return resp.json();
+            },
+          },
+        },
+      };
+      return _zai;
+    }
+
+    // ── Neither configured — graceful error ──────────────────────
+    _initError = `AI is not configured. To enable AI features:
+1. On Vercel: set ZAI_API_KEY and ZAI_BASE_URL environment variables
+2. On local dev: ensure /etc/.z-ai-config exists (z-ai-web-dev-sdk sandbox)
+3. Or integrate with OpenAI/Anthropic by modifying src/lib/ai/ai-service.ts`;
+    throw new Error(_initError);
   }
-  return _zai;
 }
 
-/**
- * Send a single-turn chat completion to the LLM.
- * @param systemPrompt — defines the AI's role + behavior
- * @param userMessage — the user's input
- * @returns the AI's text response
- */
 export async function aiChat(
   systemPrompt: string,
   userMessage: string
@@ -45,16 +84,10 @@ export async function aiChat(
     return completion.choices[0]?.message?.content || "";
   } catch (e: any) {
     console.error("[AI Service] aiChat failed:", e?.message || e);
-    throw new Error(`AI request failed: ${e?.message || "unknown error"}`);
+    throw e;
   }
 }
 
-/**
- * Send a chat completion + parse the response as JSON.
- * Automatically appends "Respond with valid JSON only" to the system
- * prompt + extracts JSON from the response (handles markdown code
- * fences).
- */
 export async function aiChatJSON(
   systemPrompt: string,
   userMessage: string
@@ -62,28 +95,16 @@ export async function aiChatJSON(
   const enhancedPrompt = `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no code fences, no additional text. Just the JSON object.`;
   const response = await aiChat(enhancedPrompt, userMessage);
   try {
-    // Try direct parse first
     return JSON.parse(response);
   } catch {
-    // Try extracting JSON from markdown code fences or surrounding text
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch {
-        // Fall through
-      }
+      try { return JSON.parse(jsonMatch[0]); } catch {}
     }
-    // Return the raw text if we can't parse JSON
     return { raw: response, parseError: true };
   }
 }
 
-/**
- * Check if the AI service is available (the SDK is installed + can
- * create an instance). Used by API endpoints to return a friendly
- * error if AI is not configured.
- */
 export async function isAIAvailable(): Promise<boolean> {
   try {
     await getAI();
@@ -91,4 +112,13 @@ export async function isAIAvailable(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Reset the cached instance (used when env vars change, e.g.
+ * after the user configures ZAI_API_KEY on Vercel).
+ */
+export function resetAI() {
+  _zai = null;
+  _initError = null;
 }
