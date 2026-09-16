@@ -50,9 +50,11 @@ async function getAI(): Promise<any> {
                   "X-Z-AI-From": "Z",
                 },
                 body: JSON.stringify({
-                  model: process.env.ZAI_MODEL || body.model || "glm-4",
+                  model: process.env.ZAI_MODEL || body.model || "glm-4-flash",
                   messages: body.messages,
-                  thinking: body.thinking || { type: "disabled" },
+                  // NOTE: 'thinking' parameter removed — it's an internal
+                  // SDK feature that the public Z.ai API doesn't support.
+                  // Including it may cause 400 errors on some models.
                 }),
               });
               if (!resp.ok) {
