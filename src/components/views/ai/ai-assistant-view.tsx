@@ -131,7 +131,13 @@ function TriageTab() {
     if (!input.chiefComplaint.trim()) { toast.error("Please enter a chief complaint"); return; }
     setLoading(true); setResult(null);
     try {
-      const vitals = Object.fromEntries(Object.entries(input).map(([k, v]) => [k, v ? Number(v) : undefined]));
+      // Convert numeric fields to numbers, keep chiefComplaint as string
+      const vitals = Object.fromEntries(
+        Object.entries(input).map(([k, v]) => {
+          if (k === "chiefComplaint") return [k, v || undefined];
+          return [k, v ? Number(v) : undefined];
+        })
+      );
       const data = await fetchJson("/api/ai/triage-score", vitals);
       setResult(data);
     } catch (e: any) { toast.error(e.message); }

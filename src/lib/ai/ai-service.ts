@@ -33,23 +33,27 @@ async function getAI(): Promise<any> {
         chat: {
           completions: {
             create: async (body: any) => {
-              const resp = await fetch(
-                `${process.env.ZAI_BASE_URL}/chat/completions`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
-                  },
-                  body: JSON.stringify({
-                    model: body.model || "glm-4",
-                    messages: body.messages,
-                    thinking: body.thinking,
-                  }),
-                }
+              // Build the URL — ZAI_BASE_URL should include /v1
+              // The full endpoint is: {baseUrl}/chat/completions
+              const baseUrl = process.env.ZAI_BASE_URL!.replace(/\/$/, "");
+              const url = `${baseUrl}/chat/completions`;
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
+                  "X-Z-AI-From": "Z", // Required by Z.ai API
+                },
+                body: JSON.stringify({
+                  model: body.model || "glm-4",
+                  messages: body.messages,
+                  thinking: body.thinking || { type: "disabled" },
+                }),
+              }
               );
               if (!resp.ok) {
-                throw new Error(`AI API error: ${resp.status}`);
+                const errText = await resp.text().catch(() => "");
+                throw new Error(`AI API error: ${resp.status} — ${errText.slice(0, 200)}`);
               }
               return resp.json();
             },
