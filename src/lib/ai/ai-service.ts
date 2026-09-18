@@ -169,9 +169,16 @@ export function formatAIError(status: number, errText: string): string {
     if (status >= 500) {
       return "AI provider is temporarily unavailable. Please try again later.";
     }
+    // For 400/404 errors, include the actual error message so the admin
+    // can see what's wrong (wrong model name, wrong URL, etc.)
+    // Never include API keys — only error.code + error.message from upstream
+    if (msg) {
+      return `AI request failed (HTTP ${status}): ${msg}`;
+    }
     return `AI request failed (HTTP ${status}). Please contact your administrator if this persists.`;
   } catch {
-    return `AI request failed (HTTP ${status}). Please contact your administrator.`;
+    // JSON parse failed — return the raw text (truncated, no secrets)
+    return `AI request failed (HTTP ${status}): ${errText.slice(0, 200)}`;
   }
 }
 
