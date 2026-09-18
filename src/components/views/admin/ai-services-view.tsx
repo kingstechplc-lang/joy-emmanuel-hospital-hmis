@@ -216,6 +216,20 @@ export function AIServicesView() {
         <ErrorState message="Failed to load AI configuration" onRetry={() => refetch()} />
       ) : !data ? null : (
         <>
+          {/* Quick Setup wizard — shows when no DB providers exist */}
+          {canManage && (data.totalProviders || 0) === 0 && (
+            <QuickSetupCard
+              activeConfig={data.active}
+              onCreateProvider={() => setProviderDialog({ open: true, editing: {
+                code: "zai",
+                name: "Z.ai",
+                baseUrl: "https://api.z.ai/api/paas/v4",
+                providerType: "openai_compatible",
+                isDefault: true,
+              } })}
+            />
+          )}
+
           {/* Section 1: Current Active Configuration */}
           <ActiveConfigCard active={data.active} totalProviders={data.totalProviders} totalModels={data.totalModels} />
 
@@ -1023,5 +1037,81 @@ function CredentialDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// =====================================================================
+// QUICK SETUP CARD — shows when no DB providers exist
+// =====================================================================
+function QuickSetupCard({ activeConfig, onCreateProvider }: {
+  activeConfig: any;
+  onCreateProvider: () => void;
+}) {
+  const isEnvConfigured = activeConfig?.source === "environment";
+  const isNotConfigured = activeConfig?.source === "none";
+
+  return (
+    <Card className="border-violet-300 shadow-lg shadow-violet-500/10 overflow-hidden">
+      <div className="h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500" />
+      <CardContent className="p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md shrink-0">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-slate-900">Quick Setup Required</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              No AI providers are configured in the database yet. Set up a provider to enable runtime model switching.
+            </p>
+          </div>
+        </div>
+
+        <div className={`rounded-lg p-3 mb-4 text-xs ${isEnvConfigured ? "bg-amber-50 border border-amber-200" : "bg-rose-50 border border-rose-200"}`}>
+          {isEnvConfigured ? (
+            <div className="flex items-start gap-2 text-amber-800">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">AI is using environment variables (read-only)</p>
+                <p className="mt-0.5">Provider: {activeConfig?.providerName || "Z.ai"} | Model: {activeConfig?.modelCode || "glm-4-plus"}</p>
+                <p className="mt-0.5">Create a database-backed provider below to switch models without redeploying.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 text-rose-800">
+              <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">AI is not configured</p>
+                <p className="mt-0.5">No environment variables or database configuration found.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2 mb-4">
+          <SetupStep number={1} title="Create Provider" desc="Add Z.ai as a provider (pre-filled)" />
+          <SetupStep number={2} title="Configure API Key" desc="Enter your Z.ai API key (encrypted)" />
+          <SetupStep number={3} title="Add Model" desc="Add glm-4-plus and set as default" />
+          <SetupStep number={4} title="Test Model" desc="Verify the model works" />
+        </div>
+
+        <Button onClick={onCreateProvider} className="w-full bg-gradient-to-r from-violet-600 to-purple-700 hover:opacity-90 gap-2 h-11 font-semibold">
+          <Plus className="w-4 h-4" /> Start Setup — Create Z.ai Provider
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SetupStep({ number, title, desc }: { number: number; title: string; desc: string }) {
+  return (
+    <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 border border-slate-100">
+      <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-violet-100 text-violet-700">
+        {number}
+      </div>
+      <div className="flex-1">
+        <p className="text-xs font-medium text-slate-900">{title}</p>
+        <p className="text-[10px] text-slate-500">{desc}</p>
+      </div>
+    </div>
   );
 }
