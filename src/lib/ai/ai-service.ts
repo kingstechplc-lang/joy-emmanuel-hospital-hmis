@@ -12,6 +12,73 @@
 //   - All AI results are ADVISORY ONLY
 // =====================================================================
 
+// =====================================================================
+// CANONICAL DEFAULT MODEL — single source of truth for the whole app.
+// =====================================================================
+// Verified 2025-Q3 against the public Z.ai international API
+// (https://api.z.ai/api/paas/v4) with the project's live API key:
+//   - glm-4-plus        → 429 "Insufficient balance" (code 1113) ✅ VALID MODEL
+//   - glm-4-flash       → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
+//   - glm-4             → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
+//   - chatglm_turbo     → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
+//   - chatglm_plus      → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
+// `glm-4-flash` is published on the Chinese platform (open.bigmodel.cn) but
+// is NOT routable on this account's international api.z.ai endpoint, so we
+// use `glm-4-plus` as the only verified-valid default. Override at deploy
+// time by setting the `ZAI_MODEL` env var (e.g. if Z.ai opens up a free tier
+// model on this account later).
+// =====================================================================
+export const DEFAULT_ZAI_MODEL = "glm-4-plus";
+
+/** Resolve the model name to send to the API. Env var wins, then default. */
+function resolveModel(override?: string): string {
+  return override || process.env.ZAI_MODEL || DEFAULT_ZAI_MODEL;
+}
+
+/**
+ * Sanitize + map upstream Z.ai errors to actionable, key-safe messages.
+ * Never includes the API key, never echoes the full upstream body raw.
+ * Returns a single-line string safe to surface to the browser.
+ */
+function formatZaiApiError(status: number, errText: string): string {
+  const trimmed = (errText || "").trim().slice(0, 400);
+  let code = "";
+  let upstreamMsg = "";
+  try {
+    const parsed = JSON.parse(trimmed);
+    code = String(parsed?.error?.code ?? "");
+    upstreamMsg = String(parsed?.error?.message ?? "").slice(0, 200);
+  } catch {
+    // Non-JSON upstream body — keep the raw text but truncated (no keys leak).
+    upstreamMsg = trimmed.slice(0, 200);
+  }
+
+  // Map known Z.ai error codes to actionable messages.
+  if (status === 429 || code === "1113") {
+    return (
+      `AI provider rejected request: insufficient balance on the Z.ai account (HTTP 429, code 1113). ` +
+      `Top up at https://z.ai billing, or set ZAI_MODEL to a free-tier model if your account has access. ` +
+      `Model used: ${resolveModel()}.`
+    );
+  }
+  if (status === 400 && code === "1211") {
+    return (
+      `AI provider rejected model name as unknown (HTTP 400, code 1211). ` +
+      `Verified-valid model on api.z.ai for this account: glm-4-plus. ` +
+      `Set ZAI_MODEL=glm-4-plus on Vercel (or unset it to fall back to the default). ` +
+      `Model used: ${resolveModel()}.`
+    );
+  }
+  if (status === 401 || code === "1001") {
+    return (
+      `AI provider authentication failed (HTTP 401). Check that ZAI_API_KEY is set correctly on Vercel. `
+    );
+  }
+  // Fallback: include the (truncated, key-free) upstream message so the operator
+  // can still diagnose novel errors without us surfacing the raw payload.
+  return `AI API error: ${status}${code ? ` (code ${code})` : ""}${upstreamMsg ? ` — ${upstreamMsg}` : ""}`;
+}
+
 let _zai: any = null;
 let _initError: string | null = null;
 
@@ -49,7 +116,7 @@ async function getAI(): Promise<any> {
                   Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
                 },
                 body: JSON.stringify({
-                  model: process.env.ZAI_MODEL || body.model || "glm-4-flash",
+                  model: resolveModel(body.model),
                   messages: body.messages,
                   // NOTE: 'thinking' parameter removed — it's an internal
                   // SDK feature that the public Z.ai API doesn't support.
@@ -58,7 +125,7 @@ async function getAI(): Promise<any> {
               });
               if (!resp.ok) {
                 const errText = await resp.text().catch(() => "");
-                throw new Error(`AI API error: ${resp.status} — ${errText.slice(0, 300)}`);
+                throw new Error(formatZaiApiError(resp.status, errText));
               }
               return resp.json();
             },

@@ -2,12 +2,17 @@
 // API: /api/ai/debug — tests the AI API connection (NO AUTH REQUIRED)
 // =====================================================================
 // Visit in browser:
-//   /api/ai/debug                    → uses ZAI_MODEL env var (or default)
+//   /api/ai/debug                    → uses ZAI_MODEL env var (or DEFAULT_ZAI_MODEL)
 //   /api/ai/debug?model=glm-4-plus   → tests with a specific model
-//   /api/ai/debug?model=glm-4-flash  → tests glm-4-flash
+//   /api/ai/debug?model=glm-4-flash  → tests glm-4-flash (expected to fail
+//                                       on this account — see DEFAULT_ZAI_MODEL
+//                                       comment in ai-service.ts)
 // =====================================================================
 import { NextResponse } from "next/server";
 import { apiRouteConfig } from "@/lib/api-route-config";
+// Canonical model default — imported here so this endpoint never drifts out
+// of sync with the value used by the real AI service in production.
+import { DEFAULT_ZAI_MODEL } from "@/lib/ai/ai-service";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
 
@@ -18,7 +23,7 @@ export async function GET(req: Request) {
   const apiKey = process.env.ZAI_API_KEY;
   const baseUrl = process.env.ZAI_BASE_URL;
   const chatUrl = process.env.ZAI_CHAT_URL;
-  const envModel = process.env.ZAI_MODEL || "glm-4-flash";
+  const envModel = process.env.ZAI_MODEL || DEFAULT_ZAI_MODEL;
   const model = testModel || envModel;
 
   // Mask the API key for display
@@ -69,6 +74,27 @@ export async function GET(req: Request) {
     let respJson: any = null;
     try { respJson = JSON.parse(respText); } catch {}
 
+    // Decode common Z.ai error codes into actionable hints.
+    const errCode = respJson?.error?.code ? String(respJson.error.code) : "";
+    let diagnosis = "";
+    if (!resp.ok) {
+      if (resp.status === 429 || errCode === "1113") {
+        diagnosis = "Model name is valid on this account, but the account has insufficient balance. Top up at https://z.ai billing.";
+      } else if (resp.status === 400 && errCode === "1211") {
+        diagnosis = "Model name is NOT recognized on this account's api.z.ai endpoint. Verified-valid model: glm-4-plus. (glm-4-flash is published on the Chinese open.bigmodel.cn but is not routable here.)";
+      } else if (resp.status === 401 || errCode === "1001") {
+        diagnosis = "Authentication failed. Check that ZAI_API_KEY is set correctly on Vercel.";
+      }
+    }
+
+    const tip = resp.ok
+      ? "✅ AI is working! Try the AI Assistant view."
+      : !resp.ok && (resp.status === 429 || errCode === "1113")
+        ? "❌ 429 = model is valid but account has no credits. Top up at https://z.ai — no model change will fix this until you add balance."
+        : !resp.ok && (resp.status === 400 && errCode === "1211")
+          ? "❌ 400 code 1211 = model name unknown on this api.z.ai account. The only verified-valid model is glm-4-plus — try /api/ai/debug?model=glm-4-plus"
+          : "❌ Unrecognized error. Try /api/ai/debug?model=glm-4-plus  (the only verified-valid model on this account).";
+
     return NextResponse.json({
       status: resp.ok ? "ok" : "error",
       httpStatus: resp.status,
@@ -80,14 +106,12 @@ export async function GET(req: Request) {
         ZAI_CHAT_URL: chatUrl || "NOT SET",
         ZAI_MODEL: envModel,
         testingModel: model,
-        note: testModel ? `Testing with ?model=${testModel} (overrides ZAI_MODEL)` : "Using ZAI_MODEL env var",
+        note: testModel ? `Testing with ?model=${testModel} (overrides ZAI_MODEL)` : "Using ZAI_MODEL env var (or DEFAULT_ZAI_MODEL)",
       },
       response: resp.ok
         ? { ok: true, content: respJson?.choices?.[0]?.message?.content || "(empty response)" }
-        : { ok: false, error: respJson?.error || respText.slice(0, 500) },
-      tip: resp.ok
-        ? "✅ AI is working! Try the AI Assistant view."
-        : "❌ Try: /api/ai/debug?model=glm-4-plus  or  /api/ai/debug?model=glm-4  or  /api/ai/debug?model=chatglm_turbo",
+        : { ok: false, error: respJson?.error || respText.slice(0, 500), diagnosis },
+      tip,
     });
   } catch (e: any) {
     return NextResponse.json({
