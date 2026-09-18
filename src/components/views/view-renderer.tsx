@@ -78,6 +78,7 @@ import { TelemedicineView } from "@/components/views/clinical/telemedicine-view"
 import { AnalyticsDashboardView } from "@/components/views/analytics/analytics-dashboard-view";
 import { InventoryAlertsView } from "@/components/views/inventory/inventory-alerts-view";
 import { AIAssistantView } from "@/components/views/ai/ai-assistant-view";
+import { AIServicesView } from "@/components/views/admin/ai-services-view";
 import { WristbandsView } from "@/components/views/clinical/wristbands-view";
 import { MedicationLabelsView } from "@/components/views/pharmacy/medication-labels-view";
 import { CDSSHealthCenterView } from "@/components/views/clinical/cdss-health-center-view";
@@ -198,6 +199,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   analytics: AnalyticsDashboardView,
   inventory_alerts: InventoryAlertsView,
   ai_assistant: AIAssistantView,
+  ai_services: AIServicesView,
 };
 
 const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
@@ -296,6 +298,7 @@ const PERMISSION_MAP: Partial<Record<ViewKey, string>> = {
   wristbands: "wristband.print",
   medication_labels: "medication_label.print",
   cdss_health: "cdss.view",
+  ai_services: "ai_config.view",
 };
 
 export function ViewRenderer({ view }: { view: ViewKey }) {

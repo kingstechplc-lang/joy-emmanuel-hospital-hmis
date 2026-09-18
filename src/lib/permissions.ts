@@ -182,6 +182,10 @@ export const PERMISSIONS = {
   REPORT_EXPORT: "report.export",
   ANALYTICS_VIEW: "analytics.view",
 
+  // AI Services — admin-only configuration of AI providers/models/credentials
+  AI_CONFIG_VIEW: "ai_config.view",
+  AI_CONFIG_MANAGE: "ai_config.manage",
+
   // Users / Roles / Permissions
   USER_CREATE: "user.create",
   USER_EDIT: "user.edit",

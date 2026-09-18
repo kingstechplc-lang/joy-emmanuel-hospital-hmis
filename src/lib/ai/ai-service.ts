@@ -1,166 +1,240 @@
 // =====================================================================
-// AI SERVICE — pluggable interface for all AI-powered features
+// AI SERVICE — database-backed provider/model resolution
 // =====================================================================
-// Architecture for future expansion:
-//   - Tries z-ai-web-dev-sdk first (works in dev sandbox where
-//     /etc/.z-ai-config exists)
-//   - Falls back to direct fetch() if ZAI_API_KEY + ZAI_BASE_URL env
-//     vars are set (works on Vercel production with a real AI key)
-//   - Returns a graceful error if neither is configured
-//   - To add new providers (OpenAI, Anthropic, etc.), just add a new
-//     branch in the getAI() function — modules + endpoints stay same
-//   - All AI results are ADVISORY ONLY
+// Resolution chain (highest priority wins):
+//   1. Database: active AIProvider (isDefault=true) + active AICredential
+//      + AIModel (defaultForProvider=true)
+//   2. Environment variables: ZAI_API_KEY + ZAI_BASE_URL + ZAI_MODEL
+//   3. No configuration → returns clear error
+//
+// The AI Assistant UI, API routes, and clinical modules all call
+// aiChat() or aiChatJSON() — they never need to know which provider
+// or model is active. The resolver handles everything.
+//
+// To add a new provider (OpenAI, Anthropic, etc.), an admin creates
+// an AIProvider record with the correct baseUrl + providerType, adds
+// an AICredential with the API key, and adds an AIModel with the
+// correct modelCode. No code changes needed for OpenAI-compatible
+// providers (most are). For non-standard protocols (Anthropic), a
+// new adapter branch would be needed in the fetch fallback.
 // =====================================================================
+import { db } from "@/lib/db";
+import { decryptApiKey } from "@/lib/ai/crypto";
 
-// =====================================================================
-// CANONICAL DEFAULT MODEL — single source of truth for the whole app.
-// =====================================================================
-// Verified 2025-Q3 against the public Z.ai international API
-// (https://api.z.ai/api/paas/v4) with the project's live API key:
-//   - glm-4-plus        → 429 "Insufficient balance" (code 1113) ✅ VALID MODEL
-//   - glm-4-flash       → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
-//   - glm-4             → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
-//   - chatglm_turbo     → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
-//   - chatglm_plus      → 400 "Unknown Model"        (code 1211) ❌ NOT AVAILABLE
-// `glm-4-flash` is published on the Chinese platform (open.bigmodel.cn) but
-// is NOT routable on this account's international api.z.ai endpoint, so we
-// use `glm-4-plus` as the only verified-valid default. Override at deploy
-// time by setting the `ZAI_MODEL` env var (e.g. if Z.ai opens up a free tier
-// model on this account later).
-// =====================================================================
 export const DEFAULT_ZAI_MODEL = "glm-4-plus";
+export const DEFAULT_ZAI_BASE_URL = "https://api.z.ai/api/paas/v4";
 
-/** Resolve the model name to send to the API. Env var wins, then default. */
-function resolveModel(override?: string): string {
-  return override || process.env.ZAI_MODEL || DEFAULT_ZAI_MODEL;
+export interface AIRuntimeConfig {
+  providerCode: string;
+  providerName: string;
+  baseUrl: string;
+  apiKey: string;
+  modelCode: string;
+  displayName: string;
+  supportsThinking: boolean;
+  supportsVision: boolean;
+  supportsTools: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  source: "database" | "environment" | "none";
+}
+
+let _cachedConfig: AIRuntimeConfig | null = null;
+let _cacheExpiry = 0;
+const CACHE_TTL_MS = 60_000; // 1 minute — balances performance vs config-change responsiveness
+
+/**
+ * Resolve the active AI runtime configuration.
+ * Checks the database first, falls back to env vars.
+ * Results are cached for 60 seconds to avoid querying the DB on
+ * every AI request.
+ */
+export async function resolveActiveAIConfig(): Promise<AIRuntimeConfig> {
+  // Check cache
+  if (_cachedConfig && Date.now() < _cacheExpiry) {
+    return _cachedConfig;
+  }
+
+  // ── 1. Try database configuration ──────────────────────────────
+  try {
+    const provider = await db.aIProvider.findFirst({
+      where: { active: true, isDefault: true },
+      include: {
+        models: {
+          where: { active: true, defaultForProvider: true },
+          take: 1,
+        },
+        credentials: {
+          where: { active: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (provider && provider.models.length > 0 && provider.credentials.length > 0) {
+      const model = provider.models[0];
+      const cred = provider.credentials[0];
+      const apiKey = decryptApiKey(cred.apiKeyEncrypted, cred.apiKeyIv, cred.apiKeyTag);
+
+      if (apiKey) {
+        const config: AIRuntimeConfig = {
+          providerCode: provider.code,
+          providerName: provider.name,
+          baseUrl: provider.baseUrl,
+          apiKey,
+          modelCode: model.modelCode,
+          displayName: model.displayName,
+          supportsThinking: model.supportsThinking,
+          supportsVision: model.supportsVision,
+          supportsTools: model.supportsTools,
+          temperature: model.temperatureDefault ?? undefined,
+          maxTokens: model.maxTokensDefault ?? undefined,
+          source: "database",
+        };
+        _cachedConfig = config;
+        _cacheExpiry = Date.now() + CACHE_TTL_MS;
+        return config;
+      }
+    }
+  } catch (e) {
+    console.error("[AI Service] DB config lookup failed:", e);
+    // Fall through to env var fallback
+  }
+
+  // ── 2. Try environment variables ───────────────────────────────
+  if (process.env.ZAI_API_KEY && (process.env.ZAI_BASE_URL || process.env.ZAI_CHAT_URL)) {
+    const config: AIRuntimeConfig = {
+      providerCode: "zai",
+      providerName: "Z.ai (env var)",
+      baseUrl: process.env.ZAI_BASE_URL || process.env.ZAI_CHAT_URL?.replace(/\/chat\/completions$/, "") || DEFAULT_ZAI_BASE_URL,
+      apiKey: process.env.ZAI_API_KEY,
+      modelCode: process.env.ZAI_MODEL || DEFAULT_ZAI_MODEL,
+      displayName: process.env.ZAI_MODEL || DEFAULT_ZAI_MODEL,
+      supportsThinking: false,
+      supportsVision: false,
+      supportsTools: false,
+      source: "environment",
+    };
+    _cachedConfig = config;
+    _cacheExpiry = Date.now() + CACHE_TTL_MS;
+    return config;
+  }
+
+  // ── 3. No configuration ────────────────────────────────────────
+  const noConfig: AIRuntimeConfig = {
+    providerCode: "none",
+    providerName: "Not configured",
+    baseUrl: "",
+    apiKey: "",
+    modelCode: "",
+    displayName: "Not configured",
+    supportsThinking: false,
+    supportsVision: false,
+    supportsTools: false,
+    source: "none",
+  };
+  return noConfig;
 }
 
 /**
- * Sanitize + map upstream Z.ai errors to actionable, key-safe messages.
- * Never includes the API key, never echoes the full upstream body raw.
- * Returns a single-line string safe to surface to the browser.
+ * Clear the cached config — call after admin changes AI configuration.
  */
-function formatZaiApiError(status: number, errText: string): string {
-  const trimmed = (errText || "").trim().slice(0, 400);
-  let code = "";
-  let upstreamMsg = "";
-  try {
-    const parsed = JSON.parse(trimmed);
-    code = String(parsed?.error?.code ?? "");
-    upstreamMsg = String(parsed?.error?.message ?? "").slice(0, 200);
-  } catch {
-    // Non-JSON upstream body — keep the raw text but truncated (no keys leak).
-    upstreamMsg = trimmed.slice(0, 200);
-  }
-
-  // Map known Z.ai error codes to actionable messages.
-  if (status === 429 || code === "1113") {
-    return (
-      `AI provider rejected request: insufficient balance on the Z.ai account (HTTP 429, code 1113). ` +
-      `Top up at https://z.ai billing, or set ZAI_MODEL to a free-tier model if your account has access. ` +
-      `Model used: ${resolveModel()}.`
-    );
-  }
-  if (status === 400 && code === "1211") {
-    return (
-      `AI provider rejected model name as unknown (HTTP 400, code 1211). ` +
-      `Verified-valid model on api.z.ai for this account: glm-4-plus. ` +
-      `Set ZAI_MODEL=glm-4-plus on Vercel (or unset it to fall back to the default). ` +
-      `Model used: ${resolveModel()}.`
-    );
-  }
-  if (status === 401 || code === "1001") {
-    return (
-      `AI provider authentication failed (HTTP 401). Check that ZAI_API_KEY is set correctly on Vercel. `
-    );
-  }
-  // Fallback: include the (truncated, key-free) upstream message so the operator
-  // can still diagnose novel errors without us surfacing the raw payload.
-  return `AI API error: ${status}${code ? ` (code ${code})` : ""}${upstreamMsg ? ` — ${upstreamMsg}` : ""}`;
+export function clearAIConfigCache() {
+  _cachedConfig = null;
+  _cacheExpiry = 0;
 }
 
-let _zai: any = null;
-let _initError: string | null = null;
-
-async function getAI(): Promise<any> {
-  if (_zai) return _zai;
-  if (_initError) throw new Error(_initError);
-
-  // ── Try z-ai-web-dev-sdk (dev sandbox) ────────────────────────
+// =====================================================================
+// SANITIZED ERROR FORMATTING — never exposes API keys/secrets
+// =====================================================================
+export function formatAIError(status: number, errText: string): string {
   try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    _zai = await ZAI.create();
-    return _zai;
-  } catch (e: any) {
-    const msg = e?.message || String(e);
+    const err = JSON.parse(errText);
+    const code = err?.error?.code || err?.code || "";
+    const msg = err?.error?.message || err?.message || errText.slice(0, 200);
 
-    // ── Fallback: direct fetch with env vars (Vercel production) ─
-    if (process.env.ZAI_API_KEY && (process.env.ZAI_BASE_URL || process.env.ZAI_CHAT_URL)) {
-      _zai = {
-        chat: {
-          completions: {
-            create: async (body: any) => {
-              // URL construction:
-              // - If ZAI_CHAT_URL is set, use it directly (full URL)
-              // - Otherwise: {ZAI_BASE_URL}/chat/completions
-              let url = process.env.ZAI_CHAT_URL;
-              if (!url) {
-                const baseUrl = process.env.ZAI_BASE_URL!.replace(/\/$/, "");
-                url = `${baseUrl}/chat/completions`;
-              }
-              console.log("[AI Service] fetch URL:", url);
-              const resp = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${process.env.ZAI_API_KEY}`,
-                },
-                body: JSON.stringify({
-                  model: resolveModel(body.model),
-                  messages: body.messages,
-                  // NOTE: 'thinking' parameter removed — it's an internal
-                  // SDK feature that the public Z.ai API doesn't support.
-                  // Including it may cause 400 errors on some models.
-                }),
-              });
-              if (!resp.ok) {
-                const errText = await resp.text().catch(() => "");
-                throw new Error(formatZaiApiError(resp.status, errText));
-              }
-              return resp.json();
-            },
-          },
-        },
-      };
-      return _zai;
+    // Map known Z.ai error codes to user-friendly messages
+    if (status === 429 && code === "1113") {
+      return "AI service has insufficient balance. Please add credits to the AI provider account or contact your administrator.";
     }
-
-    // ── Neither configured — graceful error ──────────────────────
-    _initError = `AI is not configured. To enable AI features:
-1. On Vercel: set ZAI_API_KEY and ZAI_BASE_URL environment variables
-2. On local dev: ensure /etc/.z-ai-config exists (z-ai-web-dev-sdk sandbox)
-3. Or integrate with OpenAI/Anthropic by modifying src/lib/ai/ai-service.ts`;
-    throw new Error(_initError);
+    if (status === 400 && code === "1211") {
+      return "AI model configuration error. The configured model is not recognized by the provider. An administrator must update the AI model in Administration → AI Services.";
+    }
+    if (status === 401 || code === "1001") {
+      return "AI authentication failed. The API key may be incorrect or expired. An administrator must update the AI credentials in Administration → AI Services.";
+    }
+    if (status === 429) {
+      return "AI service is rate-limited. Please try again in a moment.";
+    }
+    if (status >= 500) {
+      return "AI provider is temporarily unavailable. Please try again later.";
+    }
+    return `AI request failed (HTTP ${status}). Please contact your administrator if this persists.`;
+  } catch {
+    return `AI request failed (HTTP ${status}). Please contact your administrator.`;
   }
 }
 
+// =====================================================================
+// CHAT COMPLETION — the main entry point for all AI features
+// =====================================================================
 export async function aiChat(
   systemPrompt: string,
   userMessage: string
 ): Promise<string> {
+  const config = await resolveActiveAIConfig();
+
+  if (config.source === "none") {
+    throw new Error(
+      "AI is not configured. An administrator must set up AI Services in Administration → AI Services."
+    );
+  }
+
+  const chatUrl = `${config.baseUrl.replace(/\/$/, "")}/chat/completions`;
+
+  // Build request body — only include parameters supported by the model
+  const body: any = {
+    model: config.modelCode,
+    messages: [
+      { role: "assistant", content: systemPrompt },
+      { role: "user", content: userMessage },
+    ],
+  };
+  // Only add thinking if the model supports it
+  if (config.supportsThinking) {
+    body.thinking = { type: "disabled" };
+  }
+  if (config.temperature !== undefined) {
+    body.temperature = config.temperature;
+  }
+  if (config.maxTokens !== undefined) {
+    body.max_tokens = config.maxTokens;
+  }
+
   try {
-    const zai = await getAI();
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "assistant", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      thinking: { type: "disabled" },
+    const resp = await fetch(chatUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
     });
-    return completion.choices[0]?.message?.content || "";
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      throw new Error(formatAIError(resp.status, errText));
+    }
+
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || "";
   } catch (e: any) {
-    console.error("[AI Service] aiChat failed:", e?.message || e);
-    throw e;
+    // Re-throw formatted errors
+    if (e?.message?.includes("AI")) throw e;
+    // Network errors
+    throw new Error(
+      "AI service is temporarily unavailable. Please check your internet connection and try again."
+    );
   }
 }
 
@@ -182,19 +256,11 @@ export async function aiChatJSON(
 }
 
 export async function isAIAvailable(): Promise<boolean> {
-  try {
-    await getAI();
-    return true;
-  } catch {
-    return false;
-  }
+  const config = await resolveActiveAIConfig();
+  return config.source !== "none";
 }
 
-/**
- * Reset the cached instance (used when env vars change, e.g.
- * after the user configures ZAI_API_KEY on Vercel).
- */
-export function resetAI() {
-  _zai = null;
-  _initError = null;
+// ── Legacy compat: resolveModel still works for old code ──────────
+export function resolveModel(override?: string): string {
+  return override || process.env.ZAI_MODEL || DEFAULT_ZAI_MODEL;
 }

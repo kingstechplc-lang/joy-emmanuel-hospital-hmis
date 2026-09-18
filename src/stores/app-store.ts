@@ -105,7 +105,8 @@ export type ViewKey =
   | "telemedicine"
   | "analytics"
   | "inventory_alerts"
-  | "ai_assistant";
+  | "ai_assistant"
+  | "ai_services";
 
 type AppState = {
   view: ViewKey;
@@ -307,6 +308,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "reports", label: "Reports", icon: "BarChart3", permission: "report.view", category: "Administration" },
   { key: "analytics", label: "Analytics", icon: "TrendingUp", permission: "report.view", category: "Administration" },
   { key: "ai_assistant", label: "AI Assistant", icon: "Sparkles", permission: "clinical.view", category: "Administration" },
+  { key: "ai_services", label: "AI Services", icon: "Sparkles", permission: "ai_config.view", category: "Administration" },
   { key: "settings_facilities", label: "Facilities", icon: "Building2", permission: "facility.manage", category: "Administration" },
   { key: "settings_departments", label: "Departments", icon: "Network", permission: "department.manage", category: "Administration" },
   { key: "department_dashboard", label: "Dept Dashboard", icon: "LayoutDashboard", permission: "department.manage", category: "Administration" },

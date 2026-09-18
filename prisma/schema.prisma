@@ -490,6 +490,11 @@ model User {
   // Tier 3 #9: Telemedicine — clinician + created-by back-relations
   telemedicineAsClinician   TelemedicineRoom[]          @relation("telemedicineClinician")
   telemedicineCreatedBy     TelemedicineRoom[]          @relation("telemedicineCreatedBy")
+  // AI Provider/Model/Credential/TestRun back-relations
+  aiProvidersCreated        AIProvider[]                @relation("aiProviderCreatedBy")
+  aiModelsCreated          AIModel[]                   @relation("aiModelCreatedBy")
+  aiCredentialsCreated     AICredential[]              @relation("aiCredentialCreatedBy")
+  aiModelTestsRun          AIModelTestRun[]            @relation("aiTestedBy")
   imagingOrders              ImagingOrder[]             @relation("imagingOrderClinician")
   procedures                 Procedure[]                @relation("procedurePerformer")
   admissions                 Admission[]                @relation("admissionAdmittedBy")
@@ -6777,6 +6782,110 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([action, createdAt])
   @@index([severity, createdAt])
+}
+
+// =====================================================================
+// AI PROVIDER & MODEL MANAGEMENT — database-backed AI configuration
+// =====================================================================
+// Allows authorized admins to switch AI models without redeploying.
+// API keys are stored AES-256-GCM encrypted — never plaintext.
+//
+// Resolution chain:
+//   1. Active AIProviderCredential (where active=true, provider.active=true)
+//   2. AIModel where defaultForProvider=true && provider.active=true
+//   3. Falls back to env vars (ZAI_API_KEY, ZAI_BASE_URL, ZAI_MODEL) if
+//      no DB config exists
+// =====================================================================
+
+model AIProvider {
+  id              String   @id @default(cuid())
+  code            String   @unique // zai | openai | anthropic | groq | ollama | custom
+  name            String
+  description     String?
+  baseUrl         String
+  providerType    String   @default("openai_compatible") // openai_compatible | anthropic | custom
+  active          Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdById     String?
+  createdBy       User?    @relation("aiProviderCreatedBy", fields: [createdById], references: [id])
+
+  models          AIModel[]
+  credentials     AICredential[]
+  testRuns        AIModelTestRun[]
+
+  @@index([active, isDefault])
+}
+
+model AIModel {
+  id                String   @id @default(cuid())
+  providerId        String
+  provider          AIProvider @relation(fields: [providerId], references: [id])
+  modelCode         String   // exact ID sent to the provider API, e.g. "glm-4-plus"
+  displayName       String   // human-friendly, e.g. "GLM-4 Plus"
+  description       String?
+  active            Boolean  @default(true)
+  defaultForProvider Boolean  @default(false)
+  // Capability flags — adapter omits unsupported params
+  supportsStreaming Boolean  @default(false)
+  supportsVision    Boolean  @default(false)
+  supportsTools     Boolean  @default(false)
+  supportsThinking  Boolean  @default(false)
+  // Runtime defaults
+  temperatureDefault Float?  // 0.0 - 2.0
+  maxTokensDefault  Int?
+  contextWindow     Int?     // max input tokens
+  pricingType       String   @default("paid") // free | freemium | paid
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdById       String?
+  createdBy         User?    @relation("aiModelCreatedBy", fields: [createdById], references: [id])
+
+  testRuns          AIModelTestRun[]
+
+  @@unique([providerId, modelCode])
+  @@index([providerId, active, defaultForProvider])
+}
+
+model AICredential {
+  id              String   @id @default(cuid())
+  providerId      String
+  provider        AIProvider @relation(fields: [providerId], references: [id])
+  // AES-256-GCM encrypted API key — NEVER stored in plaintext,
+  // NEVER returned in API responses. Encrypted with a key derived
+  // from NEXTAUTH_SECRET.
+  apiKeyEncrypted String
+  apiKeyIv        String   // initialization vector (base64)
+  apiKeyTag       String   // auth tag (base64)
+  label           String?  // optional description, e.g. "Production key"
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdById     String?
+  createdBy       User?    @relation("aiCredentialCreatedBy", fields: [createdById], references: [id])
+
+  @@index([providerId, active])
+}
+
+model AIModelTestRun {
+  id                  String   @id @default(cuid())
+  modelId             String
+  model               AIModel  @relation(fields: [modelId], references: [id])
+  providerId          String
+  provider            AIProvider @relation(fields: [providerId], references: [id])
+  status              String   // ok | model_not_found | auth_failed | insufficient_balance | rate_limited | timeout | provider_unavailable | unknown_error
+  httpStatus          Int?
+  errorMessage        String?  // sanitized — no API keys/secrets
+  latencyMs           Int?
+  responsePreview     String?  // first 100 chars of AI response — non-PHI test prompt only
+  testedById          String
+  testedBy            User     @relation("aiTestedBy", fields: [testedById], references: [id])
+  createdAt           DateTime @default(now())
+
+  @@index([modelId, createdAt])
+  @@index([status, createdAt])
 }
 
 // =====================================================================
