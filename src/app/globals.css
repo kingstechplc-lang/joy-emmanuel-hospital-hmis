@@ -347,6 +347,146 @@ table td.wrap, table td .wrap,
 }
 
 /* ===================================================================== */
+/* AI ASSISTANT — premium animations & effects                            */
+/* Designed to be GPU-light for low-end devices (itel A16 Plus, Tecno Pop)*/
+/* All heavy effects (blur orbs, spinning gradients) are gated behind     */
+/* the `sm:` breakpoint so they ONLY render on >=640px screens.          */
+/* ===================================================================== */
+
+/* Subtle gradient shimmer — used on AI header background only on desktop */
+@keyframes ai-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.ai-shimmer-bg {
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: ai-shimmer 6s linear infinite;
+}
+
+/* Floating orb animation — replaced with simpler transform on mobile */
+@keyframes ai-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8px, -6px) scale(1.05); }
+}
+.ai-float-slow { animation: ai-float 10s ease-in-out infinite; }
+.ai-float-slower { animation: ai-float 14s ease-in-out infinite; animation-delay: 2s; }
+
+/* Concentric pulse ring — used on the AI icon in the header */
+@keyframes ai-pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  70% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.ai-pulse-ring::before,
+.ai-pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  animation: ai-pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.ai-pulse-ring::after { animation-delay: 1.25s; }
+
+/* Loading spinner concentric rings — used in LoadingCard */
+@keyframes ai-ring-spin {
+  to { transform: rotate(360deg); }
+}
+.ai-ring-spin { animation: ai-ring-spin 1.6s linear infinite; }
+.ai-ring-spin-reverse { animation: ai-ring-spin 2.4s linear infinite reverse; }
+
+/* Tab indicator slide — uses transform for GPU acceleration */
+@keyframes ai-tab-pop {
+  0% { transform: scale(0.96); opacity: 0; }
+  60% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.ai-tab-pop { animation: ai-tab-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Staggered entrance for tool cards / results */
+@keyframes ai-enter-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-enter-up { animation: ai-enter-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Subtle glow pulse for active tab icon */
+@keyframes ai-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(168, 85, 247, 0.4); }
+}
+.ai-glow-pulse { animation: ai-glow 2.5s ease-in-out infinite; }
+
+/* Spinning gradient ring — only on desktop, replaced with static ring on mobile */
+@keyframes ai-spin-slow {
+  to { transform: rotate(360deg); }
+}
+.ai-spin-slow { animation: ai-spin-slow 6s linear infinite; }
+
+/* Underline grow for active tab indicator */
+@keyframes ai-underline-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ===================================================================== */
+/* MOBILE / LOW-END DEVICE DEGRADATIONS                                   */
+/* On screens <640px (most phones including itel A16 Plus 480x854, Tecno  */
+/* Pop 2 480x960), disable heavy effects to keep frame rate acceptable.  */
+/* ===================================================================== */
+@media (max-width: 639px) {
+  .ai-shimmer-bg,
+  .ai-float-slow,
+  .ai-float-slower,
+  .ai-pulse-ring::before,
+  .ai-pulse-ring::after,
+  .ai-spin-slow,
+  .ai-glow-pulse {
+    animation: none !important;
+  }
+  /* Reduce blur radius to nothing on mobile — saves GPU cycles */
+  .ai-desktop-blur { display: none !important; }
+}
+
+/* Honour user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .ai-shimmer-bg,
+  .ai-float-slow,
+  .ai-float-slower,
+  .ai-pulse-ring::before,
+  .ai-pulse-ring::after,
+  .ai-ring-spin,
+  .ai-ring-spin-reverse,
+  .ai-tab-pop,
+  .ai-glow-pulse,
+  .ai-spin-slow {
+    animation: none !important;
+  }
+  .ai-enter-up { animation-duration: 0.01ms !important; }
+  .fade-in-up { animation-duration: 0.01ms !important; }
+}
+
+/* Hide scrollbar on AI category tabs (horizontal scroll on mobile) */
+.ai-tabs-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.ai-tabs-scroll::-webkit-scrollbar {
+  height: 0;
+  display: none;
+}
+
+/* Custom dropdown content entrance for AI tool selector */
+@keyframes ai-dropdown-enter {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ai-dropdown-enter {
+  animation: ai-dropdown-enter 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ===================================================================== */
 /* TIER 2 — DASHBOARD GRID RESPONSIVE OVERRIDES                            */
 /* ===================================================================== */
 /* On mobile (below 768px), the 12-column dashboard grid is too narrow    */

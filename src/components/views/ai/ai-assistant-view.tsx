@@ -17,7 +17,8 @@ import {
   Brain, Stethoscope, Pill, FlaskConical, Loader2, Sparkles,
   AlertTriangle, CheckCircle2, Lightbulb, Activity, TrendingUp,
   Zap, ShieldCheck, ArrowRight, Wand2, FileText, ScanLine,
-  GitCompare, ClipboardList, ChevronDown, Copy, XCircle,
+  GitCompare, ClipboardList, ChevronDown, Copy, XCircle, Check,
+  Search, type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeJson } from "@/components/ui-helpers";
@@ -57,75 +58,311 @@ const TOOLS: ToolDef[] = [
   { id: "discharge_gen", label: "Discharge Summary Generator", desc: "Auto-generate discharge", icon: <FileText className="w-4 h-4" />, gradient: "from-slate-600 to-slate-800", category: "Documentation" },
 ];
 
-const CATEGORIES = ["Diagnosis & Coding", "Safety & Risk", "Documentation"];
+// =====================================================================
+// CATEGORY DEFINITIONS — drives the tab strip + dropdown selector
+// Each category has its own gradient, icon, accent colour, and short
+// label (for compact mobile tabs). Tool count is computed at runtime.
+// =====================================================================
+interface CategoryDef {
+  id: string;
+  label: string;           // full label (desktop)
+  shortLabel: string;      // abbreviated label (mobile)
+  icon: LucideIcon;
+  gradient: string;        // tailwind gradient (e.g. "from-violet-600 to-purple-700")
+  ringClass: string;       // tailwind ring/border accent class
+  textClass: string;       // tailwind text colour for active state
+  bgClass: string;         // tailwind bg tint for inactive hover
+}
+
+const CATEGORIES: CategoryDef[] = [
+  {
+    id: "Diagnosis & Coding",
+    label: "Diagnosis & Coding",
+    shortLabel: "Diagnose",
+    icon: Brain,
+    gradient: "from-violet-600 to-purple-700",
+    ringClass: "ring-violet-400/60",
+    textClass: "text-violet-700",
+    bgClass: "bg-violet-50",
+  },
+  {
+    id: "Safety & Risk",
+    label: "Safety & Risk",
+    shortLabel: "Safety",
+    icon: ShieldCheck,
+    gradient: "from-rose-600 to-pink-700",
+    ringClass: "ring-rose-400/60",
+    textClass: "text-rose-700",
+    bgClass: "bg-rose-50",
+  },
+  {
+    id: "Documentation",
+    label: "Documentation",
+    shortLabel: "Docs",
+    icon: FileText,
+    gradient: "from-indigo-600 to-blue-700",
+    ringClass: "ring-indigo-400/60",
+    textClass: "text-indigo-700",
+    bgClass: "bg-indigo-50",
+  },
+];
 
 export function AIAssistantView() {
   const [tool, setTool] = useState<ToolId>("icd10");
+  const [activeCategory, setActiveCategory] = useState<string>("Diagnosis & Coding");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const activeTool = TOOLS.find(t => t.id === tool)!;
+  const activeCat = CATEGORIES.find(c => c.id === activeCategory)!;
+  const toolsInCat = TOOLS.filter(t => t.category === activeCategory);
+
+  // When category changes, switch to the first tool in that category.
+  // (Each tool belongs to exactly one category, so a tool selected under
+  //  one tab never exists under another — auto-switch is the cleanest UX.)
+  const handleCategoryChange = (catId: string) => {
+    setActiveCategory(catId);
+    const first = TOOLS.find(t => t.category === catId);
+    if (first) setTool(first.id);
+  };
 
   return (
-    <div className={`space-y-5 transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-      {/* Animated gradient header — changes color per tool */}
-      <div className={`rounded-2xl bg-gradient-to-r ${activeTool.gradient} text-white p-6 md:p-8 shadow-2xl relative overflow-hidden transition-all duration-500`}>
-        <div className="absolute top-0 right-0 w-72 h-72 bg-white opacity-10 blur-3xl rounded-full pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute bottom-0 left-1/3 w-56 h-56 bg-white opacity-5 blur-3xl rounded-full pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
-          backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-        }} />
+    <div
+      className={`space-y-4 sm:space-y-5 transition-all duration-500 ${
+        mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      }`}
+    >
+      {/* ───────────────────────────────────────────────────────────────
+          ANIMATED GRADIENT HEADER
+          - Per-tool gradient (changes colour as you switch tools)
+          - Subtle grid pattern + shimmer overlay (desktop only)
+          - Floating blur orbs (desktop only — hidden on mobile to save GPU)
+          - Compact on mobile (p-4) / roomier on desktop (sm:p-7)
+      ─────────────────────────────────────────────────────────────── */}
+      <div
+        className={`rounded-2xl bg-gradient-to-r ${activeTool.gradient} text-white p-4 sm:p-7 shadow-xl sm:shadow-2xl relative overflow-hidden transition-all duration-500`}
+      >
+        {/* Decorative blur orbs — desktop only (mobile-disable via ai-desktop-blur) */}
+        <div
+          className="ai-desktop-blur absolute top-0 right-0 w-64 h-64 bg-white opacity-10 blur-3xl rounded-full pointer-events-none ai-float-slow"
+        />
+        <div
+          className="ai-desktop-blur absolute bottom-0 left-1/3 w-48 h-48 bg-white opacity-5 blur-3xl rounded-full pointer-events-none ai-float-slower"
+        />
+        {/* Subtle grid pattern — pure CSS, no GPU cost */}
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+        {/* Shimmer sweep — desktop only */}
+        <div className="ai-shimmer-bg absolute inset-0 pointer-events-none" />
+
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-white/40 via-transparent to-white/30 animate-spin" style={{ animationDuration: "4s" }} />
-              <div className="relative w-12 h-12 bg-white/15 backdrop-blur rounded-xl ring-1 ring-white/30 shadow-lg flex items-center justify-center">
-                <Wand2 className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3">
+            {/* AI icon with pulse rings (desktop) / plain icon (mobile) */}
+            <div className="relative shrink-0">
+              {/* Rotating gradient ring — desktop only */}
+              <div
+                className="hidden sm:block absolute inset-0 rounded-xl bg-gradient-to-tr from-white/40 via-transparent to-white/30 ai-spin-slow"
+                style={{ animationDuration: "4s" }}
+              />
+              <div
+                className="relative w-11 h-11 sm:w-12 sm:h-12 bg-white/15 backdrop-blur rounded-xl ring-1 ring-white/30 shadow-lg flex items-center justify-center"
+              >
+                <Wand2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">AI Clinical Assistant</h2>
-              <p className="text-sm text-white/80 mt-0.5">10 AI-powered clinical tools</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
+                  AI Clinical Assistant
+                </h2>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-white/15 ring-1 ring-white/30 rounded-full px-2 py-0.5">
+                  <Sparkles className="w-3 h-3" /> {TOOLS.length} tools
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-white/80 mt-0.5">
+                <span className="sm:hidden">{activeCat.shortLabel} · </span>
+                <span className="font-medium">{activeTool.label}</span>
+              </p>
             </div>
           </div>
-          <p className="text-xs text-white/60 max-w-lg leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-white/65 max-w-lg leading-relaxed">
             All AI suggestions are advisory. The clinician always makes the final clinical decision.
           </p>
         </div>
       </div>
 
-      {/* Tool selector — grouped dropdown */}
-      <Card className="shadow-md">
-        <CardContent className="p-4">
-          <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select AI Tool</Label>
+      {/* ───────────────────────────────────────────────────────────────
+          CATEGORY TAB STRIP
+          - Horizontal scroll on mobile (snap + hidden scrollbar)
+          - Active tab: gradient bg, white text, lift + glow
+          - Inactive tab: subtle tint, dark text, hover lift
+          - Each tab shows: icon chip + label (full on desktop, short on
+            mobile) + tool-count badge
+      ─────────────────────────────────────────────────────────────── */}
+      <div className="ai-tabs-scroll overflow-x-auto -mx-1 px-1 pb-1">
+        <div className="flex gap-2 min-w-max">
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = activeCategory === cat.id;
+            const count = TOOLS.filter((t) => t.category === cat.id).length;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => handleCategoryChange(cat.id)}
+                aria-pressed={isActive}
+                className={`
+                  group relative flex items-center gap-2 sm:gap-2.5 rounded-xl px-3 py-2 sm:px-4 sm:py-2.5
+                  transition-all duration-300 ease-out
+                  ring-1 touch-manipulation select-none
+                  ${isActive
+                    ? `bg-gradient-to-r ${cat.gradient} text-white ring-white/30 shadow-md sm:shadow-lg sm:-translate-y-0.5`
+                    : `bg-white text-slate-700 ring-slate-200 hover:${cat.bgClass} hover:ring-slate-300 hover:-translate-y-0.5 shadow-sm`
+                  }
+                `}
+              >
+                {/* Icon chip */}
+                <span
+                  className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg transition-all duration-300 ${
+                    isActive
+                      ? "bg-white/20 ring-1 ring-white/30"
+                      : `${cat.bgClass} ${cat.textClass} ring-1 ring-slate-200 group-hover:scale-110`
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </span>
+                {/* Label: full on sm+, short on mobile */}
+                <span className="flex flex-col leading-tight text-left">
+                  <span className="font-semibold text-sm sm:text-[15px]">
+                    <span className="sm:hidden">{cat.shortLabel}</span>
+                    <span className="hidden sm:inline">{cat.label}</span>
+                  </span>
+                  <span
+                    className={`text-[10px] font-medium ${
+                      isActive ? "text-white/70" : "text-slate-400"
+                    }`}
+                  >
+                    {count} {count === 1 ? "tool" : "tools"}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ───────────────────────────────────────────────────────────────
+          TOOL DROPDOWN SELECTOR
+          - Beautiful gradient-tinted trigger (per active category)
+          - Animated chevron that rotates on open
+          - Only shows tools in the currently active category
+          - Each option: icon chip + label + description
+          - Full-width on mobile, larger touch targets
+      ─────────────────────────────────────────────────────────────── */}
+      <Card
+        className={`shadow-md overflow-hidden ring-1 ${activeCat.ringClass} transition-all duration-300`}
+      >
+        <CardContent className="p-3 sm:p-4 space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Search className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">Select AI Tool in </span>
+              <span className="sm:hidden">Tool in </span>
+              <span className={`${activeCat.textClass}`}>{activeCat.shortLabel}</span>
+            </Label>
+            <Badge
+              variant="secondary"
+              className={`text-[10px] font-medium ${activeCat.bgClass} ${activeCat.textClass} border-0`}
+            >
+              {toolsInCat.length} available
+            </Badge>
+          </div>
           <Select value={tool} onValueChange={(v) => setTool(v as ToolId)}>
-            <SelectTrigger className="h-12 text-base font-medium">
-              <div className="flex items-center gap-2">
-                {activeTool.icon}
-                <SelectValue />
+            <SelectTrigger
+              className={`
+                h-12 sm:h-14 text-sm sm:text-base font-medium rounded-xl
+                bg-gradient-to-r ${activeCat.gradient} bg-clip-text text-transparent
+                border-2 border-slate-200 hover:border-slate-300
+                data-[state=open]:border-slate-400
+                transition-all duration-300
+                [&>svg:last-child]:text-slate-400 [&>svg:last-child]:transition-transform
+                [&>svg:last-child]:data-[state=open]:rotate-180
+              `}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${activeTool.gradient} text-white shadow-sm shrink-0`}
+                >
+                  {activeTool.icon}
+                </span>
+                <span className="flex flex-col items-start leading-tight min-w-0">
+                  <span className="text-slate-900 font-semibold truncate w-full text-left text-sm sm:text-base">
+                    {activeTool.label}
+                  </span>
+                  <span className="text-[11px] text-slate-500 truncate w-full text-left sm:text-xs">
+                    {activeTool.desc}
+                  </span>
+                </span>
               </div>
+              <SelectValue aria-hidden className="sr-only" />
             </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map(cat => (
-                <div key={cat}>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 pt-2 pb-1">{cat}</p>
-                  {TOOLS.filter(t => t.category === cat).map(t => (
-                    <SelectItem key={t.id} value={t.id}>
-                      <div className="flex items-center gap-2">
-                        {t.icon} {t.label} <span className="text-xs text-slate-400">— {t.desc}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </div>
-              ))}
+            <SelectContent
+              className="rounded-xl p-1 ai-dropdown-enter max-h-[min(60vh,420px)]"
+              position="popper"
+              sideOffset={6}
+            >
+              {toolsInCat.map((t) => {
+                const isActive = t.id === tool;
+                return (
+                  <SelectItem
+                    key={t.id}
+                    value={t.id}
+                    className={`
+                      relative rounded-lg cursor-pointer py-2.5 pr-9
+                      transition-all duration-200
+                      ${isActive ? "bg-slate-50" : "hover:bg-slate-50"}
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br ${t.gradient} text-white shadow-sm shrink-0`}
+                      >
+                        {t.icon}
+                      </span>
+                      <span className="flex flex-col leading-tight">
+                        <span className="font-semibold text-slate-900 text-sm">
+                          {t.label}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {t.desc}
+                        </span>
+                      </span>
+                      {isActive && (
+                        <Check
+                          className={`w-4 h-4 ml-auto ${activeCat.textClass}`}
+                        />
+                      )}
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </CardContent>
       </Card>
 
-      {/* Tool content */}
-      <div key={tool} className="fade-in-up" style={{ animationDuration: "0.4s" }}>
+      {/* ───────────────────────────────────────────────────────────────
+          TOOL CONTENT
+          - Re-mounts on tool switch (key={tool}) so animations replay
+          - Staggered entrance via ai-enter-up
+      ─────────────────────────────────────────────────────────────── */}
+      <div key={tool} className="ai-enter-up" style={{ animationDuration: "0.45s" }}>
         {tool === "icd10" && <ICD10Tab />}
         {tool === "triage" && <TriageTab />}
         {tool === "dose" && <DoseTab />}
@@ -142,17 +379,34 @@ export function AIAssistantView() {
 }
 
 // =====================================================================
-// SHARED COMPONENTS
+// SHARED COMPONENTS — premium look + mobile-optimised
 // =====================================================================
 function LoadingCard({ text = "Analyzing..." }: { text?: string }) {
   return (
-    <Card className="border-violet-200 shadow-lg shadow-violet-500/10">
-      <CardContent className="p-8 text-center">
-        <div className="relative inline-flex items-center justify-center mb-4">
-          <div className="absolute w-16 h-16 rounded-full bg-violet-200 opacity-60 animate-ping" />
-          <div className="absolute w-12 h-12 rounded-full bg-violet-300 opacity-50 animate-pulse" />
-          <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white animate-pulse" />
+    <Card className="border-violet-200 shadow-md sm:shadow-lg sm:shadow-violet-500/10 overflow-hidden">
+      <CardContent className="p-6 sm:p-8 text-center">
+        {/* Concentric spinner — two rings rotating in opposite directions (desktop)
+            On mobile the rings still rotate but use the cheaper ai-ring-spin CSS
+            instead of the spinning gradient circle */}
+        <div className="relative inline-flex items-center justify-center mb-4 w-16 h-16 sm:w-20 sm:h-20">
+          {/* Outer ring — desktop only */}
+          <div
+            className="hidden sm:block absolute inset-0 rounded-full border-4 border-violet-200 border-t-violet-600 ai-ring-spin"
+            aria-hidden
+          />
+          {/* Inner ring (reverse) — desktop only */}
+          <div
+            className="hidden sm:block absolute inset-2 rounded-full border-4 border-purple-100 border-b-purple-500 ai-ring-spin-reverse"
+            aria-hidden
+          />
+          {/* Mobile fallback — simple single ring */}
+          <div
+            className="sm:hidden absolute inset-0 rounded-full border-4 border-violet-200 border-t-violet-600 ai-ring-spin"
+            aria-hidden
+          />
+          {/* Center sparkle */}
+          <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
         </div>
         <p className="text-sm font-medium text-violet-700 flex items-center justify-center gap-2">
@@ -165,8 +419,11 @@ function LoadingCard({ text = "Analyzing..." }: { text?: string }) {
 
 function ResultCard({ children }: { children: React.ReactNode }) {
   return (
-    <Card className="shadow-lg fade-in-up border-slate-200" style={{ animationDuration: "0.5s" }}>
-      <CardContent className="p-5 space-y-4">{children}</CardContent>
+    <Card
+      className="shadow-md sm:shadow-lg ai-enter-up border-slate-200 overflow-hidden"
+      style={{ animationDuration: "0.5s" }}
+    >
+      <CardContent className="p-4 sm:p-5 space-y-4">{children}</CardContent>
     </Card>
   );
 }
@@ -175,9 +432,29 @@ function AIButton({ onClick, disabled, loading, icon, label, loadingText, gradie
   onClick: () => void; disabled: boolean; loading: boolean; icon: React.ReactNode; label: string; loadingText: string; gradient: string;
 }) {
   return (
-    <Button onClick={onClick} disabled={disabled || loading}
-      className={`bg-gradient-to-r ${gradient} hover:opacity-90 gap-2 h-11 font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]`}>
-      {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {loadingText}</> : <>{icon} {label}</>}
+    <Button
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`
+        bg-gradient-to-r ${gradient} hover:opacity-90 gap-2
+        h-11 sm:h-12 font-semibold shadow-md
+        transition-all duration-200
+        hover:scale-[1.02] active:scale-[0.98]
+        touch-manipulation relative overflow-hidden
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+      `}
+    >
+      {/* Subtle inner shimmer on hover — desktop only */}
+      <span className="ai-shimmer-bg absolute inset-0 pointer-events-none opacity-0 hover:opacity-100" />
+      {loading ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" /> {loadingText}
+        </>
+      ) : (
+        <>
+          {icon} {label}
+        </>
+      )}
     </Button>
   );
 }
@@ -185,10 +462,17 @@ function AIButton({ onClick, disabled, loading, icon, label, loadingText, gradie
 function ReasoningBlock({ text }: { text?: string }) {
   if (!text) return null;
   return (
-    <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-slate-600">
+    <div className="rounded-lg bg-amber-50/60 border border-amber-100 p-3 text-xs text-slate-600 transition-all hover:bg-amber-50">
       <div className="flex items-start gap-2">
-        <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
-        <div><span className="font-bold text-slate-700">AI Reasoning:</span> {text}</div>
+        <div className="shrink-0 w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center">
+          <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+        </div>
+        <div>
+          <span className="font-bold text-amber-700 uppercase text-[10px] tracking-wider block mb-1">
+            AI Reasoning
+          </span>
+          {text}
+        </div>
       </div>
     </div>
   );
@@ -196,9 +480,13 @@ function ReasoningBlock({ text }: { text?: string }) {
 
 function SectionHeader({ icon, title, color }: { icon: React.ReactNode; title: string; color: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>{icon}</div>
-      <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+    <div className="flex items-center gap-2.5">
+      <div
+        className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-sm ${color} relative`}
+      >
+        {icon}
+      </div>
+      <h3 className="text-sm font-bold text-slate-900 tracking-tight">{title}</h3>
     </div>
   );
 }
