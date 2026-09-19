@@ -11,13 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger,
 } from "@/components/ui/select";
 import {
   Brain, Stethoscope, Pill, FlaskConical, Loader2, Sparkles,
   AlertTriangle, CheckCircle2, Lightbulb, Activity, TrendingUp,
   Zap, ShieldCheck, ArrowRight, Wand2, FileText, ScanLine,
-  GitCompare, ClipboardList, ChevronDown, Copy, XCircle, Check,
+  GitCompare, ClipboardList, ChevronDown, Copy, XCircle,
   Search, type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -310,48 +310,40 @@ export function AIAssistantView() {
                   </span>
                 </span>
               </div>
-              <SelectValue aria-hidden className="sr-only" />
             </SelectTrigger>
             <SelectContent
               className="rounded-xl p-1 ai-dropdown-enter max-h-[min(60vh,420px)]"
               position="popper"
               sideOffset={6}
             >
-              {toolsInCat.map((t) => {
-                const isActive = t.id === tool;
-                return (
-                  <SelectItem
-                    key={t.id}
-                    value={t.id}
-                    className={`
-                      relative rounded-lg cursor-pointer py-2.5 pr-9
-                      transition-all duration-200
-                      ${isActive ? "bg-slate-50" : "hover:bg-slate-50"}
-                    `}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br ${t.gradient} text-white shadow-sm shrink-0`}
-                      >
-                        {t.icon}
+              {toolsInCat.map((t) => (
+                <SelectItem
+                  key={t.id}
+                  value={t.id}
+                  className="
+                    relative rounded-lg cursor-pointer py-2.5 pr-9
+                    transition-all duration-200
+                    data-[state=checked]:bg-slate-50
+                    hover:bg-slate-50
+                  "
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br ${t.gradient} text-white shadow-sm shrink-0`}
+                    >
+                      {t.icon}
+                    </span>
+                    <span className="flex flex-col leading-tight">
+                      <span className="font-semibold text-slate-900 text-sm">
+                        {t.label}
                       </span>
-                      <span className="flex flex-col leading-tight">
-                        <span className="font-semibold text-slate-900 text-sm">
-                          {t.label}
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          {t.desc}
-                        </span>
+                      <span className="text-[11px] text-slate-500">
+                        {t.desc}
                       </span>
-                      {isActive && (
-                        <Check
-                          className={`w-4 h-4 ml-auto ${activeCat.textClass}`}
-                        />
-                      )}
-                    </div>
-                  </SelectItem>
-                );
-              })}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </CardContent>
