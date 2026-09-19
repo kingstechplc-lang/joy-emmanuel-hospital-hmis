@@ -483,6 +483,7 @@ function UsageStatsSection({
   const callsByTool = data.callsByTool || [];
   const recentCalls = data.recentCalls || [];
   const last24hSeries = data.last24hSeries || [];
+  const warning: string | undefined = data._warning;
 
   // Find max count for bar chart scaling
   const maxHourly = Math.max(1, ...last24hSeries.map((h: any) => h.count));
@@ -513,6 +514,25 @@ function UsageStatsSection({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+
+        {/* ── Warning banner (when backend couldn't read the table) ── */}
+        {warning && (
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 ai-enter-up">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+            <div className="flex-1">
+              <div className="font-semibold mb-0.5">Usage stats unavailable</div>
+              <div className="text-amber-700 leading-relaxed">{warning}</div>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 shrink-0"
+              onClick={onRetry}
+            >
+              <RefreshCw className="w-3 h-3 mr-1" /> Retry
+            </Button>
+          </div>
+        )}
 
         {/* ── KPI cards ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
@@ -648,7 +668,7 @@ function UsageStatsSection({
                         <code className="text-[10px] text-slate-500 truncate">{c.modelCode}</code>
                       </div>
                       <div className="text-[10px] text-slate-500 truncate">
-                        {c.user?.name || c.user?.email || "system"}
+                        {c.user ? `${c.user.firstName} ${c.user.lastName}`.trim() || c.user.email || "system" : "system"}
                         {c.latencyMs != null && ` · ${c.latencyMs}ms`}
                         {c.totalTokens != null && ` · ${c.totalTokens} tok`}
                         {!c.success && c.errorMessage && ` · ${c.errorMessage.slice(0, 80)}`}
