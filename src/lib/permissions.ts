@@ -186,6 +186,21 @@ export const PERMISSIONS = {
   AI_CONFIG_VIEW: "ai_config.view",
   AI_CONFIG_MANAGE: "ai_config.manage",
 
+  // Live Notice Board — facility/org-wide communication module.
+  // Every authenticated user with clinical.view (or any staff role) gets
+  // NOTICE_VIEW automatically via the role seeders — see
+  // src/lib/permissions.ts role matrix below. Create / publish / cancel /
+  // pin are gated separately so e.g. a unit manager can post a
+  // department notice without being able to pin org-wide.
+  NOTICE_VIEW: "notice.view",
+  NOTICE_CREATE: "notice.create",
+  NOTICE_UPDATE: "notice.update",
+  NOTICE_PUBLISH: "notice.publish",
+  NOTICE_CANCEL: "notice.cancel",
+  NOTICE_PIN: "notice.pin",
+  NOTICE_ACK_VIEW: "notice.acknowledgement.view",
+  NOTICE_HISTORY_VIEW: "notice.history.view",
+
   // Users / Roles / Permissions
   USER_CREATE: "user.create",
   USER_EDIT: "user.edit",
@@ -595,6 +610,11 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.AUDIT_MANAGE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — org admin has full notice management (create, edit,
+    // publish, cancel, pin, view acknowledgement analytics + version history)
+    PERMISSIONS.NOTICE_VIEW, PERMISSIONS.NOTICE_CREATE, PERMISSIONS.NOTICE_UPDATE,
+    PERMISSIONS.NOTICE_PUBLISH, PERMISSIONS.NOTICE_CANCEL, PERMISSIONS.NOTICE_PIN,
+    PERMISSIONS.NOTICE_ACK_VIEW, PERMISSIONS.NOTICE_HISTORY_VIEW,
     // Tier 2 — Clinical Templates: org admins can manage the full lifecycle
     PERMISSIONS.CLINICAL_TEMPLATE_VIEW, PERMISSIONS.CLINICAL_TEMPLATE_CREATE,
     PERMISSIONS.CLINICAL_TEMPLATE_UPDATE, PERMISSIONS.CLINICAL_TEMPLATE_APPROVE,
@@ -683,6 +703,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.RECOVERY_VIEW, PERMISSIONS.RECOVERY_MANAGE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — facility admin has full notice management
+    PERMISSIONS.NOTICE_VIEW, PERMISSIONS.NOTICE_CREATE, PERMISSIONS.NOTICE_UPDATE,
+    PERMISSIONS.NOTICE_PUBLISH, PERMISSIONS.NOTICE_CANCEL, PERMISSIONS.NOTICE_PIN,
+    PERMISSIONS.NOTICE_ACK_VIEW, PERMISSIONS.NOTICE_HISTORY_VIEW,
     // Tier 2 — Clinical Templates: facility admins can manage + apply
     PERMISSIONS.CLINICAL_TEMPLATE_VIEW, PERMISSIONS.CLINICAL_TEMPLATE_CREATE,
     PERMISSIONS.CLINICAL_TEMPLATE_UPDATE, PERMISSIONS.CLINICAL_TEMPLATE_ACTIVATE,
@@ -817,6 +841,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.CLINICAL_ALERT_ACKNOWLEDGE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   laboratory_scientist: [
@@ -844,6 +870,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.DOCUMENT_UPLOAD, PERMISSIONS.DOCUMENT_VIEW,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   radiographer: [
@@ -857,6 +885,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.DOCUMENT_UPLOAD, PERMISSIONS.DOCUMENT_VIEW,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   receptionist: [
@@ -873,6 +903,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.MEDICATION_LABEL_PRINT,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   cashier: [
@@ -889,6 +921,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   accountant: [
@@ -915,6 +949,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.PAYSLIP_VIEW,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   records_officer: [
@@ -939,6 +975,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.MEDICATION_LABEL_PRINT,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 
   inventory_officer: [
@@ -949,6 +987,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionCode[]> = {
     PERMISSIONS.TASK_ASSIGN, PERMISSIONS.TASK_COMPLETE,
     // Tier 2 — Dashboard customization
     PERMISSIONS.DASHBOARD_CUSTOMIZE,
+    // Live Notice Board — every staff role can see notices in their scope
+    PERMISSIONS.NOTICE_VIEW,
   ],
 };
 

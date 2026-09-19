@@ -106,7 +106,8 @@ export type ViewKey =
   | "analytics"
   | "inventory_alerts"
   | "ai_assistant"
-  | "ai_services";
+  | "ai_services"
+  | "notice_board";
 
 type AppState = {
   view: ViewKey;
@@ -302,6 +303,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "tasks", label: "Tasks", icon: "CheckSquare", permission: "task.assign", category: "Operations" },
   { key: "incident_reports", label: "Incident Reports", icon: "AlertTriangle", permission: "task.assign", category: "Operations" },
   { key: "handover", label: "Shift Handover", icon: "ArrowLeftRight", permission: "clinical.view", category: "Operations" },
+  { key: "notice_board", label: "Live Notice Board", icon: "Megaphone", permission: "notice.view", category: "Operations" },
 
   { key: "audit_logs", label: "Audit Logs", icon: "ScrollText", permission: "audit.view", category: "Administration" },
   { key: "security", label: "Security", icon: "Shield", permission: "security.dashboard", category: "Administration" },

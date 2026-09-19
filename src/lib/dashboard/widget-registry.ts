@@ -516,6 +516,19 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     defaultRefreshMs: 60_000,
     enabled: true,
   },
+
+  // ─── LIVE NOTICE BOARD (Operations) ─────────────────────────────────
+  {
+    id: "panel_notice_board",
+    name: "Live Notice Board",
+    description: "Latest facility notices with unread / critical / pending-ack counts. Click through to the full board.",
+    category: "OPERATIONS",
+    requiredPermissions: ["notice.view"],
+    defaultSize: { w: 4, h: 3 },
+    supportedSizes: ["sm", "md", "lg"],
+    defaultRefreshMs: 15_000, // realtime — same cadence as the main board
+    enabled: true,
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────

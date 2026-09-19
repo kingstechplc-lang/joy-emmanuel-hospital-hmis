@@ -30,6 +30,7 @@ import { WidgetWardOccupancy } from "./widget-ward-occupancy";
 import { WidgetPendingTasks } from "./widget-pending-tasks";
 import { WidgetQuickActions } from "./widget-quick-actions";
 import { WidgetBatchOperations } from "./widget-batch-operations";
+import { WidgetNoticeBoard } from "./widget-notice-board";
 import { Card, CardContent } from "@/components/ui/card";
 import { WIDGET_BY_ID } from "@/lib/dashboard/widget-registry";
 
@@ -98,6 +99,10 @@ export function WidgetRenderer({
         config={config}
       />
     );
+  }
+
+  if (widgetId === "panel_notice_board") {
+    return <WidgetNoticeBoard />;
   }
 
   // Unknown widget — placeholder

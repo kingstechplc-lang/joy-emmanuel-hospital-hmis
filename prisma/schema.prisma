@@ -135,6 +135,8 @@ model Organization {
   smsLogs                 SmsLog[]
   // Tier 3 #9: Telemedicine
   telemedicineRooms       TelemedicineRoom[]
+  // Live Notice Board — org-scoped notices
+  notices                 Notice[]
 }
 
 model Facility {
@@ -269,6 +271,8 @@ model Facility {
   deductions                     Deduction[]
   statutoryRules                 StatutoryRule[]
   costCenters                    CostCenter[]
+  // Live Notice Board — facility-scoped notices
+  notices                        Notice[]
 
   @@unique([organizationId, code])
 }
@@ -339,6 +343,8 @@ model Department {
   costCenters            CostCenter[]
   // Tier 2: Clinical Templates (department-scoped templates)
   clinicalTemplates      ClinicalTemplate[]
+  // Live Notice Board — department-targeted notices
+  notices                Notice[]
 
   @@unique([facilityId, code])
   @@index([facilityId, status])
@@ -496,6 +502,13 @@ model User {
   aiCredentialsCreated     AICredential[]              @relation("aiCredentialCreatedBy")
   aiModelTestsRun          AIModelTestRun[]            @relation("aiTestedBy")
   aiUsageLogs              AIUsageLog[]                @relation("aiUsageBy")
+  // Notice Board — creator/editor/canceller/reader/acknowledger/version-author back-relations
+  noticesCreated          Notice[]                    @relation("noticeCreatedBy")
+  noticesUpdated          Notice[]                    @relation("noticeUpdatedBy")
+  noticesCancelled       Notice[]                    @relation("noticeCancelledBy")
+  noticeReads             NoticeRead[]                @relation("noticeReadBy")
+  noticeAcknowledgements  NoticeAcknowledgement[]    @relation("noticeAcknowledgedBy")
+  noticeVersionChanges    NoticeVersionHistory[]     @relation("noticeVersionChangedBy")
   imagingOrders              ImagingOrder[]             @relation("imagingOrderClinician")
   procedures                 Procedure[]                @relation("procedurePerformer")
   admissions                 Admission[]                @relation("admissionAdmittedBy")
@@ -6925,6 +6938,142 @@ model AIUsageLog {
   @@index([tool, createdAt])
   @@index([success, createdAt])
   @@index([createdAt])
+}
+
+// =====================================================================
+// LIVE NOTICE BOARD — facility/org-wide communication module
+// =====================================================================
+// A "Notice" is a facility/org-wide announcement (distinct from the
+// per-user workflow Notification model above). Notices support:
+//   - Targeting: FACILITY | DEPARTMENT | ROLE | USER | ORGANIZATION
+//     via the normalized NoticeTarget join table (no nullable FK soup).
+//   - Lifecycle: DRAFT → SCHEDULED → PUBLISHED → EXPIRED | CANCELLED
+//     enforced server-side by the /api/notices routes.
+//   - Scheduling: publishAt for "go live at" semantics.
+//   - Expiry: expiresAt; visibility queries check this server-side
+//     (no reliance on a background cron, although one can help).
+//   - Pinning: isPinned — surfaces in a dedicated UI slot, with a
+//     configurable per-facility cap.
+//   - Acknowledgement: requiresAcknowledgement + NoticeAcknowledgement
+//     row per (noticeId, userId). READ ≠ ACKNOWLEDGED — separate
+//     NoticeRead row marks when a user has opened the notice.
+//   - Version history: NoticeVersionHistory snapshots every edit to
+//     a published notice so the audit trail of "what was communicated"
+//     is preserved.
+// All visibility queries enforce organization + facility scoping from
+// the session, never from the request body — IDOR-safe.
+// =====================================================================
+model Notice {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  createdById     String
+  createdBy       User     @relation("noticeCreatedBy", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?    @relation("noticeUpdatedBy", fields: [updatedById], references: [id])
+  cancelledById   String?
+  cancelledBy     User?    @relation("noticeCancelledBy", fields: [cancelledById], references: [id])
+
+  title           String
+  body            String   // plain text or markdown — sanitised on render
+  noticeType      String   @default("GENERAL") // GENERAL | IMPORTANT | URGENT | EMERGENCY | MAINTENANCE | CLINICAL | ADMINISTRATIVE | IT | SECURITY | STAFF | EVENT | POLICY
+  priority        String   @default("NORMAL")  // LOW | NORMAL | HIGH | CRITICAL
+  status          String   @default("DRAFT")   // DRAFT | SCHEDULED | PUBLISHED | EXPIRED | CANCELLED
+  visibilityScope String   @default("FACILITY")// FACILITY | DEPARTMENT | ROLE | USER | ORGANIZATION — quick filter hint, actual targeting is in NoticeTarget rows
+
+  publishAt       DateTime? // when SCHEDULED becomes PUBLISHED (null = immediate on publish)
+  expiresAt       DateTime? // when PUBLISHED becomes EXPIRED (null = never expires)
+  publishedAt     DateTime?
+  cancelledAt     DateTime?
+
+  requiresAcknowledgement Boolean @default(false)
+  isPinned        Boolean  @default(false)
+
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  targets         NoticeTarget[]
+  reads           NoticeRead[]
+  acknowledgements NoticeAcknowledgement[]
+  versions        NoticeVersionHistory[]
+
+  @@index([organizationId, status])
+  @@index([facilityId, status])
+  @@index([departmentId, status])
+  @@index([status, publishAt, expiresAt])
+  @@index([isPinned, createdAt])
+  @@index([organizationId, priority, createdAt])
+  @@index([noticeType, createdAt])
+}
+
+// Normalized targeting — one row per (notice, target) pair so a single
+// notice can target multiple facilities / departments / roles / users.
+// targetType is one of: FACILITY | DEPARTMENT | ROLE | USER | ORGANIZATION.
+// targetId is the FK id of the targeted entity, or "*" meaning "all in
+// scope" (e.g. all departments in the facility, all roles in the org).
+model NoticeTarget {
+  id          String  @id @default(cuid())
+  noticeId    String
+  notice      Notice  @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  targetType  String  // FACILITY | DEPARTMENT | ROLE | USER | ORGANIZATION
+  targetId    String  // FK id, or "*" for "all in scope"
+
+  @@unique([noticeId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+// Per-user read tracking — one row per (notice, user) who has opened
+// the notice. Opening the detail view writes a row (idempotent — the
+// unique constraint prevents duplicates). READ ≠ ACKNOWLEDGED.
+model NoticeRead {
+  id          String   @id @default(cuid())
+  noticeId    String
+  notice      Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("noticeReadBy", fields: [userId], references: [id])
+  readAt      DateTime @default(now())
+
+  @@unique([noticeId, userId])
+  @@index([userId, readAt])
+}
+
+// Per-user acknowledgement — one row per (notice, user) who has
+// clicked "Acknowledge" on a notice with requiresAcknowledgement=true.
+// Server-side check: the user must be in the notice's target scope
+// before accepting the acknowledgement.
+model NoticeAcknowledgement {
+  id              String   @id @default(cuid())
+  noticeId        String
+  notice          Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation("noticeAcknowledgedBy", fields: [userId], references: [id])
+  acknowledgedAt  DateTime @default(now())
+
+  @@unique([noticeId, userId])
+  @@index([noticeId])
+  @@index([userId, acknowledgedAt])
+}
+
+// Version history — every edit to a PUBLISHED notice snapshots the
+// prior (title, body) so the audit trail of what was communicated is
+// preserved. DRAFT edits don't snapshot (the draft IS the version).
+model NoticeVersionHistory {
+  id          String   @id @default(cuid())
+  noticeId    String
+  notice      Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  version     Int
+  title       String
+  body        String
+  changedById String
+  changedBy   User     @relation("noticeVersionChangedBy", fields: [changedById], references: [id])
+  changedAt   DateTime @default(now())
+
+  @@index([noticeId, version])
 }
 
 // =====================================================================

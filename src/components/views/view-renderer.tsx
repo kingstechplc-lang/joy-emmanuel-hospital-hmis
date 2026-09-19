@@ -49,6 +49,7 @@ import { DocumentsView } from "@/components/views/operations/documents-view";
 import { TasksView } from "@/components/views/operations/tasks-view";
 import { IncidentReportsView } from "@/components/views/operations/incident-reports-view";
 import { HandoverView } from "@/components/views/operations/handover-view";
+import { NoticeBoardView } from "@/components/views/operations/notice-board-view";
 import { WardRoundsView } from "@/components/views/inpatient/ward-rounds-view";
 import { IntakeOutputView } from "@/components/views/inpatient/intake-output-view";
 import { AuditLogsView } from "@/components/views/admin/audit-logs-view";
@@ -146,6 +147,7 @@ const VIEW_MAP: Record<ViewKey, React.ComponentType<any>> = {
   tasks: TasksView,
   incident_reports: IncidentReportsView,
   handover: HandoverView,
+  notice_board: NoticeBoardView,
   ward_rounds: WardRoundsView,
   intake_output: IntakeOutputView,
   audit_logs: AuditLogsView,
