@@ -3,7 +3,7 @@
 // =====================================================================
 // AI ASSISTANT — 10 AI-powered clinical tools with beautiful UI
 // =====================================================================
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -286,29 +286,35 @@ export function AIAssistantView() {
           <Select value={tool} onValueChange={(v) => setTool(v as ToolId)}>
             <SelectTrigger
               className={`
-                h-12 sm:h-14 text-sm sm:text-base font-medium rounded-xl
-                bg-gradient-to-r ${activeCat.gradient} bg-clip-text text-transparent
-                border-2 border-slate-200 hover:border-slate-300
+                h-12 sm:h-14 rounded-xl
+                bg-white border-2 border-slate-200
+                hover:border-slate-300
                 data-[state=open]:border-slate-400
+                data-[state=open]:ring-2 data-[state=open]:ring-slate-100
                 transition-all duration-300
-                [&>svg:last-child]:text-slate-400 [&>svg:last-child]:transition-transform
+                px-3 sm:px-4
+                w-full
+                [&>svg:last-child]:text-slate-400
+                [&>svg:last-child]:transition-transform
+                [&>svg:last-child]:duration-300
+                [&>svg:last-child]:shrink-0
                 [&>svg:last-child]:data-[state=open]:rotate-180
               `}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
                 <span
                   className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${activeTool.gradient} text-white shadow-sm shrink-0`}
                 >
                   {activeTool.icon}
                 </span>
-                <span className="flex flex-col items-start leading-tight min-w-0">
-                  <span className="text-slate-900 font-semibold truncate w-full text-left text-sm sm:text-base">
+                <div className="flex flex-col items-start leading-tight min-w-0 flex-1">
+                  <span className="block text-slate-900 font-semibold truncate w-full text-left text-[13px] sm:text-base">
                     {activeTool.label}
                   </span>
-                  <span className="text-[11px] text-slate-500 truncate w-full text-left sm:text-xs">
+                  <span className="block text-[10px] sm:text-xs text-slate-500 truncate w-full text-left">
                     {activeTool.desc}
                   </span>
-                </span>
+                </div>
               </div>
             </SelectTrigger>
             <SelectContent
@@ -374,8 +380,19 @@ export function AIAssistantView() {
 // SHARED COMPONENTS — premium look + mobile-optimised
 // =====================================================================
 function LoadingCard({ text = "Analyzing..." }: { text?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Auto-scroll the loading card into view as soon as the user clicks
+    // an action button. Smooth scroll positions the card vertically
+    // centered so the user immediately sees the spinner.
+    const timer = setTimeout(() => {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, []);
   return (
-    <Card className="border-violet-200 shadow-md sm:shadow-lg sm:shadow-violet-500/10 overflow-hidden">
+    <div ref={ref}>
+      <Card className="border-violet-200 shadow-md sm:shadow-lg sm:shadow-violet-500/10 overflow-hidden">
       <CardContent className="p-6 sm:p-8 text-center">
         {/* Concentric spinner — two rings rotating in opposite directions (desktop)
             On mobile the rings still rotate but use the cheaper ai-ring-spin CSS
@@ -406,6 +423,7 @@ function LoadingCard({ text = "Analyzing..." }: { text?: string }) {
         </p>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -452,9 +470,20 @@ function AIButton({ onClick, disabled, loading, icon, label, loadingText, gradie
 }
 
 function ReasoningBlock({ text }: { text?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!text) return;
+    // Once the result returns and the reasoning block mounts, scroll it
+    // into view so the user immediately sees the AI's explanation. Slightly
+    // delayed so the ResultCard's entrance animation settles first.
+    const timer = setTimeout(() => {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [text]);
   if (!text) return null;
   return (
-    <div className="rounded-lg bg-amber-50/60 border border-amber-100 p-3 text-xs text-slate-600 transition-all hover:bg-amber-50">
+    <div ref={ref} className="rounded-lg bg-amber-50/60 border border-amber-100 p-3 text-xs text-slate-600 transition-all hover:bg-amber-50">
       <div className="flex items-start gap-2">
         <div className="shrink-0 w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center">
           <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
