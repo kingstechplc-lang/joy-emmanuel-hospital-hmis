@@ -5,7 +5,7 @@
 // triage category (1-5) with reasoning. Based on the South African
 // Triage Scale (SATS) which is widely used in Ghana.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface TriageInput {
   chiefComplaint: string;
@@ -30,7 +30,7 @@ export interface TriageResult {
   recommendations: string[];
 }
 
-export async function scoreTriage(input: TriageInput): Promise<TriageResult> {
+export async function scoreTriage(input: TriageInput, opts?: AIChatOptions): Promise<TriageResult> {
   const systemPrompt = `You are an expert triage nurse using the South African Triage Scale (SATS).
 Analyze the patient's chief complaint + vital signs and recommend a triage category.
 
@@ -63,5 +63,5 @@ Rules:
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
 
-  return aiChatJSON(systemPrompt, `Patient vitals + complaint:\n${vitalsText}`);
+  return aiChatJSON(systemPrompt, `Patient vitals + complaint:\n${vitalsText}`, opts);
 }

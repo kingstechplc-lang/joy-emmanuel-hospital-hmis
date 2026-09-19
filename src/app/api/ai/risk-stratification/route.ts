@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     );
 
   try {
-    const result = await stratifyPatientRisk(body);
+    const result = await stratifyPatientRisk(body, { userId: session.user.id, tool: "risk_stratification" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

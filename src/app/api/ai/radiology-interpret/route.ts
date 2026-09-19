@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "reportText is required" }, { status: 400 });
 
   try {
-    const result = await interpretRadiologyReport(body);
+    const result = await interpretRadiologyReport(body, { userId: session.user.id, tool: "radiology" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

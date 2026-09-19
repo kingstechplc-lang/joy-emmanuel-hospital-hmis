@@ -4,7 +4,7 @@
 // Takes free-text diagnosis (e.g., "fever and headache for 3 days")
 // and returns suggested ICD-10 codes with confidence scores.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface ICD10Suggestion {
   code: string;
@@ -17,7 +17,7 @@ export interface ICD10Result {
   reasoning: string;
 }
 
-export async function suggestICD10(freeText: string): Promise<ICD10Result> {
+export async function suggestICD10(freeText: string, opts?: AIChatOptions): Promise<ICD10Result> {
   const systemPrompt = `You are an expert clinical coder certified in ICD-10 (International Classification of Diseases, 10th Revision).
 Given a free-text clinical description, suggest the most appropriate ICD-10 codes.
 Consider:
@@ -40,5 +40,5 @@ Rules:
 - Maximum 5 suggestions
 - Always include at least 1 suggestion if the input is a recognizable diagnosis`;
 
-  return aiChatJSON(systemPrompt, `Free-text diagnosis: "${freeText}"`);
+  return aiChatJSON(systemPrompt, `Free-text diagnosis: "${freeText}"`, opts);
 }

@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   if (!freeText) return NextResponse.json({ error: "freeText is required" }, { status: 400 });
 
   try {
-    const result = await suggestICD10(freeText);
+    const result = await suggestICD10(freeText, { userId: session.user.id, tool: "icd10" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

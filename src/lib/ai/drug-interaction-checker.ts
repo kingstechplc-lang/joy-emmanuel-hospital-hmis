@@ -6,7 +6,7 @@
 // interactions with severity, mechanism, clinical effect, and
 // management recommendations.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface MedicationInput {
   name: string;
@@ -51,7 +51,7 @@ export interface DrugInteractionCheckerResult {
 
 export async function checkDrugInteractions(
   input: DrugInteractionCheckerInput
-): Promise<DrugInteractionCheckerResult> {
+, opts?: AIChatOptions): Promise<DrugInteractionCheckerResult> {
   const systemPrompt = `You are an expert clinical pharmacist specializing in drug-drug and drug-allergy interactions.
 Analyze the medication list for potential interactions. Severity levels: mild | moderate | severe | contraindicated.
 
@@ -124,6 +124,5 @@ Rules:
 
   return aiChatJSON(
     systemPrompt,
-    `Medications:\n${medicationsText}${patientText}${allergiesText}${conditionsText}`
-  );
+    `Medications:\n${medicationsText}${patientText}${allergiesText}${conditionsText}`, opts);
 }

@@ -1,6 +1,8 @@
 // =====================================================================
 // API: /api/admin/ai/models/[id]
 //   PATCH — update an AIModel (all fields, active, defaultForProvider)
+//   DELETE — hard-delete a model + cascade-delete its test runs.
+//            Blocked when the model is the default for its provider.
 //   Permission: ai_config.manage
 // =====================================================================
 // Special rules:
@@ -9,9 +11,12 @@
 //   - If setting `active=false` on the *current default* model,
 //     block the change with 400 "Cannot deactivate the default model"
 //     (otherwise the resolver would have no default for this provider).
+//   - DELETE on a model that is `defaultForProvider=true` is blocked
+//     with 400 "Cannot delete the default model" — must promote
+//     another model to default first.
 //
-// Audit log: AI_MODEL_UPDATED (category=ADMIN, severity=notice,
-// source="ai_config")
+// Audit log: AI_MODEL_UPDATED / AI_MODEL_DELETED (category=ADMIN,
+// severity=notice/warning, source="ai_config")
 // =====================================================================
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -131,4 +136,73 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
 
   return NextResponse.json({ item: updated });
+}
+
+// =====================================================================
+// DELETE — hard-delete a model + cascade-delete its test runs
+// =====================================================================
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasPermission(session, PERMISSIONS.AI_CONFIG_MANAGE)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const existing = await db.aIModel.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { testRuns: true } },
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Rule: cannot delete the default model for its provider — the
+  // resolver would have no default for this provider after deletion.
+  if (existing.defaultForProvider) {
+    return NextResponse.json(
+      {
+        error: "Cannot delete the default model for this provider. Set another model as default for this provider first, then delete this one.",
+        code: "CANNOT_DELETE_DEFAULT_MODEL",
+      },
+      { status: 400 }
+    );
+  }
+
+  // Cascade delete in a transaction:
+  //   1. AIModelTestRun for this model
+  //   2. AIModel itself
+  // AIUsageLog rows are denormalized (modelCode is a string snapshot),
+  // so they remain for historical stats even after the model is gone.
+  await db.$transaction([
+    db.aIModelTestRun.deleteMany({ where: { modelId: id } }),
+    db.aIModel.delete({ where: { id } }),
+  ]);
+
+  clearAIConfigCache();
+
+  await auditLog({
+    userId: session.user.id,
+    organizationId: session.user.organizationId,
+    action: "AI_MODEL_DELETED",
+    actionCategory: "ADMIN",
+    severity: "warning",
+    source: "ai_config",
+    resourceType: "ai_model",
+    resourceId: id,
+    oldValues: {
+      providerId: existing.providerId,
+      modelCode: existing.modelCode,
+      displayName: existing.displayName,
+      pricingType: existing.pricingType,
+      active: existing.active,
+      defaultForProvider: existing.defaultForProvider,
+      testRunsCount: existing._count.testRuns,
+    },
+  });
+
+  return NextResponse.json({ success: true, id });
 }

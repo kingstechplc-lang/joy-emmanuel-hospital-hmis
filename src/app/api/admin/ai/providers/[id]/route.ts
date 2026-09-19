@@ -2,6 +2,14 @@
 // API: /api/admin/ai/providers/[id]
 //   PATCH — update an AIProvider (name, description, baseUrl,
 //           providerType, active, isDefault)
+//   DELETE — hard-delete a provider AND cascade-delete its models,
+//            credentials, and test runs. Blocked when:
+//              - Provider is the default (must unset default or pick
+//                another default first).
+//              - Provider has any AIUsageLog rows (we keep these for
+//                historical stats — they're nullable-referenced so
+//                deletion is still allowed; the cascade only touches
+//                models/credentials/testRuns).
 //   Permission: ai_config.manage
 // =====================================================================
 // Special rules:
@@ -105,4 +113,86 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
 
   return NextResponse.json({ item: updated });
+}
+
+// =====================================================================
+// DELETE — hard-delete a provider + cascade its models/credentials/tests
+// =====================================================================
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasPermission(session, PERMISSIONS.AI_CONFIG_MANAGE)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const existing = await db.aIProvider.findUnique({
+    where: { id },
+    include: {
+      _count: {
+        select: {
+          models: true,
+          credentials: true,
+          testRuns: true,
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Rule: cannot delete the default provider — the resolver would fall
+  // through to env vars, silently bypassing the admin's config.
+  if (existing.isDefault) {
+    return NextResponse.json(
+      {
+        error: "Cannot delete the default provider. Set another provider as default first (or unset this provider's default flag), then delete it.",
+        code: "CANNOT_DELETE_DEFAULT_PROVIDER",
+      },
+      { status: 400 }
+    );
+  }
+
+  // Cascade delete in a transaction:
+  //   1. AIModelTestRun (by providerId — also covers tests for the provider's models)
+  //   2. AICredential (by providerId)
+  //   3. AIModel (by providerId — their testRuns already deleted above)
+  //   4. AIProvider itself
+  // AIUsageLog is NOT cascaded — those rows are nullable-referenced
+  // (userId yes, but providerCode is denormalized) so they remain for
+  // historical stats even after the provider is gone.
+  await db.$transaction([
+    db.aIModelTestRun.deleteMany({ where: { providerId: id } }),
+    db.aICredential.deleteMany({ where: { providerId: id } }),
+    db.aIModel.deleteMany({ where: { providerId: id } }),
+    db.aIProvider.delete({ where: { id } }),
+  ]);
+
+  clearAIConfigCache();
+
+  await auditLog({
+    userId: session.user.id,
+    organizationId: session.user.organizationId,
+    action: "AI_PROVIDER_DELETED",
+    actionCategory: "ADMIN",
+    severity: "warning",
+    source: "ai_config",
+    resourceType: "ai_provider",
+    resourceId: id,
+    oldValues: {
+      code: existing.code,
+      name: existing.name,
+      baseUrl: existing.baseUrl,
+      providerType: existing.providerType,
+      active: existing.active,
+      isDefault: existing.isDefault,
+      modelsCount: existing._count.models,
+      credentialsCount: existing._count.credentials,
+      testRunsCount: existing._count.testRuns,
+    },
+  });
+
+  return NextResponse.json({ success: true, id });
 }

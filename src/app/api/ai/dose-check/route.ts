@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "medicationName is required" }, { status: 400 });
 
   try {
-    const result = await checkPediatricDose(body as DoseCheckInput);
+    const result = await checkPediatricDose(body as DoseCheckInput, { userId: session.user.id, tool: "dose" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

@@ -6,7 +6,7 @@
 // duplicate therapy, contraindications, inappropriate routes, and
 // required monitoring.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface PrescriptionInput {
   medication: string;
@@ -54,7 +54,7 @@ export interface PrescriptionCheckResult {
 
 export async function checkPrescriptions(
   input: PrescriptionCheckInput
-): Promise<PrescriptionCheckResult> {
+, opts?: AIChatOptions): Promise<PrescriptionCheckResult> {
   const systemPrompt = `You are an expert pharmacist and prescribing safety officer. Check prescriptions for dose errors, interactions, allergy conflicts, duplicate therapy, contraindications, and monitoring requirements.
 
 Verify each prescription against:
@@ -143,6 +143,5 @@ Rules:
 
   return aiChatJSON(
     systemPrompt,
-    `Prescriptions to review:\n${rxText}${patientText}${allergiesText}${currentMedsText}${conditionsText}`
-  );
+    `Prescriptions to review:\n${rxText}${patientText}${allergiesText}${currentMedsText}${conditionsText}`, opts);
 }

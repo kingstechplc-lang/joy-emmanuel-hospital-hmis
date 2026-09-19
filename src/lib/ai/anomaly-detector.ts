@@ -4,7 +4,7 @@
 // Takes a set of lab results and identifies unusual patterns,
 // critical values, and potential lab errors that warrant review.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface LabResultInput {
   testName: string;
@@ -29,7 +29,7 @@ export interface AnomalyResult {
   overallAssessment: string;
 }
 
-export async function detectAnomalies(results: LabResultInput[]): Promise<AnomalyResult> {
+export async function detectAnomalies(results: LabResultInput[], opts?: AIChatOptions): Promise<AnomalyResult> {
   const systemPrompt = `You are an expert clinical pathologist + lab scientist. Analyze a set of lab results and identify:
 1. Critical values that require immediate attention
 2. Abnormal results that fall outside reference ranges
@@ -73,5 +73,5 @@ Rules:
     ? `\nPatient: age=${results[0]?.patientAge || "?"}, sex=${results[0]?.patientSex || "?"}`
     : "";
 
-  return aiChatJSON(systemPrompt, `Lab results:\n${resultsText}${patientInfo}`);
+  return aiChatJSON(systemPrompt, `Lab results:\n${resultsText}${patientInfo}`, opts);
 }

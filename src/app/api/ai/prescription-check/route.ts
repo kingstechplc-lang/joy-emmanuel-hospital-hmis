@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     );
 
   try {
-    const result = await checkPrescriptions(body);
+    const result = await checkPrescriptions(body, { userId: session.user.id, tool: "prescription_check" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

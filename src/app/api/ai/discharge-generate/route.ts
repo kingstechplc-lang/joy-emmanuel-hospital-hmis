@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "diagnoses array is required" }, { status: 400 });
 
   try {
-    const result = await generateDischargeSummary(body);
+    const result = await generateDischargeSummary(body, { userId: session.user.id, tool: "discharge_gen" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

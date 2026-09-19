@@ -2,20 +2,21 @@
 
 // =====================================================================
 // AI SERVICES ADMIN VIEW — manage providers, models, credentials, tests
+// + realtime usage statistics dashboard
 // =====================================================================
 // This is the single admin UI for the database-backed AI configuration.
-// It mirrors the layout pattern of audit-logs-view.tsx (gradient header
-// + KPI-style "current configuration" card + tables) and the dialog
-// pattern of medications-admin-view.tsx (modal forms with create/edit).
 //
-// Sections:
-//   1. Current Active Configuration — resolved provider + model + key
+// Sections (mobile-first responsive, beautiful animations):
+//   1. Animated gradient header — changes colour per active provider
+//   2. AI Usage Statistics — KPI cards + per-tool breakdown + recent
+//      calls list. Polls /api/admin/ai/usage every 10s for realtime
+//      updates. Auto-scrolls the new calls into view as they arrive.
+//   3. Current Active Configuration — resolved provider + model + key
 //      status (masked only, never the full key).
-//   2. Providers — table of all AIProvider rows with add/edit/disable
-//      actions. The "isDefault" toggle enforces single-default on the
-//      client by prompting with a confirmation dialog.
-//   3. Models — table of all AIModel rows grouped by provider, with
-//      add/edit/disable/set-default/test actions.
+//   4. Providers — table of all AIProvider rows with add/edit/delete
+//      actions. Delete cascades models/credentials/testRuns.
+//   5. Models — table of all AIModel rows grouped by provider, with
+//      add/edit/delete/test actions.
 //
 // Security:
 //   - API keys are entered via <input type="password"> in the
@@ -41,10 +42,12 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Sparkles, Plus, RefreshCw, Loader2, AlertTriangle, CheckCircle2, XCircle,
-  Edit, Key, FlaskConical, Star, StarOff, Power, Activity, Cpu, Eye, EyeOff,
+  Edit, Key, FlaskConical, Star, Power, Activity, Cpu, Eye, EyeOff,
   Server, Brain, Zap, Image as ImageIcon, Wrench, MessageSquare, ShieldCheck,
+  Trash2, TrendingUp, Clock, BarChart3, type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -74,6 +77,20 @@ const PRICING_TYPES = [
   { value: "free", label: "Free" },
 ];
 
+// Tool metadata for human-friendly labels + colours in the usage dashboard
+const TOOL_META: Record<string, { label: string; gradient: string }> = {
+  icd10:                { label: "ICD-10 Suggester",          gradient: "from-violet-500 to-purple-700" },
+  radiology:            { label: "Radiology Interpreter",    gradient: "from-cyan-500 to-blue-700" },
+  triage:               { label: "Triage Scorer",            gradient: "from-blue-500 to-cyan-700" },
+  drug_interactions:    { label: "Drug Interaction Checker",  gradient: "from-rose-500 to-pink-700" },
+  prescription_check:   { label: "Prescription Error Detector", gradient: "from-orange-500 to-red-700" },
+  risk_stratification: { label: "Patient Risk Stratification", gradient: "from-amber-500 to-orange-700" },
+  dose:                 { label: "Pediatric Dose Check",      gradient: "from-emerald-500 to-teal-700" },
+  anomaly:              { label: "Lab Anomaly Detection",    gradient: "from-fuchsia-500 to-pink-700" },
+  clinical_summary:    { label: "Clinical Summary Generator", gradient: "from-indigo-500 to-blue-700" },
+  discharge_gen:       { label: "Discharge Summary Generator", gradient: "from-slate-500 to-slate-800" },
+};
+
 // =====================================================================
 // MAIN VIEW
 // =====================================================================
@@ -82,23 +99,35 @@ export function AIServicesView() {
   const user = session?.user as any;
   const perms: string[] = user?.permissions || [];
   const canManage = user?.roles?.includes("super_admin") || perms.includes("ai_config.manage");
+  const canViewUsage = canManage || perms.includes("analytics.view");
 
   const qc = useQueryClient();
   const queryKey = ["ai-services-config"];
+  const usageQueryKey = ["ai-usage-stats"];
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: () => fetchJson("/api/admin/ai/config"),
-    refetchInterval: 60_000, // auto-refresh every 60s — admin can see live status
+    refetchInterval: 60_000,
+  });
+
+  // Realtime usage stats — poll every 10s
+  const usageQuery = useQuery({
+    queryKey: usageQueryKey,
+    queryFn: () => fetchJson("/api/admin/ai/usage"),
+    refetchInterval: 10_000,
+    enabled: canViewUsage,
   });
 
   const [providerDialog, setProviderDialog] = useState<{ open: boolean; editing: any | null }>({ open: false, editing: null });
   const [modelDialog, setModelDialog] = useState<{ open: boolean; editing: any | null; providerId?: string }>({ open: false, editing: null, providerId: undefined });
   const [credDialog, setCredDialog] = useState<{ open: boolean; provider: any | null }>({ open: false, provider: null });
   const [testResults, setTestResults] = useState<Record<string, any>>({});
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "provider" | "model"; item: any } | null>(null);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey });
+    qc.invalidateQueries({ queryKey: usageQueryKey });
   };
 
   // ── Provider mutations ──────────────────────────────────────
@@ -120,6 +149,11 @@ export function AIServicesView() {
     onSuccess: () => { toast.success("Provider updated"); invalidate(); setProviderDialog({ open: false, editing: null }); },
     onError: (e: any) => toast.error(e?.message || "Failed to update provider"),
   });
+  const deleteProviderMut = useMutation({
+    mutationFn: (id: string) => fetchJson(`/api/admin/ai/providers/${id}`, { method: "DELETE" }),
+    onSuccess: () => { toast.success("Provider deleted"); invalidate(); setDeleteTarget(null); },
+    onError: (e: any) => { toast.error(e?.message || "Failed to delete provider"); setDeleteTarget(null); },
+  });
 
   // ── Model mutations ─────────────────────────────────────────
   const createModelMut = useMutation({
@@ -139,6 +173,11 @@ export function AIServicesView() {
     }),
     onSuccess: () => { toast.success("Model updated"); invalidate(); setModelDialog({ open: false, editing: null, providerId: undefined }); },
     onError: (e: any) => toast.error(e?.message || "Failed to update model"),
+  });
+  const deleteModelMut = useMutation({
+    mutationFn: (id: string) => fetchJson(`/api/admin/ai/models/${id}`, { method: "DELETE" }),
+    onSuccess: () => { toast.success("Model deleted"); invalidate(); setDeleteTarget(null); },
+    onError: (e: any) => { toast.error(e?.message || "Failed to delete model"); setDeleteTarget(null); },
   });
 
   // ── Credential mutation ─────────────────────────────────────
@@ -171,22 +210,62 @@ export function AIServicesView() {
   });
 
   return (
-    <div className="space-y-4 fade-in-up">
-      {/* Gradient header */}
-      <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 text-white p-5 shadow-lg relative overflow-hidden">
-        <Sparkles className="absolute top-3 right-4 w-16 h-16 text-white/15" strokeWidth={1.5} />
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Sparkles className="w-5 h-5" /> AI Services
-        </h2>
-        <p className="text-sm text-white/80 mt-1">
-          Configure AI providers, models, and credentials. The resolved configuration is used by the AI Assistant and all AI clinical tools.
-        </p>
+    <div className="space-y-4 sm:space-y-5 fade-in-up">
+      {/* ───────────────────────────────────────────────────────
+          ANIMATED GRADIENT HEADER
+          - Per-active-provider gradient colour
+          - Subtle grid pattern + shimmer sweep (desktop only)
+          - Compact on mobile, roomier on desktop
+      ─────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl bg-gradient-to-r from-violet-600 via-purple-700 to-fuchsia-700 text-white p-4 sm:p-6 shadow-xl sm:shadow-2xl relative overflow-hidden">
+        {/* Floating orbs — desktop only */}
+        <div className="ai-desktop-blur absolute top-0 right-0 w-64 h-64 bg-white opacity-10 blur-3xl rounded-full pointer-events-none ai-float-slow" />
+        <div className="ai-desktop-blur absolute bottom-0 left-1/3 w-48 h-48 bg-fuchsia-300 opacity-20 blur-3xl rounded-full pointer-events-none ai-float-slower" />
+        {/* Subtle grid pattern — pure CSS, no GPU cost */}
+        <div
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+        {/* Shimmer sweep — desktop only */}
+        <div className="ai-shimmer-bg absolute inset-0 pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 sm:gap-4 mb-2">
+            <div className="relative shrink-0">
+              {/* Rotating gradient ring — desktop only */}
+              <div
+                className="hidden sm:block absolute inset-0 rounded-xl bg-gradient-to-tr from-white/40 via-transparent to-white/30 ai-spin-slow"
+                style={{ animationDuration: "4s" }}
+              />
+              <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-white/15 backdrop-blur rounded-xl ring-1 ring-white/30 shadow-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight truncate">AI Services</h2>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-white/15 ring-1 ring-white/30 rounded-full px-2 py-0.5">
+                  <BarChart3 className="w-3 h-3" /> Realtime Stats
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-white/80 mt-0.5">
+                Configure AI providers, models, and credentials. The resolved configuration is used by the AI Assistant and all AI clinical tools.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Action bar */}
+      {/* ───────────────────────────────────────────────────────
+          ACTION BAR
+      ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs text-slate-500">
-          {isFetching ? (
+          {isFetching || usageQuery.isFetching ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin text-violet-600" />
               <span className="text-violet-700 font-medium">Refreshing…</span>
@@ -194,16 +273,16 @@ export function AIServicesView() {
           ) : (
             <>
               <RefreshCw className="w-3 h-3 text-slate-400" />
-              <span>Auto-refresh every 60s</span>
+              <span>Config: 60s · Usage: 10s</span>
             </>
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          <Button variant="outline" size="sm" onClick={() => { refetch(); usageQuery.refetch(); }} disabled={isFetching}>
             <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
           </Button>
           {canManage && (
-            <Button size="sm" onClick={() => setProviderDialog({ open: true, editing: null })} className="bg-violet-600 hover:bg-violet-700">
+            <Button size="sm" onClick={() => setProviderDialog({ open: true, editing: null })} className="bg-gradient-to-r from-violet-600 to-purple-700 hover:opacity-90 gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Add Provider
             </Button>
           )}
@@ -226,23 +305,34 @@ export function AIServicesView() {
                 baseUrl: "https://api.z.ai/api/paas/v4",
                 providerType: "openai_compatible",
                 isDefault: true,
-              } })}
+              }})}
+            />
+          )}
+
+          {/* Section 0: AI Usage Statistics (realtime) */}
+          {canViewUsage && (
+            <UsageStatsSection
+              data={usageQuery.data}
+              isLoading={usageQuery.isLoading}
+              isError={usageQuery.isError}
+              onRetry={() => usageQuery.refetch()}
             />
           )}
 
           {/* Section 1: Current Active Configuration */}
           <ActiveConfigCard active={data.active} totalProviders={data.totalProviders} totalModels={data.totalModels} />
 
-          {/* Section 2: Providers */}
+          {/* Section 2: Providers (with delete) */}
           <ProvidersSection
             providers={data.providers || []}
             canManage={canManage}
             onEdit={(p) => setProviderDialog({ open: true, editing: p })}
             onConfigureCreds={(p) => setCredDialog({ open: true, provider: p })}
             onAddModel={(providerId) => setModelDialog({ open: true, editing: null, providerId })}
+            onDelete={(p) => setDeleteTarget({ type: "provider", item: p })}
           />
 
-          {/* Section 3: Models (per provider) */}
+          {/* Section 3: Models (with delete, per provider) */}
           <ModelsSection
             providers={data.providers || []}
             canManage={canManage}
@@ -250,11 +340,12 @@ export function AIServicesView() {
             onTest={(providerId, modelId) => testMut.mutate({ providerId, modelId })}
             testing={testMut.isPending}
             testResults={testResults}
+            onDelete={(m) => setDeleteTarget({ type: "model", item: m })}
           />
         </>
       )}
 
-      {/* Dialogs */}
+      {/* ── Dialogs ── */}
       {providerDialog.open && (
         <ProviderFormDialog
           provider={providerDialog.editing}
@@ -297,8 +388,327 @@ export function AIServicesView() {
           saving={setCredMut.isPending}
         />
       )}
+
+      {/* Delete confirmation */}
+      {deleteTarget && (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && setDeleteTarget(null)}
+          title={deleteTarget.type === "provider" ? "Delete AI Provider" : "Delete AI Model"}
+          description={
+            deleteTarget.type === "provider"
+              ? `This will permanently delete "${deleteTarget.item.name}" and cascade-delete its models, credentials, and test runs. AIUsageLog rows are kept for historical stats. This action cannot be undone.`
+              : `This will permanently delete model "${deleteTarget.item.displayName}" (${deleteTarget.item.modelCode}) and cascade-delete its test runs. This action cannot be undone.`
+          }
+          details={
+            <div className="space-y-1 text-xs">
+              <div><span className="text-slate-500">Name:</span> <span className="font-semibold">{deleteTarget.item.name || deleteTarget.item.displayName}</span></div>
+              {deleteTarget.type === "provider" && (
+                <>
+                  <div><span className="text-slate-500">Code:</span> <code className="px-1 py-0.5 bg-slate-100 rounded">{deleteTarget.item.code}</code></div>
+                  <div><span className="text-slate-500">Status:</span> {deleteTarget.item.isDefault ? <Badge variant="outline" className="ml-1 text-amber-700 bg-amber-50 border-amber-200">DEFAULT — cannot delete</Badge> : <Badge variant="outline" className="ml-1">OK</Badge>}</div>
+                </>
+              )}
+              {deleteTarget.type === "model" && (
+                <div><span className="text-slate-500">Status:</span> {deleteTarget.item.defaultForProvider ? <Badge variant="outline" className="ml-1 text-amber-700 bg-amber-50 border-amber-200">DEFAULT — cannot delete</Badge> : <Badge variant="outline" className="ml-1">OK</Badge>}</div>
+              )}
+            </div>
+          }
+          variant="destructive"
+          confirmText="Delete Permanently"
+          onConfirm={async () => {
+            if (deleteTarget.type === "provider") {
+              if (deleteTarget.item.isDefault) {
+                toast.error("Cannot delete the default provider. Set another provider as default first.");
+                return;
+              }
+              await deleteProviderMut.mutateAsync(deleteTarget.item.id);
+            } else {
+              if (deleteTarget.item.defaultForProvider) {
+                toast.error("Cannot delete the default model. Set another model as default for this provider first.");
+                return;
+              }
+              await deleteModelMut.mutateAsync(deleteTarget.item.id);
+            }
+          }}
+        />
+      )}
     </div>
   );
+}
+
+// =====================================================================
+// SECTION 0: AI USAGE STATISTICS (REALTIME)
+// =====================================================================
+function UsageStatsSection({
+  data, isLoading, isError, onRetry,
+}: {
+  data: any;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
+  if (isLoading) {
+    return (
+      <Card className="shadow-md border-violet-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-violet-600" /> AI Usage Statistics
+          </CardTitle>
+          <CardDescription className="text-xs">Realtime — auto-refreshes every 10 seconds</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+  if (isError) {
+    return (
+      <Card>
+        <CardHeader><CardTitle className="text-base font-bold flex items-center gap-2"><BarChart3 className="w-4 h-4 text-rose-600" /> AI Usage Statistics</CardTitle></CardHeader>
+        <CardContent>
+          <ErrorState message="Failed to load usage stats" onRetry={onRetry} />
+        </CardContent>
+      </Card>
+    );
+  }
+  if (!data) return null;
+
+  const totals = data.totals || { today: 0, week: 0, month: 0, allTime: 0 };
+  const successRate = data.successRate || { today: 100, week: 100, month: 100 };
+  const avgLatencyMs = data.avgLatencyMs || { today: 0, week: 0, month: 0 };
+  const callsByTool = data.callsByTool || [];
+  const recentCalls = data.recentCalls || [];
+  const last24hSeries = data.last24hSeries || [];
+
+  // Find max count for bar chart scaling
+  const maxHourly = Math.max(1, ...last24hSeries.map((h: any) => h.count));
+  const maxToolCount = Math.max(1, ...callsByTool.map((t: any) => t.count));
+
+  return (
+    <Card className="shadow-md border-violet-200 overflow-hidden">
+      {/* Gradient top strip */}
+      <div className="h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500" />
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-violet-600" /> AI Usage Statistics
+            </CardTitle>
+            <CardDescription className="text-xs flex items-center gap-1.5 mt-0.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Realtime — auto-refreshes every 10s
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="text-[10px] bg-violet-50 text-violet-700 border-violet-200 shrink-0">
+            <Clock className="w-2.5 h-2.5 mr-0.5" />
+            {new Date(data.generatedAt).toLocaleTimeString()}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+
+        {/* ── KPI cards ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+          <UsageKpiCard
+            label="Calls Today"
+            value={totals.today}
+            icon={Activity}
+            gradient="from-violet-500 to-purple-700"
+            subtext={`${successRate.today}% success`}
+          />
+          <UsageKpiCard
+            label="Calls (7 days)"
+            value={totals.week}
+            icon={TrendingUp}
+            gradient="from-blue-500 to-cyan-700"
+            subtext={`${successRate.week}% success`}
+          />
+          <UsageKpiCard
+            label="Calls (30 days)"
+            value={totals.month}
+            icon={BarChart3}
+            gradient="from-emerald-500 to-teal-700"
+            subtext={`${successRate.month}% success`}
+          />
+          <UsageKpiCard
+            label="Avg Latency"
+            value={`${avgLatencyMs.today || 0}ms`}
+            icon={Clock}
+            gradient="from-amber-500 to-orange-700"
+            subtext={`today · ${avgLatencyMs.week || 0}ms 7d`}
+          />
+        </div>
+
+        {/* ── Last 24h activity bar chart ── */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+              <Zap className="w-3 h-3 text-violet-600" /> Last 24 hours
+            </h4>
+            <span className="text-[10px] text-slate-500">{last24hSeries.reduce((s: number, h: any) => s + h.count, 0)} calls</span>
+          </div>
+          <div className="flex items-end gap-0.5 h-20 sm:h-24 px-1 bg-slate-50 rounded-lg p-2 overflow-hidden">
+            {last24hSeries.map((h: any, i: number) => {
+              const heightPct = (h.count / maxHourly) * 100;
+              const hour = new Date(h.hour).getHours();
+              const isPeak = h.count === maxHourly && h.count > 0;
+              return (
+                <div
+                  key={i}
+                  className="flex-1 group relative flex flex-col items-center justify-end h-full"
+                  title={`${hour}:00 — ${h.count} calls (${h.successCount} ok)`}
+                >
+                  <div
+                    className={`w-full rounded-t-sm transition-all duration-500 ${
+                      isPeak
+                        ? "bg-gradient-to-t from-violet-600 to-fuchsia-500"
+                        : h.count > 0
+                        ? "bg-gradient-to-t from-violet-400 to-purple-500"
+                        : "bg-slate-200"
+                    }`}
+                    style={{ height: `${Math.max(2, heightPct)}%` }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-[9px] text-slate-400 mt-1 px-1">
+            <span>23h ago</span>
+            <span>12h ago</span>
+            <span>now</span>
+          </div>
+        </div>
+
+        {/* ── Calls by tool (horizontal bar chart) ── */}
+        {callsByTool.length > 0 && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+              <Brain className="w-3 h-3 text-violet-600" /> Calls by Tool (30 days)
+            </h4>
+            <div className="space-y-1.5">
+              {callsByTool.map((t: any, i: number) => {
+                const meta = TOOL_META[t.tool] || { label: t.tool, gradient: "from-slate-500 to-slate-700" };
+                const pct = (t.count / maxToolCount) * 100;
+                const successPct = t.count > 0 ? (t.successCount / t.count) * 100 : 100;
+                return (
+                  <div
+                    key={t.tool}
+                    className="flex items-center gap-2 sm:gap-3 text-xs ai-enter-up"
+                    style={{ animationDelay: `${i * 0.04}s` }}
+                  >
+                    <div className="w-24 sm:w-36 truncate font-medium text-slate-700">{meta.label}</div>
+                    <div className="flex-1 h-6 bg-slate-100 rounded-md overflow-hidden relative">
+                      <div
+                        className={`h-full bg-gradient-to-r ${meta.gradient} transition-all duration-700 ease-out flex items-center justify-end pr-2`}
+                        style={{ width: `${Math.max(3, pct)}%` }}
+                      >
+                        <span className="text-[10px] font-bold text-white drop-shadow-sm">{t.count}</span>
+                      </div>
+                    </div>
+                    <div className="w-16 sm:w-20 text-right text-[10px] text-slate-500">
+                      {Math.round(successPct)}% ok
+                      {t.avgLatencyMs > 0 && <div className="text-[9px]">{t.avgLatencyMs}ms</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Recent calls ── */}
+        {recentCalls.length > 0 && (
+          <div>
+            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+              <Activity className="w-3 h-3 text-violet-600" /> Recent Calls
+            </h4>
+            <div className="space-y-1 max-h-72 overflow-y-auto sidebar-scroll">
+              {recentCalls.map((c: any, i: number) => {
+                const meta = TOOL_META[c.tool] || { label: c.tool || "unknown", gradient: "from-slate-500 to-slate-700" };
+                return (
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 transition-colors ai-enter-up"
+                    style={{ animationDelay: `${Math.min(i * 0.02, 0.3)}s` }}
+                  >
+                    <div className={`shrink-0 w-7 h-7 rounded-md bg-gradient-to-br ${meta.gradient} flex items-center justify-center`}>
+                      {c.success ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : <XCircle className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="font-semibold text-slate-900 truncate">{meta.label}</span>
+                        <span className="text-slate-400">·</span>
+                        <code className="text-[10px] text-slate-500 truncate">{c.modelCode}</code>
+                      </div>
+                      <div className="text-[10px] text-slate-500 truncate">
+                        {c.user?.name || c.user?.email || "system"}
+                        {c.latencyMs != null && ` · ${c.latencyMs}ms`}
+                        {c.totalTokens != null && ` · ${c.totalTokens} tok`}
+                        {!c.success && c.errorMessage && ` · ${c.errorMessage.slice(0, 80)}`}
+                      </div>
+                    </div>
+                    <div className="text-[9px] text-slate-400 shrink-0">
+                      {timeAgo(new Date(c.createdAt))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {totals.allTime === 0 && (
+          <div className="text-center py-6 text-slate-500 text-xs">
+            <Activity className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+            No AI calls logged yet. Statistics will appear here as clinicians use the AI Assistant.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function UsageKpiCard({ label, value, icon: Icon, gradient, subtext }: {
+  label: string;
+  value: number | string;
+  icon: LucideIcon;
+  gradient: string;
+  subtext?: string;
+}) {
+  return (
+    <div className="relative rounded-xl p-3 sm:p-4 bg-white border border-slate-200 shadow-sm overflow-hidden">
+      <div className={`absolute -top-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-br ${gradient} opacity-10 blur-xl`} />
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{label}</span>
+          <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm`}>
+            <Icon className="w-3 h-3 text-white" />
+          </div>
+        </div>
+        <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight tabular-nums">{value}</div>
+        {subtext && <div className="text-[10px] text-slate-500 mt-0.5">{subtext}</div>}
+      </div>
+    </div>
+  );
+}
+
+function timeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 // =====================================================================
@@ -322,7 +732,7 @@ function ActiveConfigCard({ active, totalProviders, totalModels }: { active: any
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <ConfigItem label="Source" value={<Badge variant="outline" className={`text-xs ${sourceColor}`}>{sourceLabel}</Badge>} />
           <ConfigItem label="Provider" value={active?.providerName || "—"} />
           <ConfigItem label="Model" value={active?.displayName || active?.modelCode || "—"} />
@@ -409,16 +819,17 @@ function Stat({ label, value, icon }: { label: string; value: number; icon: Reac
 }
 
 // =====================================================================
-// SECTION 2: PROVIDERS TABLE
+// SECTION 2: PROVIDERS TABLE (with delete)
 // =====================================================================
 function ProvidersSection({
-  providers, canManage, onEdit, onConfigureCreds, onAddModel,
+  providers, canManage, onEdit, onConfigureCreds, onAddModel, onDelete,
 }: {
   providers: any[];
   canManage: boolean;
   onEdit: (p: any) => void;
   onConfigureCreds: (p: any) => void;
   onAddModel: (providerId: string) => void;
+  onDelete: (p: any) => void;
 }) {
   return (
     <Card>
@@ -510,6 +921,15 @@ function ProvidersSection({
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onEdit(p)}>
                               <Edit className="w-3 h-3" /> Edit
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                              onClick={() => onDelete(p)}
+                              title={p.isDefault ? "Cannot delete the default provider — set another as default first" : "Delete provider"}
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </Button>
                           </div>
                         </td>
                       )}
@@ -526,10 +946,10 @@ function ProvidersSection({
 }
 
 // =====================================================================
-// SECTION 3: MODELS TABLE (per provider)
+// SECTION 3: MODELS TABLE (with delete, per provider)
 // =====================================================================
 function ModelsSection({
-  providers, canManage, onEdit, onTest, testing, testResults,
+  providers, canManage, onEdit, onTest, testing, testResults, onDelete,
 }: {
   providers: any[];
   canManage: boolean;
@@ -537,6 +957,7 @@ function ModelsSection({
   onTest: (providerId: string, modelId?: string) => void;
   testing: boolean;
   testResults: Record<string, any>;
+  onDelete: (m: any) => void;
 }) {
   const totalModels = providers.reduce((n, p) => n + (p.models?.length || 0), 0);
   if (totalModels === 0) {
@@ -651,9 +1072,20 @@ function ModelsSection({
                           </td>
                           {canManage && (
                             <td className="p-2 text-right">
-                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onEdit(m, p.id)}>
-                                <Edit className="w-3 h-3" /> Edit
-                              </Button>
+                              <div className="flex justify-end gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onEdit(m, p.id)}>
+                                  <Edit className="w-3 h-3" /> Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                  onClick={() => onDelete(m)}
+                                  title={m.defaultForProvider ? "Cannot delete the default model — set another as default first" : "Delete model"}
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </Button>
+                              </div>
                             </td>
                           )}
                         </tr>
@@ -721,11 +1153,12 @@ function ProviderFormDialog({
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-          <DialogTitle className="text-white flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white relative overflow-hidden">
+          <div className="ai-shimmer-bg absolute inset-0 pointer-events-none" />
+          <DialogTitle className="text-white flex items-center gap-2 relative">
             <Server className="w-5 h-5" /> {isEdit ? "Edit Provider" : "Add Provider"}
           </DialogTitle>
-          <DialogDescription className="text-white/80">
+          <DialogDescription className="text-white/80 relative">
             {isEdit ? "Update this AI provider's configuration." : "Register a new AI provider. Most OpenAI-compatible providers work out of the box."}
           </DialogDescription>
         </DialogHeader>
@@ -832,11 +1265,12 @@ function ModelFormDialog({
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="large">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-          <DialogTitle className="text-white flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white relative overflow-hidden">
+          <div className="ai-shimmer-bg absolute inset-0 pointer-events-none" />
+          <DialogTitle className="text-white flex items-center gap-2 relative">
             <Cpu className="w-5 h-5" /> {isEdit ? "Edit Model" : "Add Model"}
           </DialogTitle>
-          <DialogDescription className="text-white/80">
+          <DialogDescription className="text-white/80 relative">
             {isEdit ? "Update this AI model's configuration." : "Register a new AI model. The model code is the exact ID sent to the provider API."}
           </DialogDescription>
         </DialogHeader>
@@ -966,11 +1400,12 @@ function CredentialDialog({
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="flex flex-col p-0 gap-0 overflow-hidden" size="medium">
-        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-          <DialogTitle className="text-white flex items-center gap-2">
+        <DialogHeader className="px-6 pt-5 pb-3 shrink-0 border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white relative overflow-hidden">
+          <div className="ai-shimmer-bg absolute inset-0 pointer-events-none" />
+          <DialogTitle className="text-white flex items-center gap-2 relative">
             <Key className="w-5 h-5" /> Configure API Key — {provider?.name}
           </DialogTitle>
-          <DialogDescription className="text-white/80">
+          <DialogDescription className="text-white/80 relative">
             The key is encrypted with AES-256-GCM before storage. It is NEVER returned in plaintext by the API.
           </DialogDescription>
         </DialogHeader>
@@ -1055,7 +1490,7 @@ function QuickSetupCard({ activeConfig, onCreateProvider }: {
       <div className="h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500" />
       <CardContent className="p-5">
         <div className="flex items-start gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md shrink-0 ai-glow-pulse">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">

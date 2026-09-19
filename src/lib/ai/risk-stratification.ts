@@ -6,7 +6,7 @@
 // sepsis, falls, complications, and mortality. Uses validated risk
 // factors where available (e.g., LACE, qSOFA, STRATIFY).
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface RiskStratificationInput {
   age?: number;
@@ -43,7 +43,7 @@ export interface RiskStratificationResult {
 
 export async function stratifyPatientRisk(
   input: RiskStratificationInput
-): Promise<RiskStratificationResult> {
+, opts?: AIChatOptions): Promise<RiskStratificationResult> {
   const systemPrompt = `You are an expert in clinical risk assessment. Score the patient's risk for readmission, sepsis, falls, complications, and mortality. Use validated risk factors.
 
 Apply validated tools where relevant:
@@ -114,5 +114,5 @@ Rules:
       `Admission history:\n${input.admissionHistory.map((a) => `- ${a}`).join("\n")}`
     );
 
-  return aiChatJSON(systemPrompt, `Patient profile:\n\n${sections.join("\n\n")}`);
+  return aiChatJSON(systemPrompt, `Patient profile:\n\n${sections.join("\n\n")}`, opts);
 }

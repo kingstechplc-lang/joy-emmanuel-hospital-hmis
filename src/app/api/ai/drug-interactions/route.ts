@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "medications array is required" }, { status: 400 });
 
   try {
-    const result = await checkDrugInteractions(body);
+    const result = await checkDrugInteractions(body, { userId: session.user.id, tool: "drug_interactions" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

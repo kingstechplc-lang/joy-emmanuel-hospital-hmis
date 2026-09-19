@@ -495,6 +495,7 @@ model User {
   aiModelsCreated          AIModel[]                   @relation("aiModelCreatedBy")
   aiCredentialsCreated     AICredential[]              @relation("aiCredentialCreatedBy")
   aiModelTestsRun          AIModelTestRun[]            @relation("aiTestedBy")
+  aiUsageLogs              AIUsageLog[]                @relation("aiUsageBy")
   imagingOrders              ImagingOrder[]             @relation("imagingOrderClinician")
   procedures                 Procedure[]                @relation("procedurePerformer")
   admissions                 Admission[]                @relation("admissionAdmittedBy")
@@ -6886,6 +6887,44 @@ model AIModelTestRun {
 
   @@index([modelId, createdAt])
   @@index([status, createdAt])
+}
+
+// =====================================================================
+// AI USAGE LOG — every AI call is logged here for the AI Services
+// admin statistics dashboard. Includes success/error, latency, tokens
+// (when reported), the calling tool, and the calling user.
+//
+// The /api/admin/ai/usage endpoint aggregates this table for the
+// realtime "AI Usage Statistics" section in the admin UI.
+// =====================================================================
+model AIUsageLog {
+  id              String   @id @default(cuid())
+  // Snapshot of what was called — denormalized so historical logs
+  // remain accurate even if the provider/model is later edited or deleted.
+  providerCode    String   // e.g. "zai" | "groq" | "openai"
+  providerName    String   // snapshot at call time
+  modelCode       String   // e.g. "glm-4-plus" | "llama-3.3-70b-versatile"
+  displayName     String   // snapshot at call time
+  source          String   // "database" | "environment" | "none"
+  tool            String?  // which AI feature — "icd10" | "triage" | "dose" | "anomaly" | "drug_interactions" | "clinical_summary" | "risk_stratification" | "radiology" | "discharge_gen" | "prescription_check"
+  // Result
+  success         Boolean  @default(false)
+  errorMessage    String?  // sanitized, truncated to 500 chars
+  latencyMs       Int?     // wall-clock duration of the AI call
+  promptTokens    Int?     // if reported by provider
+  completionTokens Int?
+  totalTokens     Int?
+  // Caller — nullable because some internal calls may not have a user
+  userId          String?
+  user            User?    @relation("aiUsageBy", fields: [userId], references: [id])
+  // Audit
+  createdAt       DateTime @default(now())
+
+  @@index([providerCode, createdAt])
+  @@index([modelCode, createdAt])
+  @@index([tool, createdAt])
+  @@index([success, createdAt])
+  @@index([createdAt])
 }
 
 // =====================================================================

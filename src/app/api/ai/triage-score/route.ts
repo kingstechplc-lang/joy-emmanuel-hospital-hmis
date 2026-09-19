@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "chiefComplaint is required" }, { status: 400 });
 
   try {
-    const result = await scoreTriage(body as TriageInput);
+    const result = await scoreTriage(body as TriageInput, { userId: session.user.id, tool: "triage" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

@@ -5,7 +5,7 @@
 // weight-based dosing is correct. Returns dose verification with
 // safety warnings.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface DoseCheckInput {
   medicationName: string;
@@ -28,7 +28,7 @@ export interface DoseCheckResult {
   reasoning: string;
 }
 
-export async function checkPediatricDose(input: DoseCheckInput): Promise<DoseCheckResult> {
+export async function checkPediatricDose(input: DoseCheckInput, opts?: AIChatOptions): Promise<DoseCheckResult> {
   const systemPrompt = `You are an expert pediatric pharmacist. Verify weight-based dosing for pediatric prescriptions.
 Consider:
 - Standard mg/kg dosing for the medication
@@ -59,5 +59,5 @@ Rules:
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
 
-  return aiChatJSON(systemPrompt, `Prescription details:\n${inputText}`);
+  return aiChatJSON(systemPrompt, `Prescription details:\n${inputText}`, opts);
 }

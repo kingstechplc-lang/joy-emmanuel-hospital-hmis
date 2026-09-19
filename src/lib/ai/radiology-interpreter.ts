@@ -6,7 +6,7 @@
 // diagnoses, recommended actions, and critical findings requiring
 // urgent clinician attention.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface RadiologyInterpretInput {
   reportText: string;
@@ -37,7 +37,7 @@ export interface RadiologyInterpretResult {
 
 export async function interpretRadiologyReport(
   input: RadiologyInterpretInput
-): Promise<RadiologyInterpretResult> {
+, opts?: AIChatOptions): Promise<RadiologyInterpretResult> {
   const systemPrompt = `You are an expert radiologist. Parse the free-text radiology report and extract structured findings, impressions, and recommendations.
 
 Return JSON with this exact shape:
@@ -90,6 +90,5 @@ Rules:
 
   return aiChatJSON(
     systemPrompt,
-    `${contextText}Radiology report text:\n"""\n${input.reportText}\n"""`
-  );
+    `${contextText}Radiology report text:\n"""\n${input.reportText}\n"""`, opts);
 }

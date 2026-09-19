@@ -5,7 +5,7 @@
 // procedures, notes) and produces a structured summary suitable for
 // handover, referral, or chart documentation.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface ClinicalSummaryInput {
   patientAge?: number;
@@ -29,7 +29,7 @@ export interface ClinicalSummaryResult {
 
 export async function generateClinicalSummary(
   input: ClinicalSummaryInput
-): Promise<ClinicalSummaryResult> {
+, opts?: AIChatOptions): Promise<ClinicalSummaryResult> {
   const systemPrompt = `You are an expert physician generating a structured clinical summary suitable for handover or referral.
 Generate a professional, concise summary.
 
@@ -85,5 +85,5 @@ Rules:
     sections.push(`Procedures:\n${input.procedures.map((p) => `- ${p}`).join("\n")}`);
   if (input.notes) sections.push(`Clinical notes:\n${input.notes}`);
 
-  return aiChatJSON(systemPrompt, `Clinical snapshot:\n\n${sections.join("\n\n")}`);
+  return aiChatJSON(systemPrompt, `Clinical snapshot:\n\n${sections.join("\n\n")}`, opts);
 }

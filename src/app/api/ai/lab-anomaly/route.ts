@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "results array is required" }, { status: 400 });
 
   try {
-    const result = await detectAnomalies(results);
+    const result = await detectAnomalies(results, { userId: session.user.id, tool: "anomaly" });
     await auditLog({
       userId: session.user.id,
       organizationId: session.user.organizationId,

@@ -39,6 +39,23 @@ export interface AIRuntimeConfig {
   source: "database" | "environment" | "none";
 }
 
+// =====================================================================
+// AI CHAT OPTIONS — optional context for usage logging
+// =====================================================================
+// `userId` — the calling user's id, written to AIUsageLog.userId so
+//   the admin dashboard can show "calls by user" stats.
+// `tool` — which AI feature triggered the call (e.g. "icd10", "triage"),
+//   written to AIUsageLog.tool so the dashboard can show "calls by
+//   tool" stats.
+//
+// Both are optional — existing callers that don't pass them continue
+// to work, just without those dimensions on the usage log row.
+// =====================================================================
+export interface AIChatOptions {
+  userId?: string;
+  tool?: string;
+}
+
 let _cachedConfig: AIRuntimeConfig | null = null;
 let _cacheExpiry = 0;
 const CACHE_TTL_MS = 60_000; // 1 minute — balances performance vs config-change responsiveness
@@ -183,15 +200,73 @@ export function formatAIError(status: number, errText: string): string {
 }
 
 // =====================================================================
+// USAGE LOGGING — writes a row to AIUsageLog after every AI call.
+// Non-blocking: failures here never propagate to the caller, because
+// we don't want a logging glitch to break a clinician's AI request.
+// =====================================================================
+async function logAIUsage(params: {
+  providerCode: string;
+  providerName: string;
+  modelCode: string;
+  displayName: string;
+  source: string;
+  success: boolean;
+  errorMessage?: string;
+  latencyMs: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  userId?: string;
+  tool?: string;
+}) {
+  try {
+    await db.aIUsageLog.create({
+      data: {
+        providerCode: params.providerCode,
+        providerName: params.providerName,
+        modelCode: params.modelCode,
+        displayName: params.displayName,
+        source: params.source,
+        success: params.success,
+        errorMessage: params.errorMessage ? params.errorMessage.slice(0, 500) : null,
+        latencyMs: params.latencyMs,
+        promptTokens: params.promptTokens ?? null,
+        completionTokens: params.completionTokens ?? null,
+        totalTokens: params.totalTokens ?? null,
+        userId: params.userId ?? null,
+        tool: params.tool ?? null,
+      },
+    });
+  } catch (e) {
+    // Never fail the user's AI request because of a logging error
+    console.error("[AI Service] Failed to log usage:", e);
+  }
+}
+
+// =====================================================================
 // CHAT COMPLETION — the main entry point for all AI features
 // =====================================================================
 export async function aiChat(
   systemPrompt: string,
-  userMessage: string
+  userMessage: string,
+  opts?: AIChatOptions
 ): Promise<string> {
   const config = await resolveActiveAIConfig();
 
   if (config.source === "none") {
+    // Still log the failed attempt for usage stats
+    void logAIUsage({
+      providerCode: config.providerCode,
+      providerName: config.providerName,
+      modelCode: config.modelCode,
+      displayName: config.displayName,
+      source: config.source,
+      success: false,
+      errorMessage: "AI is not configured",
+      latencyMs: 0,
+      userId: opts?.userId,
+      tool: opts?.tool,
+    });
     throw new Error(
       "AI is not configured. An administrator must set up AI Services in Administration → AI Services."
     );
@@ -218,6 +293,13 @@ export async function aiChat(
     body.max_tokens = config.maxTokens;
   }
 
+  const start = Date.now();
+  let success = false;
+  let errorMessage: string | undefined;
+  let promptTokens: number | undefined;
+  let completionTokens: number | undefined;
+  let totalTokens: number | undefined;
+
   try {
     const resp = await fetch(chatUrl, {
       method: "POST",
@@ -234,23 +316,50 @@ export async function aiChat(
     }
 
     const data = await resp.json();
+    success = true;
+    // Capture token usage if reported by the provider
+    if (data?.usage) {
+      promptTokens = data.usage.prompt_tokens ?? data.usage.promptTokens;
+      completionTokens = data.usage.completion_tokens ?? data.usage.completionTokens;
+      totalTokens = data.usage.total_tokens ?? data.usage.totalTokens;
+    }
     return data.choices?.[0]?.message?.content || "";
   } catch (e: any) {
+    errorMessage = e?.message;
     // Re-throw formatted errors
     if (e?.message?.includes("AI")) throw e;
     // Network errors
     throw new Error(
       "AI service is temporarily unavailable. Please check your internet connection and try again."
     );
+  } finally {
+    // Always log usage — even on failure — so the admin dashboard can
+    // show error rates and latency trends.
+    void logAIUsage({
+      providerCode: config.providerCode,
+      providerName: config.providerName,
+      modelCode: config.modelCode,
+      displayName: config.displayName,
+      source: config.source,
+      success,
+      errorMessage,
+      latencyMs: Date.now() - start,
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      userId: opts?.userId,
+      tool: opts?.tool,
+    });
   }
 }
 
 export async function aiChatJSON(
   systemPrompt: string,
-  userMessage: string
+  userMessage: string,
+  opts?: AIChatOptions
 ): Promise<any> {
   const enhancedPrompt = `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no code fences, no additional text. Just the JSON object.`;
-  const response = await aiChat(enhancedPrompt, userMessage);
+  const response = await aiChat(enhancedPrompt, userMessage, opts);
   try {
     return JSON.parse(response);
   } catch {

@@ -5,7 +5,7 @@
 // consultations, procedures, vitals, dates) and produces a
 // complete discharge summary following the standard medical format.
 // =====================================================================
-import { aiChatJSON } from "./ai-service";
+import { aiChatJSON, type AIChatOptions } from "./ai-service";
 
 export interface DischargeGenerateInput {
   encounterId?: string;
@@ -33,7 +33,7 @@ export interface DischargeSummaryResult {
 
 export async function generateDischargeSummary(
   input: DischargeGenerateInput
-): Promise<DischargeSummaryResult> {
+, opts?: AIChatOptions): Promise<DischargeSummaryResult> {
   const systemPrompt = `You are an expert physician generating a structured discharge summary from encounter data. Follow standard medical discharge summary format.
 
 Include:
@@ -91,5 +91,5 @@ Rules:
   if (input.vitals?.length)
     sections.push(`Vitals:\n${input.vitals.map((v) => `- ${v}`).join("\n")}`);
 
-  return aiChatJSON(systemPrompt, `Encounter data:\n\n${sections.join("\n\n")}`);
+  return aiChatJSON(systemPrompt, `Encounter data:\n\n${sections.join("\n\n")}`, opts);
 }
