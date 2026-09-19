@@ -47,7 +47,7 @@ import {
   Sparkles, Plus, RefreshCw, Loader2, AlertTriangle, CheckCircle2, XCircle,
   Edit, Key, FlaskConical, Star, Power, Activity, Cpu, Eye, EyeOff,
   Server, Brain, Zap, Image as ImageIcon, Wrench, MessageSquare, ShieldCheck,
-  Trash2, TrendingUp, Clock, BarChart3, type LucideIcon,
+  Trash2, TrendingUp, Clock, BarChart3, Globe, Lock, ChevronDown, type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -309,17 +309,7 @@ export function AIServicesView() {
             />
           )}
 
-          {/* Section 0: AI Usage Statistics (realtime) */}
-          {canViewUsage && (
-            <UsageStatsSection
-              data={usageQuery.data}
-              isLoading={usageQuery.isLoading}
-              isError={usageQuery.isError}
-              onRetry={() => usageQuery.refetch()}
-            />
-          )}
-
-          {/* Section 1: Current Active Configuration */}
+          {/* Section 1: Current Active Configuration (hero card) */}
           <ActiveConfigCard active={data.active} totalProviders={data.totalProviders} totalModels={data.totalModels} />
 
           {/* Section 2: Providers (with delete) */}
@@ -342,6 +332,21 @@ export function AIServicesView() {
             testResults={testResults}
             onDelete={(m) => setDeleteTarget({ type: "model", item: m })}
           />
+
+          {/* Section 4: AI Usage Statistics (realtime, collapsible)
+              Moved to bottom so admin can find provider/model config
+              without scrolling past the (growing) stats list. The
+              stats section is collapsed by default — only KPI cards +
+              24h bar chart are visible; expand to see calls-by-tool
+              and recent-calls lists. */}
+          {canViewUsage && (
+            <UsageStatsSection
+              data={usageQuery.data}
+              isLoading={usageQuery.isLoading}
+              isError={usageQuery.isError}
+              onRetry={() => usageQuery.refetch()}
+            />
+          )}
         </>
       )}
 
@@ -448,6 +453,14 @@ function UsageStatsSection({
   isError: boolean;
   onRetry: () => void;
 }) {
+  // Collapsible details: KPI cards + last-24h bar chart are always
+  // visible (compact, useful at a glance). Calls-by-tool + recent-calls
+  // lists are collapsed by default — admin expands to see details.
+  // This keeps the section short so the admin doesn't have to scroll
+  // past an ever-growing stats list to reach the provider/model tables
+  // (which are now placed ABOVE the stats section).
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
+
   if (isLoading) {
     return (
       <Card className="shadow-md border-violet-200">
@@ -606,81 +619,111 @@ function UsageStatsSection({
           </div>
         </div>
 
-        {/* ── Calls by tool (horizontal bar chart) ── */}
-        {callsByTool.length > 0 && (
-          <div>
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-              <Brain className="w-3 h-3 text-violet-600" /> Calls by Tool (30 days)
-            </h4>
-            <div className="space-y-1.5">
-              {callsByTool.map((t: any, i: number) => {
-                const meta = TOOL_META[t.tool] || { label: t.tool, gradient: "from-slate-500 to-slate-700" };
-                const pct = (t.count / maxToolCount) * 100;
-                const successPct = t.count > 0 ? (t.successCount / t.count) * 100 : 100;
-                return (
-                  <div
-                    key={t.tool}
-                    className="flex items-center gap-2 sm:gap-3 text-xs ai-enter-up"
-                    style={{ animationDelay: `${i * 0.04}s` }}
-                  >
-                    <div className="w-24 sm:w-36 truncate font-medium text-slate-700">{meta.label}</div>
-                    <div className="flex-1 h-6 bg-slate-100 rounded-md overflow-hidden relative">
-                      <div
-                        className={`h-full bg-gradient-to-r ${meta.gradient} transition-all duration-700 ease-out flex items-center justify-end pr-2`}
-                        style={{ width: `${Math.max(3, pct)}%` }}
-                      >
-                        <span className="text-[10px] font-bold text-white drop-shadow-sm">{t.count}</span>
-                      </div>
-                    </div>
-                    <div className="w-16 sm:w-20 text-right text-[10px] text-slate-500">
-                      {Math.round(successPct)}% ok
-                      {t.avgLatencyMs > 0 && <div className="text-[9px]">{t.avgLatencyMs}ms</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* ── Expand / collapse button for detailed breakdown ── */}
+        {(callsByTool.length > 0 || recentCalls.length > 0) && (
+          <button
+            type="button"
+            onClick={() => setDetailsExpanded(s => !s)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-medium text-violet-700 hover:text-violet-800 hover:bg-violet-50 transition-colors rounded-lg py-1.5 border border-violet-200 bg-violet-50/50"
+            aria-expanded={detailsExpanded}
+          >
+            {detailsExpanded ? (
+              <>
+                <ChevronDown className="w-3.5 h-3.5 rotate-180 transition-transform" />
+                Show Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-3.5 h-3.5 transition-transform" />
+                Show Details
+                <Badge variant="outline" className="text-[9px] bg-white text-violet-700 border-violet-200 ml-1">
+                  {callsByTool.length} tools · {recentCalls.length} recent
+                </Badge>
+              </>
+            )}
+          </button>
         )}
 
-        {/* ── Recent calls ── */}
-        {recentCalls.length > 0 && (
-          <div>
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-              <Activity className="w-3 h-3 text-violet-600" /> Recent Calls
-            </h4>
-            <div className="space-y-1 max-h-72 overflow-y-auto sidebar-scroll">
-              {recentCalls.map((c: any, i: number) => {
-                const meta = TOOL_META[c.tool] || { label: c.tool || "unknown", gradient: "from-slate-500 to-slate-700" };
-                return (
-                  <div
-                    key={c.id}
-                    className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 transition-colors ai-enter-up"
-                    style={{ animationDelay: `${Math.min(i * 0.02, 0.3)}s` }}
-                  >
-                    <div className={`shrink-0 w-7 h-7 rounded-md bg-gradient-to-br ${meta.gradient} flex items-center justify-center`}>
-                      {c.success ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : <XCircle className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className="font-semibold text-slate-900 truncate">{meta.label}</span>
-                        <span className="text-slate-400">·</span>
-                        <code className="text-[10px] text-slate-500 truncate">{c.modelCode}</code>
+        {/* ── Collapsible details: Calls by tool + Recent calls ── */}
+        {detailsExpanded && (callsByTool.length > 0 || recentCalls.length > 0) && (
+          <div className="space-y-4 ai-enter-up">
+            {/* ── Calls by tool (horizontal bar chart) ── */}
+            {callsByTool.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                  <Brain className="w-3 h-3 text-violet-600" /> Calls by Tool (30 days)
+                </h4>
+                <div className="space-y-1.5">
+                  {callsByTool.map((t: any, i: number) => {
+                    const meta = TOOL_META[t.tool] || { label: t.tool, gradient: "from-slate-500 to-slate-700" };
+                    const pct = (t.count / maxToolCount) * 100;
+                    const successPct = t.count > 0 ? (t.successCount / t.count) * 100 : 100;
+                    return (
+                      <div
+                        key={t.tool}
+                        className="flex items-center gap-2 sm:gap-3 text-xs ai-enter-up"
+                        style={{ animationDelay: `${i * 0.04}s` }}
+                      >
+                        <div className="w-24 sm:w-36 truncate font-medium text-slate-700">{meta.label}</div>
+                        <div className="flex-1 h-6 bg-slate-100 rounded-md overflow-hidden relative">
+                          <div
+                            className={`h-full bg-gradient-to-r ${meta.gradient} transition-all duration-700 ease-out flex items-center justify-end pr-2`}
+                            style={{ width: `${Math.max(3, pct)}%` }}
+                          >
+                            <span className="text-[10px] font-bold text-white drop-shadow-sm">{t.count}</span>
+                          </div>
+                        </div>
+                        <div className="w-16 sm:w-20 text-right text-[10px] text-slate-500">
+                          {Math.round(successPct)}% ok
+                          {t.avgLatencyMs > 0 && <div className="text-[9px]">{t.avgLatencyMs}ms</div>}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-slate-500 truncate">
-                        {c.user ? `${c.user.firstName} ${c.user.lastName}`.trim() || c.user.email || "system" : "system"}
-                        {c.latencyMs != null && ` · ${c.latencyMs}ms`}
-                        {c.totalTokens != null && ` · ${c.totalTokens} tok`}
-                        {!c.success && c.errorMessage && ` · ${c.errorMessage.slice(0, 80)}`}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── Recent calls ── */}
+            {recentCalls.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                  <Activity className="w-3 h-3 text-violet-600" /> Recent Calls
+                </h4>
+                <div className="space-y-1 max-h-72 overflow-y-auto sidebar-scroll">
+                  {recentCalls.map((c: any, i: number) => {
+                    const meta = TOOL_META[c.tool] || { label: c.tool || "unknown", gradient: "from-slate-500 to-slate-700" };
+                    return (
+                      <div
+                        key={c.id}
+                        className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 transition-colors ai-enter-up"
+                        style={{ animationDelay: `${Math.min(i * 0.02, 0.3)}s` }}
+                      >
+                        <div className={`shrink-0 w-7 h-7 rounded-md bg-gradient-to-br ${meta.gradient} flex items-center justify-center`}>
+                          {c.success ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : <XCircle className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="font-semibold text-slate-900 truncate">{meta.label}</span>
+                            <span className="text-slate-400">·</span>
+                            <code className="text-[10px] text-slate-500 truncate">{c.modelCode}</code>
+                          </div>
+                          <div className="text-[10px] text-slate-500 truncate">
+                            {c.user ? `${c.user.firstName} ${c.user.lastName}`.trim() || c.user.email || "system" : "system"}
+                            {c.latencyMs != null && ` · ${c.latencyMs}ms`}
+                            {c.totalTokens != null && ` · ${c.totalTokens} tok`}
+                            {!c.success && c.errorMessage && ` · ${c.errorMessage.slice(0, 80)}`}
+                          </div>
+                        </div>
+                        <div className="text-[9px] text-slate-400 shrink-0">
+                          {timeAgo(new Date(c.createdAt))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-[9px] text-slate-400 shrink-0">
-                      {timeAgo(new Date(c.createdAt))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -732,86 +775,239 @@ function timeAgo(date: Date): string {
 }
 
 // =====================================================================
-// SECTION 1: ACTIVE CONFIGURATION CARD
+// SECTION 1: CURRENT ACTIVE CONFIGURATION (HERO CARD)
+// =====================================================================
+// Unique hero design — the visual treatment changes based on the
+// active source (database = emerald, environment = amber, none = rose)
+// so an admin can see at a glance whether AI is properly configured.
+//
+// Layout:
+//   - Top: gradient banner with large provider icon + provider/model name
+//     + animated "Configured" status pill
+//   - Middle: 3 mini-cards (Base URL, Model Code, API Key masked) with
+//     gradient accent icons
+//   - Bottom: capability chips + stats row (providers / models count)
+//   - If not configured: warning message replaces the mini-cards
 // =====================================================================
 function ActiveConfigCard({ active, totalProviders, totalModels }: { active: any; totalProviders: number; totalModels: number }) {
   const isConfigured = active?.configured === true;
-  const sourceLabel = active?.source === "database" ? "Database" : active?.source === "environment" ? "Environment Variables" : "Not Configured";
-  const sourceColor = active?.source === "database" ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-    : active?.source === "environment" ? "bg-amber-100 text-amber-700 border-amber-200"
-    : "bg-rose-100 text-rose-700 border-rose-200";
+  const source = active?.source || "none";
+  const sourceLabel = source === "database" ? "Database-backed" : source === "environment" ? "Environment Vars" : "Not Configured";
+
+  // Visual treatment per source
+  const theme = source === "database"
+    ? {
+        gradient: "from-emerald-600 via-teal-600 to-cyan-700",
+        glow: "bg-emerald-300",
+        badge: "bg-emerald-500/20 text-emerald-50 ring-emerald-300/40",
+        accent: "text-emerald-700",
+        accentBg: "bg-emerald-50",
+        accentRing: "ring-emerald-200",
+        iconBg: "bg-emerald-500/20 ring-emerald-300/40",
+        statusColor: "text-emerald-300",
+        stripGradient: "from-emerald-400 via-teal-400 to-cyan-500",
+      }
+    : source === "environment"
+    ? {
+        gradient: "from-amber-600 via-orange-600 to-yellow-700",
+        glow: "bg-amber-300",
+        badge: "bg-amber-500/20 text-amber-50 ring-amber-300/40",
+        accent: "text-amber-700",
+        accentBg: "bg-amber-50",
+        accentRing: "ring-amber-200",
+        iconBg: "bg-amber-500/20 ring-amber-300/40",
+        statusColor: "text-amber-300",
+        stripGradient: "from-amber-400 via-orange-400 to-yellow-500",
+      }
+    : {
+        gradient: "from-rose-600 via-rose-700 to-red-800",
+        glow: "bg-rose-300",
+        badge: "bg-rose-500/20 text-rose-50 ring-rose-300/40",
+        accent: "text-rose-700",
+        accentBg: "bg-rose-50",
+        accentRing: "ring-rose-200",
+        iconBg: "bg-rose-500/20 ring-rose-300/40",
+        statusColor: "text-rose-300",
+        stripGradient: "from-rose-400 via-red-400 to-pink-500",
+      };
 
   return (
-    <Card className="card-hover-lift">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-bold flex items-center gap-2">
-          <Activity className="w-4 h-4 text-violet-600" /> Current Active Configuration
-        </CardTitle>
-        <CardDescription className="text-xs">
-          The resolved AI runtime config — used by the AI Assistant and all AI clinical tools.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <ConfigItem label="Source" value={<Badge variant="outline" className={`text-xs ${sourceColor}`}>{sourceLabel}</Badge>} />
-          <ConfigItem label="Provider" value={active?.providerName || "—"} />
-          <ConfigItem label="Model" value={active?.displayName || active?.modelCode || "—"} />
-          <ConfigItem
-            label="Connection Status"
-            value={
-              isConfigured ? (
-                <span className="inline-flex items-center gap-1 text-emerald-700">
-                  <CheckCircle2 className="w-4 h-4" /> Configured
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-rose-700">
-                  <XCircle className="w-4 h-4" /> Not Configured
-                </span>
-              )
-            }
-          />
-          <ConfigItem label="Base URL" value={<code className="text-xs break-all">{active?.baseUrl || "—"}</code>} />
-          <ConfigItem label="Model Code" value={<code className="text-xs">{active?.modelCode || "—"}</code>} />
-          <ConfigItem
-            label="API Key (masked)"
-            value={active?.apiKeyMasked ? <code className="text-xs">{active.apiKeyMasked}</code> : <span className="text-slate-400 text-xs">Not set</span>}
-          />
-          <ConfigItem label="Capabilities" value={
-            <div className="flex flex-wrap gap-1">
-              <CapChip icon={<Brain className="w-3 h-3" />} label="Thinking" on={active?.supportsThinking} />
-              <CapChip icon={<ImageIcon className="w-3 h-3" />} label="Vision" on={active?.supportsVision} />
-              <CapChip icon={<Wrench className="w-3 h-3" />} label="Tools" on={active?.supportsTools} />
+    <Card className="card-hover-lift overflow-hidden shadow-md sm:shadow-lg">
+      {/* ── HERO BANNER ─────────────────────────────────────────── */}
+      <div className={`relative overflow-hidden bg-gradient-to-r ${theme.gradient} text-white p-4 sm:p-6`}>
+        {/* Decorative orbs — desktop only */}
+        <div className={`ai-desktop-blur absolute -top-10 -right-10 w-48 h-48 ${theme.glow} opacity-20 blur-3xl rounded-full pointer-events-none ai-float-slow`} />
+        <div className={`ai-desktop-blur absolute -bottom-12 left-1/4 w-40 h-40 ${theme.glow} opacity-10 blur-3xl rounded-full pointer-events-none ai-float-slower`} />
+        {/* Subtle grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+        {/* Shimmer sweep — desktop only */}
+        <div className="ai-shimmer-bg absolute inset-0 pointer-events-none" />
+
+        <div className="relative z-10">
+          {/* Top row: title + source badge + status pill */}
+          <div className="flex items-start justify-between gap-2 sm:gap-3 mb-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-white/80 shrink-0" />
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-white/90 truncate">
+                Active Configuration
+              </h3>
             </div>
-          } />
-        </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ring-1 ${theme.badge}`}>
+                <Server className="w-2.5 h-2.5" />
+                {sourceLabel}
+              </span>
+            </div>
+          </div>
 
-        {/* Stats */}
-        <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
-          <Stat label="Total Providers" value={totalProviders} icon={<Server className="w-3.5 h-3.5" />} />
-          <Stat label="Total Models" value={totalModels} icon={<Cpu className="w-3.5 h-3.5" />} />
-        </div>
+          {/* Middle: large provider icon + provider/model name */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Icon with glow ring */}
+            <div className="relative shrink-0">
+              {/* Rotating gradient ring — desktop only */}
+              <div
+                className="hidden sm:block absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/40 via-transparent to-white/30 ai-spin-slow"
+                style={{ animationDuration: "5s" }}
+              />
+              <div className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${theme.iconBg} ring-1 backdrop-blur flex items-center justify-center shadow-lg`}>
+                {isConfigured ? (
+                  <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                ) : source === "environment" ? (
+                  <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                ) : (
+                  <XCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                )}
+              </div>
+            </div>
 
-        {!isConfigured && (
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div>
-              <div className="font-semibold">AI is not configured.</div>
-              <div className="text-amber-700">
-                Add a provider, set it as default, add a model (mark it default for the provider), and configure an API key. Alternatively, set the <code>ZAI_API_KEY</code> environment variable.
+            {/* Provider + model display */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">
+                  {active?.providerName || "Not configured"}
+                </h2>
+                {/* Animated status pill */}
+                <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-white/15 ring-1 ring-white/30`}>
+                  <span className="relative flex h-2 w-2">
+                    {isConfigured && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                    )}
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${isConfigured ? "bg-emerald-400" : source === "environment" ? "bg-amber-400" : "bg-rose-400"}`} />
+                  </span>
+                  {isConfigured ? "Live" : source === "environment" ? "Read-only" : "Down"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 text-xs sm:text-sm text-white/80 min-w-0">
+                <Brain className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span className="truncate">
+                  {active?.displayName || active?.modelCode || "— no model —"}
+                </span>
+                {active?.modelCode && active?.displayName && active?.modelCode !== active?.displayName && (
+                  <code className="text-[10px] sm:text-[11px] text-white/60 truncate">({active.modelCode})</code>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── METADATA MINI-CARDS ────────────────────────────────── */}
+      <CardContent className="p-3 sm:p-4 space-y-3">
+        {isConfigured ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <ConfigMiniCard
+              icon={<Globe className="w-3.5 h-3.5" />}
+              label="Base URL"
+              value={<code className="text-xs break-all">{active?.baseUrl || "—"}</code>}
+              theme={theme}
+            />
+            <ConfigMiniCard
+              icon={<Cpu className="w-3.5 h-3.5" />}
+              label="Model Code"
+              value={<code className="text-xs font-mono">{active?.modelCode || "—"}</code>}
+              theme={theme}
+            />
+            <ConfigMiniCard
+              icon={<Key className="w-3.5 h-3.5" />}
+              label="API Key (masked)"
+              value={
+                active?.apiKeyMasked ? (
+                  <code className="text-xs font-mono">{active.apiKeyMasked}</code>
+                ) : (
+                  <span className="text-slate-400 text-xs">Not set</span>
+                )
+              }
+              theme={theme}
+            />
+          </div>
+        ) : (
+          /* Not configured warning */
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 ai-enter-up">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+            <div className="flex-1">
+              <div className="font-semibold mb-0.5">AI is not configured</div>
+              <div className="text-amber-700 leading-relaxed">
+                Add a provider, set it as default, add a model (mark it default for the provider), and configure an API key. Alternatively, set the <code className="px-1 py-0.5 bg-amber-100 rounded">ZAI_API_KEY</code> environment variable.
               </div>
             </div>
           </div>
         )}
+
+        {/* ── Capabilities + stats ───────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+          {/* Capabilities */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase tracking-wide text-slate-500 flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Capabilities
+            </Label>
+            <div className="flex flex-wrap gap-1.5">
+              <CapChip icon={<Brain className="w-3 h-3" />} label="Thinking" on={active?.supportsThinking} />
+              <CapChip icon={<ImageIcon className="w-3 h-3" />} label="Vision" on={active?.supportsVision} />
+              <CapChip icon={<Wrench className="w-3 h-3" />} label="Tools" on={active?.supportsTools} />
+            </div>
+          </div>
+          {/* Stats */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase tracking-wide text-slate-500 flex items-center gap-1">
+              <Server className="w-3 h-3" /> Inventory
+            </Label>
+            <div className="flex flex-wrap gap-3">
+              <Stat label="Providers" value={totalProviders} icon={<Server className="w-3.5 h-3.5" />} />
+              <Stat label="Models" value={totalModels} icon={<Cpu className="w-3.5 h-3.5" />} />
+            </div>
+          </div>
+        </div>
       </CardContent>
+
+      {/* Bottom gradient strip — matches hero theme */}
+      <div className={`h-1 bg-gradient-to-r ${theme.stripGradient}`} />
     </Card>
   );
 }
 
-function ConfigItem({ label, value }: { label: string; value: any }) {
+// Mini card for metadata fields in the Active Configuration hero
+function ConfigMiniCard({ icon, label, value, theme }: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  theme: any;
+}) {
   return (
-    <div className="space-y-0.5">
-      <Label className="text-[10px] uppercase tracking-wide text-slate-500">{label}</Label>
-      <div className="text-sm text-slate-900">{value}</div>
+    <div className={`relative rounded-xl p-3 ${theme.accentBg} ring-1 ${theme.accentRing} overflow-hidden`}>
+      <div className="flex items-center gap-2 mb-1">
+        <div className={`w-5 h-5 rounded-md flex items-center justify-center ${theme.accent} bg-white ring-1 ring-slate-200 shadow-sm`}>
+          {icon}
+        </div>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
+      </div>
+      <div className="text-sm text-slate-900 min-w-0">{value}</div>
     </div>
   );
 }
