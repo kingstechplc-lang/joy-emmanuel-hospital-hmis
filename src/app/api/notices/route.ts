@@ -41,6 +41,7 @@ import { db } from "@/lib/db";
 import { getSession, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
 import { auditLog } from "@/lib/session";
+import { autoPromoteAndExpireNotices } from "@/lib/notices";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
@@ -72,6 +73,21 @@ export async function GET(req: Request) {
   const pageSize = Math.min(100, Math.max(10, parseInt(url.searchParams.get("pageSize") || "25", 10)));
 
   const now = new Date();
+
+  // ── Lazy auto-promote + auto-expire ────────────────────────────
+  // Promote SCHEDULED notices whose publishAt has arrived → PUBLISHED.
+  // Expire PUBLISHED notices whose expiresAt has passed → EXPIRED.
+  // This fires before the visibility query so the upcoming filter
+  // picks up the just-promoted notices. Non-blocking for the user —
+  // if this fails, the visibility query still returns correct data
+  // (SCHEDULED notices remain invisible to normal users, which is the
+  // safe fallback).
+  try {
+    await autoPromoteAndExpireNotices(session.user.organizationId, session.user.id, now);
+  } catch (e) {
+    console.error("[notices list] autoPromoteAndExpire failed:", e);
+  }
+
   const canManage = hasPermission(session, PERMISSIONS.NOTICE_CREATE);
 
   // Build base where clause — tenant isolation ALWAYS applied

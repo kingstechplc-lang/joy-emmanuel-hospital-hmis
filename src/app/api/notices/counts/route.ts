@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, hasPermission } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { autoPromoteAndExpireNotices } from "@/lib/notices";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
@@ -23,6 +24,14 @@ export async function GET() {
   }
 
   const now = new Date();
+
+  // Lazy auto-promote + auto-expire before computing counts — so the
+  // global indicator badge reflects the post-promotion state.
+  try {
+    await autoPromoteAndExpireNotices(session.user.organizationId, session.user.id, now);
+  } catch (e) {
+    console.error("[notices counts] autoPromoteAndExpire failed:", e);
+  }
 
   // Build the visibility OR clause for this user
   const targetClauses: any[] = [

@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession, hasPermission, auditLog } from "@/lib/session";
 import { PERMISSIONS } from "@/lib/permissions";
+import { autoPromoteAndExpireNotices } from "@/lib/notices";
 import { apiRouteConfig } from "@/lib/api-route-config";
 
 export const { dynamic, revalidate, maxDuration } = apiRouteConfig;
@@ -37,6 +38,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!hasPermission(session, PERMISSIONS.NOTICE_VIEW)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Lazy auto-promote + auto-expire before fetching — if the requested
+  // notice is SCHEDULED and its publishAt has arrived, this will flip it
+  // to PUBLISHED so the visibility check below passes.
+  try {
+    await autoPromoteAndExpireNotices(session.user.organizationId, session.user.id, new Date());
+  } catch (e) {
+    console.error("[notices detail] autoPromoteAndExpire failed:", e);
   }
 
   const { id } = await params;
