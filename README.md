@@ -4,7 +4,9 @@ A complete, production-ready **Multi-facility Hospital Management Information Sy
 
 Built with **Next.js 16**, **TypeScript**, **Prisma ORM**, **NextAuth.js**, **shadcn/ui**, and **Tailwind CSS**.
 
-> **Production stack**: Deployed on **Vercel** with **Neon PostgreSQL**. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full deployment guide.
+> **Production stack**: Deployed on **Vercel** with **Neon PostgreSQL**. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full cloud deployment guide.
+>
+> **LAN / Local deployment**: For a single hospital server PC running PostgreSQL locally with staff accessing via `http://192.168.x.x:3000` on the hospital LAN, see **[DEPLOYMENT-LAN.md](./DEPLOYMENT-LAN.md)**. No code changes required — configuration only.
 
 > **Core Principle**: ONE PATIENT = ONE MASTER PATIENT RECORD. Patients are organization-level (NOT facility-owned); encounters are facility-specific. A patient registered at Facility A can visit Facility B without creating a duplicate record — their entire longitudinal medical history is preserved across all Joy Emmanuel Hospital facilities.
 
